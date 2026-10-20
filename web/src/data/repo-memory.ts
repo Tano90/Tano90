@@ -98,6 +98,7 @@ export async function inviteMember(s: Session, input: { name: string; email: str
 export async function updateMember(s: Session, memberId: string, input: { role: Exclude<Session["role"], "owner">; outletIds: string[] }) {
   const d = db();
   const m = d.members.find((x) => x.id === memberId);
+  if (!canManageTeam(s.role)) throw new Forbidden();
   if (!m) throw new Error("Teammitglied nicht gefunden.");
   assertCanChangeMember(s, m, { role: input.role }, d.members.filter((x) => x.role === "owner").length);
   m.role = input.role;

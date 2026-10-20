@@ -96,6 +96,8 @@ export async function sha256(text: string): Promise<string> {
 }
 
 async function memberAndOwners(tx: Tx, s: Session, memberId: string) {
+  // Check the role first: "for update" hides rows the user may not change, which would read as "not found".
+  if (!canManageTeam(s.role)) throw new Forbidden();
   const members = await tx<Member[]>`
     select m.id, m.user_id, m.display_name as name, m.email, m.role, m.all_outlets, '{}'::uuid[] as outlet_ids
     from memberships m where m.library_id = ${s.libraryId} for update`;

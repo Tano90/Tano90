@@ -109,6 +109,43 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
   });
 
+  describe("second build pass: team, package counts, menus", () => {
+    const chef = { ...owner, userId: sid("usr-chef"), role: "chef" as const };
+    it("team rules hold in the repo and in the database", async () => {
+      const { asUser } = await import("../src/data/pg/client");
+      await expect(repo.updateMember(chef, sid("mem-3"), { role: "admin", outletIds: [] })).rejects.toThrow(/Berechtigung/);
+      await expect(repo.removeMember(owner, sid("mem-1"))).rejects.toThrow(/mindestens einen Inhaber/);
+      await expect(repo.transferOwnership(chef, sid("mem-3"))).rejects.toThrow(/Nur der Inhaber/);
+      // Bypassing the app: staff cannot promote themselves, a chef cannot touch the owner.
+      await asUser(staff.userId, (tx) => tx`update memberships set role = 'owner' where user_id = ${staff.userId}`).catch(() => {});
+      await asUser(chef.userId, (tx) => tx`update memberships set role = 'outlet_staff' where id = ${sid("mem-1")}`).catch(() => {});
+      await asUser(chef.userId, (tx) => tx`delete from memberships where id = ${sid("mem-1")}`).catch(() => {});
+      const roles = await admin`select id, role from memberships where library_id = ${owner.libraryId} order by id`;
+      expect(Object.fromEntries(roles.map((r) => [r.id, r.role]))).toMatchObject({ [sid("mem-1")]: "owner", [sid("mem-3")]: "outlet_staff" });
+    });
+    it("a package count only accepts the item's own packages and stores the breakdown", async () => {
+      const ev = await repo.startCount(staff, sid("out-mitte"));
+      await expect(repo.saveCountLines(staff, ev, { [sid("ing-butter")]: { packs: { [sid("ing-quark-pk1")]: 1 }, looseBase: 0 } })).rejects.toThrow(/Gebinde/);
+      await repo.saveCountLines(staff, ev, { [sid("ing-butter")]: { packs: { [sid("ing-butter-pk1")]: 2, [sid("ing-butter-pk0")]: 1 }, looseBase: 10 } });
+      const open = (await repo.getOpenCount(staff, sid("out-mitte")))!;
+      expect(open.draft[sid("ing-butter")]).toBe(2 * 2500 + 250 + 10);
+      expect(open.breakdown[sid("ing-butter")].packs[sid("ing-butter-pk1")]).toBe(2);
+      await repo.closeCount(staff, ev);
+    });
+    it("menus: same numbers as in memory, invisible and unwritable for other libraries", async () => {
+      const m = (await repo.getMenu(owner, sid("menu-mittag")))!;
+      expect(m.summary.courses.map((c) => c.name)).toEqual(["Vorspeise", "Hauptgang", "Dessert"]);
+      expect(m.bom.lines.reduce((s, l) => s + (l.costCents ?? 0), 0)).toBeCloseTo(m.summary.costCents, 6);
+      const asDemoLib = { ...stranger, libraryId: owner.libraryId };
+      expect(await repo.getMenu(asDemoLib, sid("menu-mittag"))).toBeNull();
+      expect(await repo.listMenus(asDemoLib)).toEqual([]);
+      await expect(repo.saveMenu(stranger, { name: "Fremd", categoryId: null, priceCents: null, priceIncludesVat: true, vatBp: null, targetMarginBp: null, validFrom: null, validTo: null, courses: [{ name: "G", items: [{ recipeId: sid("rec-linsensuppe"), portions: 1 }] }] })).rejects.toThrow(/gibt es nicht mehr/);
+      await expect(repo.saveMenu(staff, { name: "x", categoryId: null, priceCents: null, priceIncludesVat: true, vatBp: null, targetMarginBp: null, validFrom: null, validTo: null, courses: [] })).rejects.toThrow(/Berechtigung/);
+      const { asUser } = await import("../src/data/pg/client");
+      await expect(asUser(staff.userId, (tx) => tx`insert into menus (library_id, name) values (${owner.libraryId}, 'gehackt')`)).rejects.toThrow(/row-level security/);
+    });
+  });
+
   describe("prices", () => {
     it("BUG-001: an editor can save and change a supplier price (with price history)", async () => {
       const ing = await repo.saveIngredient(owner, { name: `Preis-Test ${Date.now()}`, shortName: null, internalUid: null, categoryId: null, baseUnit: "g", gramsPerPiece: null, mlPerGram: null });

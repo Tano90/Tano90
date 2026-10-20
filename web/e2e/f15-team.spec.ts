@@ -39,7 +39,8 @@ test.describe("S25 Team verwalten", () => {
     const d = await edit(page, "Sam Berger");
     await d.getByRole("button", { name: "Inhaberschaft übertragen" }).click();
     await page.getByRole("dialog", { name: /zur Inhaberin oder zum Inhaber/ }).getByRole("button", { name: "Übertragen" }).click();
-    await expect(page.getByText("Inhaberschaft übertragen")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.getByRole("row").filter({ hasText: "Sam Berger" })).toContainText("Inhaber");
     const rows = await db()`select display_name, role from memberships where library_id = ${sid("lib-demo")} order by display_name`;
     expect(rows.map((r) => `${r.display_name}:${r.role}`)).toEqual(["Alex Wolf:outlet_staff", "Demo Nutzer:admin", "Sam Berger:owner"]);
   });
