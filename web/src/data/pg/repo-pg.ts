@@ -367,6 +367,17 @@ export async function saveSupplier(s: Session, input: SupplierInput): Promise<st
   });
 }
 
+export async function archiveSupplier(s: Session, id: string): Promise<{ pricesRemoved: number }> {
+  assertEditor(s);
+  return run(s, async (tx) => {
+    const [{ n }] = await tx<{ n: number }[]>`select count(*)::int as n from purchase_orders where supplier_id = ${id} and status in ('draft', 'ordered', 'partially_delivered')`;
+    if (n) throw new Error(`Bei diesem Lieferanten gibt es noch ${n} offene Bestellung(en) oder Entwürfe. Erst abschließen oder löschen.`);
+    one(await tx`update suppliers set archived_at = now() where id = ${id} and archived_at is null returning id`, "Lieferant");
+    const items = await tx`update stock_items set archived_at = now(), is_preferred = false where supplier_id = ${id} and archived_at is null returning id`;
+    return { pricesRemoved: items.length };
+  });
+}
+
 // ---------------------------------------------------------------- recipes
 
 export async function listRecipes(s: Session, f: { q?: string; categoryId?: string } = {}) {

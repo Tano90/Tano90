@@ -323,6 +323,26 @@ export async function saveSupplier(s: Session, input: SupplierInput): Promise<st
   return id;
 }
 
+/**
+ * Archive a supplier. Refused while it has drafts or open orders. Its prices are archived too, so no
+ * recipe keeps costing with a supplier you no longer buy from; the caller warns how many that is.
+ */
+export async function archiveSupplier(s: Session, id: string): Promise<{ pricesRemoved: number }> {
+  assertEditor(s);
+  const d = db();
+  const open = d.orders.filter((o) => o.supplierId === id && ["draft", "ordered", "partially_delivered"].includes(o.status));
+  if (open.length) throw new Error(`Bei diesem Lieferanten gibt es noch ${open.length} offene Bestellung(en) oder Entwürfe. Erst abschließen oder löschen.`);
+  const row = d.suppliers.find((x) => x.id === id);
+  if (!row) throw new Error("Lieferant nicht gefunden.");
+  row.archivedAt = now();
+  const items = d.stockItems.filter((x) => x.supplierId === id && !x.archivedAt);
+  for (const si of items) {
+    si.archivedAt = now();
+    si.isPreferred = false;
+  }
+  return { pricesRemoved: items.length };
+}
+
 // ---------------------------------------------------------------- recipes
 
 export async function listRecipes(_s: Session, f: { q?: string; categoryId?: string } = {}) {

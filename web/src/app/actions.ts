@@ -298,6 +298,10 @@ export async function saveSupplier(input: z.input<typeof SupplierSchema>) {
   return run((s) => repo.saveSupplier(s, SupplierSchema.parse(input)), ["/suppliers", "/ingredients"]);
 }
 
+export async function archiveSupplier(supplierId: string) {
+  return run((s) => repo.archiveSupplier(s, supplierId), ["/suppliers", "/ingredients", "/recipes"]);
+}
+
 // ---------------------------------------------------------------- recipes
 
 const RecipeSchema = z.object({

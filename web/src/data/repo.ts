@@ -17,7 +17,7 @@ export const {
   getMembership, findUserIdByEmail, createLibrary, invitationPreview, acceptInvitation, deleteAccountData,
   getLibrary, getBilling, updateLibrary, listOutlets, createOutlet, listMembers, inviteMember, listCategories,
   listIngredients, getIngredient, saveIngredient, archiveIngredient, savePackage, deletePackage, saveStockItem, archiveStockItem,
-  setIngredientAllergens, setNutrition, listSuppliers, getSupplier, saveSupplier,
+  setIngredientAllergens, setNutrition, listSuppliers, getSupplier, saveSupplier, archiveSupplier,
   listRecipes, getRecipe, lineOptions, previewRecipe, saveRecipe, archiveRecipe,
   getStock, listStockEvents, recordWaste, getOpenCount, startCount, saveCountLines, closeCount,
   listOrders, orderCounts, getOrder, orderableItems, saveOrderDraft, sendOrder, deleteOrderDraft, receiveDelivery,

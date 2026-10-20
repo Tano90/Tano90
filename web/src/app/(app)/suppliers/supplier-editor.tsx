@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { saveSupplier } from "@/app/actions";
+import { archiveSupplier, saveSupplier } from "@/app/actions";
 import { Notice } from "@/components/app/notice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/dialog";
 import { Field, Input } from "@/components/ui/field";
 import { MoneyInput, parseCents } from "@/components/ui/money-input";
 import { toast } from "@/components/ui/toast";
@@ -66,7 +67,12 @@ export function SupplierEditor({ supplier, items, canEdit }: { supplier: Supplie
           <Field label="Lieferzeit (Tage)"><Input inputMode="numeric" className="num text-right" value={f.leadTimeDays} onChange={set("leadTimeDays")} /></Field>
           <Field label="Mindestbestellwert (netto)"><MoneyInput value={f.minOrder} onValueChange={(v) => setF({ ...f, minOrder: v })} /></Field>
         </fieldset>
-        {canEdit && <div><Button type="submit" loading={pending}>{supplier ? "Speichern" : "Lieferant anlegen"}</Button></div>}
+        {canEdit && (
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" loading={pending}>{supplier ? "Speichern" : "Lieferant anlegen"}</Button>
+            {supplier && <ArchiveSupplier id={supplier.id} name={supplier.companyName} prices={items.length} />}
+          </div>
+        )}
       </form>
 
       {supplier && (
@@ -97,5 +103,39 @@ export function SupplierEditor({ supplier, items, canEdit }: { supplier: Supplie
         </section>
       )}
     </div>
+  );
+}
+
+function ArchiveSupplier({ id, name, prices }: { id: string; name: string; prices: number }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [pending, start] = useTransition();
+  return (
+    <ConfirmDialog
+      open={open}
+      onOpenChange={setOpen}
+      trigger={<Button variant="ghost">Archivieren</Button>}
+      title={`„${name}“ archivieren?`}
+      description={
+        prices
+          ? `Die ${prices} Preise dieses Lieferanten werden mitarchiviert. Zutaten ohne anderen Lieferanten haben danach keinen Preis mehr, und ihre Rezepte zeigen das an. Bestellungen und Lagerbewegungen bleiben erhalten.`
+          : "Der Lieferant verschwindet aus Listen und Auswahlfeldern. Bestellungen und Lagerbewegungen bleiben erhalten."
+      }
+      confirmLabel="Archivieren"
+      danger
+      loading={pending}
+      onConfirm={() =>
+        start(async () => {
+          const res = await archiveSupplier(id);
+          setOpen(false);
+          if (!res.ok) {
+            toast.error("Archivieren nicht möglich", { description: res.error });
+            return;
+          }
+          toast.success("Lieferant archiviert", res.data.pricesRemoved ? { description: `${res.data.pricesRemoved} Preise entfernt.` } : undefined);
+          router.push("/suppliers");
+        })
+      }
+    />
   );
 }
