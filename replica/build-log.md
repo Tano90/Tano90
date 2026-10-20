@@ -13,9 +13,9 @@ Originals vorhanden, daher kein Layoutvergleich.
 | S01 | Anmeldung | 2026-10-20 | partial | echte Auth (Passwort, Magic Link, Passwort vergessen) | – |
 | S02 | Übersicht | 2026-10-20 | done | – | – |
 | S03 | Zutaten | 2026-10-20 | done | Bulk-Aktionen (archivieren, Kategorie setzen) | – |
-| S04 | Zutat | 2026-10-20 | done | Gebinde bearbeiten (nur anlegen/löschen), Zutaten zusammenführen, Sichtbarkeit/Mindestbestand pro Outlet | Gebinde-Hierarchie plus Preis pro Pack oder pro kg braucht zwei Dialoge, sonst wird es unverständlich Seit 4. Durchgang: Tab „Outlets“ (Sichtbarkeit). |
+| S04 | Zutat | 2026-10-20 | done | Gebinde bearbeiten (nur anlegen/löschen), Zutaten zusammenführen | Gebinde-Hierarchie plus Preis pro Pack oder pro kg braucht zwei Dialoge, sonst wird es unverständlich |
 | S05 | Rezepte | 2026-10-20 | done | Bulk-Aktionen | – |
-| S06 | Rezept | 2026-10-20 | done | VK pro Outlet, Nährwerte pro Portion | Live-Kalkulation über Unterrezepte und Einheiten (Stück ↔ g ↔ ml); „Portion“ als Einheit für Unterrezepte Seit 4. Durchgang: Preis pro Outlet. |
+| S06 | Rezept | 2026-10-20 | done | – | Live-Kalkulation über Unterrezepte und Einheiten (Stück ↔ g ↔ ml); „Portion“ als Einheit für Unterrezepte |
 | S07 | Menüs | 2026-10-20 | done | – | – |
 | S08 | Menü | 2026-10-20 | done | Menü-Etikett zum Drucken | Stückliste rekursiv über Unterrezepte: Mengen laufen über Chargenanteile (Menge ÷ Ausbeute), nicht über Portionen |
 | S09 | Etikett & Stückliste | 2026-10-20 | done | Etikett-Vorlagen und Formate (heute eine Druckansicht); Menü-Stückliste steckt in S08 | Allergen-Namen lagen in einem Client-Modul und mussten für die Server-Seite in ein gemeinsames Modul |
