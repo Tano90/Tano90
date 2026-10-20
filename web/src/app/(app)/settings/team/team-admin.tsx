@@ -117,7 +117,7 @@ function Invite({ outlets }: { outlets: O[] }) {
       onOpenChange={setOpen}
       trigger={<Button><Plus aria-hidden className="size-4" /> Einladen</Button>}
       title="Teammitglied einladen"
-      description="Die Einladung geht per E-Mail raus, sobald der Mailversand angebunden ist. Bis dahin wird das Mitglied direkt angelegt."
+      description="Die Einladung geht per E-Mail raus und gilt 7 Tage. Im Demo-Modus ohne Datenbank wird das Mitglied direkt angelegt."
       footer={
         <Button
           loading={pending}
@@ -129,7 +129,7 @@ function Invite({ outlets }: { outlets: O[] }) {
               setOpen(false);
               setF({ name: "", email: "", role: "outlet_staff" });
               setPicked([]);
-              toast.success("Teammitglied hinzugefügt");
+              toast.success(res.data.sent ? "Einladung gesendet" : "Teammitglied hinzugefügt");
               router.refresh();
             })
           }

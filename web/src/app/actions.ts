@@ -4,10 +4,15 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { z } from "zod";
+import { headers } from "next/headers";
 import * as repo from "@/data/repo";
-import { OUTLET_COOKIE, SESSION_COOKIE, currentOutletId, requireSession } from "@/data/session";
-import { db } from "@/data/store";
+import { OUTLET_COOKIE, SESSION_COOKIE, authMode, canManageBilling, currentOutletId, currentUser, demoAllowed, requireSession } from "@/data/session";
 import type { Session } from "@/data/types";
+import { billingConfigured, createCheckout, createPortal, syncOutletQuantity } from "@/lib/billing";
+import { sendMail } from "@/lib/mail";
+import { invitationMail, orderMail } from "@/lib/mail-templates";
+import { RateLimited, allow } from "@/lib/rate-limit";
+import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 
 export type Result<T = null> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -24,25 +29,179 @@ async function run<T>(fn: (s: Session) => Promise<T>, paths: string[] = []): Pro
   }
 }
 
-// ---------------------------------------------------------------- session
+// ---------------------------------------------------------------- session & account
+
+const appUrl = () => process.env.APP_URL ?? "http://localhost:3000";
+const emailSchema = z.string().trim().toLowerCase().email("Bitte eine gültige E-Mail-Adresse angeben.");
+const passwordSchema = z.string().min(10, "Das Passwort braucht mindestens 10 Zeichen.").max(200);
+
+async function clientKey() {
+  const h = await headers();
+  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "unknown";
+}
+
+/** Plain wrapper for actions that run before there is a session (sign in, sign up, reset). */
+async function open<T>(fn: () => Promise<T>): Promise<Result<T>> {
+  try {
+    return { ok: true, data: await fn() };
+  } catch (e) {
+    unstable_rethrow(e);
+    if (e instanceof z.ZodError) return { ok: false, error: e.issues.map((i) => i.message).join(" ") };
+    return { ok: false, error: e instanceof Error ? e.message : "Unbekannter Fehler." };
+  }
+}
 
 export async function signIn(_: Result | null, form: FormData): Promise<Result> {
-  const email = String(form.get("email") ?? "").trim().toLowerCase();
-  const password = String(form.get("password") ?? "");
-  const m = db().members.find((x) => x.email === email);
-  if (!m || password.length < 1) return { ok: false, error: "E-Mail oder Passwort stimmt nicht." };
-  (await cookies()).set(SESSION_COOKIE, m.userId, { httpOnly: true, sameSite: "lax", path: "/" });
+  const res = await open(async () => {
+    const email = emailSchema.parse(form.get("email"));
+    const password = String(form.get("password") ?? "");
+    if (!(await allow(`signin:${await clientKey()}`, 20, 600))) throw new RateLimited();
+    if (authMode() === "supabase") {
+      const { error } = await (await supabaseServer()).auth.signInWithPassword({ email, password });
+      if (error) throw new Error(error.code === "email_not_confirmed" ? "Bitte bestätige zuerst deine E-Mail-Adresse." : "E-Mail oder Passwort stimmt nicht.");
+      return null;
+    }
+    if (!demoAllowed()) throw new Error("Anmeldung ist nicht eingerichtet.");
+    const id = await repo.findUserIdByEmail(email);
+    if (!id || !password) throw new Error("E-Mail oder Passwort stimmt nicht.");
+    (await cookies()).set(SESSION_COOKIE, id, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" });
+    return null;
+  });
+  if (!res.ok) return res;
+  redirect(String(form.get("next") ?? "") .startsWith("/") ? String(form.get("next")) : "/");
+}
+
+export async function sendMagicLink(_: Result<string> | null, form: FormData): Promise<Result<string>> {
+  return open(async () => {
+    if (authMode() !== "supabase") throw new Error("Magic Links brauchen Supabase Auth.");
+    const email = emailSchema.parse(form.get("email"));
+    if (!(await allow(`magic:${email}`, 3, 3600)) || !(await allow(`magic-ip:${await clientKey()}`, 10, 3600))) throw new RateLimited();
+    const { error } = await (await supabaseServer()).auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: `${appUrl()}/auth/callback` } });
+    // Same answer whether or not the address exists, so the form cannot be used to probe for accounts.
+    if (error && error.code !== "otp_disabled" && error.status !== 400) throw new Error("Der Link konnte nicht gesendet werden.");
+    return "Wenn ein Konto zu dieser Adresse existiert, ist ein Anmeldelink unterwegs.";
+  });
+}
+
+export async function signUp(_: Result<string> | null, form: FormData): Promise<Result<string>> {
+  return open(async () => {
+    if (authMode() !== "supabase") throw new Error("Registrierung braucht Supabase Auth. Lokal gibt es Demo-Zugänge.");
+    const email = emailSchema.parse(form.get("email"));
+    const password = passwordSchema.parse(form.get("password"));
+    const name = z.string().trim().min(1, "Bitte deinen Namen angeben.").max(80).parse(form.get("name"));
+    if (!(await allow(`signup:${await clientKey()}`, 5, 3600))) throw new RateLimited();
+    const { error } = await (await supabaseServer()).auth.signUp({
+      email, password, options: { data: { name }, emailRedirectTo: `${appUrl()}/auth/callback?next=/onboarding` },
+    });
+    if (error && error.code === "weak_password") throw new Error("Dieses Passwort ist zu schwach oder bekannt aus Datenlecks.");
+    if (error && error.code !== "user_already_exists") throw new Error("Die Registrierung hat nicht geklappt. Bitte später erneut versuchen.");
+    return "Fast geschafft: Wir haben dir eine E-Mail geschickt. Bestätige deine Adresse über den Link darin.";
+  });
+}
+
+export async function requestPasswordReset(_: Result<string> | null, form: FormData): Promise<Result<string>> {
+  return open(async () => {
+    if (authMode() !== "supabase") throw new Error("Passwort-Zurücksetzen braucht Supabase Auth.");
+    const email = emailSchema.parse(form.get("email"));
+    if (!(await allow(`reset:${email}`, 3, 3600)) || !(await allow(`reset-ip:${await clientKey()}`, 10, 3600))) throw new RateLimited();
+    await (await supabaseServer()).auth.resetPasswordForEmail(email, { redirectTo: `${appUrl()}/auth/callback?next=/update-password` });
+    return "Wenn ein Konto zu dieser Adresse existiert, ist ein Link zum Zurücksetzen unterwegs.";
+  });
+}
+
+export async function updatePassword(_: Result | null, form: FormData): Promise<Result> {
+  const res = await open(async () => {
+    const password = passwordSchema.parse(form.get("password"));
+    if (password !== form.get("confirm")) throw new Error("Die Passwörter stimmen nicht überein.");
+    const sb = await supabaseServer();
+    const { error } = await sb.auth.updateUser({ password });
+    if (error) throw new Error(error.code === "same_password" ? "Das neue Passwort muss sich vom alten unterscheiden." : "Das Passwort konnte nicht geändert werden. Ist der Link abgelaufen?");
+    return null;
+  });
+  if (!res.ok) return res;
   redirect("/");
 }
 
 export async function signOut() {
+  if (authMode() === "supabase") await (await supabaseServer()).auth.signOut({ scope: "local" });
   (await cookies()).delete(SESSION_COOKIE);
   redirect("/login");
+}
+
+/** Ends every session of this user on every device. */
+export async function signOutEverywhere() {
+  if (authMode() === "supabase") await (await supabaseServer()).auth.signOut({ scope: "global" });
+  (await cookies()).delete(SESSION_COOKIE);
+  redirect("/login?signedout=all");
+}
+
+export async function deleteAccount(_: Result | null, form: FormData): Promise<Result> {
+  const res = await open(async () => {
+    if (form.get("confirm") !== "LÖSCHEN") throw new Error("Bitte tippe LÖSCHEN zur Bestätigung.");
+    const user = await currentUser();
+    if (!user) throw new Error("Nicht angemeldet.");
+    const done = await repo.deleteAccountData(user.id);
+    if (!done.ok) throw new Error(done.reason);
+    if (authMode() === "supabase") {
+      const { error } = await supabaseAdmin().auth.admin.deleteUser(user.id);
+      if (error) throw new Error("Deine Daten sind gelöscht, das Login konnte aber nicht entfernt werden. Bitte melde dich beim Support.");
+      await (await supabaseServer()).auth.signOut({ scope: "local" });
+    }
+    (await cookies()).delete(SESSION_COOKIE);
+    return null;
+  });
+  if (!res.ok) return res;
+  redirect("/login?deleted=1");
+}
+
+export async function createLibrary(_: Result | null, form: FormData): Promise<Result> {
+  const res = await open(async () => {
+    const user = await currentUser();
+    if (!user) throw new Error("Bitte zuerst anmelden.");
+    const input = z.object({ libraryName: name, outletName: name, ownerName: name }).parse({
+      libraryName: form.get("libraryName"), outletName: form.get("outletName"), ownerName: form.get("ownerName"),
+    });
+    await repo.createLibrary(user.id, input);
+    return null;
+  });
+  if (!res.ok) return res;
+  redirect("/");
+}
+
+export async function acceptInvitation(_: Result | null, form: FormData): Promise<Result> {
+  const res = await open(async () => {
+    const user = await currentUser();
+    if (!user) throw new Error("Bitte zuerst anmelden.");
+    await repo.acceptInvitation(user.id, String(form.get("token") ?? ""), name.parse(form.get("name")));
+    return null;
+  });
+  if (!res.ok) return res;
+  redirect("/");
 }
 
 export async function setOutlet(outletId: string) {
   (await cookies()).set(OUTLET_COOKIE, outletId, { sameSite: "lax", path: "/" });
   revalidatePath("/", "layout");
+}
+
+// ---------------------------------------------------------------- billing
+
+export async function startCheckout(): Promise<Result<string>> {
+  return run(async (s) => {
+    if (!canManageBilling(s.role)) throw new Error("Nur Inhaber können das Abo verwalten.");
+    if (!billingConfigured()) throw new Error("Die Abrechnung ist noch nicht eingerichtet.");
+    const billing = await repo.getBilling(s);
+    return createCheckout({ libraryId: s.libraryId, email: s.email, outletCount: (await repo.listOutlets(s)).length, customerId: billing.stripeCustomerId });
+  });
+}
+
+export async function openBillingPortal(): Promise<Result<string>> {
+  return run(async (s) => {
+    if (!canManageBilling(s.role)) throw new Error("Nur Inhaber können das Abo verwalten.");
+    const billing = await repo.getBilling(s);
+    if (!billing.stripeCustomerId) throw new Error("Noch kein Abo vorhanden.");
+    return createPortal(billing.stripeCustomerId);
+  });
 }
 
 // ---------------------------------------------------------------- schemas
@@ -176,8 +335,31 @@ export async function saveOrderDraft(input: z.input<typeof OrderSchema>) {
   return run(async (s) => repo.saveOrderDraft(s, { ...OrderSchema.parse(input), outletId: await currentOutletId(s) }), ["/orders", "/"]);
 }
 export async function sendOrder(orderId: string) {
-  return run((s) => repo.sendOrder(s, orderId), ["/orders", "/"]);
+  return run(async (s) => {
+    const found = await repo.getOrder(s, orderId);
+    if (!found) throw new Error("Bestellung nicht gefunden.");
+    if (found.order.status !== "draft") return { alreadySent: true, to: null, mailed: false };
+    const to = found.supplier.orderEmail;
+    if (to) {
+      if (!(await allow(`order-mail:${s.libraryId}`, 100, 3600))) throw new RateLimited();
+      const lib = await repo.getLibrary(s);
+      // Mail first, then mark as sent. The order id is the idempotency key, so if marking fails and the
+      // user retries, the supplier still gets exactly one email.
+      await sendMail({
+        to,
+        replyTo: s.email,
+        idempotencyKey: `order-${orderId}`,
+        ...orderMail({
+          libraryName: lib.name, outletName: found.outlet.name, supplierName: found.supplier.companyName, customerNumber: found.supplier.customerNumber,
+          orderNumber: found.order.orderNumber, expectedDeliveryDate: found.order.expectedDeliveryDate, note: found.order.note, lines: found.lines,
+        }),
+      });
+    }
+    const sent = await repo.sendOrder(s, orderId);
+    return { ...sent, mailed: !!to };
+  }, ["/orders", "/"]);
 }
+
 export async function deleteOrderDraft(orderId: string) {
   return run((s) => repo.deleteOrderDraft(s, orderId), ["/orders", "/"]);
 }
@@ -215,9 +397,27 @@ export async function updateLibrary(input: { name: string; defaultVatBp: number;
   return run((s) => repo.updateLibrary(s, schema.parse(input)), ["/"]);
 }
 export async function createOutlet(outletName: string, isCentralKitchen: boolean) {
-  return run((s) => repo.createOutlet(s, name.parse(outletName), isCentralKitchen), ["/"]);
+  return run(async (s) => {
+    const id = await repo.createOutlet(s, name.parse(outletName), isCentralKitchen);
+    const billing = await repo.getBilling(s);
+    if (billing.stripeSubscriptionId && billingConfigured()) {
+      // Billing follows the outlet count. If Stripe is down the outlet still exists; the next change re-syncs.
+      await syncOutletQuantity(billing.stripeSubscriptionId, (await repo.listOutlets(s)).length).catch((e) => console.error("[billing] quantity sync failed", e));
+    }
+    return id;
+  }, ["/"]);
 }
+const ROLE_LABEL = { admin: "Admin", chef: "Küchenleitung", outlet_staff: "Teammitglied" } as const;
+
 export async function inviteMember(input: { name: string; email: string; role: string; outletIds: string[] }) {
-  const schema = z.object({ name, email: z.string().trim().email("Die E-Mail-Adresse ist ungültig."), role: z.enum(["admin", "chef", "outlet_staff"]), outletIds: z.array(id) });
-  return run((s) => repo.inviteMember(s, schema.parse(input)), ["/settings/team"]);
+  const schema = z.object({ name, email: emailSchema, role: z.enum(["admin", "chef", "outlet_staff"]), outletIds: z.array(id) });
+  return run(async (s) => {
+    const data = schema.parse(input);
+    if (!(await allow(`invite:${s.libraryId}`, 20, 3600))) throw new RateLimited();
+    const { token } = await repo.inviteMember(s, data);
+    if (!token) return { sent: false };
+    const lib = await repo.getLibrary(s);
+    await sendMail({ to: data.email, replyTo: s.email, ...invitationMail({ libraryName: lib.name, inviterName: s.name, roleLabel: ROLE_LABEL[data.role], link: `${appUrl()}/invite/${token}` }) });
+    return { sent: true };
+  }, ["/settings/team"]);
 }

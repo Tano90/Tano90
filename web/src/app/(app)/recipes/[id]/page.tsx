@@ -10,7 +10,7 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
   const isNew = id === "new";
   const found = isNew ? null : await getRecipe(s, id);
   if (!isNew && (!found || found.recipe.archivedAt)) notFound();
-  const [options, categories, library] = await Promise.all([lineOptions(s, isNew ? undefined : id), listCategories("recipe"), getLibrary()]);
+  const [options, categories, library] = await Promise.all([lineOptions(s, isNew ? undefined : id), listCategories(s, "recipe"), getLibrary(s)]);
   return (
     <>
       <PageHeader title={found?.recipe.name ?? "Neues Rezept"} back={{ href: "/recipes", label: "Rezepte" }} />

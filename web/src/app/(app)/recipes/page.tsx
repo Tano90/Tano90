@@ -10,7 +10,7 @@ export const metadata = { title: "Rezepte · Kitchen Ledger" };
 export default async function RecipesPage({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string }> }) {
   const sp = await searchParams;
   const s = await requireSession();
-  const [rows, categories] = await Promise.all([listRecipes(s, { q: sp.q, categoryId: sp.cat }), listCategories("recipe")]);
+  const [rows, categories] = await Promise.all([listRecipes(s, { q: sp.q, categoryId: sp.cat }), listCategories(s, "recipe")]);
   return (
     <>
       <PageHeader

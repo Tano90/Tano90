@@ -9,10 +9,10 @@ export const metadata = { title: "Einstellungen · Kitchen Ledger" };
 
 export default async function SettingsPage() {
   const s = await requireSession();
-  const lib = await getLibrary();
+  const lib = await getLibrary(s);
   return (
     <>
-      <PageHeader title="Einstellungen" description={<>Gilt für alle Outlets. Standorte und Team verwaltest du unter <Link className="text-accent underline" href="/settings/team">Outlets & Team</Link>.</>} />
+      <PageHeader title="Einstellungen" description={<>Gilt für alle Outlets. Außerdem: <Link className="text-accent underline" href="/settings/team">Outlets & Team</Link> · <Link className="text-accent underline" href="/settings/billing">Abo & Rechnungen</Link> · <Link className="text-accent underline" href="/settings/account">Dein Konto</Link></>} />
       {canManageTeam(s.role) ? <LibraryForm library={lib} /> : <NoPermission what="Die Einstellungen des Betriebs können nur Inhaber und Admins ändern." />}
     </>
   );

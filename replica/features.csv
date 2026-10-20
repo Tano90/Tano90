@@ -1,7 +1,7 @@
 feature,area,priority,original,clone,notes
-Login mit E-Mail und Passwort,auth,must,yes,partial,S01; Demo-Login ohne echte Passwörter – Supabase Auth folgt mit /replica-backend
+Login mit E-Mail und Passwort,auth,must,yes,partial,"S01; Supabase Auth gebaut (Registrierung mit Bestätigung, Passwort, Magic Link, Reset, überall abmelden, Konto löschen); ohne eigenes Supabase-Projekt nicht end-to-end getestet"
 Bibliothek (Mandant) mit mehreren Outlets,setup,must,yes,yes,"S24 S25; Library vs. outlet-gebundene Daten; Outlet-Switch im Header, Outlet anlegen"
-Benutzer einladen und Outlets zuweisen,setup,must,yes,partial,"S25; Rollenmodell geraten; Mitglied wird direkt angelegt, keine Einladungs-Mail, Rolle nachträglich ändern fehlt"
+Benutzer einladen und Outlets zuweisen,setup,must,yes,partial,"S25; Rollenmodell geraten; Einladung per E-Mail mit Token, gegen Postgres getestet; Rolle nachträglich ändern fehlt"
 Zutatenliste mit Suche und Filter,library,must,yes,yes,S03
 Zutat anlegen mit Kategorie,library,must,yes,yes,S04 F01
 Gebinde-Hierarchie (z. B. 30x150 g),library,must,yes,yes,S04; Quelle 7
@@ -15,7 +15,7 @@ VK-Preis mit/ohne MwSt. und Marge,recipes,must,yes,yes,S06 Financial-Tab
 Allergene pro Zutat (enthält/Spuren/frei/unbekannt),allergens,must,yes,yes,S04; 14 EU-Allergene
 Allergene im Rezept automatisch vererbt + manuell ergänzbar,allergens,must,yes,yes,S06; Quelle 12; unbekannt schlägt frei
 Lieferanten verwalten,procurement,must,yes,partial,"S10 S11; anlegen/bearbeiten ja, archivieren fehlt"
-Bestellung pro Lieferant und Outlet anlegen und per E-Mail senden,procurement,must,yes,partial,"S13 F06; S13; Status wird gesetzt, E-Mail-Versand erst mit /replica-backend (Resend)"
+Bestellung pro Lieferant und Outlet anlegen und per E-Mail senden,procurement,must,yes,yes,"S13 F06; S13; Mail über Resend (lokal Postausgang), Bestell-ID als Idempotenzschlüssel"
 Wareneingang inkl. Teillieferung,procurement,must,yes,yes,S14 F07; S14; Überlieferung wird abgelehnt
 Inventur pro Outlet (Packungen und Teilmengen),inventory,must,yes,partial,"S17 F08; S17; Zählen in kg/l/Stk. mit Dezimalstellen, Zählen in Gebinden fehlt"
 Lagerbestand und Lagerwert (WAC) pro Outlet,inventory,must,yes,yes,S16; Quelle 20

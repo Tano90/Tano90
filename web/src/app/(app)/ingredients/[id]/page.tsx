@@ -8,7 +8,7 @@ export default async function IngredientPage({ params, searchParams }: { params:
   const { id } = await params;
   const { tab } = await searchParams;
   const s = await requireSession();
-  const categories = (await listCategories("ingredient")).map((c) => ({ value: c.id, label: c.name }));
+  const categories = (await listCategories(s, "ingredient")).map((c) => ({ value: c.id, label: c.name }));
   if (id === "new") {
     return (
       <>

@@ -14,7 +14,7 @@ export default async function IngredientsPage({ searchParams }: { searchParams: 
   const s = await requireSession();
   const [rows, categories, suppliers] = await Promise.all([
     listIngredients(s, { q: sp.q, categoryId: sp.cat, supplierId: sp.sup, unverified: sp.unverified === "1" }),
-    listCategories("ingredient"),
+    listCategories(s, "ingredient"),
     listSuppliers(s),
   ]);
   const filtered = !!(sp.q || sp.cat || sp.sup || sp.unverified);
