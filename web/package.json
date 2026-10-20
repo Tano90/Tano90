@@ -17,7 +17,8 @@
     "screenshot:screens": "node scripts/screenshot-screens.mjs",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx --conditions=react-server scripts/seed.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "vercel-build": "npm run db:migrate && npm run build"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

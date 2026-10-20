@@ -23,5 +23,5 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|icon.svg|api/webhooks|api/cron).*)"],
+  matcher: ["/((?!_next/static|_next/image|icon.svg|api/webhooks|api/cron|api/health).*)"],
 };
