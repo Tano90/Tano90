@@ -23,7 +23,7 @@ test.describe("Randfälle 3. Durchgang", () => {
     await page.getByRole("option", { name: /^Zucker/ }).click();
     await page.getByRole("textbox", { name: "Menge" }).fill("1");
     await page.getByRole("button", { name: "Umbuchen" }).dblclick();
-    await expect(page.getByText("Umgebucht")).toBeVisible();
+    await expect(page.getByText("Umgebucht", { exact: true })).toBeVisible();
     await page.waitForTimeout(500);
     expect(await stockQuantity("Zucker")).toBe(zucker - 1000);
   });

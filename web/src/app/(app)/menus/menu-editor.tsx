@@ -54,7 +54,8 @@ export function MenuEditor({ menu, recipes, categories, defaultVatBp, canEdit }:
   }, [dirty]);
 
   const field = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setF({ ...f, [k]: e.target.value });
+    const v = e.target.value;
+    setF((p) => ({ ...p, [k]: v }));
     setDirty(true);
   };
   const editCourses = (next: Course[]) => {
@@ -133,7 +134,7 @@ export function MenuEditor({ menu, recipes, categories, defaultVatBp, canEdit }:
             </Select>
           </Field>
           <Field label="Menüpreis pro Gast" className="md:col-span-3">
-            <MoneyInput value={f.price} onValueChange={(v) => { setF({ ...f, price: v }); setDirty(true); }} vat={{ includesVat: f.includesVat, onChange: (v) => { setF({ ...f, includesVat: v }); setDirty(true); } }} />
+            <MoneyInput value={f.price} onValueChange={(v) => { setF((p) => ({ ...p, price: v })); setDirty(true); }} vat={{ includesVat: f.includesVat, onChange: (v) => { setF((p) => ({ ...p, includesVat: v })); setDirty(true); } }} />
           </Field>
           <Field label="Mehrwertsteuer (%)" className="md:col-span-1">
             <Input inputMode="decimal" className="text-right" value={f.vat} onChange={field("vat")} />

@@ -10,7 +10,28 @@ import { STRANGER, db, reseed, sid } from "./db";
 type User = "owner" | "chef" | "staff" | "stranger";
 const USER_ID: Record<User, string> = { owner: sid("usr-owner"), chef: sid("usr-chef"), staff: sid("usr-staff"), stranger: STRANGER.id };
 
-export const test = base.extend<{ login: (u: User) => Promise<void>; axe: () => Promise<void>; problems: string[] }>({
+// Wait for the page's scripts after every navigation: typing into a controlled input before its component
+// has hydrated gets reset (page content hydrates after the layout, behind the loading boundary).
+function waitForHydration(page: Page) {
+  for (const name of ["goto", "reload"] as const) {
+    const original = page[name].bind(page) as (...a: unknown[]) => Promise<unknown>;
+    (page as unknown as Record<string, unknown>)[name] = async (...args: unknown[]) => {
+      const res = await original(...args);
+      await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
+      return res;
+    };
+  }
+}
+
+export const test = base.extend<{ login: (u: User) => Promise<void>; axe: () => Promise<void>; problems: string[]; hydration: void }>({
+  hydration: [
+    async ({ page, context }, use) => {
+      waitForHydration(page);
+      context.on("page", waitForHydration);
+      await use();
+    },
+    { auto: true },
+  ],
   problems: [
     async ({ page }, use) => {
       const problems: string[] = [];

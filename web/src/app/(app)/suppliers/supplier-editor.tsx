@@ -29,7 +29,7 @@ export function SupplierEditor({ supplier, items, canEdit }: { supplier: Supplie
   });
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => { const v = e.target.value; setF((p) => ({ ...p, [k]: v })); };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +67,7 @@ export function SupplierEditor({ supplier, items, canEdit }: { supplier: Supplie
           <Field label="Telefon"><Input type="tel" value={f.phone} onChange={set("phone")} /></Field>
           <Field label="Deine Kundennummer"><Input value={f.customerNumber} onChange={set("customerNumber")} /></Field>
           <Field label="Lieferzeit (Tage)"><Input inputMode="numeric" className="num text-right" value={f.leadTimeDays} onChange={set("leadTimeDays")} /></Field>
-          <Field label="Mindestbestellwert (netto)"><MoneyInput value={f.minOrder} onValueChange={(v) => setF({ ...f, minOrder: v })} /></Field>
+          <Field label="Mindestbestellwert (netto)"><MoneyInput value={f.minOrder} onValueChange={(v) => setF((p) => ({ ...p, minOrder: v }))} /></Field>
         </fieldset>
         {canEdit && (
           <div className="flex flex-wrap gap-2">

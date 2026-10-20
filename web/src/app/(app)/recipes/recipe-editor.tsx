@@ -76,7 +76,8 @@ export function RecipeEditor({ recipe, usedIn, options, categories, defaultVatBp
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setF({ ...f, [k]: e.target.value });
+    const v = e.target.value;
+    setF((p) => ({ ...p, [k]: v }));
     setDirty(true);
   };
 
@@ -230,7 +231,7 @@ export function RecipeEditor({ recipe, usedIn, options, categories, defaultVatBp
             <fieldset disabled={!canEdit} className="grid max-w-(--size-form-max) gap-4 md:grid-cols-2">
               <legend className="sr-only">Kalkulation</legend>
               <Field label="Verkaufspreis pro Portion" className="md:col-span-2">
-                <MoneyInput value={f.sellPrice} onValueChange={(v) => { setF({ ...f, sellPrice: v }); setDirty(true); }} vat={{ includesVat: f.includesVat, onChange: (v) => { setF({ ...f, includesVat: v }); setDirty(true); } }} />
+                <MoneyInput value={f.sellPrice} onValueChange={(v) => { setF((p) => ({ ...p, sellPrice: v })); setDirty(true); }} vat={{ includesVat: f.includesVat, onChange: (v) => { setF((p) => ({ ...p, includesVat: v })); setDirty(true); } }} />
               </Field>
               <Field label="Mehrwertsteuer (%)">
                 <Input inputMode="decimal" className="num text-right" value={f.vat} onChange={set("vat")} />

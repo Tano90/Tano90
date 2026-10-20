@@ -14,7 +14,7 @@ test.describe("F10 Umbuchung", () => {
     await page.getByRole("option", { name: /^Butter/ }).click();
     await page.getByRole("textbox", { name: "Menge" }).fill("1,5");
     await page.getByRole("button", { name: "Umbuchen" }).click();
-    await expect(page.getByText("Umgebucht")).toBeVisible();
+    await expect(page.getByText("Umgebucht", { exact: true })).toBeVisible();
     await expect(page.getByRole("listitem").filter({ hasText: "An Zentralküche" })).toContainText("1,5 kg Butter");
     expect(await stockQuantity("Butter")).toBe(mitte - 1500);
     expect(await stockQuantity("Butter", "out-zentral")).toBe(zentral + 1500);
@@ -30,7 +30,7 @@ test.describe("F10 Umbuchung", () => {
     await page.getByRole("option", { name: /^Zucker/ }).click();
     await page.getByRole("textbox", { name: "Menge" }).fill("2");
     await page.getByRole("button", { name: "Umbuchen" }).click();
-    await expect(page.getByText("Umgebucht")).toBeVisible();
+    await expect(page.getByText("Umgebucht", { exact: true })).toBeVisible();
     // Staff assigned only to the central kitchen.
     await db()`update membership_outlets set outlet_id = ${sid("out-zentral")} where membership_id = ${sid("mem-3")}`;
     await login("staff");

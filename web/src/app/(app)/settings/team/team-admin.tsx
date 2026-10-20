@@ -143,10 +143,10 @@ function Invite({ outlets }: { outlets: O[] }) {
     >
       <div className="flex flex-col gap-4">
         {error && <p role="alert" className="text-danger">{error}</p>}
-        <Field label="Name" required><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
-        <Field label="E-Mail" required><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
+        <Field label="Name" required><Input value={f.name} onChange={(e) => { const v = e.target.value; setF((p) => ({ ...p, name: v })); }} /></Field>
+        <Field label="E-Mail" required><Input type="email" value={f.email} onChange={(e) => { const v = e.target.value; setF((p) => ({ ...p, email: v })); }} /></Field>
         <Field label="Rolle" hint={ROLE[f.role].text}>
-          <Select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value as Role })}>
+          <Select value={f.role} onChange={(e) => { const v = e.target.value as Role; setF((p) => ({ ...p, role: v })); }}>
             <option value="outlet_staff">Team</option>
             <option value="chef">Küchenleitung</option>
             <option value="admin">Admin</option>

@@ -427,28 +427,28 @@ function StockItemDialog({ detail, suppliers, item }: { detail: Detail; supplier
     >
       <div className="flex flex-col gap-4">
         <Field label="Lieferant" hint={suppliers.length === 0 ? "Lege zuerst einen Lieferanten an." : undefined}>
-          <Select value={f.supplierId} onChange={(e) => setF({ ...f, supplierId: e.target.value })}>
+          <Select value={f.supplierId} onChange={(e) => { const v = e.target.value; setF((p) => ({ ...p, supplierId: v })); }}>
             {suppliers.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </Select>
         </Field>
         <Field label="Bestelleinheit (Gebinde)">
-          <Select value={f.packageId} onChange={(e) => setF({ ...f, packageId: e.target.value })}>
+          <Select value={f.packageId} onChange={(e) => { const v = e.target.value; setF((p) => ({ ...p, packageId: v })); }}>
             {detail.packages.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
           </Select>
         </Field>
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 text-xs">Preis gilt</legend>
-          <label className="flex items-center gap-2"><input type="radio" name="pt" checked={f.priceType === "per_pack"} onChange={() => setF({ ...f, priceType: "per_pack" })} /> pro Gebinde</label>
-          <label className="flex items-center gap-2"><input type="radio" name="pt" checked={f.priceType === "per_unit"} onChange={() => setF({ ...f, priceType: "per_unit" })} /> {perUnitLabel}</label>
+          <label className="flex items-center gap-2"><input type="radio" name="pt" checked={f.priceType === "per_pack"} onChange={() => setF((p) => ({ ...p, priceType: "per_pack" }))} /> pro Gebinde</label>
+          <label className="flex items-center gap-2"><input type="radio" name="pt" checked={f.priceType === "per_unit"} onChange={() => setF((p) => ({ ...p, priceType: "per_unit" }))} /> {perUnitLabel}</label>
         </fieldset>
         <Field label={f.priceType === "per_pack" ? "Preis pro Gebinde (netto)" : `Preis ${perUnitLabel} (netto)`} required error={error ?? undefined}>
-          <MoneyInput value={f.price} onValueChange={(price) => setF({ ...f, price })} />
+          <MoneyInput value={f.price} onValueChange={(price) => setF((p) => ({ ...p, price }))} />
         </Field>
         <Field label="GTIN / EAN" hint="Optional, für das Scannen bei der Inventur.">
-          <Input inputMode="numeric" value={f.gtin} onChange={(e) => setF({ ...f, gtin: e.target.value })} maxLength={14} />
+          <Input inputMode="numeric" value={f.gtin} onChange={(e) => { const v = e.target.value; setF((p) => ({ ...p, gtin: v })); }} maxLength={14} />
         </Field>
-        <label className="flex items-center gap-2"><input type="checkbox" checked={f.isPreferred} onChange={(e) => setF({ ...f, isPreferred: e.target.checked })} /> Bevorzugter Preis für die Kalkulation</label>
-        <label className="flex items-center gap-2"><input type="checkbox" checked={f.weighted} onChange={(e) => setF({ ...f, weighted: e.target.checked })} /> Wird nach Gewicht geliefert und abgerechnet</label>
+        <label className="flex items-center gap-2"><input type="checkbox" checked={f.isPreferred} onChange={(e) => { const v = e.target.checked; setF((p) => ({ ...p, isPreferred: v })); }} /> Bevorzugter Preis für die Kalkulation</label>
+        <label className="flex items-center gap-2"><input type="checkbox" checked={f.weighted} onChange={(e) => { const v = e.target.checked; setF((p) => ({ ...p, weighted: v })); }} /> Wird nach Gewicht geliefert und abgerechnet</label>
       </div>
     </Dialog>
   );
