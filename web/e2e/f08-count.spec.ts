@@ -10,11 +10,11 @@ test.describe("F08 Inventur", () => {
     const butter = await stockQuantity("Butter");
     await page.goto("/stock/count");
     await page.getByRole("button", { name: "Inventur starten" }).click();
-    await page.getByLabel(/Speisequark/).fill("3");
+    await page.getByRole("textbox", { name: /Speisequark/ }).fill("3");
     await expect(page.getByText("Zwischenstand gespeichert")).toBeVisible();
     await axe();
     await page.reload();
-    await expect(page.getByLabel(/Speisequark/)).toHaveValue("3");
+    await expect(page.getByRole("textbox", { name: /Speisequark/ })).toHaveValue("3");
     await page.getByRole("button", { name: "Inventur abschließen" }).click();
     await expect(page.getByRole("dialog")).toContainText("1 Artikel gezählt");
     await page.getByRole("dialog").getByRole("button", { name: "Abschließen" }).click();
@@ -26,15 +26,15 @@ test.describe("F08 Inventur", () => {
   test("F08-E2 offline zählen, wieder online speichern", async ({ page, context }) => {
     await page.goto("/stock/count");
     await page.getByRole("button", { name: "Inventur starten" }).click();
-    await expect(page.getByLabel(/Speisequark/)).toBeVisible();
+    await expect(page.getByRole("textbox", { name: /Speisequark/ })).toBeVisible();
     await context.setOffline(true);
-    await page.getByLabel(/Speisequark/).fill("4");
+    await page.getByRole("textbox", { name: /Speisequark/ }).fill("4");
     await expect(page.getByText(/Speichern fehlgeschlagen/)).toBeVisible();
     await context.setOffline(false);
-    await page.getByLabel(/Speisequark/).press("Tab");
+    await page.getByRole("textbox", { name: /Speisequark/ }).press("Tab");
     await expect(page.getByText("Zwischenstand gespeichert")).toBeVisible();
     await page.reload();
-    await expect(page.getByLabel(/Speisequark/)).toHaveValue("4");
+    await expect(page.getByRole("textbox", { name: /Speisequark/ })).toHaveValue("4");
   });
 
   test("F08-E3 zweiter Tab kann keine zweite Inventur starten", async ({ page, context }) => {
@@ -42,7 +42,7 @@ test.describe("F08 Inventur", () => {
     await page.goto("/stock/count");
     await second.goto("/stock/count");
     await page.getByRole("button", { name: "Inventur starten" }).click();
-    await expect(page.getByLabel(/Speisequark/)).toBeVisible();
+    await expect(page.getByRole("textbox", { name: /Speisequark/ })).toBeVisible();
     await second.getByRole("button", { name: "Inventur starten" }).click();
     await expect(second.getByText("Für dieses Outlet läuft schon eine Inventur.")).toBeVisible();
   });
@@ -51,9 +51,48 @@ test.describe("F08 Inventur", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/stock/count");
     await page.getByRole("button", { name: "Inventur starten" }).click();
-    const input = page.getByLabel(/Speisequark/);
+    const input = page.getByRole("textbox", { name: /Speisequark/ });
     await expect(input).toBeVisible();
     expect((await input.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expectNoHorizontalScroll(page);
+  });
+});
+
+test.describe("S17 Inventur in Gebinden", () => {
+  test.beforeEach(async ({ login }) => {
+    reseed();
+    await login("staff");
+  });
+
+  test("S17-H1 Kartons, Stücke und Loses ergeben den Bestand, auch nach Neuladen", async ({ page, axe }) => {
+    await page.goto("/stock/count");
+    await page.getByRole("button", { name: "Inventur starten" }).click();
+    await page.getByRole("button", { name: "Butter in Gebinden zählen" }).click();
+    await page.getByLabel("Butter: Karton 10 × 250 g").fill("2");
+    await page.getByLabel("Butter: Stück 250 g").fill("3");
+    await page.getByLabel("Butter: lose (kg)").fill("0,1");
+    const total = page.getByRole("textbox", { name: /^Butter/ }).first();
+    await expect(total).toHaveValue("5,85");
+    await expect(page.getByText("Zwischenstand gespeichert")).toBeVisible();
+    await axe();
+    await page.reload();
+    await expect(page.getByLabel("Butter: Karton 10 × 250 g")).toHaveValue("2");
+    await expect(page.getByLabel("Butter: lose (kg)")).toHaveValue("0,1");
+    await page.getByRole("button", { name: "Inventur abschließen" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Abschließen" }).click();
+    await page.waitForURL("/stock");
+    expect(await stockQuantity("Butter")).toBe(5850);
+  });
+
+  test("S17-E1 zurück zur Gesamtmenge behält die Summe", async ({ page }) => {
+    await page.goto("/stock/count");
+    await page.getByRole("button", { name: "Inventur starten" }).click();
+    await page.getByRole("button", { name: "Butter in Gebinden zählen" }).click();
+    await page.getByLabel("Butter: Karton 10 × 250 g").fill("1");
+    await page.getByRole("button", { name: "Butter in Gebinden zählen" }).click();
+    await expect(page.getByLabel("Butter: Karton 10 × 250 g")).toHaveCount(0);
+    const total = page.getByRole("textbox", { name: /^Butter/ });
+    await expect(total).toHaveValue("2,5");
+    await expect(total).toBeEditable();
   });
 });

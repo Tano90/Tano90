@@ -1,7 +1,7 @@
 // In-memory store with seed data. Stands in for Supabase until /replica-backend runs.
 // Lives on globalThis so dev hot reloads keep the data; a server restart resets it.
 import "server-only";
-import { applyMovement } from "@/domain/stock";
+import { type CountBreakdown, applyMovement } from "@/domain/stock";
 import type {
   AllergenRow, Category, CountDraft, Ingredient, Library, Member, Nutrition, Outlet, OutletIngredient, Package,
   PurchaseOrder, Recipe, RecipeLine, StockEvent, StockItem, StockLevel, StockMovement, Supplier,
@@ -26,6 +26,7 @@ export type Db = {
   movements: StockMovement[];
   levels: StockLevel[];
   countDrafts: Record<string, CountDraft>;
+  countBreakdowns?: Record<string, Record<string, CountBreakdown>>;
   seq: number;
 };
 

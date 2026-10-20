@@ -17,3 +17,17 @@ export function suggestPacks(parBase: number | null, onHandBase: number, onOrder
   const need = parBase - Math.max(onHandBase, 0) - onOrderBase;
   return need > 0 ? Math.ceil(need / packBase) : 0;
 }
+
+/** What was counted for one item when counting in packages: number of each package plus a loose rest. */
+export type CountBreakdown = { packs: Record<string, number>; looseBase: number };
+
+/** Total base quantity of a package count. Unknown packages are refused, so a stale sheet cannot book nonsense. */
+export function countTotal(b: CountBreakdown, packages: { id: string; quantityBase: number }[]): number {
+  let total = b.looseBase;
+  for (const [id, n] of Object.entries(b.packs)) {
+    const p = packages.find((x) => x.id === id);
+    if (!p) throw new Error("Dieses Gebinde gibt es nicht mehr. Bitte die Seite neu laden.");
+    total += n * p.quantityBase;
+  }
+  return total;
+}

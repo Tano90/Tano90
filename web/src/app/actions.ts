@@ -389,8 +389,13 @@ export async function receiveDelivery(orderId: string, input: z.input<typeof Rec
 export async function startCount() {
   return run(async (s) => repo.startCount(s, await currentOutletId(s)), ["/stock"]);
 }
-export async function saveCountLines(eventId: string, counted: Record<string, number | null>) {
-  return run((s) => repo.saveCountLines(s, eventId, z.record(z.string(), z.number().min(0).nullable()).parse(counted)));
+const CountEntrySchema = z.union([
+  z.number().min(0),
+  z.object({ packs: z.record(z.string(), z.number().min(0)), looseBase: z.number().min(0) }),
+  z.null(),
+]);
+export async function saveCountLines(eventId: string, counted: Record<string, z.input<typeof CountEntrySchema>>) {
+  return run((s) => repo.saveCountLines(s, eventId, z.record(z.string(), CountEntrySchema).parse(counted)));
 }
 export async function closeCount(eventId: string) {
   return run((s) => repo.closeCount(s, eventId), ["/stock", "/"]);

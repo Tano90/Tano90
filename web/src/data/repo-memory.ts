@@ -3,12 +3,12 @@
 import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
-import { suggestPacks } from "@/domain/stock";
+import { type CountBreakdown, countTotal, suggestPacks } from "@/domain/stock";
 import { type BaseUnit } from "@/domain/units";
 import { Forbidden, assertCanChangeMember, canAccessOutlet, canEditLibrary, canManageTeam } from "./session-rules";
 import { addMovement, db, newId, now } from "./store";
 import type {
-  AllergenRow, Ingredient, Nutrition, Package, PurchaseOrder, Recipe, RecipeLine, Session, StockEvent, StockItem, Supplier,
+  AllergenRow, CountEntry, Ingredient, Nutrition, Package, PurchaseOrder, Recipe, RecipeLine, Session, StockEvent, StockItem, Supplier,
 } from "./types";
 
 const visible = <T extends { archivedAt: string | null }>(rows: T[]) => rows.filter((r) => !r.archivedAt);
@@ -549,7 +549,12 @@ export async function recordWaste(s: Session, outletId: string, lines: { ingredi
 export async function getOpenCount(s: Session, outletId: string) {
   assertOutlet(s, outletId);
   const ev = db().events.find((e) => e.outletId === outletId && e.type === "count" && e.status === "open");
-  return ev ? { event: ev, draft: db().countDrafts[ev.id] ?? {} } : null;
+  if (!ev) return null;
+  const d = db();
+  const ids = new Set(d.outletIngredients.filter((x) => x.outletId === outletId).map((x) => x.ingredientId));
+  const packages: Record<string, { id: string; label: string; quantityBase: number }[]> = {};
+  for (const p of d.packages) if (ids.has(p.ingredientId)) (packages[p.ingredientId] ??= []).push({ id: p.id, label: p.label, quantityBase: p.quantityBase });
+  return { event: ev, draft: d.countDrafts[ev.id] ?? {}, breakdown: d.countBreakdowns?.[ev.id] ?? {}, packages };
 }
 
 export async function startCount(s: Session, outletId: string) {
@@ -562,15 +567,21 @@ export async function startCount(s: Session, outletId: string) {
   return ev.id;
 }
 
-export async function saveCountLines(s: Session, eventId: string, counted: Record<string, number | null>) {
+export async function saveCountLines(s: Session, eventId: string, counted: Record<string, CountEntry>) {
   const d = db();
   const ev = d.events.find((e) => e.id === eventId);
   if (!ev || ev.status !== "open") throw new Error("Diese Inventur ist nicht mehr offen.");
   assertOutlet(s, ev.outletId);
   const draft = (d.countDrafts[eventId] ??= {});
-  for (const [ing, qty] of Object.entries(counted)) {
-    if (qty === null) delete draft[ing];
-    else draft[ing] = qty;
+  const breakdowns = ((d.countBreakdowns ??= {})[eventId] ??= {});
+  for (const [ing, entry] of Object.entries(counted)) {
+    delete breakdowns[ing];
+    if (entry === null) delete draft[ing];
+    else if (typeof entry === "number") draft[ing] = entry;
+    else {
+      draft[ing] = countTotal(entry, d.packages.filter((p) => p.ingredientId === ing));
+      breakdowns[ing] = entry;
+    }
   }
 }
 
@@ -593,6 +604,7 @@ export async function closeCount(s: Session, eventId: string) {
   ev.status = "closed";
   ev.closedAt = now();
   delete d.countDrafts[eventId];
+  delete d.countBreakdowns?.[eventId];
   return { counted: Object.keys(draft).length, changed };
 }
 

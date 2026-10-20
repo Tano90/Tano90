@@ -139,5 +139,7 @@ export type StockLevel = { outletId: string; ingredientId: string; quantityBase:
 
 /** Draft count lines kept on the open count event until it is closed. */
 export type CountDraft = Record<string, number>; // ingredientId -> counted base quantity
+/** One line of a count sheet: a total in base units, or a count in packages. null clears the line. */
+export type CountEntry = number | { packs: Record<string, number>; looseBase: number } | null;
 
 export type Session = { userId: string; name: string; email: string; role: Role; libraryId: string; outletIds: string[] | "all" };

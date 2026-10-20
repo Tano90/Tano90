@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Package as PackageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { closeCount, saveCountLines, startCount } from "@/app/actions";
@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { toast } from "@/components/ui/toast";
+import type { CountBreakdown } from "@/domain/stock";
 import type { BaseUnit } from "@/domain/units";
 import { formatDate } from "@/lib/dates";
 import { formatCents, formatQty } from "@/lib/format";
@@ -66,19 +67,30 @@ export function StartCount({ past }: { past: { id: string; closedAt: string | nu
   );
 }
 
-export function CountSheet({ eventId, draft, items }: { eventId: string; draft: Record<string, number>; items: Item[] }) {
+type Pack = { id: string; label: string; quantityBase: number };
+type PackValues = Record<string, string>; // package id or "loose" -> typed text
+const num = (raw: string) => (raw.trim() ? Number(raw.replace(",", ".")) : 0);
+
+export function CountSheet({ eventId, draft, breakdown, packages, items }: {
+  eventId: string; draft: Record<string, number>; breakdown: Record<string, CountBreakdown>; packages: Record<string, Pack[]>; items: Item[];
+}) {
   const router = useRouter();
+  const unitOf = (id: string) => items.find((i) => i.id === id)?.baseUnit ?? "g";
   const [values, setValues] = useState<Record<string, string>>(
-    Object.fromEntries(Object.entries(draft).map(([id, base]) => {
-      const it = items.find((i) => i.id === id);
-      return [id, it ? formatQty(base / FACTOR[it.baseUnit]) : ""];
-    })),
+    Object.fromEntries(Object.entries(draft).map(([id, base]) => [id, formatQty(base / FACTOR[unitOf(id)])])),
+  );
+  // Items counted in packages: what was typed per package, plus the loose rest in kg, l or pieces.
+  const [packValues, setPackValues] = useState<Record<string, PackValues>>(
+    Object.fromEntries(Object.entries(breakdown).map(([id, b]) => [id, {
+      ...Object.fromEntries(Object.entries(b.packs).map(([pk, n]) => [pk, formatQty(n)])),
+      loose: b.looseBase ? formatQty(b.looseBase / FACTOR[unitOf(id)]) : "",
+    }])),
   );
   const [query, setQuery] = useState("");
   const [saved, setSaved] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [pending, start] = useTransition();
   const [confirm, setConfirm] = useState(false);
-  const dirty = useRef<Record<string, number | null>>({});
+  const dirty = useRef<Record<string, number | CountBreakdown | null>>({});
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Save the sheet a moment after typing stops, so a dead spot in the cold room costs seconds, not the count.
@@ -120,6 +132,27 @@ export function CountSheet({ eventId, draft, items }: { eventId: string; draft: 
     timer.current = setTimeout(flush, 600);
   };
 
+  const changePack = (it: Item, key: string, raw: string) => {
+    const pv = { ...packValues[it.id], [key]: raw.replace(/[^\d,]/g, "") };
+    setPackValues({ ...packValues, [it.id]: pv });
+    const packs = Object.fromEntries((packages[it.id] ?? []).filter((p) => pv[p.id]?.trim()).map((p) => [p.id, num(pv[p.id])]));
+    const looseBase = num(pv.loose ?? "") * FACTOR[it.baseUnit];
+    const empty = !Object.keys(packs).length && !pv.loose?.trim();
+    const total = (packages[it.id] ?? []).reduce((sum, p) => sum + (packs[p.id] ?? 0) * p.quantityBase, looseBase);
+    setValues((v) => ({ ...v, [it.id]: empty ? "" : formatQty(total / FACTOR[it.baseUnit]) }));
+    dirty.current[it.id] = empty || Object.values(packs).some(Number.isNaN) || Number.isNaN(looseBase) ? null : { packs, looseBase };
+    clearTimeout(timer.current);
+    timer.current = setTimeout(flush, 600);
+  };
+  const togglePacks = (it: Item) => {
+    if (packValues[it.id]) {
+      // Back to a plain total: keep the sum that was counted.
+      const { [it.id]: _, ...rest } = packValues;
+      setPackValues(rest);
+      change(it, values[it.id] ?? "");
+    } else setPackValues({ ...packValues, [it.id]: {} });
+  };
+
   const shown = useMemo(() => items.filter((i) => !query || i.name.toLowerCase().includes(query.toLowerCase())), [items, query]);
   const counted = Object.values(values).filter((v) => v.trim()).length;
 
@@ -135,6 +168,8 @@ export function CountSheet({ eventId, draft, items }: { eventId: string; draft: 
       <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-bg">
         {shown.map((it) => {
           const id = `c-${it.id}`;
+          const packs = packages[it.id] ?? [];
+          const pv = packValues[it.id];
           return (
             <li key={it.id} className="flex flex-wrap items-center gap-3 px-3 py-2">
               <label htmlFor={id} className="min-w-40 flex-1">
@@ -148,11 +183,48 @@ export function CountSheet({ eventId, draft, items }: { eventId: string; draft: 
                   className="num h-(--size-control-lg) w-28 rounded-sm border border-border-input bg-bg px-3 text-right text-base"
                   value={values[it.id] ?? ""}
                   placeholder="–"
+                  readOnly={!!pv}
+                  aria-describedby={pv ? `${id}-sum` : undefined}
                   onChange={(e) => change(it, e.target.value)}
                   onBlur={() => flush()}
                 />
                 <span className="w-8 text-text-muted">{LABEL[it.baseUnit]}</span>
+                {packs.length > 0 && (
+                  <Button variant="ghost" size="sm" aria-expanded={!!pv} aria-controls={`${id}-packs`} aria-label={`${it.name} in Gebinden zählen`} onClick={() => togglePacks(it)}>
+                    <PackageIcon aria-hidden className="size-4" /> Gebinde
+                  </Button>
+                )}
               </span>
+              {pv && (
+                <fieldset id={`${id}-packs`} className="flex w-full flex-wrap items-end gap-3 rounded-sm bg-surface-sunken p-3">
+                  <legend className="sr-only">{it.name} in Gebinden</legend>
+                  <p id={`${id}-sum`} className="sr-only">Summe aus den Gebinden</p>
+                  {packs.map((p) => (
+                    <label key={p.id} className="flex flex-col gap-1 text-xs">
+                      <span><span className="sr-only">{it.name}: </span>{p.label}</span>
+                      <input
+                        inputMode="numeric"
+                        className="num h-(--size-control-md) w-24 rounded-sm border border-border-input bg-bg px-3 text-right text-base"
+                        value={pv[p.id] ?? ""}
+                        placeholder="0"
+                        onChange={(e) => changePack(it, p.id, e.target.value)}
+                        onBlur={() => flush()}
+                      />
+                    </label>
+                  ))}
+                  <label className="flex flex-col gap-1 text-xs">
+                    <span><span className="sr-only">{it.name}: </span>lose ({LABEL[it.baseUnit]})</span>
+                    <input
+                      inputMode="decimal"
+                      className="num h-(--size-control-md) w-24 rounded-sm border border-border-input bg-bg px-3 text-right text-base"
+                      value={pv.loose ?? ""}
+                      placeholder="0"
+                      onChange={(e) => changePack(it, "loose", e.target.value)}
+                      onBlur={() => flush()}
+                    />
+                  </label>
+                </fieldset>
+              )}
             </li>
           );
         })}

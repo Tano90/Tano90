@@ -4,12 +4,12 @@
 import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
-import { suggestPacks } from "@/domain/stock";
+import { type CountBreakdown, countTotal, suggestPacks } from "@/domain/stock";
 import type { BaseUnit } from "@/domain/units";
 import type { Billing, IngredientFilter, IngredientInput, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
 import { Forbidden, assertCanChangeMember, canEditLibrary, canManageTeam } from "../session-rules";
 import type {
-  AllergenRow, Category, Ingredient, Library, Member, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
+  AllergenRow, Category, CountEntry, Ingredient, Library, Member, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
   StockEvent, StockItem, StockMovement, Supplier,
 } from "../types";
 import { type Tx, asService, asUser, friendly } from "./client";
@@ -593,8 +593,19 @@ export async function getOpenCount(s: Session, outletId: string) {
   return run(s, async (tx) => {
     const [event] = await tx<StockEvent[]>`select * from stock_events where outlet_id = ${outletId} and type = 'count' and status = 'open'`;
     if (!event) return null;
-    const lines = await tx<{ ingredientId: string; countedBase: number }[]>`select ingredient_id, counted_base from stock_count_lines where stock_event_id = ${event.id}`;
-    return { event, draft: Object.fromEntries(lines.map((l) => [l.ingredientId, l.countedBase])) as Record<string, number> };
+    const lines = await tx<{ ingredientId: string; countedBase: number; breakdown: CountBreakdown | null }[]>`select ingredient_id, counted_base, breakdown from stock_count_lines where stock_event_id = ${event.id}`;
+    const packs = await tx<{ id: string; ingredientId: string; label: string; quantityBase: number }[]>`
+      select p.id, p.ingredient_id, p.label, p.quantity_base from packages p
+      join outlet_ingredients oi on oi.ingredient_id = p.ingredient_id and oi.outlet_id = ${outletId}
+      order by p.quantity_base`;
+    const packages: Record<string, { id: string; label: string; quantityBase: number }[]> = {};
+    for (const p of packs) (packages[p.ingredientId] ??= []).push({ id: p.id, label: p.label, quantityBase: p.quantityBase });
+    return {
+      event,
+      draft: Object.fromEntries(lines.map((l) => [l.ingredientId, l.countedBase])) as Record<string, number>,
+      breakdown: Object.fromEntries(lines.filter((l) => l.breakdown).map((l) => [l.ingredientId, l.breakdown!])) as Record<string, CountBreakdown>,
+      packages,
+    };
   });
 }
 
@@ -607,15 +618,25 @@ export async function startCount(s: Session, outletId: string) {
   });
 }
 
-export async function saveCountLines(s: Session, eventId: string, counted: Record<string, number | null>) {
+export async function saveCountLines(s: Session, eventId: string, counted: Record<string, CountEntry>) {
   await run(s, async (tx) => {
     const [ev] = await tx`select 1 from stock_events where id = ${eventId} and status = 'open'`;
     if (!ev) throw new Error("Diese Inventur ist nicht mehr offen.");
-    for (const [ingredientId, qty] of Object.entries(counted)) {
-      if (qty === null) await tx`delete from stock_count_lines where stock_event_id = ${eventId} and ingredient_id = ${ingredientId}`;
-      else await tx`
-        insert into stock_count_lines (stock_event_id, ingredient_id, counted_base) values (${eventId}, ${ingredientId}, ${qty})
-        on conflict (stock_event_id, ingredient_id) do update set counted_base = excluded.counted_base, updated_at = now()`;
+    for (const [ingredientId, entry] of Object.entries(counted)) {
+      if (entry === null) {
+        await tx`delete from stock_count_lines where stock_event_id = ${eventId} and ingredient_id = ${ingredientId}`;
+        continue;
+      }
+      let qty = entry as number;
+      let breakdown: CountBreakdown | null = null;
+      if (typeof entry !== "number") {
+        const packs = await tx<{ id: string; quantityBase: number }[]>`select id, quantity_base from packages where ingredient_id = ${ingredientId}`;
+        qty = countTotal(entry, packs);
+        breakdown = entry;
+      }
+      await tx`
+        insert into stock_count_lines (stock_event_id, ingredient_id, counted_base, breakdown) values (${eventId}, ${ingredientId}, ${qty}, ${breakdown ? tx.json(breakdown) : null})
+        on conflict (stock_event_id, ingredient_id) do update set counted_base = excluded.counted_base, breakdown = excluded.breakdown, updated_at = now()`;
     }
   });
 }
