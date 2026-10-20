@@ -24,13 +24,16 @@ type Props = {
   onCreateItem?: (name: string) => void;
   newLine: () => Line;
   showCost?: boolean;
+  /** Units offered for the item on a line (e.g. portions only for sub-recipes). */
+  unitsFor?: (itemId: string | null) => readonly Unit[];
+  readOnly?: boolean;
 };
 
 /**
  * Rows of item + quantity + unit (+ cost). Used by recipes, menus, orders, deliveries, counts and waste.
  * Each row is a labelled group so screen readers announce "Zeile 3 von 5".
  */
-export function LineEditor({ label, lines, options, onChange, onCreateItem, newLine, showCost = true }: Props) {
+export function LineEditor({ label, lines, options, onChange, onCreateItem, newLine, showCost = true, unitsFor, readOnly }: Props) {
   const update = (id: string, patch: Partial<Line>) => onChange(lines.map((l) => (l.id === id ? { ...l, ...patch } : l)));
 
   return (
@@ -54,6 +57,7 @@ export function LineEditor({ label, lines, options, onChange, onCreateItem, newL
               value={line.itemId}
               onChange={(itemId) => update(line.id, { itemId })}
               onCreate={onCreateItem}
+              disabled={readOnly}
               placeholder="Zutat oder Rezept wählen"
             />
             <QuantityInput
@@ -62,6 +66,8 @@ export function LineEditor({ label, lines, options, onChange, onCreateItem, newL
               unit={line.unit}
               onValueChange={(quantity) => update(line.id, { quantity })}
               onUnitChange={(unit) => update(line.id, { unit })}
+              units={unitsFor?.(line.itemId)}
+              disabled={readOnly}
               aria-invalid={line.warning ? true : undefined}
             />
             <span className="num text-right">
@@ -74,18 +80,18 @@ export function LineEditor({ label, lines, options, onChange, onCreateItem, newL
                   formatCents(line.costCents)
                 ))}
             </span>
-            <Button variant="ghost" size="icon" aria-label={`Zeile ${i + 1} entfernen`} onClick={() => onChange(lines.filter((l) => l.id !== line.id))}>
+            <Button variant="ghost" size="icon" disabled={readOnly} aria-label={`Zeile ${i + 1} entfernen`} onClick={() => onChange(lines.filter((l) => l.id !== line.id))}>
               <Trash2 aria-hidden className="size-4" />
             </Button>
             {line.warning && <p className="text-xs text-warning md:col-span-4">{line.warning}</p>}
           </li>
         ))}
       </ol>
-      <div>
+      {!readOnly && <div>
         <Button variant="secondary" size="sm" onClick={() => onChange([...lines, newLine()])}>
           <Plus aria-hidden className="size-4" /> Zeile hinzufügen
         </Button>
-      </div>
+      </div>}
     </div>
   );
 }

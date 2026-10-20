@@ -5,8 +5,9 @@ import { cn } from "@/lib/cn";
 import { controlClass } from "./field";
 
 export const UNITS = ["g", "kg", "mg", "ml", "cl", "l", "piece"] as const;
-export type Unit = (typeof UNITS)[number];
-const UNIT_LABEL: Record<Unit, string> = { g: "g", kg: "kg", mg: "mg", ml: "ml", cl: "cl", l: "l", piece: "Stk." };
+/** "portion" is only offered for sub-recipes. */
+export type Unit = (typeof UNITS)[number] | "portion";
+const UNIT_LABEL: Record<Unit, string> = { g: "g", kg: "kg", mg: "mg", ml: "ml", cl: "cl", l: "l", piece: "Stk.", portion: "Port." };
 
 type Props = Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> & {
   value: string;
@@ -39,6 +40,7 @@ export const QuantityInput = forwardRef<HTMLInputElement, Props>(function Quanti
       />
       <select
         aria-label="Einheit"
+        disabled={props.disabled}
         value={unit}
         onChange={(e) => onUnitChange(e.target.value as Unit)}
         aria-invalid={invalid}

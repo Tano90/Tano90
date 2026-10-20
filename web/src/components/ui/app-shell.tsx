@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  BarChart3, BookOpen, ChefHat, Menu as MenuIcon, Package, Settings, ShoppingCart, Truck, UtensilsCrossed, X,
+  BarChart3, BookOpen, ChefHat, LayoutDashboard, Menu as MenuIcon, Package, Settings, ShoppingCart, Truck, UtensilsCrossed, X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -10,13 +10,14 @@ import { cn } from "@/lib/cn";
 import { Select } from "./field";
 
 const NAV = [
+  { href: "/", label: "Übersicht", icon: LayoutDashboard },
   { href: "/ingredients", label: "Zutaten", icon: Package },
   { href: "/recipes", label: "Rezepte", icon: ChefHat },
   { href: "/menus", label: "Menüs", icon: UtensilsCrossed },
   { href: "/suppliers", label: "Lieferanten", icon: Truck },
   { href: "/orders", label: "Bestellungen", icon: ShoppingCart },
   { href: "/stock", label: "Lager", icon: BookOpen },
-  { href: "/analytics", label: "Auswertungen", icon: BarChart3 },
+  { href: "/analytics/pos", label: "Auswertungen", icon: BarChart3 },
   { href: "/settings", label: "Einstellungen", icon: Settings },
 ];
 
@@ -24,12 +25,13 @@ type Props = {
   outlets: { id: string; name: string }[];
   outletId: string;
   onOutletChange: (id: string) => void;
-  userName: string;
+  /** Right side of the header: user name or a user menu. */
+  user: React.ReactNode;
   children: React.ReactNode;
 };
 
 /** Sidebar navigation, header with the outlet switch, and a skip link. The sidebar becomes a drawer below lg. */
-export function AppShell({ outlets, outletId, onOutletChange, userName, children }: Props) {
+export function AppShell({ outlets, outletId, onOutletChange, user, children }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -53,12 +55,13 @@ export function AppShell({ outlets, outletId, onOutletChange, userName, children
         </div>
         <ul className="mt-2 flex flex-col gap-1">
           {NAV.map(({ href, label, icon: Icon }) => {
-            const active = pathname?.startsWith(href);
+            const active = href === "/" ? pathname === "/" : pathname?.startsWith(href.split("/").slice(0, 2).join("/"));
             return (
               <li key={href}>
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
+                  onClick={() => setOpen(false)}
                   className={cn(
                     "flex h-(--size-control-md) items-center gap-3 rounded-sm px-3 text-nav-text hover:bg-nav-item-active hover:text-nav-text-active",
                     active && "bg-nav-item-active font-semibold text-nav-text-active",
@@ -87,7 +90,7 @@ export function AppShell({ outlets, outletId, onOutletChange, userName, children
               ))}
             </Select>
           </label>
-          <span className="ml-auto text-text-muted">{userName}</span>
+          <div className="ml-auto">{user}</div>
         </header>
         <main id="main" className="mx-auto w-full max-w-(--size-content-max) flex-1 p-4 lg:p-6">
           {children}

@@ -20,6 +20,7 @@ type Props = {
   /** Offer "create" when nothing matches (new ingredient straight from a recipe line). */
   onCreate?: (query: string) => void;
   id?: string;
+  disabled?: boolean;
   "aria-invalid"?: boolean;
   "aria-describedby"?: string;
   className?: string;

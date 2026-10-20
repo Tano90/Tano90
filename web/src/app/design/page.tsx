@@ -75,7 +75,7 @@ export default function DesignPage() {
   ]);
 
   return (
-    <AppShell outlets={[{ id: "o1", name: "Küche Mitte" }, { id: "o2", name: "Zentralküche" }]} outletId={outlet} onOutletChange={setOutlet} userName="Demo Nutzer">
+    <AppShell outlets={[{ id: "o1", name: "Küche Mitte" }, { id: "o2", name: "Zentralküche" }]} outletId={outlet} onOutletChange={setOutlet} user={<span className="text-text-muted">Demo Nutzer</span>}>
       <div className="flex flex-col gap-6">
         <header>
           <h1 className="text-xl">Designsystem</h1>
