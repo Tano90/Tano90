@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { rollUp } from "./allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, costRecipe, foodCostBp } from "./costing";
 import { applyMovement, suggestPacks } from "./stock";
+import { billOfMaterials, summarizeMenu } from "./menus";
 import { toBase } from "./units";
 
 const gram = { baseUnit: "g" as const, gramsPerPiece: null, mlPerGram: null };
@@ -96,5 +97,27 @@ describe("stock", () => {
     expect(suggestPacks(5000, 1200, 1000, 1000)).toBe(3);
     expect(suggestPacks(5000, 6000, 0, 1000)).toBe(0);
     expect(suggestPacks(null, 0, 0, 1000)).toBe(0);
+  });
+});
+
+describe("menus", () => {
+  const menu = {
+    priceCents: 2380, priceIncludesVat: true, vatBp: 1900, targetMarginBp: 7000,
+    courses: [{ name: "Vorspeise", items: [{ recipeId: "soup", portions: 1 }] }, { name: "Hauptgang", items: [{ recipeId: "soup", portions: 2 }] }],
+  };
+  it("sums dish costs per course and computes the margin on the net price", () => {
+    const sum = summarizeMenu(menu, ctx(), 1900);
+    const perPortion = costRecipe(soup, ctx()).perPortionCents;
+    expect(sum.courses.map((c) => c.costCents)).toEqual([perPortion, 2 * perPortion]);
+    expect(sum.netPriceCents).toBe(2000);
+    expect(sum.foodCostBp).toBe(Math.round(((3 * perPortion) / 2000) * 10000));
+    expect(sum.marginBp).toBe(10000 - sum.foodCostBp!);
+  });
+  it("explodes sub-recipes into ingredients for the bill of materials", () => {
+    // 3 portions of a 4-portion soup: 3/4 of 450 g spinach and 3/4 of 0.5 l stock = 375 ml of a 2 l batch of 5 onions.
+    const bom = billOfMaterials(menu, ctx(), 1);
+    expect(Object.fromEntries(bom.lines.map((l) => [l.ingredientId, l.quantityBase]))).toEqual({ spinach: 337.5, onion: 0.9375 * 120 });
+    expect(bom.unknown).toBe(0);
+    expect(billOfMaterials(menu, ctx(), 10).lines.find((l) => l.ingredientId === "spinach")!.quantityBase).toBe(3375);
   });
 });

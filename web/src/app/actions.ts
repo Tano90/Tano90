@@ -384,6 +384,32 @@ export async function receiveDelivery(orderId: string, input: z.input<typeof Rec
   return run((s) => repo.receiveDelivery(s, orderId, ReceiveSchema.parse(input)), ["/orders", "/stock", "/"]);
 }
 
+// ---------------------------------------------------------------- menus
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Bitte ein gültiges Datum angeben.");
+const MenuSchema = z.object({
+  id: id.optional(),
+  name,
+  categoryId: z.string().nullable(),
+  priceCents: cents.nullable(),
+  priceIncludesVat: z.boolean(),
+  vatBp: bp.nullable(),
+  targetMarginBp: bp.nullable(),
+  validFrom: isoDate.nullable(),
+  validTo: isoDate.nullable(),
+  courses: z.array(z.object({
+    name: z.string().trim().min(1, "Bitte jedem Gang einen Namen geben.").max(80),
+    items: z.array(z.object({ recipeId: z.string().min(1, "Bitte ein Rezept wählen."), portions: positive })),
+  })).min(1, "Mindestens einen Gang anlegen."),
+}).refine((m) => !m.validFrom || !m.validTo || m.validTo >= m.validFrom, "„Gültig bis“ liegt vor „gültig ab“.");
+export type MenuInput = z.input<typeof MenuSchema>;
+export async function saveMenu(input: MenuInput) {
+  return run((s) => repo.saveMenu(s, MenuSchema.parse(input)), ["/menus"]);
+}
+export async function archiveMenu(menuId: string) {
+  return run((s) => repo.archiveMenu(s, menuId), ["/menus"]);
+}
+
 // ---------------------------------------------------------------- stock
 
 export async function startCount() {

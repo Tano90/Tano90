@@ -3,7 +3,7 @@
 import "server-only";
 import { type CountBreakdown, applyMovement } from "@/domain/stock";
 import type {
-  AllergenRow, Category, CountDraft, Ingredient, Library, Member, Nutrition, Outlet, OutletIngredient, Package,
+  AllergenRow, Category, CountDraft, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
   PurchaseOrder, Recipe, RecipeLine, StockEvent, StockItem, StockLevel, StockMovement, Supplier,
 } from "./types";
 
@@ -20,6 +20,7 @@ export type Db = {
   verified: Record<string, boolean>;
   nutrition: Record<string, Nutrition>;
   recipes: Recipe[];
+  menus: Menu[];
   outletIngredients: OutletIngredient[];
   orders: PurchaseOrder[];
   events: StockEvent[];
@@ -77,9 +78,10 @@ export function seed(): Db {
     categories: [
       ...["Gemüse", "Obst", "Trockenware", "Molkereiprodukte", "Gewürze & Öle", "Backzutaten"].map((name, i) => ({ id: `cat-i${i}`, kind: "ingredient" as const, name })),
       ...["Grundrezepte", "Suppen", "Hauptgerichte", "Desserts"].map((name, i) => ({ id: `cat-r${i}`, kind: "recipe" as const, name })),
+      ...["Mittagstisch", "Abendkarte"].map((name, i) => ({ id: `cat-m${i}`, kind: "menu" as const, name })),
     ],
     ingredients: [], packages: [], suppliers: [], stockItems: [], allergens: {}, verified: {}, nutrition: {},
-    recipes: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
+    recipes: [], menus: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
   };
 
   const sup = (id: string, companyName: string, orderEmail: string, leadTimeDays: number) =>
@@ -182,6 +184,13 @@ export function seed(): Db {
       lines: [line(0, "ing-mehl", 300, "g"), line(1, "ing-butter", 200, "g"), line(2, "ing-zucker", 150, "g"), line(3, "ing-eier", 3, "piece"), line(4, "ing-aepfel", 1.2, "kg")],
     }),
   );
+
+  const course = (p: number, name: string, recipeId: string) => ({ id: `mc-${p}`, name, position: p, items: [{ id: `mi-${p}`, recipeId, portions: 1, position: 0 }] });
+  d.menus.push({
+    id: "menu-mittag", libraryId: d.library.id, name: "Mittagsmenü", categoryId: "cat-m0", priceCents: 2400, priceIncludesVat: true, vatBp: 700,
+    targetMarginBp: 7000, validFrom: null, validTo: null, archivedAt: null, updatedAt: t,
+    courses: [course(0, "Vorspeise", "rec-linsensuppe"), course(1, "Hauptgang", "rec-ofengemuese"), course(2, "Dessert", "rec-apfelkuchen")],
+  });
 
   // Stock history for Küche Mitte: one delivered order, a waste event, an open order and a draft.
   const priceOf = (id: string) => d.stockItems.find((s) => s.ingredientId === id)!;

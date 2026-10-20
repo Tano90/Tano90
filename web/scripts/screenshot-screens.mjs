@@ -24,6 +24,8 @@ const SCREENS = [
   ["S04", "/ingredients/ing-olivenoel?tab=packages", "usr-owner"],
   ["S05", "/recipes", "usr-owner"],
   ["S06", "/recipes/rec-linsensuppe", "usr-owner"],
+  ["S07", "/menus", "usr-owner"],
+  ["S08", "/menus/menu-mittag", "usr-owner"],
   ["S10", "/suppliers", "usr-owner"],
   ["S11", "/suppliers/sup-frische", "usr-owner"],
   ["S12", "/orders", "usr-owner"],

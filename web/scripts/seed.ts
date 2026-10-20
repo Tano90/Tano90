@@ -45,6 +45,11 @@ try {
     await tx`insert into outlet_ingredients ${tx(d.outletIngredients.map((o) => ({ outletId: sid(o.outletId), ingredientId: sid(o.ingredientId), parLevelBase: o.parLevelBase, minLevelBase: o.minLevelBase })))}`;
     await tx`insert into recipes ${tx(d.recipes.map((r) => ({ id: sid(r.id), libraryId: lib, name: r.name, categoryId: u(r.categoryId), productType: r.productType, portions: r.portions, netQuantityBase: r.netQuantityBase, netUnit: r.netUnit, sellPriceCents: r.sellPriceCents, sellPriceIncludesVat: r.sellPriceIncludesVat, vatBp: r.vatBp, targetFoodCostBp: r.targetFoodCostBp, prepMinutes: r.prepMinutes, instructions: r.instructions })))}`;
     await tx`insert into recipe_lines ${tx(d.recipes.flatMap((r) => r.lines.map((l) => ({ recipeId: sid(r.id), ingredientId: u(l.ingredientId), subRecipeId: u(l.subRecipeId), quantity: l.quantity, unit: l.unit, position: l.position }))))}`;
+    for (const m of d.menus) {
+      await tx`insert into menus ${tx({ id: sid(m.id), libraryId: lib, name: m.name, categoryId: u(m.categoryId), priceCents: m.priceCents, priceIncludesVat: m.priceIncludesVat, vatBp: m.vatBp, targetMarginBp: m.targetMarginBp })}`;
+      await tx`insert into menu_courses ${tx(m.courses.map((c) => ({ id: sid(`${m.id}:${c.id}`), menuId: sid(m.id), name: c.name, position: c.position })))}`;
+      await tx`insert into menu_items ${tx(m.courses.flatMap((c) => c.items.map((it) => ({ courseId: sid(`${m.id}:${c.id}`), recipeId: sid(it.recipeId), portions: it.portions, position: it.position }))))}`;
+    }
     for (const o of d.orders) {
       await tx`insert into purchase_orders ${tx({ id: sid(o.id), libraryId: lib, outletId: sid(o.outletId), supplierId: sid(o.supplierId), orderNumber: o.orderNumber, status: o.status, orderedAt: o.orderedAt, expectedDeliveryDate: o.expectedDeliveryDate, note: o.note, createdAt: o.createdAt })}`;
       await tx`insert into purchase_order_lines ${tx(o.lines.map((l) => ({ id: sid(l.id), purchaseOrderId: sid(o.id), stockItemId: sid(l.stockItemId), quantityPacks: l.quantityPacks, unitPriceCents: l.unitPriceCents, receivedPacks: o.received[l.id] ?? 0 })))}`;

@@ -97,6 +97,7 @@ test.describe("F02 Rezept anlegen und kalkulieren", () => {
   });
 
   test("F02-N1 archiviertes Rezept ist nicht mehr erreichbar", async ({ page }) => {
+    await db()`update menus set archived_at = now()`; // the demo menu uses the cake
     await page.goto(`/recipes/${sid("rec-apfelkuchen")}`);
     await page.getByRole("button", { name: "Archivieren" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Archivieren" }).click();

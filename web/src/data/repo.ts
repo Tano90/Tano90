@@ -18,9 +18,9 @@ export const {
   getLibrary, getBilling, updateLibrary, listOutlets, createOutlet, listMembers, inviteMember, updateMember, removeMember, transferOwnership, listCategories,
   listIngredients, getIngredient, saveIngredient, archiveIngredient, savePackage, deletePackage, saveStockItem, archiveStockItem,
   setIngredientAllergens, setNutrition, listSuppliers, getSupplier, saveSupplier, archiveSupplier,
-  listRecipes, getRecipe, lineOptions, previewRecipe, saveRecipe, archiveRecipe,
+  listRecipes, getRecipe, lineOptions, previewRecipe, saveRecipe, archiveRecipe, listMenus, getMenu, saveMenu, archiveMenu,
   getStock, listStockEvents, recordWaste, getOpenCount, startCount, saveCountLines, closeCount,
   listOrders, orderCounts, getOrder, orderableItems, saveOrderDraft, sendOrder, deleteOrderDraft, receiveDelivery,
   dashboard,
 } = impl;
-export type { Billing, IngredientFilter, IngredientInput, RecipeDraft, StockItemInput, SupplierInput } from "./repo-memory";
+export type { Billing, IngredientFilter, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "./repo-memory";

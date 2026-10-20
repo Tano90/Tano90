@@ -4,12 +4,13 @@
 import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
+import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { type CountBreakdown, countTotal, suggestPacks } from "@/domain/stock";
 import type { BaseUnit } from "@/domain/units";
-import type { Billing, IngredientFilter, IngredientInput, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
+import type { Billing, IngredientFilter, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
 import { Forbidden, assertCanChangeMember, canEditLibrary, canManageTeam } from "../session-rules";
 import type {
-  AllergenRow, Category, CountEntry, Ingredient, Library, Member, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
+  AllergenRow, Category, CountEntry, Ingredient, Library, Member, Menu, MenuCourse, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
   StockEvent, StockItem, StockMovement, Supplier,
 } from "../types";
 import { type Tx, asService, asUser, friendly } from "./client";
@@ -136,7 +137,7 @@ export async function transferOwnership(s: Session, memberId: string) {
   });
 }
 
-export async function listCategories(s: Session, kind: "ingredient" | "recipe"): Promise<Category[]> {
+export async function listCategories(s: Session, kind: Category["kind"]): Promise<Category[]> {
   return run(s, (tx) => tx<Category[]>`select id, kind, name from categories where library_id = ${s.libraryId} and kind = ${kind} order by name`);
 }
 
@@ -528,10 +529,101 @@ export async function saveRecipe(s: Session, draft: RecipeDraft): Promise<string
 export async function archiveRecipe(s: Session, id: string) {
   assertEditor(s);
   await run(s, async (tx) => {
-    const parents = await tx<{ name: string }[]>`select distinct r.name from recipes r join recipe_lines rl on rl.recipe_id = r.id where rl.sub_recipe_id = ${id} and r.archived_at is null`;
+    const parents = await tx<{ name: string }[]>`
+      select distinct r.name from recipes r join recipe_lines rl on rl.recipe_id = r.id where rl.sub_recipe_id = ${id} and r.archived_at is null
+      union all
+      select distinct 'Menü „' || m.name || '“' from menus m join menu_courses c on c.menu_id = m.id join menu_items mi on mi.course_id = c.id
+      where mi.recipe_id = ${id} and m.archived_at is null`;
     if (parents.length) throw new Error(`Wird noch verwendet in: ${parents.map((r) => r.name).join(", ")}.`);
     await tx`update recipes set archived_at = now() where id = ${id}`;
   });
+}
+
+// ---------------------------------------------------------------- menus
+
+async function loadMenus(tx: Tx, lib: string, id?: string): Promise<Menu[]> {
+  const menus = await tx<Omit<Menu, "courses">[]>`
+    select id, library_id, name, category_id, price_cents, price_includes_vat, vat_bp, target_margin_bp, valid_from, valid_to, archived_at, updated_at
+    from menus where library_id = ${lib} and (${id ?? null}::uuid is null or id = ${id ?? null})`;
+  if (!menus.length) return [];
+  const courses = await tx<(Omit<MenuCourse, "items"> & { menuId: string })[]>`
+    select id, menu_id, name, position from menu_courses where menu_id = any(${menus.map((m) => m.id)}::uuid[]) order by position`;
+  const items = await tx<(MenuCourse["items"][number] & { courseId: string })[]>`
+    select id, course_id, recipe_id, portions, position from menu_items where course_id = any(${courses.map((c) => c.id)}::uuid[]) order by position`;
+  return menus.map((m) => ({
+    ...m,
+    courses: courses.filter((c) => c.menuId === m.id).map(({ menuId: _, ...c }) => ({ ...c, items: items.filter((i) => i.courseId === c.id).map(({ courseId: __, ...i }) => i) })),
+  }));
+}
+
+export async function listMenus(s: Session, f: { q?: string } = {}) {
+  return run(s, async (tx) => {
+    const [data, menus, [lib], cats] = await Promise.all([
+      loadCosting(tx, s.libraryId),
+      loadMenus(tx, s.libraryId),
+      tx<{ defaultVatBp: number }[]>`select default_vat_bp from libraries where id = ${s.libraryId}`,
+      tx<Category[]>`select id, name from categories where library_id = ${s.libraryId} and kind = 'menu'`,
+    ]);
+    const ctx = contextOf(data);
+    const memo = new Map<string, RecipeCost>();
+    const q = f.q?.trim().toLowerCase();
+    return menus
+      .filter((m) => !m.archivedAt && (!q || m.name.toLowerCase().includes(q)))
+      .map((m) => {
+        const sum = summarizeMenu(m, ctx, lib.defaultVatBp, memo);
+        return {
+          id: m.id, name: m.name, category: cats.find((c) => c.id === m.categoryId)?.name ?? "–",
+          courses: m.courses.length, dishes: m.courses.reduce((n, c) => n + c.items.length, 0),
+          priceCents: m.priceCents, costCents: sum.costCents, missing: sum.missing, foodCostBp: sum.foodCostBp,
+          marginBp: sum.marginBp, targetMarginBp: m.targetMarginBp, belowTarget: sum.belowTarget, validTo: m.validTo,
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+  });
+}
+
+export async function getMenu(s: Session, id: string, servings = 1) {
+  if (!isUuid(id)) return null;
+  return run(s, async (tx) => {
+    const [menu] = await loadMenus(tx, s.libraryId, id);
+    if (!menu) return null;
+    const data = await loadCosting(tx, s.libraryId);
+    const [lib] = await tx<{ defaultVatBp: number }[]>`select default_vat_bp from libraries where id = ${s.libraryId}`;
+    const ctx = contextOf(data);
+    return { menu, summary: summarizeMenu(menu, ctx, lib.defaultVatBp), bom: billOfMaterials(menu, ctx, servings) };
+  });
+}
+
+export async function saveMenu(s: Session, draft: MenuDraft): Promise<string> {
+  assertEditor(s);
+  return run(s, async (tx) => {
+    const recipeIds = [...new Set(draft.courses.flatMap((c) => c.items.map((i) => i.recipeId)))];
+    if (recipeIds.some((r) => !isUuid(r))) throw new Error("Ein gewähltes Rezept gibt es nicht mehr.");
+    const [{ n }] = await tx<{ n: number }[]>`select count(*)::int as n from recipes where id = any(${recipeIds}::uuid[]) and archived_at is null`;
+    if (n !== recipeIds.length) throw new Error("Ein gewähltes Rezept gibt es nicht mehr.");
+    const values = {
+      name: draft.name, categoryId: draft.categoryId, priceCents: draft.priceCents, priceIncludesVat: draft.priceIncludesVat,
+      vatBp: draft.vatBp, targetMarginBp: draft.targetMarginBp, validFrom: draft.validFrom, validTo: draft.validTo,
+    };
+    let id = draft.id;
+    if (id) {
+      const updated = await tx`update menus set ${tx(values)}, updated_at = now() where id = ${id} and archived_at is null returning id`;
+      if (!updated.length) throw new Error("Menü nicht gefunden.");
+      await tx`delete from menu_courses where menu_id = ${id}`; // cascades the items
+    } else {
+      id = (await tx<{ id: string }[]>`insert into menus ${tx({ ...values, libraryId: s.libraryId })} returning id`)[0].id;
+    }
+    for (const [p, c] of draft.courses.entries()) {
+      const [course] = await tx<{ id: string }[]>`insert into menu_courses ${tx({ menuId: id, name: c.name, position: p })} returning id`;
+      if (c.items.length) await tx`insert into menu_items ${tx(c.items.map((it, i) => ({ courseId: course.id, recipeId: it.recipeId, portions: it.portions, position: i })))}`;
+    }
+    return id!;
+  });
+}
+
+export async function archiveMenu(s: Session, id: string) {
+  assertEditor(s);
+  await run(s, (tx) => tx`update menus set archived_at = now() where id = ${id}`);
 }
 
 // ---------------------------------------------------------------- stock

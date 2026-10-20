@@ -81,6 +81,25 @@ export type Nutrition = {
 
 export type RecipeLine = { id: string; ingredientId: string | null; subRecipeId: string | null; quantity: number; unit: LineUnit; position: number; note: string | null };
 
+export type MenuItem = { id: string; recipeId: string; portions: number; position: number };
+export type MenuCourse = { id: string; name: string; position: number; items: MenuItem[] };
+export type Menu = {
+  id: string;
+  libraryId: string;
+  name: string;
+  categoryId: string | null;
+  priceCents: number | null;
+  priceIncludesVat: boolean;
+  vatBp: number | null;
+  /** Gross margin the kitchen aims for: (net price - food cost) / net price. */
+  targetMarginBp: number | null;
+  validFrom: string | null;
+  validTo: string | null;
+  archivedAt: string | null;
+  updatedAt: string;
+  courses: MenuCourse[];
+};
+
 export type Recipe = {
   id: string;
   libraryId: string;

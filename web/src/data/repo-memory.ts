@@ -3,12 +3,13 @@
 import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
+import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { type CountBreakdown, countTotal, suggestPacks } from "@/domain/stock";
 import { type BaseUnit } from "@/domain/units";
 import { Forbidden, assertCanChangeMember, canAccessOutlet, canEditLibrary, canManageTeam } from "./session-rules";
 import { addMovement, db, newId, now } from "./store";
 import type {
-  AllergenRow, CountEntry, Ingredient, Nutrition, Package, PurchaseOrder, Recipe, RecipeLine, Session, StockEvent, StockItem, Supplier,
+  AllergenRow, Category, CountEntry, Ingredient, Menu, Nutrition, Package, PurchaseOrder, Recipe, RecipeLine, Session, StockEvent, StockItem, Supplier,
 } from "./types";
 
 const visible = <T extends { archivedAt: string | null }>(rows: T[]) => rows.filter((r) => !r.archivedAt);
@@ -125,7 +126,7 @@ export async function transferOwnership(s: Session, memberId: string) {
   me.role = "admin";
 }
 
-export async function listCategories(_s: Session, kind: "ingredient" | "recipe") {
+export async function listCategories(_s: Session, kind: Category["kind"]) {
   return db().categories.filter((c) => c.kind === kind);
 }
 
@@ -476,9 +477,76 @@ export async function saveRecipe(s: Session, draft: RecipeDraft): Promise<string
 
 export async function archiveRecipe(s: Session, id: string) {
   assertEditor(s);
-  const parents = db().recipes.filter((r) => !r.archivedAt && r.lines.some((l) => l.subRecipeId === id));
+  const parents = [
+    ...db().recipes.filter((r) => !r.archivedAt && r.lines.some((l) => l.subRecipeId === id)),
+    ...visible(db().menus).filter((m) => m.courses.some((c) => c.items.some((i) => i.recipeId === id))).map((m) => ({ name: `Menü „${m.name}“` })),
+  ];
   if (parents.length) throw new Error(`Wird noch verwendet in: ${parents.map((r) => r.name).join(", ")}.`);
   const row = db().recipes.find((r) => r.id === id);
+  if (row) row.archivedAt = now();
+}
+
+// ---------------------------------------------------------------- menus
+
+export type MenuDraft = Pick<Menu, "name" | "categoryId" | "priceCents" | "priceIncludesVat" | "vatBp" | "targetMarginBp" | "validFrom" | "validTo"> & {
+  id?: string;
+  courses: { name: string; items: { recipeId: string; portions: number }[] }[];
+};
+
+export async function listMenus(_s: Session, f: { q?: string } = {}) {
+  const d = db();
+  const q = f.q?.trim().toLowerCase();
+  const ctx = costContext();
+  const memo = new Map<string, RecipeCost>();
+  return visible(d.menus)
+    .filter((m) => !q || m.name.toLowerCase().includes(q))
+    .map((m) => {
+      const sum = summarizeMenu(m, ctx, d.library.defaultVatBp, memo);
+      return {
+        id: m.id, name: m.name, category: d.categories.find((c) => c.id === m.categoryId)?.name ?? "–",
+        courses: m.courses.length, dishes: m.courses.reduce((n, c) => n + c.items.length, 0),
+        priceCents: m.priceCents, costCents: sum.costCents, missing: sum.missing, foodCostBp: sum.foodCostBp,
+        marginBp: sum.marginBp, targetMarginBp: m.targetMarginBp, belowTarget: sum.belowTarget, validTo: m.validTo,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "de"));
+}
+
+export async function getMenu(_s: Session, id: string, servings = 1) {
+  const d = db();
+  const menu = d.menus.find((m) => m.id === id);
+  if (!menu) return null;
+  const ctx = costContext();
+  return { menu, summary: summarizeMenu(menu, ctx, d.library.defaultVatBp), bom: billOfMaterials(menu, ctx, servings) };
+}
+
+function assertMenuRecipes(draft: MenuDraft) {
+  for (const c of draft.courses) for (const it of c.items) {
+    const r = db().recipes.find((x) => x.id === it.recipeId);
+    if (!r || r.archivedAt) throw new Error("Ein gewähltes Rezept gibt es nicht mehr.");
+  }
+}
+
+export async function saveMenu(s: Session, draft: MenuDraft): Promise<string> {
+  assertEditor(s);
+  assertMenuRecipes(draft);
+  const d = db();
+  const courses = draft.courses.map((c, p) => ({ id: newId("mc"), name: c.name, position: p, items: c.items.map((it, i) => ({ id: newId("mi"), recipeId: it.recipeId, portions: it.portions, position: i })) }));
+  const { id: _, courses: __, ...fields } = draft;
+  if (draft.id) {
+    const row = d.menus.find((m) => m.id === draft.id && !m.archivedAt);
+    if (!row) throw new Error("Menü nicht gefunden.");
+    Object.assign(row, fields, { courses, updatedAt: now() });
+    return row.id;
+  }
+  const id = newId("menu");
+  d.menus.push({ ...fields, id, libraryId: d.library.id, courses, archivedAt: null, updatedAt: now() });
+  return id;
+}
+
+export async function archiveMenu(s: Session, id: string) {
+  assertEditor(s);
+  const row = db().menus.find((m) => m.id === id);
   if (row) row.archivedAt = now();
 }
 
