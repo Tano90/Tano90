@@ -5,7 +5,7 @@ import { getLibrary } from "@/data/repo";
 import { canManageTeam, requireSession } from "@/data/session";
 import { LibraryForm } from "./library-form";
 
-export const metadata = { title: "Einstellungen · Kitchen Ledger" };
+export const metadata = { title: "Einstellungen" };
 
 export default async function SettingsPage() {
   const s = await requireSession();

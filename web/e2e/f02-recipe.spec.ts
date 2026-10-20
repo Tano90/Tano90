@@ -35,7 +35,7 @@ test.describe("F02 Rezept anlegen und kalkulieren", () => {
   test("F02-E1 Zutat ohne Preis wird markiert", async ({ page }) => {
     await page.goto(`/recipes/${sid("rec-quark")}`);
     await expect(page.getByText("Für „Meersalz fein“ ist kein Preis hinterlegt.")).toBeVisible();
-    await expect(summary(page)).toContainText("1 Zeile(n) ohne Kosten");
+    await expect(summary(page)).toContainText("1 Zeile(n) ohne Preis");
   });
 
   test("F02-E2 Stück ohne Stückgewicht wird erklärt, nicht mit 0 € gerechnet", async ({ page }) => {
@@ -43,7 +43,7 @@ test.describe("F02 Rezept anlegen und kalkulieren", () => {
     await page.getByRole("textbox", { name: "Name", exact: true }).fill("Karottensticks");
     await addLine(page, "Karotten", "2", "piece");
     await expect(page.getByText("Für „Karotten“ fehlt das Gewicht pro Stück.")).toBeVisible();
-    await expect(summary(page)).toContainText("ohne Kosten");
+    await expect(summary(page)).toContainText("ohne Preis");
   });
 
   test("F02-E3 Doppelklick legt genau ein Rezept an", async ({ page }) => {

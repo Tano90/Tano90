@@ -4,7 +4,7 @@ import { currentOutletId, requireSession } from "@/data/session";
 import { dayIn } from "@/lib/dates";
 import { OrderForm } from "../order-form";
 
-export const metadata = { title: "Neue Bestellung · Kitchen Ledger" };
+export const metadata = { title: "Neue Bestellung" };
 
 export default async function NewOrderPage({ searchParams }: { searchParams: Promise<{ supplier?: string }> }) {
   const { supplier } = await searchParams;

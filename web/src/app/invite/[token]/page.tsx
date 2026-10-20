@@ -5,7 +5,7 @@ import { invitationPreview } from "@/data/repo";
 import { currentUser } from "@/data/session";
 import { AcceptForm } from "./accept-form";
 
-export const metadata = { title: "Einladung · Kitchen Ledger" };
+export const metadata = { title: "Einladung" };
 
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;

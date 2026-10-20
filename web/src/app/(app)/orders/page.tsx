@@ -5,7 +5,7 @@ import { listOrders, orderCounts } from "@/data/repo";
 import { currentOutletId, requireSession } from "@/data/session";
 import { OrderTable } from "./order-table";
 
-export const metadata = { title: "Bestellungen · Kitchen Ledger" };
+export const metadata = { title: "Bestellungen" };
 
 const TABS = [
   { key: "open", label: "Offen" },

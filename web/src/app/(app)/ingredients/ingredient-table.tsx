@@ -66,7 +66,7 @@ export function IngredientTable({ rows, filtered, categories, suppliers, canEdit
           <EmptyState
             icon={Package}
             title="Noch keine Zutaten"
-            body="Lege deine erste Zutat mit Gebinde und Preis an. Danach kannst du Rezepte kalkulieren."
+            body="Fang mit dem an, was du am häufigsten kaufst. Mit Gebinde und Preis rechnet jedes Rezept von selbst."
             action={canEdit && <Link href="/ingredients/new" className="font-semibold text-accent underline">Zutat anlegen</Link>}
           />
         }

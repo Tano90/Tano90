@@ -70,7 +70,7 @@ export function OrderForm({ order, suppliers, initialSupplierId, today }: { orde
       if (andSend) {
         const sent = await sendOrder(res.data);
         if (!sent.ok) return setError(sent.error);
-        toast.success("Bestellung gesendet", { description: sent.data.to ? `An ${sent.data.to}` : "Der Lieferant hat keine Bestell-Adresse – bitte telefonisch bestellen." });
+        toast.success("Bestellung ist raus", { description: sent.data.to ? `Geht an ${sent.data.to}.` : "Der Lieferant hat keine Bestell-Adresse – bitte telefonisch bestellen." });
       } else toast.success("Entwurf gespeichert");
       router.push(`/orders/${res.data}`);
       router.refresh();

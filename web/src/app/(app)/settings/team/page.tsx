@@ -4,7 +4,7 @@ import { listMembers, listOutlets } from "@/data/repo";
 import { canManageTeam, requireSession } from "@/data/session";
 import { TeamAdmin } from "./team-admin";
 
-export const metadata = { title: "Outlets & Team · Kitchen Ledger" };
+export const metadata = { title: "Outlets & Team" };
 
 export default async function TeamPage() {
   const s = await requireSession();

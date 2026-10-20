@@ -7,7 +7,7 @@ import { currentOutletId, requireSession } from "@/data/session";
 import { formatBp, formatCents } from "@/lib/format";
 import { formatBase } from "@/lib/units-display";
 
-export const metadata = { title: "Übersicht · Kitchen Ledger" };
+export const metadata = { title: "Übersicht" };
 
 export default async function DashboardPage() {
   const s = await requireSession();
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
       <section aria-labelledby="todo" className="mt-8 rounded-md border border-border bg-bg">
         <h2 id="todo" className="border-b border-border px-4 py-3 text-base font-semibold">Zu erledigen ({todo.length})</h2>
         {todo.length === 0 ? (
-          <p className="px-4 py-6 text-text-muted">Alles erledigt. Preise vollständig, Bestände über Minimum.</p>
+          <p className="px-4 py-6 text-text-muted">Nichts offen: Alle Preise sind da, alle Bestände über Minimum.</p>
         ) : (
           <ul className="divide-y divide-border">
             {todo.map(({ key, href, icon: Icon, text }) => (

@@ -4,7 +4,7 @@ import { currentOutletId, requireSession } from "@/data/session";
 import { formatDateTime } from "@/lib/dates";
 import { CountSheet, StartCount } from "./count-sheet";
 
-export const metadata = { title: "Inventur · Kitchen Ledger" };
+export const metadata = { title: "Inventur" };
 
 export default async function CountPage() {
   const s = await requireSession();

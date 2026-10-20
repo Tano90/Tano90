@@ -1,5 +1,5 @@
 // DRAFT. Must be completed with the operator's details and reviewed by a lawyer before launch (/replica-deploy checks this).
-export const metadata = { title: "Datenschutz · Kitchen Ledger" };
+export const metadata = { title: "Datenschutz" };
 
 const PROCESSORS = [
   ["Supabase Inc.", "Datenbank, Anmeldung, Dateispeicher", "EU (Frankfurt)", "https://supabase.com/privacy"],

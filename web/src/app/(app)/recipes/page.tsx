@@ -5,7 +5,7 @@ import { listCategories, listRecipes } from "@/data/repo";
 import { canEditLibrary, requireSession } from "@/data/session";
 import { RecipeTable } from "./recipe-table";
 
-export const metadata = { title: "Rezepte · Kitchen Ledger" };
+export const metadata = { title: "Rezepte" };
 
 export default async function RecipesPage({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string }> }) {
   const sp = await searchParams;

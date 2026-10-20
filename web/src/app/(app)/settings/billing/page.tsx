@@ -7,7 +7,7 @@ import { billingConfigured } from "@/lib/billing";
 import { formatDate } from "@/lib/dates";
 import { BillingButtons } from "./billing-buttons";
 
-export const metadata = { title: "Abo & Rechnungen · Kitchen Ledger" };
+export const metadata = { title: "Abo & Rechnungen" };
 
 const PLAN = { trial: { label: "Testphase", tone: "info" }, active: { label: "Aktiv", tone: "success" }, past_due: { label: "Zahlung offen", tone: "warning" }, cancelled: { label: "Gekündigt", tone: "danger" } } as const;
 const date = (iso: string | null) => formatDate(iso, undefined, "long");

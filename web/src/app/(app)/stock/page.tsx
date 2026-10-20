@@ -6,7 +6,7 @@ import { currentOutletId, requireSession } from "@/data/session";
 import { formatCents } from "@/lib/format";
 import { StockTable } from "./stock-table";
 
-export const metadata = { title: "Lager · Kitchen Ledger" };
+export const metadata = { title: "Lager" };
 
 const linkCls = "inline-flex h-(--size-control-md) items-center gap-2 rounded-sm border border-border-input bg-bg px-4 font-semibold hover:bg-row-hover";
 

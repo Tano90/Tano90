@@ -25,7 +25,7 @@ async function run<T>(fn: (s: Session) => Promise<T>, paths: string[] = []): Pro
   } catch (e) {
     unstable_rethrow(e);
     if (e instanceof z.ZodError) return { ok: false, error: e.issues.map((i) => i.message).join(" ") };
-    return { ok: false, error: e instanceof Error ? e.message : "Unbekannter Fehler." };
+    return { ok: false, error: e instanceof Error ? e.message : "Da ist etwas schiefgegangen. Bitte versuch es noch einmal." };
   }
 }
 
@@ -47,7 +47,7 @@ async function open<T>(fn: () => Promise<T>): Promise<Result<T>> {
   } catch (e) {
     unstable_rethrow(e);
     if (e instanceof z.ZodError) return { ok: false, error: e.issues.map((i) => i.message).join(" ") };
-    return { ok: false, error: e instanceof Error ? e.message : "Unbekannter Fehler." };
+    return { ok: false, error: e instanceof Error ? e.message : "Da ist etwas schiefgegangen. Bitte versuch es noch einmal." };
   }
 }
 

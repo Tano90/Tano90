@@ -204,7 +204,7 @@ export function RecipeEditor({ recipe, usedIn, options, categories, defaultVatBp
 
         <Tabs defaultValue="lines">
           <TabList aria-label="Rezeptteile">
-            <Tab value="lines" warning={c && c.missing > 0 ? `${c.missing} Zeilen ohne Kosten` : undefined}>Zutaten</Tab>
+            <Tab value="lines" warning={c && c.missing > 0 ? `${c.missing} Zeilen ohne Preis` : undefined}>Zutaten</Tab>
             <Tab value="financial">Kalkulation</Tab>
             <Tab value="prep">Zubereitung</Tab>
             <Tab value="allergens" warning={unknownAllergens ? `${unknownAllergens} unbekannt` : undefined}>Allergene</Tab>
@@ -277,7 +277,7 @@ export function RecipeEditor({ recipe, usedIn, options, categories, defaultVatBp
           {c && c.missing > 0 && (
             <p className="mt-1 flex items-start gap-1 text-xs text-warning">
               <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
-              {c.missing} Zeile(n) ohne Kosten – der Wert ist zu niedrig.
+              {c.missing} Zeile(n) ohne Preis – der echte Wareneinsatz liegt höher.
             </p>
           )}
           <dl className="mt-4 grid grid-cols-[1fr_auto] gap-x-4 gap-y-2 text-sm">

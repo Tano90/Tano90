@@ -4,6 +4,7 @@ import "server-only";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Resend } from "resend";
+import { APP_NAME } from "./brand";
 
 export type Mail = { to: string; subject: string; text: string; html: string; replyTo?: string; idempotencyKey?: string };
 
@@ -20,7 +21,7 @@ export async function sendMail(mail: Mail): Promise<{ id: string; delivered: boo
   }
   const resend = new Resend(key);
   const { data, error } = await resend.emails.send(
-    { from: process.env.MAIL_FROM ?? "Kitchen Ledger <no-reply@example.com>", to: mail.to, subject: mail.subject, text: mail.text, html: mail.html, replyTo: mail.replyTo },
+    { from: process.env.MAIL_FROM ?? `${APP_NAME} <no-reply@example.com>`, to: mail.to, subject: mail.subject, text: mail.text, html: mail.html, replyTo: mail.replyTo },
     mail.idempotencyKey ? { idempotencyKey: mail.idempotencyKey } : undefined,
   );
   if (error) throw new Error(`E-Mail konnte nicht gesendet werden: ${error.message}`);

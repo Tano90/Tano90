@@ -10,7 +10,8 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       <EmptyState
         icon={TriangleAlert}
         title="Da ist etwas schiefgegangen"
-        body={error.message || "Die Seite konnte nicht geladen werden."}
+        // Never show error.message: in production it is Next.js's generic English text.
+        body={`Die Seite ließ sich gerade nicht laden. Meist hilft ein zweiter Versuch.${error.digest ? ` Fehlercode für den Support: ${error.digest}` : ""}`}
         action={<Button onClick={reset}>Erneut versuchen</Button>}
       />
     </div>

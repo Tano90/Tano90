@@ -3,7 +3,7 @@ import { getStock, listOutlets, listStockEvents } from "@/data/repo";
 import { currentOutletId, requireSession } from "@/data/session";
 import { WasteForm, WasteOverview } from "./waste-form";
 
-export const metadata = { title: "Schwund · Kitchen Ledger" };
+export const metadata = { title: "Schwund" };
 
 export default async function WastePage() {
   const s = await requireSession();

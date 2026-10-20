@@ -5,7 +5,7 @@ import { Notice } from "@/components/app/notice";
 import { authMode, getSession } from "@/data/session";
 import { LoginForm, MagicLinkForm } from "./login-form";
 
-export const metadata = { title: "Anmelden · Kitchen Ledger" };
+export const metadata = { title: "Anmelden" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ signedout?: string; deleted?: string; next?: string; error?: string }> }) {
   const sp = await searchParams;
@@ -14,7 +14,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <AuthCard
       title="Anmelden"
-      intro="Rezepte, Kalkulation, Einkauf und Lager an einem Ort."
+      intro="Rezepte, Preise und Lager – alles, was deine Küche rechnet."
       footer={supabase && <>Noch kein Konto? <Link className="font-semibold text-accent underline" href="/signup">Registrieren</Link></>}
     >
       {sp.signedout && <Notice className="mt-4">Du wurdest auf allen Geräten abgemeldet.</Notice>}

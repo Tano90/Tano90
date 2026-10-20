@@ -5,7 +5,7 @@ import { listCategories, listIngredients, listSuppliers } from "@/data/repo";
 import { canEditLibrary, requireSession } from "@/data/session";
 import { IngredientTable } from "./ingredient-table";
 
-export const metadata = { title: "Zutaten · Kitchen Ledger" };
+export const metadata = { title: "Zutaten" };
 
 type Search = Promise<{ q?: string; cat?: string; sup?: string; unverified?: string }>;
 

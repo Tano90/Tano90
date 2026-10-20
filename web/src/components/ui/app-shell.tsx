@@ -6,6 +6,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { APP_NAME } from "@/lib/brand";
 import { cn } from "@/lib/cn";
 import { Select } from "./field";
 
@@ -48,7 +49,7 @@ export function AppShell({ outlets, outletId, onOutletChange, user, children }: 
         )}
       >
         <div className="flex h-(--size-header) items-center justify-between px-2">
-          <span className="font-semibold text-nav-text-active">Kitchen Ledger</span>
+          <span className="font-semibold text-nav-text-active">{APP_NAME}</span>
           <button type="button" className="text-nav-text lg:hidden" aria-label="Navigation schließen" onClick={() => setOpen(false)}>
             <X aria-hidden className="size-5" />
           </button>

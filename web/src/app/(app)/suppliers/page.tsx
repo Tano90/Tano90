@@ -5,7 +5,7 @@ import { listSuppliers } from "@/data/repo";
 import { canEditLibrary, requireSession } from "@/data/session";
 import { SupplierTable } from "./supplier-table";
 
-export const metadata = { title: "Lieferanten · Kitchen Ledger" };
+export const metadata = { title: "Lieferanten" };
 
 export default async function SuppliersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;

@@ -1,5 +1,5 @@
 // DRAFT. To be written and reviewed before launch (/replica-deploy checks this).
-export const metadata = { title: "Nutzungsbedingungen · Kitchen Ledger" };
+export const metadata = { title: "Nutzungsbedingungen" };
 
 export default function TermsPage() {
   return (

@@ -77,7 +77,7 @@ export function RecipeTable({ rows, filtered, categories, canEdit }: { rows: Row
           <EmptyState
             icon={ChefHat}
             title="Noch keine Rezepte"
-            body="Lege dein erstes Rezept an und sieh sofort, was eine Portion kostet."
+            body="Leg ein Rezept an – noch beim Tippen siehst du, was ein Teller kostet."
             action={canEdit && <Link href="/recipes/new" className="font-semibold text-accent underline">Rezept anlegen</Link>}
           />
         }
