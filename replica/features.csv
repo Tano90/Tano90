@@ -1,7 +1,7 @@
 feature,area,priority,original,clone,notes
 Login mit E-Mail und Passwort,auth,must,yes,partial,"S01; Supabase Auth gebaut (Registrierung mit Bestätigung, Passwort, Magic Link, Reset, überall abmelden, Konto löschen); ohne eigenes Supabase-Projekt nicht end-to-end getestet"
 Bibliothek (Mandant) mit mehreren Outlets,setup,must,yes,yes,"S24 S25; Library vs. outlet-gebundene Daten; Outlet-Switch im Header, Outlet anlegen"
-Benutzer einladen und Outlets zuweisen,setup,must,yes,partial,"S25; Rollenmodell geraten; Einladung per E-Mail mit Token, gegen Postgres getestet; Rolle nachträglich ändern fehlt"
+Benutzer einladen und Outlets zuweisen,setup,must,yes,yes,"S25; Einladung per E-Mail mit Token; Rolle und Outlets ändern, Mitglied entfernen, Inhaberschaft übertragen (mind. ein Inhaber erzwungen); E2E f15"
 Zutatenliste mit Suche und Filter,library,must,yes,yes,S03
 Zutat anlegen mit Kategorie,library,must,yes,yes,S04 F01
 Gebinde-Hierarchie (z. B. 30x150 g),library,must,yes,yes,S04; Quelle 7
@@ -10,20 +10,20 @@ Automatische Einheitenumrechnung (g/kg/ml/cl/l/Stück),library,must,yes,yes,F01 
 Rezept anlegen mit Portionen und Zutatenzeilen,recipes,must,yes,yes,S06 F02
 Wareneinsatz und Food-Cost-% pro Portion live,recipes,must,yes,yes,S06; Quelle 6
 Unterrezepte (Semi-finished) mit Nettomenge,recipes,must,yes,yes,F03; Zyklen verhindern; inkl. Portion als Einheit; Zyklen werden abgelehnt
-Preisänderung aktualisiert alle Rezepte und Menüs,recipes,must,yes,partial,"F04; Rezepte ja (live berechnet, E2E geprüft); Menüs gibt es noch nicht"
+Preisänderung aktualisiert alle Rezepte und Menüs,recipes,must,yes,yes,F04; Rezepte und Menüs live aus aktuellen Preisen berechnet; E2E f02 und f16 S08-H2
 VK-Preis mit/ohne MwSt. und Marge,recipes,must,yes,yes,S06 Financial-Tab
 Allergene pro Zutat (enthält/Spuren/frei/unbekannt),allergens,must,yes,yes,S04; 14 EU-Allergene
 Allergene im Rezept automatisch vererbt + manuell ergänzbar,allergens,must,yes,yes,S06; Quelle 12; unbekannt schlägt frei
-Lieferanten verwalten,procurement,must,yes,partial,"S10 S11; anlegen/bearbeiten ja, archivieren fehlt"
+Lieferanten verwalten,procurement,must,yes,yes,"S10 S11; anlegen, bearbeiten, archivieren (abgelehnt bei offenen Bestellungen); E2E f14"
 Bestellung pro Lieferant und Outlet anlegen und per E-Mail senden,procurement,must,yes,yes,"S13 F06; S13; Mail über Resend (lokal Postausgang), Bestell-ID als Idempotenzschlüssel"
 Wareneingang inkl. Teillieferung,procurement,must,yes,yes,S14 F07; S14; Überlieferung wird abgelehnt
-Inventur pro Outlet (Packungen und Teilmengen),inventory,must,yes,partial,"S17 F08; S17; Zählen in kg/l/Stk. mit Dezimalstellen, Zählen in Gebinden fehlt"
+Inventur pro Outlet (Packungen und Teilmengen),inventory,must,yes,yes,"S17 F08; Zählen in kg/l/Stk. oder in Gebinden (Karton, Innenpackung, loser Rest), Aufteilung bleibt beim Neuladen; E2E f08"
 Lagerbestand und Lagerwert (WAC) pro Outlet,inventory,must,yes,yes,S16; Quelle 20
 Schwund buchen mit Grund,inventory,must,yes,yes,S19 F09
-Menüs mit Gängen und Zielmarge,menus,should,yes,no,S08 F05
+Menüs mit Gängen und Zielmarge,menus,should,yes,yes,"S07 S08 F05; Gänge sortierbar, Portionen je Gericht, Live-Kalkulation, Marge gegen Ziel, Gültigkeit; E2E f16"
 Nährwerte pro 100 g und pro Portion berechnet,allergens,should,yes,partial,"S04 S06; Eingabe pro Zutat ja, Berechnung pro Rezept fehlt"
 Allergen- und Nährwertlabel drucken,allergens,should,yes,no,S09
-Stückliste (BoM) für Menü,menus,should,yes,no,S09; Quelle 14
+Stückliste (BoM) für Menü,menus,should,yes,yes,"S08 (statt eigenem S09); rekursiv über Unterrezepte, Hochrechnen auf Gäste, Kosten je Zutat; Unit- und E2E-Tests"
 Outlet-spezifische Verkaufspreise,recipes,should,yes,no,S06
 Zubereitungsschritte und Produktionszeit / Personalkosten,recipes,should,yes,yes,S06; Prime Cost
 Sichtbarkeit von Zutaten pro Outlet,inventory,should,yes,partial,"Quelle 21; wird beim Bestellen und Zählen beachtet, keine Oberfläche zum Ändern"

@@ -48,7 +48,7 @@ const sid = (x) => {
   const h = createHash("md5").update(`kitchen-ledger:${x}`).digest("hex");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
 };
-const mapPath = (p) => p.replace(/\b(ing|rec|sup|po)-[a-z0-9-]+?(?=[/?]|$)/g, (m) => sid(m));
+const mapPath = (p) => p.replace(/\b(ing|rec|sup|po|menu)-[a-z0-9-]+?(?=[/?]|$)/g, (m) => sid(m));
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium", args: ["--no-proxy-server"] });
 let failures = 0;

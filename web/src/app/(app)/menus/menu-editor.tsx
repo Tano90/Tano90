@@ -173,7 +173,7 @@ export function MenuEditor({ menu, recipes, categories, defaultVatBp, canEdit }:
                     const p = parseQuantity(it.portions) ?? 0;
                     return (
                       <li key={it.key} className="flex flex-wrap items-center gap-2">
-                        <Select aria-label={`Gericht ${ii + 1} in ${label}`} className="min-w-48 flex-1" value={it.recipeId} onChange={(e) => editItem(ci, ii, { recipeId: e.target.value })}>
+                        <Select aria-label={`Gericht ${ii + 1} in ${label}`} className="w-full sm:w-auto sm:min-w-48 sm:flex-1" value={it.recipeId} onChange={(e) => editItem(ci, ii, { recipeId: e.target.value })}>
                           <option value="">Rezept wählen …</option>
                           {recipes.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                         </Select>
