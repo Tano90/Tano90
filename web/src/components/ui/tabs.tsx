@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 export const Tabs = RadixTabs.Root;
 
 export function TabList({ className, ...props }: RadixTabs.TabsListProps) {
-  return <RadixTabs.List className={cn("flex gap-1 overflow-x-auto border-b border-border", className)} {...props} />;
+  return <RadixTabs.List className={cn("relative flex gap-1 overflow-x-auto border-b border-border", className)} {...props} />;
 }
 
 type TabProps = RadixTabs.TabsTriggerProps & { warning?: string };

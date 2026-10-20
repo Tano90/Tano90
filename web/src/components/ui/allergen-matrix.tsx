@@ -37,7 +37,7 @@ type Props = {
  */
 export function AllergenMatrix({ value, onChange, inherited }: Props) {
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
     <table className="w-full border-collapse text-sm">
       <caption className="sr-only">Allergene nach EU-Verordnung 1169/2011</caption>
       <thead>

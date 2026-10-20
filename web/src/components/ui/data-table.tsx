@@ -59,7 +59,7 @@ export function DataTable<T>({
     setSort((s) => (s?.key !== key ? { key, dir: "asc" } : s.dir === "asc" ? { key, dir: "desc" } : null));
 
   return (
-    <div className="overflow-x-auto rounded-md border border-border bg-surface-raised">
+    <div className="relative overflow-x-auto rounded-md border border-border bg-surface-raised">
       <table className="w-full border-collapse text-sm" aria-busy={state === "loading" || undefined}>
         <caption className="sr-only">{caption}</caption>
         <thead className="bg-surface">

@@ -248,7 +248,7 @@ function PackagesAndPrices({ detail, suppliers, canEdit }: { detail: Detail; sup
         {detail.stockItems.length === 0 ? (
           <Notice tone="warning">Noch kein Preis. Rezepte mit dieser Zutat zeigen deshalb unvollständige Kosten.</Notice>
         ) : (
-          <div className="overflow-x-auto rounded-md border border-border bg-bg">
+          <div className="relative overflow-x-auto rounded-md border border-border bg-bg">
             <table className="w-full text-sm">
               <caption className="sr-only">Lieferantenpreise</caption>
               <thead className="bg-surface text-xs text-text-muted">
