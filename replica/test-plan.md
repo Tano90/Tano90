@@ -8,7 +8,7 @@ Automatisiert: `cd web && E2E_DATABASE_URL=… npm run e2e` (Specs in `web/e2e/`
 schlägt fehl bei Konsolenfehlern, Seitenfehlern und jeder 5xx-Antwort; Screens werden mit axe (WCAG 2.2 AA)
 geprüft. Datenbank-Integrationstests: `TEST_DATABASE_URL=… npm test`.
 
-Lauf vom 2026-10-20 (3. Durchgang, nach Umbuchung, Lagerbericht, Bestandsgrenzen, Kasse): **127/127 E2E bestanden**, **45/45 Unit- und Integrationstests**. Neu seit dem 2. Durchgang 26 E2E-Fälle und 8 Unit-/Integrationstests; 6 Bugs (BUG-008 bis 013), alle behoben. 2. Durchgang: 34 Fälle, BUG-007. Erster Durchgang: 61 Fälle, 6 Bugs, alle behoben. Ergebnis-Spalte: ✅ bestanden · ❌ fehlgeschlagen (→ `bugs.md`) · ⏸ blockiert · 🖐 manuell offen
+Lauf vom 2026-10-20 (4. Durchgang, nach Preis pro Outlet, Sichtbarkeit, Etikett): **144/144 E2E bestanden**, **48/48 Unit- und Integrationstests**. Neu: 17 E2E-Fälle, 3 Unit-/Integrationstests; 1 Bug (BUG-014, behoben); ein Flake auf seine Ursache zurückgeführt (Eingabe vor dem Laden der Seitenskripte) und in den Fixtures behoben. 3. Durchgang: Neu seit dem 2. Durchgang 26 E2E-Fälle und 8 Unit-/Integrationstests; 6 Bugs (BUG-008 bis 013), alle behoben. 2. Durchgang: 34 Fälle, BUG-007. Erster Durchgang: 61 Fälle, 6 Bugs, alle behoben. Ergebnis-Spalte: ✅ bestanden · ❌ fehlgeschlagen (→ `bugs.md`) · ⏸ blockiert · 🖐 manuell offen
 
 | case | flow | type | steps | expected | auto | result |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -80,6 +80,23 @@ Lauf vom 2026-10-20 (3. Durchgang, nach Umbuchung, Lagerbericht, Bestandsgrenzen
 | S20-E3 | | edge: Team-Konto | Bericht öffnen | nur eigenes Outlet | e2e | ✅ |
 | S20-N1 | | negativ: Formel im Namen | Zutat „=HYPERLINK(…)“, exportieren | Zelle als Text | e2e | ✅ (zuerst ❌ → BUG-013) |
 | X-TZ3 | | edge: Tagesgrenzen | Mitternacht Berlin inkl. Zeitumstellung, New York | richtiger UTC-Zeitpunkt | unit | ✅ |
+| P-H1 | Preis pro Outlet | happy | Linsensuppe: Zentralküche 9,50 € | gespeichert, Wareneinsatz je Outlet, Liste zeigt im Outlet „Outlet · 9,50“ | e2e | ✅ |
+| P-E1 | | edge: leeren | eigenen Preis leeren | zurück auf Standardpreis | e2e | ✅ |
+| P-E2 | | edge: Tippfehler | „9,9,0“ | Meldung, eigener Preis bleibt | e2e | ✅ (zuerst ❌ → BUG-014) |
+| P-E3 | | edge: nur Tastatur | Preis tippen, Tab, Enter | gespeichert | e2e | ✅ |
+| P-E4 | | edge: Tippfehler Rezept- und Menüpreis | „7,9,0“, „2,4,0“ | Meldung, Preise bleiben | e2e | ✅ (zuerst ❌ → BUG-014) |
+| P-E5 | | edge: Tippfehler Mindestbestellwert, Stundenlohn | „1,0,0“, „18,5,0“ | Meldung, Werte bleiben | e2e | ✅ |
+| P-N1 | | negativ: Team-Konto | Kalkulation öffnen | Felder gesperrt, kein Speichern; per Repo abgelehnt, fremdes Outlet abgelehnt | e2e + int | ✅ |
+| V-H1 | Sichtbarkeit pro Outlet | happy | Butter in Zentralküche aus- und wieder einblenden | fehlt im Lager der Zentralküche, danach wieder da | e2e | ✅ |
+| V-E1 | | edge: ausgeblendet | Kreuzkümmel in Küche Mitte ausgeblendet | fehlt in der Inventur | e2e | ✅ |
+| V-N1 | | negativ: Bestand vorhanden | Butter in Küche Mitte ausblenden | „noch Bestand“, bleibt geführt | e2e | ✅ |
+| V-N2 | | negativ: Team-Konto | Tab „Outlets“ | gesperrt bzw. nicht sichtbar | e2e | ✅ |
+| L-H1 | Etikett | happy | Linsensuppe → Etikett | Zutaten nach Gewicht, Allergene über Unterrezepte (Sellerie aus dem Fond), Nährwerte je 100 g und Portion, Hinweis auf fehlende Werte | e2e + int | ✅ |
+| L-E1 | | edge: Drucken | Druckansicht | nur das Etikett, keine Hinweise, keine Navigation | e2e | ✅ |
+| L-E2 | | edge: ungeprüftes Allergen | Milch der Sahne „unbekannt“ | Hinweis, nie „keine Allergene“ | e2e | ✅ |
+| L-E3 | | edge: leeres Rezept, 120 Zeichen, 390 px | neues Rezept ohne Zeilen | „Zutaten: –“, 0 kcal, kein Querscrollen | e2e | ✅ |
+| L-N1 | | negativ: fremder Betrieb | Etikett-URL | „Nicht gefunden“ | e2e + int | ✅ |
+| X-NUT | Nährwerte | unit | Summen über Unterrezepte, je 100 g, je Portion, fehlende benannt | richtig | unit | ✅ |
 | S16-H1 | Mindest-/Zielbestand | happy | Butter 3 / 7,5 kg | Spalte „3 kg / 7,5 kg“, „unter Minimum“ | e2e | ✅ |
 | S16-E1 | | edge: leeren | Mindestbestand leeren | Markierung weg | e2e | ✅ |
 | S16-N1 | | negativ: Minimum über Ziel | 9 / 5 | Meldung | e2e | ✅ |

@@ -1,6 +1,6 @@
 # Bugs
 
-Gefunden mit `/replica-test` am 2026-10-20 (drei Durchgänge; BUG-008 bis 011 schon beim Bauen von S18/S20/S21 reproduziert und mit Test behoben) · Korrekturen: Commits in der Tabelle ·
+Gefunden mit `/replica-test` am 2026-10-20 (vier Durchgänge; BUG-008 bis 011 schon beim Bauen von S18/S20/S21 reproduziert und mit Test behoben) · Korrekturen: Commits in der Tabelle ·
 Chromium 1440 px, de-DE, Europe/Berlin · Produktions-Build auf Postgres 16 mit Demo-Seed.
 
 Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jetzt besteht.
@@ -20,6 +20,7 @@ Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jet
 | BUG-011 | S3 | Datei, die vor dem fertigen Laden gewählt wird, wird still verworfen | behoben in b987727 |
 | BUG-012 | S3 | Kassen-CSV über 1 MB scheitert, obwohl 5 MB angeboten werden | behoben in 6d2a0f3 |
 | BUG-013 | S3 | CSV-Export führt Zutatennamen mit `=` in Excel als Formel aus (CSV-Injektion) | behoben in 6d2a0f3 |
+| BUG-014 | S2 | Tippfehler in einem Preisfeld löscht den Preis beim Speichern | behoben in 69f447e |
 
 Offen: keine. S1 offen: keine.
 
@@ -203,12 +204,31 @@ Expected: Name als Text. Actual: Zelle beginnt mit `=`, Excel führt sie als For
 Evidence: e2e `S20-N1`.
 Status: fixed in 6d2a0f3 (Textzellen, die mit `= + - @` beginnen, bekommen ein `'` vorangestellt)
 
+### BUG-014: Tippfehler in einem Preisfeld löscht den Preis
+
+- Severity: S2 (der Preis verschwindet ohne Hinweis; Wareneinsatz und Marge rechnen danach ohne Preis, das fällt erst spät auf)
+- Flow / case: F02, F05, S06 / P-E2, P-E4, P-E5
+- Screen: S06 (Verkaufspreis, Preis pro Outlet), S08 (Menüpreis), S11 (Mindestbestellwert), S24 (Stundenlohn)
+- Build: vor 69f447e
+
+Steps
+1. Rezept Linsensuppe (7,90 €) öffnen, Tab „Kalkulation“.
+2. Verkaufspreis „7,9,0“ eintippen, Speichern.
+
+Expected: Meldung, Preis bleibt 7,90 €.
+Actual: gespeichert ohne Meldung, Verkaufspreis ist leer. Gleich beim Preis pro Outlet (eigener Preis gelöscht), Menüpreis, Mindestbestellwert, Stundenlohn.
+Evidence: e2e `P-E2`, `P-E4` (Datenbank: `sell_price_cents` leer), `P-E5`.
+Suspected cause: `parseCents` gibt für Leeres und Unlesbares gleichermaßen `null` zurück, und `null` heißt „kein Preis“.
+Status: fixed in 69f447e (`readCents` trennt leer von unlesbar; Unlesbares zeigt „„7,9,0“ ist kein gültiger Betrag.“ und speichert nichts)
+
 ---
 
 ## Zu prüfen (nicht reproduziert oder nicht automatisierbar)
 
 - Ungespeicherte Änderungen beim Wechsel über die Seitennavigation (nicht nur Neuladen) gehen ohne Nachfrage verloren. Gilt auch für Zutaten- und Bestellformulare.
 - Supabase-Mails (Bestätigung, Magic Link, Reset) und Stripe (Checkout, abgelehnte Karte 4000 0000 0000 0002, Kündigung im Portal): nur mit deinen Konten prüfbar, Checkliste im Testplan (A02, A05).
+- Eingaben in den ersten Augenblicken nach dem Laden einer Seite (bevor deren Skripte da sind) setzt React zurück. In den Tests reproduziert (S08-E4, 1–5 von 15 Läufen), für Menschen nur bei sehr langsamer Verbindung denkbar. Die Tests warten jetzt nach jeder Navigation auf Netzwerkruhe.
+- Eine Zutat in einem Outlet ausblenden, während dort eine offene Bestellung sie enthält: der Wareneingang bucht dann Bestand auf eine ausgeblendete Zutat. Nicht reproduziert.
 - Kasse: Stornos (negative Mengen) werden als Fehlerzeile abgelehnt, nicht verarbeitet. Bewusst noch nicht gebaut; Kassen, die Stornos als eigene Zeilen exportieren, brauchen das.
 - Umbuchung aus einem Outlet mit negativem Bestand: der Durchschnittspreis ist dann 0, der Empfänger bekommt die Ware ohne Wert. Nicht reproduziert im Seed.
 - Kassen-API: Ratenlimit greift pro Schlüssel (60/min, geprüft); ein Angreifer ohne Schlüssel bekommt 401, aber auch dafür zählt das Limit nur pro vermutetem Schlüssel. Ein IP-basiertes Limit fehlt.
