@@ -67,6 +67,12 @@ export function RecipeEditor({ recipe, usedIn, options, categories, defaultVatBp
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [saving, startSave] = useTransition();
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault(); // browser shows its "leave page?" dialog
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setF({ ...f, [k]: e.target.value });
     setDirty(true);
