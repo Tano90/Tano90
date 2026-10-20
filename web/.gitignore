@@ -5,3 +5,5 @@ next-env.d.ts
 .outbox
 .env*
 !.env.example
+test-results
+playwright-report
