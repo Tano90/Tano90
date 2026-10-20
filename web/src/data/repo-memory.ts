@@ -1,11 +1,11 @@
 // Data layer. Every function here has the signature the Supabase version will have:
-// async, takes the session, enforces the same rules as the RLS policies in schema.sql.
+// async, takes the session, enforces the same rules as the RLS policies in supabase/migrations/0001_schema.sql.
 import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
 import { suggestPacks } from "@/domain/stock";
 import { type BaseUnit } from "@/domain/units";
-import { Forbidden, canAccessOutlet, canEditLibrary, canManageTeam } from "./session";
+import { Forbidden, canAccessOutlet, canEditLibrary, canManageTeam } from "./session-rules";
 import { addMovement, db, newId, now } from "./store";
 import type {
   AllergenRow, Ingredient, Nutrition, Package, PurchaseOrder, Recipe, RecipeLine, Session, StockEvent, StockItem, Supplier,
@@ -19,9 +19,45 @@ const assertOutlet = (s: Session, outletId: string) => {
   if (!canAccessOutlet(s, outletId)) throw new Forbidden("Kein Zugriff auf dieses Outlet.");
 };
 
+// ---------------------------------------------------------------- session & accounts
+
+export async function getMembership(userId: string): Promise<Session | null> {
+  const m = db().members.find((x) => x.userId === userId);
+  if (!m) return null;
+  return { userId: m.userId, name: m.name, email: m.email, role: m.role, libraryId: db().library.id, outletIds: m.allOutlets || m.role === "owner" || m.role === "admin" ? "all" : m.outletIds };
+}
+
+/** Demo login only: seeded users are found by email. */
+export async function findUserIdByEmail(email: string): Promise<string | null> {
+  return db().members.find((x) => x.email.toLowerCase() === email.toLowerCase())?.userId ?? null;
+}
+
+export async function createLibrary(_userId: string, _input: { libraryName: string; outletName: string; ownerName: string }): Promise<string> {
+  throw new Error("Neue Betriebe brauchen die Datenbank (DATABASE_URL).");
+}
+
+export async function invitationPreview(_token: string): Promise<{ libraryName: string; email: string; role: Session["role"]; expired: boolean } | null> {
+  return null;
+}
+
+export async function acceptInvitation(_userId: string, _token: string, _name: string): Promise<string> {
+  throw new Error("Einladungen brauchen die Datenbank (DATABASE_URL).");
+}
+
+/** Removes the user's memberships; deletes the library if they were its only member. Returns false if they are the owner of a team. */
+export async function deleteAccountData(_userId: string): Promise<{ ok: boolean; reason?: string }> {
+  return { ok: false, reason: "Im Demo-Modus können Konten nicht gelöscht werden." };
+}
+
+export type Billing = { plan: "trial" | "active" | "past_due" | "cancelled"; subscriptionStatus: string | null; trialEndsAt: string | null; currentPeriodEnd: string | null; stripeCustomerId: string | null; stripeSubscriptionId: string | null };
+
+export async function getBilling(_s: Session): Promise<Billing> {
+  return { plan: "trial", subscriptionStatus: null, trialEndsAt: new Date(Date.now() + 14 * 86400000).toISOString(), currentPeriodEnd: null, stripeCustomerId: null, stripeSubscriptionId: null };
+}
+
 // ---------------------------------------------------------------- library & team
 
-export async function getLibrary() {
+export async function getLibrary(_s: Session) {
   return db().library;
 }
 
@@ -49,14 +85,16 @@ export async function listMembers(s: Session) {
   return db().members;
 }
 
-export async function inviteMember(s: Session, input: { name: string; email: string; role: Session["role"]; outletIds: string[] }) {
+/** Memory backend: adds the member directly. Postgres backend: creates an invitation and returns its token. */
+export async function inviteMember(s: Session, input: { name: string; email: string; role: Session["role"]; outletIds: string[] }): Promise<{ token: string | null }> {
   if (!canManageTeam(s.role)) throw new Forbidden();
   const d = db();
   if (d.members.some((m) => m.email.toLowerCase() === input.email.toLowerCase())) throw new Error("Diese E-Mail-Adresse ist schon im Team.");
   d.members.push({ id: newId("mem"), userId: newId("usr"), name: input.name, email: input.email, role: input.role, allOutlets: input.outletIds.length === 0, outletIds: input.outletIds });
+  return { token: null };
 }
 
-export async function listCategories(kind: "ingredient" | "recipe") {
+export async function listCategories(_s: Session, kind: "ingredient" | "recipe") {
   return db().categories.filter((c) => c.kind === kind);
 }
 

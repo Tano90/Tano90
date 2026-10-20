@@ -1,0 +1,205 @@
+// Runs against a real Postgres with the migrations and the demo seed applied:
+//   TEST_DATABASE_URL=postgres://... npm test
+// Skipped when TEST_DATABASE_URL is not set.
+import { createHash } from "node:crypto";
+import postgres from "postgres";
+import Stripe from "stripe";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+const url = process.env.TEST_DATABASE_URL;
+const sid = (x: string) => {
+  const h = createHash("md5").update(`kitchen-ledger:${x}`).digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
+};
+
+describe.skipIf(!url)("backend against Postgres", () => {
+  let repo: typeof import("../src/data/pg/repo-pg");
+  let admin: postgres.Sql;
+  const owner = { userId: sid("usr-owner"), name: "Demo Nutzer", email: "inhaber@example.com", role: "owner" as const, libraryId: sid("lib-demo"), outletIds: "all" as const };
+  const staff = { ...owner, userId: sid("usr-staff"), role: "outlet_staff" as const, outletIds: [sid("out-mitte")] };
+  const strangerId = "00000000-0000-4000-8000-00000000beef";
+  let stranger: typeof owner;
+
+  beforeAll(async () => {
+    process.env.DATABASE_URL = url;
+    repo = await import("../src/data/pg/repo-pg");
+    admin = postgres(url!, { max: 1, onnotice: () => {} });
+    await admin`delete from memberships where user_id = ${strangerId}`;
+    await admin`select delete_library(id) from libraries where name = 'Fremder Betrieb'`;
+    await admin`insert into auth.users (id, email) values (${strangerId}, 'fremd@example.com') on conflict do nothing`;
+    const libId = await repo.createLibrary(strangerId, { libraryName: "Fremder Betrieb", outletName: "Fremde Küche", ownerName: "Fremd" });
+    stranger = { ...owner, userId: strangerId, email: "fremd@example.com", libraryId: libId };
+  });
+  afterAll(async () => {
+    await admin`select delete_library(id) from libraries where name = 'Fremder Betrieb'`;
+    await admin`delete from auth.users where id = ${strangerId}`;
+    await admin.end();
+    const { sql } = await import("../src/data/pg/client");
+    await sql().end();
+  });
+
+  describe("row level security", () => {
+    it("owner sees the demo data", async () => {
+      expect((await repo.listIngredients(owner)).length).toBe(17);
+      expect((await repo.getRecipe(owner, sid("rec-linsensuppe")))?.recipe.name).toBe("Linsensuppe mit Kreuzkümmel");
+    });
+    it("a user of another library gets nothing back, even when pointing at the demo library's ids", async () => {
+      const asDemoLib = { ...stranger, libraryId: owner.libraryId }; // a forged session must not help either
+      expect(await repo.listIngredients(asDemoLib)).toEqual([]);
+      expect(await repo.getRecipe(asDemoLib, sid("rec-linsensuppe"))).toBeNull();
+      expect(await repo.getIngredient(asDemoLib, sid("ing-zwiebeln"))).toBeNull();
+      expect(await repo.getOrder(asDemoLib, sid("po-2"))).toBeNull();
+      expect(await repo.getStock(asDemoLib, sid("out-mitte"))).toEqual([]);
+      expect(await repo.listSuppliers(asDemoLib)).toEqual([]);
+    });
+    it("a user of another library cannot write into it", async () => {
+      const asDemoLib = { ...stranger, libraryId: owner.libraryId };
+      await expect(repo.saveIngredient(asDemoLib, { name: "Eindringling", shortName: null, internalUid: null, categoryId: null, baseUnit: "g", gramsPerPiece: null, mlPerGram: null })).rejects.toThrow(/Berechtigung/);
+      await expect(repo.recordWaste(asDemoLib, sid("out-mitte"), [{ ingredientId: sid("ing-sahne"), quantityBase: 100, reason: "x" }])).rejects.toThrow(/Berechtigung/);
+    });
+    it("outlet staff cannot edit the library, even bypassing the role check", async () => {
+      await expect(repo.saveRecipe(staff, { name: "x", categoryId: null, productType: "finished", portions: 1, netQuantityBase: null, netUnit: "g", sellPriceCents: null, sellPriceIncludesVat: true, vatBp: null, targetFoodCostBp: null, prepMinutes: null, instructions: null, extraAllergens: {}, lines: [] })).rejects.toThrow(/Berechtigung/);
+      const { asUser } = await import("../src/data/pg/client");
+      await expect(asUser(staff.userId, (tx) => tx`update recipes set name = 'gehackt' where id = ${sid("rec-linsensuppe")} returning id`)).resolves.toHaveLength(0);
+      await expect(asUser(staff.userId, (tx) => tx`insert into recipes (library_id, name) values (${owner.libraryId}, 'gehackt')`)).rejects.toThrow(/row-level security/);
+    });
+    it("outlet staff's session, loaded like at sign-in, lists their outlet", async () => {
+      const m = (await repo.getMembership(staff.userId))!;
+      expect(m.role).toBe("outlet_staff");
+      expect(m.outletIds).toEqual([sid("out-mitte")]);
+    });
+    it("outlet staff sees only their own outlet", async () => {
+      expect((await repo.listOutlets(staff)).map((o) => o.name)).toEqual(["Küche Mitte"]);
+      expect(await repo.getStock(staff, sid("out-zentral"))).toEqual([]);
+    });
+    it("members cannot change their own plan", async () => {
+      const { asUser } = await import("../src/data/pg/client");
+      await expect(asUser(owner.userId, (tx) => tx`update libraries set plan = 'active' where id = ${owner.libraryId}`)).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  describe("purchasing and stock", () => {
+    it("orders, receives in parts, refuses over-delivery and books stock at the right cost", async () => {
+      const before = (await repo.getStock(owner, sid("out-mitte"))).find((r) => r.name.startsWith("Speisequark"))!;
+      const id = await repo.saveOrderDraft(owner, { outletId: sid("out-mitte"), supplierId: sid("sup-molkerei"), expectedDeliveryDate: null, note: null, lines: [{ stockItemId: sid("ing-quark-si"), quantityPacks: 2 }] });
+      expect((await repo.sendOrder(owner, id)).alreadySent).toBe(false);
+      expect((await repo.sendOrder(owner, id)).alreadySent).toBe(true);
+      const order = (await repo.getOrder(owner, id))!;
+      expect(order.order.orderNumber).toMatch(/^B-\d{4}$/);
+      const lineId = order.lines[0].id;
+      expect((await repo.receiveDelivery(owner, id, { lines: [{ lineId, packs: 1 }], addToStock: true })).status).toBe("partially_delivered");
+      await expect(repo.receiveDelivery(owner, id, { lines: [{ lineId, packs: 5 }], addToStock: true })).rejects.toThrow(/offen sind nur 1/);
+      expect((await repo.receiveDelivery(owner, id, { lines: [{ lineId, packs: 1 }], addToStock: true })).status).toBe("delivered");
+      const after = (await repo.getStock(owner, sid("out-mitte"))).find((r) => r.name.startsWith("Speisequark"))!;
+      expect(after.quantityBase - before.quantityBase).toBe(10000);
+      expect(after.avgCostCents).toBeCloseTo(0.218); // same price as before: average unchanged
+    });
+    it("counts: only counted items change, the draft survives, closing books the difference", async () => {
+      const level = async (name: string) => (await repo.getStock(staff, sid("out-mitte"))).find((r) => r.name === name)!.quantityBase;
+      const [butter, sugar] = [await level("Butter"), await level("Zucker")];
+      const ev = await repo.startCount(staff, sid("out-mitte"));
+      await expect(repo.startCount(staff, sid("out-mitte"))).rejects.toThrow(/schon eine Inventur/);
+      await repo.saveCountLines(staff, ev, { [sid("ing-butter")]: butter + 500 });
+      expect((await repo.getOpenCount(staff, sid("out-mitte")))!.draft).toEqual({ [sid("ing-butter")]: butter + 500 });
+      expect(await repo.closeCount(staff, ev)).toEqual({ counted: 1, changed: 1 });
+      expect(await level("Butter")).toBe(butter + 500);
+      expect(await level("Zucker")).toBe(sugar);
+    });
+  });
+
+  describe("recipes", () => {
+    it("costs the soup through the sub-recipe like the in-memory version", async () => {
+      const soup = (await repo.listRecipes(owner)).find((r) => r.name.startsWith("Linsensuppe"))!;
+      expect(soup.perPortionCents).toBeCloseTo(62.6, 0);
+      expect(soup.missing).toBe(0);
+    });
+    it("rejects a sub-recipe cycle with a readable message", async () => {
+      const fond = (await repo.getRecipe(owner, sid("rec-fond")))!.recipe;
+      await expect(repo.saveRecipe(owner, { ...fond, id: fond.id, lines: [...fond.lines, { ingredientId: null, subRecipeId: sid("rec-fond"), quantity: 1, unit: "l", position: 9 }] }))
+        .rejects.toThrow();
+      const parent = await repo.saveRecipe(owner, { ...fond, id: undefined, name: "Testsuppe", productType: "semi_finished", lines: [{ ingredientId: null, subRecipeId: sid("rec-fond"), quantity: 1, unit: "l", position: 0 }] });
+      await expect(repo.saveRecipe(owner, { ...fond, id: fond.id, lines: [...fond.lines, { ingredientId: null, subRecipeId: parent, quantity: 1, unit: "l", position: 9 }] }))
+        .rejects.toThrow(/Endlosschleife/);
+      await repo.archiveRecipe(owner, parent);
+    });
+  });
+
+  describe("accounts", () => {
+    it("invitations: wrong email is refused, right email joins with the invited role and outlets", async () => {
+      const { token } = await repo.inviteMember(owner, { name: "Neu", email: "neu@example.com", role: "outlet_staff", outletIds: [sid("out-mitte")] });
+      expect((await repo.invitationPreview(token!))?.libraryName).toBe("Demo Bistro");
+      await expect(repo.acceptInvitation(strangerId, token!, "Fremd")).rejects.toThrow(/andere E-Mail/);
+      const newId = "00000000-0000-4000-8000-0000000000aa";
+      await admin`insert into auth.users (id, email) values (${newId}, 'NEU@example.com') on conflict do nothing`;
+      expect(await repo.acceptInvitation(newId, token!, "Neu")).toBe(owner.libraryId);
+      const m = (await repo.getMembership(newId))!;
+      expect(m.role).toBe("outlet_staff");
+      expect(m.outletIds).toEqual([sid("out-mitte")]);
+      await expect(repo.acceptInvitation(newId, token!, "Neu")).rejects.toThrow(/ungültig oder abgelaufen/);
+      await admin`delete from memberships where user_id = ${newId}`;
+      await admin`delete from auth.users where id = ${newId}`;
+    });
+    it("account deletion: owner with a team is stopped, a sole member takes the library with them", async () => {
+      expect((await repo.deleteAccountData(owner.userId)).ok).toBe(false);
+      const loneId = "00000000-0000-4000-8000-0000000000bb";
+      await admin`insert into auth.users (id, email) values (${loneId}, 'allein@example.com') on conflict do nothing`;
+      const lib = await repo.createLibrary(loneId, { libraryName: "Einzelbetrieb", outletName: "Küche", ownerName: "Allein" });
+      const s = (await repo.getMembership(loneId))!;
+      const ing = await repo.saveIngredient(s, { name: "Mehl", shortName: null, internalUid: null, categoryId: null, baseUnit: "g", gramsPerPiece: null, mlPerGram: null });
+      await repo.recordWaste(s, (await repo.listOutlets(s))[0].id, [{ ingredientId: ing, quantityBase: 10, reason: "x" }]);
+      expect((await repo.deleteAccountData(loneId)).ok).toBe(true);
+      expect(await admin`select 1 from libraries where id = ${lib}`).toHaveLength(0);
+      expect(await admin`select 1 from ingredients where library_id = ${lib}`).toHaveLength(0);
+      await admin`delete from auth.users where id = ${loneId}`;
+    });
+  });
+
+  describe("jobs", () => {
+    it("low-stock alert mails each outlet once per day and records the run", async () => {
+      const { lowStockAlerts } = await import("../src/lib/jobs");
+      const day = new Date("2031-01-15T04:00:00Z");
+      await admin`delete from job_runs where job = 'low-stock' and item_key like ${"%:2031-01-15"}`;
+      await admin`delete from stock_alerts_sent where day = '2031-01-15'`;
+      const first = await lowStockAlerts(day);
+      expect(first.ok).toBeGreaterThan(0);
+      expect(first.failed).toBe(0);
+      const second = await lowStockAlerts(day);
+      expect(second.ok).toBe(0); // already done today: skipped, no second email
+      const [sent] = await admin`select count(*)::int as n from stock_alerts_sent where day = '2031-01-15'`;
+      expect(sent.n).toBeGreaterThan(0);
+    });
+  });
+
+  describe("stripe webhook", () => {
+    const stripe = new Stripe("sk_test_dummy");
+    const secret = "whsec_test_secret";
+    const event = (id: string, type: string, object: object) => JSON.stringify({ id, object: "event", type, data: { object }, api_version: "2025-01-01", created: 0, livemode: false, pending_webhooks: 0, request: null });
+
+    it("rejects a payload with a wrong signature", () => {
+      const body = event("evt_1", "checkout.session.completed", {});
+      const header = stripe.webhooks.generateTestHeaderString({ payload: body, secret: "whsec_other" });
+      expect(() => stripe.webhooks.constructEvent(body, header, secret)).toThrow();
+    });
+    it("applies checkout once, ignores the retried delivery, follows subscription changes", async () => {
+      const { handleStripeEvent } = await import("../src/lib/billing");
+      await admin`delete from processed_webhooks where event_id like 'evt_test_%'`;
+      const body = event("evt_test_1", "checkout.session.completed", { object: "checkout.session", client_reference_id: stranger.libraryId, customer: "cus_test", subscription: "sub_test" });
+      const header = stripe.webhooks.generateTestHeaderString({ payload: body, secret });
+      const verified = stripe.webhooks.constructEvent(body, header, secret);
+      expect(await handleStripeEvent(verified)).toBe("applied");
+      expect(await handleStripeEvent(verified)).toBe("duplicate");
+      let [lib] = await admin`select plan, stripe_customer_id from libraries where id = ${stranger.libraryId}`;
+      expect(lib).toMatchObject({ plan: "active", stripe_customer_id: "cus_test" });
+
+      const failed = JSON.parse(event("evt_test_2", "invoice.payment_failed", { object: "invoice", customer: "cus_test" }));
+      expect(await handleStripeEvent(failed)).toBe("applied");
+      [lib] = await admin`select plan from libraries where id = ${stranger.libraryId}`;
+      expect(lib.plan).toBe("past_due");
+
+      const deleted = JSON.parse(event("evt_test_3", "customer.subscription.deleted", { object: "subscription", id: "sub_test", status: "canceled", metadata: {}, items: { data: [{ current_period_end: 1893456000 }] } }));
+      expect(await handleStripeEvent(deleted)).toBe("applied");
+      [lib] = await admin`select plan, stripe_subscription_id from libraries where id = ${stranger.libraryId}`;
+      expect(lib).toMatchObject({ plan: "cancelled", stripe_subscription_id: null });
+    });
+  });
+});

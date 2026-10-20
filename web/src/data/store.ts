@@ -60,7 +60,7 @@ export function addMovement(d: Db, m: Omit<StockMovement, "id" | "unitCostCents"
 // ---------------------------------------------------------------- seed
 // Fictional demo data for a small bistro. Names, suppliers and prices are made up.
 
-function seed(): Db {
+export function seed(): Db {
   const t = now();
   const d: Db = {
     library: { id: "lib-demo", name: "Demo Bistro", currency: "EUR", defaultVatBp: 700, wageCentsPerHour: 1850 },

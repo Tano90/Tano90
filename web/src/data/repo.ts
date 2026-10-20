@@ -1,0 +1,26 @@
+// Picks the data backend: Postgres when DATABASE_URL is set, otherwise the in-memory demo store.
+// `const impl: Repo = pg` makes TypeScript prove both have the same functions and return types.
+import "server-only";
+import * as pg from "./pg/repo-pg";
+import * as memory from "./repo-memory";
+
+type Repo = Omit<typeof memory, "sha256">;
+// In production without a database every call fails loudly (checked per call, not at import, so `next build` works).
+const misconfigured = process.env.NODE_ENV === "production" && !process.env.DATABASE_URL && process.env.ALLOW_DEMO !== "1";
+const refuse = Object.fromEntries(
+  Object.keys(memory).map((k) => [k, () => Promise.reject(new Error("DATABASE_URL is required in production."))]),
+) as unknown as Repo;
+const impl: Repo = process.env.DATABASE_URL ? pg : misconfigured ? refuse : memory;
+
+export const usingDatabase = !!process.env.DATABASE_URL;
+export const {
+  getMembership, findUserIdByEmail, createLibrary, invitationPreview, acceptInvitation, deleteAccountData,
+  getLibrary, getBilling, updateLibrary, listOutlets, createOutlet, listMembers, inviteMember, listCategories,
+  listIngredients, getIngredient, saveIngredient, archiveIngredient, savePackage, deletePackage, saveStockItem, archiveStockItem,
+  setIngredientAllergens, setNutrition, listSuppliers, getSupplier, saveSupplier,
+  listRecipes, getRecipe, lineOptions, previewRecipe, saveRecipe, archiveRecipe,
+  getStock, listStockEvents, recordWaste, getOpenCount, startCount, saveCountLines, closeCount,
+  listOrders, orderCounts, getOrder, orderableItems, saveOrderDraft, sendOrder, deleteOrderDraft, receiveDelivery,
+  dashboard,
+} = impl;
+export type { Billing, IngredientFilter, IngredientInput, RecipeDraft, StockItemInput, SupplierInput } from "./repo-memory";

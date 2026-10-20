@@ -1,4 +1,4 @@
-// Row types, one per table in replica/schema.sql (camelCase). The fake store and the
+// Row types, one per table in web/supabase/migrations (camelCase). The fake store and the
 // Supabase repository both return these, so screens do not change when the backend does.
 import type { Allergen, AllergenStatus } from "@/domain/allergens";
 import type { LineUnit } from "@/domain/costing";
