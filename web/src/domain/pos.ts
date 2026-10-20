@@ -68,8 +68,8 @@ export function parseWhen(raw: string, offsetFor: OffsetFor): string | null {
  * `offsetFor` gives the outlet's UTC offset, for times written without a zone.
  */
 export function parseSalesCsv(text: string, offsetFor: OffsetFor = () => 0): { rows: SaleInput[]; errors: RowError[] } {
-  const lines = text.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim());
-  if (!lines.length) return { rows: [], errors: [{ row: 1, message: "Die Datei ist leer." }] };
+  const lines = text.replace(/^﻿/, "").split(/\r?\n/);
+  if (!lines[0]?.trim()) return { rows: [], errors: [{ row: 1, message: "Die Datei ist leer." }] };
   const sep = (lines[0].match(/;/g)?.length ?? 0) >= (lines[0].match(/,/g)?.length ?? 0) ? ";" : ",";
   const head = cells(lines[0], sep).map(norm);
   const col = Object.fromEntries(Object.entries(ALIASES).map(([k, names]) => [k, head.findIndex((h) => names.includes(h))])) as Record<keyof SaleInput, number>;
@@ -81,7 +81,8 @@ export function parseSalesCsv(text: string, offsetFor: OffsetFor = () => 0): { r
   const rows: SaleInput[] = [];
   const errors: RowError[] = [];
   lines.slice(1).forEach((line, i) => {
-    const row = i + 2;
+    const row = i + 2; // the line number in the file, also when blank lines are skipped
+    if (!line.trim()) return;
     const c = cells(line, sep);
     const get = (k: keyof SaleInput) => (col[k] >= 0 ? c[col[k]] ?? "" : "");
     const quantity = parseNumber(get("quantity"));

@@ -32,8 +32,10 @@ function toCsv(rows: Row[]) {
   const unit = { g: "g", ml: "ml", piece: "Stk" } as const;
   const head = ["Zutat", "Kategorie", "Einheit", "Anfang", "Eingang", "Umbuchung", "Verkauf", "Schwund", "Inventurdifferenz", "Sonstiges", "Ende", "Wert EUR"];
   const esc = (v: string) => (/[;"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  // Names are typed by users: a leading = + - @ would run as a formula in Excel (CSV injection).
+  const text = (v: string) => (/^[=+\-@\t\r]/.test(v) ? `'${v}` : v);
   const lines = rows.map((r) => [
-    r.name, r.category, unit[r.baseUnit], n(r.openingBase), n(r.columns.delivered.base), n(r.columns.transfer.base), n(r.columns.sold.base),
+    text(r.name), text(r.category), unit[r.baseUnit], n(r.openingBase), n(r.columns.delivered.base), n(r.columns.transfer.base), n(r.columns.sold.base),
     n(r.columns.waste.base), n(r.columns.countDiff.base), n(r.columns.other.base), n(r.closingBase), (r.closingCents / 100).toFixed(2).replace(".", ","),
   ].map(esc).join(";"));
   return `﻿${[head.join(";"), ...lines].join("\r\n")}\r\n`;

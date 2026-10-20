@@ -451,14 +451,16 @@ export async function recordTransfer(input: z.input<typeof TransferSchema>) {
 
 // ---------------------------------------------------------------- point of sale
 
-export async function importSalesCsv(text: string) {
+/** One part of a sales file (the browser splits big files). `rowOffset` = data rows in earlier parts, for error row numbers. */
+export async function importSalesCsv(text: string, rowOffset = 0) {
   return run(async (s) => {
-    if (text.length > 5_000_000) throw new Error("Die Datei ist zu groß (höchstens 5 MB).");
+    if (text.length > 1_000_000) throw new Error("Dieser Teil der Datei ist zu groß.");
     const outletId = await currentOutletId(s);
     const tz = (await repo.listOutlets(s)).find((o) => o.id === outletId)?.timezone;
     const { rows, errors } = parseSalesCsv(text, (ms) => zoneOffsetMinutes(ms, tz));
     const result = rows.length ? await repo.importSales(s, outletId, rows) : { imported: 0, duplicates: 0, depleted: 0, unmapped: 0 };
-    return { ...result, errors: errors.slice(0, 50), errorCount: errors.length };
+    const shifted = errors.map((e) => (e.row === 1 ? e : { ...e, row: e.row + rowOffset }));
+    return { ...result, errors: shifted.slice(0, 50), errorCount: errors.length, headerProblem: errors.some((e) => e.row === 1) };
   }, ["/analytics/pos", "/stock"]);
 }
 const LinkSchema = z.object({ recipeId: z.string().min(1).nullable(), ignored: z.boolean() });

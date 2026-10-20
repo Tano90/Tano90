@@ -13,6 +13,28 @@ import { toast } from "@/components/ui/toast";
 import { formatQty } from "@/lib/format";
 import { useUrlFilters } from "@/lib/use-url-filters";
 
+/** Server actions take at most 1 MB per call (and hosts cap requests too): send big files in parts, each with the header. */
+function splitCsv(text: string, maxChars = 700_000): { text: string; rowOffset: number }[] {
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/);
+  const [head, ...rows] = lines;
+  const parts: { text: string; rowOffset: number }[] = [];
+  let cur: string[] = [];
+  let size = 0;
+  let offset = 0;
+  for (const line of rows) {
+    if (size + line.length > maxChars && cur.length) {
+      parts.push({ text: [head, ...cur].join("\n"), rowOffset: offset });
+      offset += cur.length;
+      cur = [];
+      size = 0;
+    }
+    cur.push(line);
+    size += line.length + 1;
+  }
+  parts.push({ text: [head, ...cur].join("\n"), rowOffset: offset });
+  return parts;
+}
+
 export function SalesImport() {
   const [state, setState] = useState<"idle" | "uploading" | "done">("idle");
   const [errors, setErrors] = useState<RowError[]>([]);
@@ -34,14 +56,29 @@ export function SalesImport() {
         onFile={async (file) => {
           setState("uploading");
           setSummary(null);
-          const res = await importSalesCsv(await file.text()).catch(() => ({ ok: false as const, error: "Verbindung unterbrochen. Bitte noch einmal versuchen." }));
-          if (!res.ok) {
-            setState("idle");
-            setErrors([]);
-            toast.error("Import fehlgeschlagen", { description: res.error });
-            return;
+          const parts = splitCsv(await file.text());
+          const total = { imported: 0, duplicates: 0, depleted: 0, unmapped: 0, errorCount: 0 };
+          const allErrors: RowError[] = [];
+          for (const [i, part] of parts.entries()) {
+            const res = await importSalesCsv(part.text, part.rowOffset).catch(() => ({ ok: false as const, error: "Verbindung unterbrochen." }));
+            if (!res.ok) {
+              setState("idle");
+              setErrors(allErrors.slice(0, 50));
+              toast.error("Import abgebrochen", {
+                description: `${res.error} ${i ? `${total.imported} Verkäufe aus den ersten ${i} von ${parts.length} Teilen sind übernommen. ` : ""}Lade die Datei einfach noch einmal hoch, schon Übernommenes wird übersprungen.`,
+              });
+              return;
+            }
+            const r = res.data;
+            total.imported += r.imported;
+            total.duplicates += r.duplicates;
+            total.depleted += r.depleted;
+            total.unmapped = r.unmapped;
+            total.errorCount += r.errorCount;
+            allErrors.push(...r.errors);
+            if (r.headerProblem) break; // every part has the same header
           }
-          const r = res.data;
+          const r = { ...total, errors: allErrors.slice(0, 50) };
           setErrors(r.errors);
           setState("done");
           setSummary(`${r.imported} Verkäufe übernommen, ${r.duplicates} schon vorhanden, ${r.depleted} vom Lager abgebucht${r.unmapped ? `, ${r.unmapped} warten auf ein Rezept` : ""}.${r.errorCount > r.errors.length ? ` Es werden nur die ersten ${r.errors.length} von ${r.errorCount} Fehlern gezeigt.` : ""}`);
