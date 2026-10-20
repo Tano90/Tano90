@@ -1,0 +1,27 @@
+import { notFound } from "next/navigation";
+import { PageHeader } from "@/components/app/page-header";
+import { getLibrary, getRecipe, lineOptions, listCategories } from "@/data/repo";
+import { canEditLibrary, requireSession } from "@/data/session";
+import { RecipeEditor } from "../recipe-editor";
+
+export default async function RecipePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const s = await requireSession();
+  const isNew = id === "new";
+  const found = isNew ? null : await getRecipe(s, id);
+  if (!isNew && (!found || found.recipe.archivedAt)) notFound();
+  const [options, categories, library] = await Promise.all([lineOptions(s, isNew ? undefined : id), listCategories("recipe"), getLibrary()]);
+  return (
+    <>
+      <PageHeader title={found?.recipe.name ?? "Neues Rezept"} back={{ href: "/recipes", label: "Rezepte" }} />
+      <RecipeEditor
+        recipe={found?.recipe ?? null}
+        usedIn={found?.usedIn ?? []}
+        options={options}
+        categories={categories.map((c) => ({ value: c.id, label: c.name }))}
+        defaultVatBp={library.defaultVatBp}
+        canEdit={canEditLibrary(s.role)}
+      />
+    </>
+  );
+}
