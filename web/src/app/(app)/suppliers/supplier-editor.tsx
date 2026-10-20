@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Field, Input } from "@/components/ui/field";
-import { MoneyInput, parseCents } from "@/components/ui/money-input";
+import { MoneyInput, readCents } from "@/components/ui/money-input";
 import { toast } from "@/components/ui/toast";
 import type { StockItem, Supplier } from "@/data/types";
 import { formatCents } from "@/lib/format";
@@ -34,6 +34,8 @@ export function SupplierEditor({ supplier, items, canEdit }: { supplier: Supplie
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     start(async () => {
+      const min = readCents(f.minOrder);
+      if (!min.ok) return setError(min.error);
       const res = await saveSupplier({
         id: supplier?.id,
         companyName: f.companyName,
@@ -42,7 +44,7 @@ export function SupplierEditor({ supplier, items, canEdit }: { supplier: Supplie
         phone: f.phone,
         customerNumber: f.customerNumber,
         leadTimeDays: Number.parseInt(f.leadTimeDays, 10) || 0,
-        minOrderCents: parseCents(f.minOrder),
+        minOrderCents: min.cents,
       });
       if (!res.ok) return setError(res.error);
       setError(null);

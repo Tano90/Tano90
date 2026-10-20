@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { type Line, LineEditor } from "@/components/ui/line-editor";
-import { MoneyInput, parseCents } from "@/components/ui/money-input";
+import { MoneyInput, parseCents, readCents } from "@/components/ui/money-input";
 import { UNITS, type Unit, parseQuantity } from "@/components/ui/quantity-input";
 import { Tab, TabList, TabPanel, Tabs } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/toast";
@@ -149,6 +149,8 @@ export function RecipeEditor({ recipe, usedIn, options, categories, defaultVatBp
     startSave(async () => {
       if (!draft) return setError("Bitte die Portionen angeben.");
       if (!f.name.trim()) return setError("Bitte einen Namen angeben.");
+      const price = readCents(f.sellPrice);
+      if (!price.ok) return setError(price.error);
       const incomplete = lines.filter((l) => l.itemId || l.quantity).length - draft.lines.length;
       const res = await saveRecipe({ ...draft, name: f.name });
       if (!res.ok) return setError(res.error);
@@ -384,8 +386,9 @@ function OutletPrices({ recipeId, outlets, prices, perPortionCents, vatBp, inclu
   const [pending, start] = useTransition();
   const save = (o: { id: string; name: string }) =>
     start(async () => {
-      const raw = values[o.id] ?? "";
-      const cents = raw.trim() ? parseCents(raw) : null;
+      const read = readCents(values[o.id] ?? "");
+      if (!read.ok) return void toast.error(read.error);
+      const cents = read.cents;
       const res = await setRecipeOutletPrice(recipeId, o.id, cents);
       if (!res.ok) return void toast.error(res.error);
       toast.success(cents === null ? `${o.name}: Standardpreis` : `${o.name}: eigener Preis gespeichert`);

@@ -6,7 +6,7 @@ import { updateLibrary } from "@/app/actions";
 import { Notice } from "@/components/app/notice";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
-import { MoneyInput, parseCents } from "@/components/ui/money-input";
+import { MoneyInput, readCents } from "@/components/ui/money-input";
 import { toast } from "@/components/ui/toast";
 import type { Library } from "@/data/types";
 
@@ -24,7 +24,9 @@ export function LibraryForm({ library }: { library: Library }) {
       onSubmit={(e) => {
         e.preventDefault();
         start(async () => {
-          const res = await updateLibrary({ name, defaultVatBp: Math.round(Number(vat.replace(",", ".")) * 100), wageCentsPerHour: parseCents(wage) });
+          const w = readCents(wage);
+          if (!w.ok) return setError(w.error);
+          const res = await updateLibrary({ name, defaultVatBp: Math.round(Number(vat.replace(",", ".")) * 100), wageCentsPerHour: w.cents });
           if (!res.ok) return setError(res.error);
           setError(null);
           toast.success("Einstellungen gespeichert");

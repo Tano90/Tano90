@@ -59,3 +59,10 @@ export function parseCents(raw: string): number | null {
   const n = Number(raw.replace(",", "."));
   return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : null;
 }
+
+/** A typo must never clear a price: empty means "no price", anything unreadable is an error to show. */
+export function readCents(raw: string): { ok: true; cents: number | null } | { ok: false; error: string } {
+  if (!raw.trim()) return { ok: true, cents: null };
+  const cents = parseCents(raw);
+  return cents === null ? { ok: false, error: `„${raw.trim()}“ ist kein gültiger Betrag.` } : { ok: true, cents };
+}

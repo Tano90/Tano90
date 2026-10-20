@@ -7,7 +7,7 @@ import { archiveMenu, saveMenu } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Field, Input, Select } from "@/components/ui/field";
-import { MoneyInput, parseCents } from "@/components/ui/money-input";
+import { MoneyInput, parseCents, readCents } from "@/components/ui/money-input";
 import { parseQuantity } from "@/components/ui/quantity-input";
 import { toast } from "@/components/ui/toast";
 import type { Menu } from "@/data/types";
@@ -92,6 +92,8 @@ export function MenuEditor({ menu, recipes, categories, defaultVatBp, canEdit }:
 
   const save = () =>
     startSave(async () => {
+      const read = readCents(f.price);
+      if (!read.ok) return setError(read.error);
       const res = await saveMenu({
         id: menu?.id,
         name: f.name,
