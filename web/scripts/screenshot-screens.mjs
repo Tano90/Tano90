@@ -25,6 +25,7 @@ const SCREENS = [
   ["S05", "/recipes", "usr-owner"],
   ["S06", "/recipes/rec-linsensuppe", "usr-owner"],
   ["S07", "/menus", "usr-owner"],
+  ["S09", "/recipes/rec-linsensuppe/label", "usr-owner"],
   ["S08", "/menus/menu-mittag", "usr-owner"],
   ["S10", "/suppliers", "usr-owner"],
   ["S11", "/suppliers/sup-frische", "usr-owner"],

@@ -10,7 +10,7 @@ export const SCREENS: Screen[] = [
   { id: "S06", title: "Rezept", route: "/recipes/rec-linsensuppe", purpose: "Rezept bauen und kalkulieren", built: true },
   { id: "S07", title: "Menüs", route: "/menus", purpose: "Menüs mit Gängen verwalten", built: true },
   { id: "S08", title: "Menü", route: "/menus/new", purpose: "Menü aus Gängen bauen, Zielmarge prüfen", built: true },
-  { id: "S09", title: "Etikett & Stückliste", route: "/recipes/rec-linsensuppe/label", purpose: "Allergen- und Nährwertetikett, Stückliste", built: false },
+  { id: "S09", title: "Etikett & Stückliste", route: "/recipes/rec-linsensuppe/label", purpose: "Allergen- und Nährwertetikett, Stückliste", built: true },
   { id: "S10", title: "Lieferanten", route: "/suppliers", purpose: "Lieferanten verwalten", built: true },
   { id: "S11", title: "Lieferant", route: "/suppliers/sup-frische", purpose: "Kontakt, Bestellweg, Sortiment", built: true },
   { id: "S12", title: "Bestellungen", route: "/orders", purpose: "Entwürfe, offene und gelieferte Bestellungen pro Outlet", built: true },

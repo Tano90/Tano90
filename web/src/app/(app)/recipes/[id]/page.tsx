@@ -1,3 +1,5 @@
+import { Tag } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/app/page-header";
 import { getLibrary, getRecipe, lineOptions, listCategories, listOutlets } from "@/data/repo";
@@ -13,7 +15,15 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
   const [options, categories, library, outlets] = await Promise.all([lineOptions(s, isNew ? undefined : id), listCategories(s, "recipe"), getLibrary(s), listOutlets(s)]);
   return (
     <>
-      <PageHeader title={found?.recipe.name ?? "Neues Rezept"} back={{ href: "/recipes", label: "Rezepte" }} />
+      <PageHeader
+        title={found?.recipe.name ?? "Neues Rezept"}
+        back={{ href: "/recipes", label: "Rezepte" }}
+        actions={found && (
+          <Link href={`/recipes/${id}/label`} className="inline-flex h-(--size-control-md) items-center gap-2 rounded-sm border border-border-input bg-bg px-4 font-semibold hover:bg-row-hover">
+            <Tag aria-hidden className="size-4" /> Etikett
+          </Link>
+        )}
+      />
       <RecipeEditor
         recipe={found?.recipe ?? null}
         usedIn={found?.usedIn ?? []}

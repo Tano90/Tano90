@@ -189,6 +189,20 @@ export function seed(): Db {
     }),
   );
 
+  // Demo nutrition per 100 g (per 100 ml for oil and cream): rounded textbook values, not for real labels.
+  // Cumin is left empty on purpose, so the label shows how missing data is reported.
+  const N: Record<string, number[]> = {
+    "ing-zwiebeln": [40, 0.1, 0, 9, 4.2, 1.1, 0], "ing-karotten": [41, 0.2, 0, 9.6, 4.7, 0.9, 0.2], "ing-sellerie": [42, 0.3, 0.1, 9.2, 1.6, 1.5, 0.3],
+    "ing-lauch": [61, 0.3, 0, 14, 3.9, 1.5, 0.1], "ing-kartoffeln": [77, 0.1, 0, 17, 0.8, 2, 0], "ing-petersilie": [36, 0.8, 0.1, 6.3, 0.9, 3, 0.1],
+    "ing-aepfel": [52, 0.2, 0, 14, 10, 0.3, 0], "ing-linsen": [352, 1.1, 0.2, 63, 2, 24, 0], "ing-mehl": [340, 1, 0.2, 71, 0.7, 10, 0],
+    "ing-zucker": [400, 0, 0, 100, 100, 0, 0], "ing-olivenoel": [820, 91, 13, 0, 0, 0, 0], "ing-salz": [0, 0, 0, 0, 0, 0, 99],
+    "ing-quark": [109, 5, 3, 2.7, 2.7, 12.6, 0.1], "ing-sahne": [292, 30, 19, 3.2, 3.2, 2.4, 0.1], "ing-butter": [741, 82, 52, 0.6, 0.6, 0.7, 0],
+    "ing-eier": [137, 9.3, 2.7, 1.1, 0.7, 12.9, 0.4],
+  };
+  for (const [id, [energyKcal, fatG, saturatedFatG, carbohydrateG, sugarsG, proteinG, saltG]] of Object.entries(N)) {
+    d.nutrition[id] = { energyKcal, fatG, saturatedFatG, carbohydrateG, sugarsG, proteinG, saltG };
+  }
+
   const course = (p: number, name: string, recipeId: string) => ({ id: `mc-${p}`, name, position: p, items: [{ id: `mi-${p}`, recipeId, portions: 1, position: 0 }] });
   d.menus.push({
     id: "menu-mittag", libraryId: d.library.id, name: "Mittagsmenü", categoryId: "cat-m0", priceCents: 2400, priceIncludesVat: true, vatBp: 700,

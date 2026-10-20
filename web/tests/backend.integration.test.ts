@@ -146,6 +146,25 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
   });
 
+  describe("labels and outlet prices", () => {
+    it("label: allergens and nutrition through sub-recipes, same as in memory", async () => {
+      const l = (await repo.getRecipeLabel(owner, sid("rec-linsensuppe")))!;
+      expect(l.allergens.celery).toBe("contains"); // from the vegetable stock
+      expect(l.nutrition.missing).toEqual(["Kreuzkümmel gemahlen"]);
+      expect(l.nutrition.perPortion.energyKcal).toBeGreaterThan(400);
+      expect(l.nutrition.per100!.energyKcal).toBeCloseTo(l.nutrition.perBatch.energyKcal * 100 / 4080, 0);
+      expect(await repo.getRecipeLabel({ ...stranger, libraryId: owner.libraryId }, sid("rec-linsensuppe"))).toBeNull();
+    });
+    it("outlet price: only editors, only own outlets, list uses it", async () => {
+      await expect(repo.setRecipeOutletPrice(staff, sid("rec-linsensuppe"), sid("out-mitte"), 500)).rejects.toThrow(/Berechtigung/);
+      await expect(repo.setRecipeOutletPrice(owner, sid("rec-linsensuppe"), stranger.libraryId, 500)).rejects.toThrow(/Outlet nicht gefunden/);
+      await repo.setRecipeOutletPrice(owner, sid("rec-linsensuppe"), sid("out-zentral"), 990);
+      const row = (await repo.listRecipes(owner, { outletId: sid("out-zentral") })).find((r) => r.name.startsWith("Linsensuppe"))!;
+      expect([row.sellPriceCents, row.outletPrice]).toEqual([990, true]);
+      await repo.setRecipeOutletPrice(owner, sid("rec-linsensuppe"), sid("out-zentral"), null);
+    });
+  });
+
   describe("point of sale", () => {
     it("two imports at the same time book each sale once", async () => {
       const rows = (tag: string) => Array.from({ length: 5 }, (_, i) => ({ externalId: `${tag}-${i}`, plu: "1001", name: "Linsensuppe", quantity: 1, revenueNetCents: 739, soldAt: "2026-10-20T10:00:00.000Z" }));

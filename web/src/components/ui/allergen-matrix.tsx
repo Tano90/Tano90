@@ -1,13 +1,9 @@
 "use client";
 
+import { ALLERGENS } from "@/lib/allergen-labels";
 import { cn } from "@/lib/cn";
 
-export const ALLERGENS = [
-  ["gluten", "Gluten"], ["crustaceans", "Krebstiere"], ["eggs", "Eier"], ["fish", "Fisch"],
-  ["peanuts", "Erdnüsse"], ["soybeans", "Soja"], ["milk", "Milch"], ["nuts", "Schalenfrüchte"],
-  ["celery", "Sellerie"], ["mustard", "Senf"], ["sesame", "Sesam"], ["sulphites", "Sulfite"],
-  ["lupin", "Lupinen"], ["molluscs", "Weichtiere"],
-] as const;
+export { ALLERGENS };
 export type Allergen = (typeof ALLERGENS)[number][0];
 
 // Same order as the database enum: a higher index wins when a recipe inherits from its ingredients.

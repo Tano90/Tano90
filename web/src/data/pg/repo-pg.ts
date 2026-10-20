@@ -5,6 +5,7 @@ import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
+import { recipeNutrition } from "@/domain/nutrition";
 import { type CountBreakdown, countTotal, stockReport, suggestPacks } from "@/domain/stock";
 import type { SaleInput } from "@/domain/pos";
 import { hashKey, newApiKey } from "@/lib/api-key";
@@ -556,6 +557,27 @@ export async function saveRecipe(s: Session, draft: RecipeDraft): Promise<string
     const extra = Object.entries(draft.extraAllergens).map(([allergen, status]) => ({ recipeId: id, allergen, status }));
     if (extra.length) await tx`insert into recipe_extra_allergens ${tx(extra)}`;
     return id!;
+  });
+}
+
+/** What a printed label needs: allergens and nutrition of the recipe, through all sub-recipes. */
+export async function getRecipeLabel(s: Session, id: string) {
+  if (!isUuid(id)) return null;
+  return run(s, async (tx) => {
+    const data = await loadCosting(tx, s.libraryId);
+    const recipe = data.recipeBy.get(id);
+    if (!recipe || recipe.archivedAt) return null;
+    const [lib] = await tx<{ name: string }[]>`select name from libraries where id = ${s.libraryId}`;
+    const rows = await tx<(Nutrition & { ingredientId: string })[]>`
+      select n.ingredient_id, n.energy_kcal, n.fat_g, n.saturated_fat_g, n.carbohydrate_g, n.sugars_g, n.protein_g, n.salt_g
+      from ingredient_nutrition n join ingredients i on i.id = n.ingredient_id where i.library_id = ${s.libraryId}`;
+    const byIng = new Map(rows.map(({ ingredientId, ...n }) => [ingredientId, n]));
+    const maps = await allergenMaps(tx, s.libraryId);
+    return {
+      name: recipe.name, portions: recipe.portions, netUnit: recipe.netUnit, libraryName: lib.name,
+      allergens: recipeAllergens({ lines: recipe.lines, extraAllergens: maps.byRecipe.get(id) ?? {} }, maps, data.recipeBy),
+      nutrition: recipeNutrition(id, contextOf(data), (ing) => byIng.get(ing))!,
+    };
   });
 }
 

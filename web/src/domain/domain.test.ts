@@ -4,6 +4,7 @@ import { type CostContext, type CostIngredient, type CostRecipe, costRecipe, foo
 import { applyMovement, stockReport, suggestPacks } from "./stock";
 import { startOfDay, zoneOffsetMinutes } from "../lib/dates";
 import { billOfMaterials, summarizeMenu } from "./menus";
+import { recipeNutrition } from "./nutrition";
 import { parseSalesCsv } from "./pos";
 import { toBase } from "./units";
 
@@ -180,5 +181,21 @@ describe("pos csv", () => {
     expect(errors.map((e) => e.row)).toEqual([2, 3, 4, 5]);
     expect(parseSalesCsv("Beleg;PLU;Menge;Zeitpunkt\n\na;1;x;20.10.2026\n").errors[0].row).toBe(3); // blank line still counts
     expect(parseSalesCsv("PLU;Menge\n1;1").errors[0].message).toMatch(/Spalte fehlt: Belegposition, Zeitpunkt/);
+  });
+});
+
+describe("nutrition", () => {
+  it("adds up per batch, per 100 g and per portion through sub-recipes, and names what is missing", () => {
+    // Spinach 23 kcal / 100 g, onions 40 kcal / 100 g at 120 g each; the stock (2 l from 5 onions) has no other data.
+    const values = (id: string) => (id === "spinach" ? { energyKcal: 23, fatG: 0.4, saturatedFatG: 0, carbohydrateG: 3.6, sugarsG: 0.4, proteinG: 2.9, saltG: 0.2 }
+      : id === "onion" ? { energyKcal: 40, fatG: 0.1, saturatedFatG: 0, carbohydrateG: 9, sugarsG: 4.2, proteinG: 1.1, saltG: 0 } : undefined);
+    const n = recipeNutrition("soup", ctx(), values)!;
+    // 450 g spinach + 1/4 of the stock: 150 g onions.
+    expect(n.perBatch.energyKcal).toBeCloseTo(4.5 * 23 + 1.5 * 40, 6);
+    expect(n.perPortion.energyKcal).toBeCloseTo((4.5 * 23 + 1.5 * 40) / 4, 6);
+    expect(n.per100!.energyKcal).toBeCloseTo(((4.5 * 23 + 1.5 * 40) * 100) / 950, 6); // yield: 450 g + 0.5 l stock
+    expect(n.missing).toEqual([]);
+    expect(n.byWeight.map((x) => x.name)).toEqual(["Spinat", "Zwiebel"]);
+    expect(recipeNutrition("soup", ctx(), (id) => (id === "spinach" ? values(id) : undefined))!.missing).toEqual(["Zwiebel"]);
   });
 });

@@ -4,6 +4,7 @@ import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
+import { recipeNutrition } from "@/domain/nutrition";
 import { type CountBreakdown, countTotal, stockReport, suggestPacks } from "@/domain/stock";
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
@@ -437,6 +438,18 @@ export async function getRecipe(_s: Session, id: string) {
     recipe,
     usedIn: d.recipes.filter((r) => !r.archivedAt && r.lines.some((l) => l.subRecipeId === id)).map((r) => ({ id: r.id, name: r.name })),
     outletPrices: d.outletPrices.filter((p) => p.recipeId === id).map(({ outletId, sellPriceCents }) => ({ outletId, sellPriceCents })),
+  };
+}
+
+/** What a printed label needs: allergens and nutrition of the recipe, through all sub-recipes. */
+export async function getRecipeLabel(_s: Session, id: string) {
+  const d = db();
+  const recipe = d.recipes.find((r) => r.id === id && !r.archivedAt);
+  if (!recipe) return null;
+  return {
+    name: recipe.name, portions: recipe.portions, netUnit: recipe.netUnit, libraryName: d.library.name,
+    allergens: recipeAllergens(recipe),
+    nutrition: recipeNutrition(id, costContext(), (ing) => d.nutrition[ing])!,
   };
 }
 
