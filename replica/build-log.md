@@ -25,12 +25,12 @@ Originals vorhanden, daher kein Layoutvergleich.
 | S13 | Neue Bestellung | 2026-10-20 | partial | E-Mail an den Lieferanten (nur Status), Bestell-PDF | – |
 | S14 | Wareneingang | 2026-10-20 | done | Ersatzartikel, Mehrlieferung | **Fehler gefunden und behoben:** nach einer Teillieferung behielt das Formular alte Werte, ein zweites Erfassen hätte doppelt gebucht. Formular setzt sich jetzt zurück, der Server lehnt Überlieferungen ab. |
 | S15 | Rechnungsabgleich | – | stub | alles | – |
-| S16 | Lager | 2026-10-20 | done | Export | Absolut positionierte Screenreader-Texte in scrollbaren Tabellen haben die Seite auf dem Handy verbreitert (behoben, betraf alle Tabellen) |
+| S16 | Lager | 2026-10-20 | done | – | Mindest- und Zielbestand pro Zeile im Dialog, in kg/l/Stk. statt Basiseinheit |
 | S17 | Inventur | 2026-10-20 | done | Barcode-Scan | Zählen in Gebinden: Aufteilung (jsonb, Migration 0006) separat von der Summe speichern, Server rechnet die Summe nach |
-| S18 | Umbuchung | – | stub | alles | – |
+| S18 | Umbuchung | 2026-10-20 | done | – | Empfangendes Outlet durfte das Ereignis nicht lesen (RLS) und den Namen des Senders nicht: Migration 0007 und Namen über den Dienstzugang nur für sichtbare Ereignisse |
 | S19 | Schwund | 2026-10-20 | done | – | – |
-| S20 | Lagerbericht | – | stub | alles | – |
-| S21 | Kassen-Anbindung | – | stub | alles | – |
+| S20 | Lagerbericht | 2026-10-20 | done | – | Tagesgrenzen in der Zeitzone des Outlets inkl. Zeitumstellung; „−0,00 €“ kam aus negativer Null |
+| S21 | Kassen-Anbindung | 2026-10-20 | done | Stornos (negative Mengen), Excel-Import | Größer als gedacht: Parser, API mit Schlüsseln, Abbuchung über Stückliste, Nachbuchen beim Verknüpfen, parallele Importe. Eine vor der Hydrierung gewählte Datei ging verloren (FileUpload holt sie jetzt nach) |
 | S22 | Menu Engineering | – | stub | alles | – |
 | S23 | Produktion | – | stub | alles | – |
 | S24 | Einstellungen | 2026-10-20 | done | – | – |
@@ -39,6 +39,9 @@ Originals vorhanden, daher kein Layoutvergleich.
 | S27 | HACCP | – | stub | alles | – |
 
 ## Außerhalb einzelner Screens
+
+- 2026-10-20 (3. Durchgang): Schritte 2–5 aus `parity.md`: Lagerbericht, Umbuchung, Mindest-/Zielbestand, Kassen-Anbindung mit
+  Lagerabzug. E2E 121/121, Unit- und Integrationstests 45/45, Demo-Modus ohne Datenbank geprüft.
 
 - 2026-10-20 (2. Durchgang): offene Must-haves aus `parity.md` gebaut: Lieferanten archivieren, Team (Rolle, Entfernen, Inhaberschaft),
   Inventur in Gebinden, Menüs mit Stückliste. Parität 62,3 → 72,1, Must-haves 20 von 21. Offen bleibt nur der Login-Durchklick
