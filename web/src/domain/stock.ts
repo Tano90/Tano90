@@ -1,4 +1,4 @@
-// Weighted average cost, the same rule as the apply_stock_movement trigger in schema.sql.
+// Weighted average cost, the same rule as the apply_stock_movement trigger in supabase/migrations/0001_schema.sql.
 export type Level = { quantityBase: number; avgCostCents: number };
 
 /** Returns the new level and the unit cost the movement is booked at. */
