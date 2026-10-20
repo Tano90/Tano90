@@ -78,7 +78,7 @@ Recon, die des Klons sind gezählt (E2E-Specs). Bewertung: **behalten** = gleich
 | F02 VK pro Outlet | ja (4) | nein | **bauen** |
 | F03 Unterrezept | Netto-Gewicht, sonst Summe der Zutaten (5) | gleich, zusätzlich Einheit „Portion“, Zyklen werden abgelehnt | behalten |
 | F04 Preisänderung | wirkt auf Rezepte und Menüs (12) | wirkt sofort auf Rezepte und Menüs (beim nächsten Öffnen neu gerechnet, nichts zwischengespeichert) | behalten |
-| F05 Menü | Gänge, Zielmarge, Stückliste (13, 14) | gleich; Kalkulation **live beim Tippen**, Stückliste rekursiv über Unterrezepte und auf Gäste hochrechenbar; Menü anlegen mit 2 Gerichten: 8 Klicks + 3 Eingaben (gezählt, E2E F05-H1) | behalten (Vorteil) |
+| F05 Menü | Gänge, Zielmarge, Stückliste (13, 14) | gleich; Kalkulation **live beim Tippen**, Stückliste rekursiv über Unterrezepte und auf Gäste hochrechenbar; Menü mit 2 Gerichten anlegen: 2 Eingaben (Name, Preis), 2 Rezept-Auswahlen, 3 Klicks (gezählt nach E2E F05-H1, ohne dessen Extra-Schritte); Klickzahl des Originals unbekannt | behalten (Vorteil) |
 | F06 Bestellen | Vorschlag aus Bestand, Verkäufen und Lieferzeit; Par-Level (35) | Vorschlag aus Ziel-/Mindestbestand, Bestand und offenen Bestellungen; 5 Klicks; Mail an Lieferanten genau einmal | Vorschlag behalten; Verkäufe fehlen (POS) |
 | F06 Par-Level pflegen | Oberfläche vorhanden (35) | nur aus Seed, keine Oberfläche | **bauen** |
 | F07 Wareneingang | Teillieferung, Bestellung bleibt offen; Haken gegen doppeltes Buchen nach Inventur (15) | gleich; Mengen vorbelegt (2 Klicks für „alles da“); Überlieferung wird abgelehnt | behalten |
