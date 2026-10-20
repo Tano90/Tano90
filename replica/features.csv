@@ -21,12 +21,12 @@ Inventur pro Outlet (Packungen und Teilmengen),inventory,must,yes,yes,"S17 F08; 
 Lagerbestand und Lagerwert (WAC) pro Outlet,inventory,must,yes,yes,S16; Quelle 20
 Schwund buchen mit Grund,inventory,must,yes,yes,S19 F09
 Menüs mit Gängen und Zielmarge,menus,should,yes,yes,"S07 S08 F05; Gänge sortierbar, Portionen je Gericht, Live-Kalkulation, Marge gegen Ziel, Gültigkeit; E2E f16"
-Nährwerte pro 100 g und pro Portion berechnet,allergens,should,yes,partial,"S04 S06; Eingabe pro Zutat ja, Berechnung pro Rezept fehlt"
-Allergen- und Nährwertlabel drucken,allergens,should,yes,no,S09
+Nährwerte pro 100 g und pro Portion berechnet,allergens,should,yes,yes,"S09; aus Zutatenwerten je 100 g/100 ml über alle Unterrezepte, fehlende Werte werden benannt; Unit- und Integrationstest"
+Allergen- und Nährwertlabel drucken,allergens,should,yes,yes,"S09; Zutatenliste nach Gewicht, Allergene über alle Unterrezepte (ungeprüfte nie als frei), Nährwerttabelle, Druckansicht nur mit dem Etikett; E2E f24"
 Stückliste (BoM) für Menü,menus,should,yes,yes,"S08 (statt eigenem S09); rekursiv über Unterrezepte, Hochrechnen auf Gäste, Kosten je Zutat; Unit- und E2E-Tests"
-Outlet-spezifische Verkaufspreise,recipes,should,yes,no,S06
+Outlet-spezifische Verkaufspreise,recipes,should,yes,yes,"S06; eigener VK pro Outlet mit Wareneinsatz je Outlet, Rezeptliste zeigt den Preis des gewählten Outlets; E2E f23, Integrationstest"
 Zubereitungsschritte und Produktionszeit / Personalkosten,recipes,should,yes,yes,S06; Prime Cost
-Sichtbarkeit von Zutaten pro Outlet,inventory,should,yes,partial,"Quelle 21; wird beim Bestellen und Zählen beachtet, keine Oberfläche zum Ändern"
+Sichtbarkeit von Zutaten pro Outlet,inventory,should,yes,yes,"S04; Tab „Outlets“: pro Outlet führen oder ausblenden, abgelehnt solange Bestand liegt; E2E f22"
 Transfer zwischen Outlets,inventory,should,yes,yes,"S18 F10; Wert zum Durchschnittspreis des Senders, Empfänger sieht eingehende Umbuchungen (Migration 0007); E2E f10"
 Par-Level und Bestellvorschlag,procurement,should,yes,yes,"S13 S16; Mindest- und Zielbestand pro Outlet im Lager bearbeitbar, Vorschlag füllt bis Ziel auf; E2E f19"
 Gewogene Artikel (Bestellung nach Gewicht),procurement,should,yes,partial,Quelle 10; Kennzeichen und Gewicht beim Wareneingang; Bestellen nach Gewicht fehlt

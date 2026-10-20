@@ -13,12 +13,12 @@ Originals vorhanden, daher kein Layoutvergleich.
 | S01 | Anmeldung | 2026-10-20 | partial | echte Auth (Passwort, Magic Link, Passwort vergessen) | – |
 | S02 | Übersicht | 2026-10-20 | done | – | – |
 | S03 | Zutaten | 2026-10-20 | done | Bulk-Aktionen (archivieren, Kategorie setzen) | – |
-| S04 | Zutat | 2026-10-20 | done | Gebinde bearbeiten (nur anlegen/löschen), Zutaten zusammenführen, Sichtbarkeit/Mindestbestand pro Outlet | Gebinde-Hierarchie plus Preis pro Pack oder pro kg braucht zwei Dialoge, sonst wird es unverständlich |
+| S04 | Zutat | 2026-10-20 | done | Gebinde bearbeiten (nur anlegen/löschen), Zutaten zusammenführen, Sichtbarkeit/Mindestbestand pro Outlet | Gebinde-Hierarchie plus Preis pro Pack oder pro kg braucht zwei Dialoge, sonst wird es unverständlich Seit 4. Durchgang: Tab „Outlets“ (Sichtbarkeit). |
 | S05 | Rezepte | 2026-10-20 | done | Bulk-Aktionen | – |
-| S06 | Rezept | 2026-10-20 | done | VK pro Outlet, Nährwerte pro Portion | Live-Kalkulation über Unterrezepte und Einheiten (Stück ↔ g ↔ ml); „Portion“ als Einheit für Unterrezepte |
+| S06 | Rezept | 2026-10-20 | done | VK pro Outlet, Nährwerte pro Portion | Live-Kalkulation über Unterrezepte und Einheiten (Stück ↔ g ↔ ml); „Portion“ als Einheit für Unterrezepte Seit 4. Durchgang: Preis pro Outlet. |
 | S07 | Menüs | 2026-10-20 | done | – | – |
 | S08 | Menü | 2026-10-20 | done | Menü-Etikett zum Drucken | Stückliste rekursiv über Unterrezepte: Mengen laufen über Chargenanteile (Menge ÷ Ausbeute), nicht über Portionen |
-| S09 | Etikett & Stückliste | – | stub | Etikett mit Allergenen und Nährwerten; die Menü-Stückliste steckt in S08 | – |
+| S09 | Etikett & Stückliste | 2026-10-20 | done | Etikett-Vorlagen und Formate (heute eine Druckansicht); Menü-Stückliste steckt in S08 | Allergen-Namen lagen in einem Client-Modul und mussten für die Server-Seite in ein gemeinsames Modul |
 | S10 | Lieferanten | 2026-10-20 | done | – | Archivieren muss offene Bestellungen ablehnen und die Preise mit archivieren |
 | S11 | Lieferant | 2026-10-20 | done | Sortiment direkt hier pflegen (geht über die Zutat) | – |
 | S12 | Bestellungen | 2026-10-20 | done | – | – |
@@ -39,6 +39,9 @@ Originals vorhanden, daher kein Layoutvergleich.
 | S27 | HACCP | – | stub | alles | – |
 
 ## Außerhalb einzelner Screens
+
+- 2026-10-20 (4. Durchgang): Preis pro Outlet, Sichtbarkeit pro Outlet, Nährwerte pro Rezept, Etikett (S09). E2E 137/137,
+  Unit- und Integrationstests 48/48, Demo-Modus geprüft. Demo-Nährwerte im Seed sind gerundete Richtwerte, nicht für echte Etiketten.
 
 - 2026-10-20 (3. Durchgang): Schritte 2–5 aus `parity.md`: Lagerbericht, Umbuchung, Mindest-/Zielbestand, Kassen-Anbindung mit
   Lagerabzug. E2E 121/121, Unit- und Integrationstests 45/45, Demo-Modus ohne Datenbank geprüft.
