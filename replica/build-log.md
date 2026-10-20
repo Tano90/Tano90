@@ -40,7 +40,7 @@ Originals vorhanden, daher kein Layoutvergleich.
 
 ## Außerhalb einzelner Screens
 
-- 2026-10-20: Allergen-Rangfolge in `schema.sql` korrigiert. `unknown` stand unter `free`, ein Gericht mit einer
+- 2026-10-20: Allergen-Rangfolge in `web/supabase/migrations/0001_schema.sql` korrigiert. `unknown` stand unter `free`, ein Gericht mit einer
   ungeprüften Zutat wäre als „frei“ durchgegangen. Jetzt gilt `free < unknown < may_contain < contains`, mit Unit-Test.
 - Unit-Tests der Rechenregeln: `npm test` in `web/` (Einheiten, Kalkulation, Unterrezepte, Allergene, gleitender
   Durchschnittspreis, Bestellvorschlag).

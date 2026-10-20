@@ -16,11 +16,11 @@ günstig bei null Nutzern. Eine Datenbank, ein Deployment, keine Microservices.
 | tables/forms | TanStack Table, React Hook Form + Zod | das Produkt besteht zu 80 % aus Tabellen und Mengenzeilen; Zod-Schemas gelten auch serverseitig |
 | mobile | zuerst PWA (Inventur-Ansicht mobil, Barcode via `BarcodeDetector` mit ZXing-Fallback), Expo erst wenn nötig | Zählen ist der einzige mobile Ablauf; eine zweite Codebasis lohnt sich anfangs nicht |
 | database | Postgres auf Supabase | RLS für Mandanten/Outlets, Trigger für das Lager-Ledger, rekursive CTEs für Unterrezepte |
-| ORM | Drizzle | SQL-nah, Migrationen als SQL-Dateien, `schema.sql` ist Migration 0001 |
+| DB-Zugriff | postgres.js (geändert, war Drizzle) | Migrationen sind SQL; jede Anfrage läuft als Rolle `authenticated`, damit RLS greift. Siehe `replica/backend.md` |
 | auth | Supabase Auth (E-Mail + Passwort, Magic Link, optional Google) | gleiche `auth.uid()` wie in den RLS-Policies |
 | payments | Stripe Billing, Preis pro Outlet (Mengenabo) | Original rechnet pro Outlet + Modul ab; Mengen = aktive Outlets |
 | email | Resend (Bestellungen an Lieferanten, Einladungen) + eigene Absender-Domain mit SPF/DKIM | Bestell-Mails müssen zuverlässig ankommen |
-| jobs | Inngest | Event-getrieben (Preis geändert → Neuberechnung), Retries, Fan-out; Cron für Tagesberichte |
+| jobs | Vercel Cron (geändert, war Inngest) | nur zwei tägliche Jobs; Kosten werden live berechnet, Neuberechnungs-Jobs entfallen. Retries über `job_runs` |
 | files | Supabase Storage | Excel-Importe, Rechnungs-PDFs, Label-PDFs |
 | excel | SheetJS (`xlsx`) serverseitig | Import/Export der Preis- und POS-Vorlagen |
 | pdf/labels | React-PDF | Allergen-/Nährwertlabel, Bestell-PDF |
@@ -29,8 +29,8 @@ günstig bei null Nutzern. Eine Datenbank, ein Deployment, keine Microservices.
 
 ## Schema
 
-Tables: 33 (siehe `replica/schema.sql`, Migration 0001). Access rules: **Postgres RLS** (Supabase).
-Geprüft gegen Postgres 16 mit Testdaten (`replica/schema.smoke.sql`): Zyklus-Sperre,
+Tables: 33 (siehe `web/supabase/migrations/0001_schema.sql`, Migration 0001). Access rules: **Postgres RLS** (Supabase).
+Geprüft gegen Postgres 16 mit Testdaten (`web/supabase/schema.smoke.sql`): Zyklus-Sperre,
 gleitender Durchschnittspreis (WAC), Ledger nur anhängend, Idempotenz, eine offene
 Inventur pro Outlet, Outlet-Abgleich und RLS-Isolation zwischen Mandanten und Outlets.
 

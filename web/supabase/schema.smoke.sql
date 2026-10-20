@@ -1,4 +1,4 @@
--- Smoke tests for schema.sql. Run against a scratch database after a Supabase auth stub:
+-- Smoke tests for migrations/0001_schema.sql.
 --   create schema auth; create table auth.users (id uuid primary key);
 --   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 --   create role authenticated;
