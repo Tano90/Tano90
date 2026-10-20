@@ -632,6 +632,15 @@ export async function receiveDelivery(s: Session, id: string, input: { lines: { 
   if (o.status !== "ordered" && o.status !== "partially_delivered") throw new Error("Diese Bestellung erwartet keine Lieferung.");
   const received = input.lines.filter((l) => l.packs > 0 || (l.weightBase ?? 0) > 0);
   if (!received.length) throw new Error("Es wurde nichts als geliefert eingetragen.");
+  for (const r of received) {
+    const line = o.lines.find((l) => l.id === r.lineId);
+    if (!line) throw new Error("Unbekannte Position.");
+    const open = line.quantityPacks - (o.received[line.id] ?? 0);
+    if (r.packs > open + 1e-9) {
+      const si = d.stockItems.find((x) => x.id === line.stockItemId)!;
+      throw new Error(`„${si.name}“: ${r.packs} geliefert, offen sind nur ${open}. Mehrlieferungen bitte als eigene Position erfassen.`);
+    }
+  }
   const ev: StockEvent = { id: newId("ev"), outletId: o.outletId, type: "delivery", status: "closed", occurredAt: now(), counterpartOutletId: null, purchaseOrderId: o.id, note: input.addToStock ? null : "Ohne Lagerbuchung", createdBy: s.userId, closedAt: now() };
   d.events.push(ev);
   for (const r of received) {
