@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { toast } from "@/components/ui/toast";
 import type { BaseUnit } from "@/domain/units";
+import { formatDate } from "@/lib/dates";
 import { formatCents, formatQty } from "@/lib/format";
 import { formatBase } from "@/lib/units-display";
 
@@ -54,7 +55,7 @@ export function StartCount({ past }: { past: { id: string; closedAt: string | nu
           <ul className="divide-y divide-border rounded-md border border-border bg-bg">
             {past.map((p) => (
               <li key={p.id} className="flex flex-wrap justify-between gap-2 px-4 py-3">
-                <span>{p.closedAt ? new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(new Date(p.closedAt)) : "–"} · {p.by}</span>
+                <span>{formatDate(p.closedAt)} · {p.by}</span>
                 <span className="num text-text-muted">{p.lines} Differenzen · {formatCents(Math.round(p.valueCents))}</span>
               </li>
             ))}
@@ -86,7 +87,8 @@ export function CountSheet({ eventId, draft, items }: { eventId: string; draft: 
     if (!Object.keys(batch).length) return true;
     dirty.current = {};
     setSaved("saving");
-    const res = await saveCountLines(eventId, batch);
+    // A dropped connection makes the action call itself throw, not return an error result.
+    const res = await saveCountLines(eventId, batch).catch(() => ({ ok: false as const, error: "offline" }));
     if (!res.ok) {
       dirty.current = { ...batch, ...dirty.current };
       setSaved("error");
@@ -95,6 +97,18 @@ export function CountSheet({ eventId, draft, items }: { eventId: string; draft: 
     setSaved("saved");
     return true;
   };
+  // While saving fails (offline), retry every few seconds and as soon as the browser is back online.
+  useEffect(() => {
+    if (saved !== "error") return;
+    const retry = () => void flush();
+    const t = setInterval(retry, 5000);
+    window.addEventListener("online", retry);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("online", retry);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saved]);
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const change = (it: Item, raw: string) => {
