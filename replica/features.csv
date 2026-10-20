@@ -1,0 +1,51 @@
+feature,area,priority,original,clone,notes
+Login mit E-Mail und Passwort,auth,must,yes,no,S01
+Bibliothek (Mandant) mit mehreren Outlets,setup,must,yes,no,S24 S25; Library vs. outlet-gebundene Daten
+Benutzer einladen und Outlets zuweisen,setup,must,yes,no,S25; Rollenmodell geraten
+Zutatenliste mit Suche und Filter,library,must,yes,no,S03
+Zutat anlegen mit Kategorie,library,must,yes,no,S04 F01
+Gebinde-Hierarchie (z. B. 30x150 g),library,must,yes,no,S04; Quelle 7
+Lieferantenpreis pro Pack oder pro Einheit (netto),library,must,yes,no,S04 S11; Quelle 9 30
+Automatische Einheitenumrechnung (g/kg/ml/cl/l/Stück),library,must,yes,no,F01 F02
+Rezept anlegen mit Portionen und Zutatenzeilen,recipes,must,yes,no,S06 F02
+Wareneinsatz und Food-Cost-% pro Portion live,recipes,must,yes,no,S06; Quelle 6
+Unterrezepte (Semi-finished) mit Nettomenge,recipes,must,yes,no,F03; Zyklen verhindern
+Preisänderung aktualisiert alle Rezepte und Menüs,recipes,must,yes,no,F04
+VK-Preis mit/ohne MwSt. und Marge,recipes,must,yes,no,S06 Financial-Tab
+Allergene pro Zutat (enthält/Spuren/frei/unbekannt),allergens,must,yes,no,S04; 14 EU-Allergene
+Allergene im Rezept automatisch vererbt + manuell ergänzbar,allergens,must,yes,no,S06; Quelle 12
+Lieferanten verwalten,procurement,must,yes,no,S10 S11
+Bestellung pro Lieferant und Outlet anlegen und per E-Mail senden,procurement,must,yes,no,S13 F06
+Wareneingang inkl. Teillieferung,procurement,must,yes,no,S14 F07
+Inventur pro Outlet (Packungen und Teilmengen),inventory,must,yes,no,S17 F08
+Lagerbestand und Lagerwert (WAC) pro Outlet,inventory,must,yes,no,S16; Quelle 20
+Schwund buchen mit Grund,inventory,must,yes,no,S19 F09
+Menüs mit Gängen und Zielmarge,menus,should,yes,no,S08 F05
+Nährwerte pro 100 g und pro Portion berechnet,allergens,should,yes,no,S04 S06
+Allergen- und Nährwertlabel drucken,allergens,should,yes,no,S09
+Stückliste (BoM) für Menü,menus,should,yes,no,S09; Quelle 14
+Outlet-spezifische Verkaufspreise,recipes,should,yes,no,S06
+Zubereitungsschritte und Produktionszeit / Personalkosten,recipes,should,yes,no,S06; Prime Cost
+Sichtbarkeit von Zutaten pro Outlet,inventory,should,yes,no,Quelle 21
+Transfer zwischen Outlets,inventory,should,yes,no,S18 F10
+Par-Level und Bestellvorschlag,procurement,should,yes,no,S13; Quelle 35
+Gewogene Artikel (Bestellung nach Gewicht),procurement,should,yes,no,Quelle 10
+Lagerbericht mit Bewegungen und Zähldifferenzen,inventory,should,yes,no,S20
+Excel-Import für Gebinde und Preise,library,should,yes,no,S26
+Generischer POS-Import (CSV/API) und PLU-Mapping,pos,should,yes,no,S21 F11; eigene Schnittstelle statt Partner-Integrationen
+Lagerabzug durch Verkäufe bis auf Rohware,pos,should,yes,no,F11
+Dashboard mit KPIs,analytics,should,yes,no,S02
+Menu Engineering Matrix (Beliebtheit × Marge),analytics,could,yes,no,S22
+Rechnungsabgleich 3-Way-Match,procurement,could,yes,no,S15 F12
+Mobile Inventur mit Barcode-Scan,inventory,could,yes,no,S17 mobil
+Zählen per Sprache,inventory,could,yes,no,Quelle 35
+Zentralküche: Bestellungen der Outlets und Produktionsplan,production,could,yes,no,S23 F13
+Chargen-Rückverfolgung,production,could,yes,no,Quelle 34
+HACCP-Checklisten und Aufgaben,haccp,could,yes,no,S27; Add-on
+Nutri-Score Berechnung,allergens,could,yes,no,öffentlicher Algorithmus
+Öffentliche REST-API für Kunden,integrations,could,yes,no,
+Fertige Integrationen mit POS-Partnern (Lightspeed Deliverect HubRise …),integrations,could,yes,skip,Partnernetzwerk und Verträge; nur über offizielle APIs später einzeln
+Lieferanten-Kataloge/EDI-Anbindungen,integrations,could,yes,skip,Partnerdeals des Originals
+Integrierte Allergen-Datenbanken von Drittanbietern,allergens,could,yes,skip,lizenzierte Daten
+Hilfecenter-Inhalte und Vorlagen des Originals,content,could,yes,skip,urheberrechtlich geschützt; eigene Doku schreiben
+Kundendaten und Rezeptbibliotheken,data,could,yes,skip,gehören dem Original und seinen Kunden
