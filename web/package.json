@@ -1,0 +1,41 @@
+{
+  "name": "kitchen-ledger-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "tokens": "node scripts/build-tokens.mjs",
+    "predev": "npm run tokens",
+    "prebuild": "npm run tokens",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "contrast": "python3 ../replica/design/contrast.py ../replica/design/tokens.json",
+    "screenshot:design": "node scripts/screenshot-design.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@radix-ui/react-dialog": "^1.3.1",
+    "@radix-ui/react-popover": "^1.3.1",
+    "@radix-ui/react-tabs": "^1.2.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "lucide-react": "^1.60.0",
+    "next": "^16.4.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "sonner": "^2.0.8",
+    "tailwind-merge": "^3.7.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "axe-core": "^4.14.0",
+    "playwright-core": "^1.64.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2"
+  }
+}
