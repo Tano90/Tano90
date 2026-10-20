@@ -18,7 +18,7 @@ Originals vorhanden, daher kein Layoutvergleich.
 | S06 | Rezept | 2026-10-20 | done | VK pro Outlet, Nährwerte pro Portion | Live-Kalkulation über Unterrezepte und Einheiten (Stück ↔ g ↔ ml); „Portion“ als Einheit für Unterrezepte |
 | S07 | Menüs | 2026-10-20 | done | – | – |
 | S08 | Menü | 2026-10-20 | done | Menü-Etikett zum Drucken | Stückliste rekursiv über Unterrezepte: Mengen laufen über Chargenanteile (Menge ÷ Ausbeute), nicht über Portionen |
-| S09 | Etikett & Stückliste | 2026-10-20 | partial | Rezept-Etikett ja (S06/label); Menü-Stückliste steckt in S08, eigener Screen nicht nötig | – |
+| S09 | Etikett & Stückliste | – | stub | Etikett mit Allergenen und Nährwerten; die Menü-Stückliste steckt in S08 | – |
 | S10 | Lieferanten | 2026-10-20 | done | – | Archivieren muss offene Bestellungen ablehnen und die Preise mit archivieren |
 | S11 | Lieferant | 2026-10-20 | done | Sortiment direkt hier pflegen (geht über die Zutat) | – |
 | S12 | Bestellungen | 2026-10-20 | done | – | – |
