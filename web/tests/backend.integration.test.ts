@@ -1,6 +1,7 @@
 // Runs against a real Postgres with the migrations and the demo seed applied:
 //   TEST_DATABASE_URL=postgres://... npm test
 // Skipped when TEST_DATABASE_URL is not set.
+import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import postgres from "postgres";
 import Stripe from "stripe";
@@ -22,13 +23,14 @@ describe.skipIf(!url)("backend against Postgres", () => {
 
   beforeAll(async () => {
     process.env.DATABASE_URL = url;
+    execSync("npm run -s db:seed", { env: { ...process.env, DATABASE_URL: url }, stdio: "pipe" });
     repo = await import("../src/data/pg/repo-pg");
     admin = postgres(url!, { max: 1, onnotice: () => {} });
     await admin`delete from memberships where user_id = ${strangerId}`;
     await admin`select delete_library(id) from libraries where name = 'Fremder Betrieb'`;
-    await admin`insert into auth.users (id, email) values (${strangerId}, 'fremd@example.com') on conflict do nothing`;
+    await admin`insert into auth.users (id, email) values (${strangerId}, 'fremd-it@example.com') on conflict do nothing`;
     const libId = await repo.createLibrary(strangerId, { libraryName: "Fremder Betrieb", outletName: "Fremde Küche", ownerName: "Fremd" });
-    stranger = { ...owner, userId: strangerId, email: "fremd@example.com", libraryId: libId };
+    stranger = { ...owner, userId: strangerId, email: "fremd-it@example.com", libraryId: libId };
   });
   afterAll(async () => {
     await admin`select delete_library(id) from libraries where name = 'Fremder Betrieb'`;
@@ -104,6 +106,18 @@ describe.skipIf(!url)("backend against Postgres", () => {
       expect(await repo.closeCount(staff, ev)).toEqual({ counted: 1, changed: 1 });
       expect(await level("Butter")).toBe(butter + 500);
       expect(await level("Zucker")).toBe(sugar);
+    });
+  });
+
+  describe("prices", () => {
+    it("BUG-001: an editor can save and change a supplier price (with price history)", async () => {
+      const ing = await repo.saveIngredient(owner, { name: `Preis-Test ${Date.now()}`, shortName: null, internalUid: null, categoryId: null, baseUnit: "g", gramsPerPiece: null, mlPerGram: null });
+      const pack = await repo.savePackage(owner, { ingredientId: ing, parentPackageId: null, count: 1, quantityBase: 5000, label: "5 kg" });
+      const si = await repo.saveStockItem(owner, { ingredientId: ing, supplierId: sid("sup-frische"), packageId: pack, priceType: "per_unit", priceCents: 320, priceUnit: "g", priceUnitQuantity: 1000, isPreferred: true, supplierSku: null, gtin: null, weighted: false });
+      await repo.saveStockItem(owner, { id: si, ingredientId: ing, supplierId: sid("sup-frische"), packageId: pack, priceType: "per_unit", priceCents: 350, priceUnit: "g", priceUnitQuantity: 1000, isPreferred: true, supplierSku: null, gtin: null, weighted: false });
+      expect((await repo.getIngredient(owner, ing))!.costPerBaseCents).toBeCloseTo(0.35);
+      const history = await admin`select price_cents from stock_item_price_history where stock_item_id = ${si} order by valid_from`;
+      expect(history.map((h) => h.price_cents)).toEqual([320, 350]);
     });
   });
 

@@ -9,5 +9,5 @@ export default defineConfig({
       "server-only": fileURLToPath(new URL("./tests/empty.ts", import.meta.url)),
     },
   },
-  test: { fileParallelism: false },
+  test: { fileParallelism: false, exclude: ["e2e/**", "node_modules/**"] },
 });
