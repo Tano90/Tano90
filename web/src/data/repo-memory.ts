@@ -4,7 +4,8 @@ import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
-import { type CountBreakdown, countTotal, suggestPacks } from "@/domain/stock";
+import { type CountBreakdown, countTotal, stockReport, suggestPacks } from "@/domain/stock";
+import { addDays, startOfDay } from "@/lib/dates";
 import { type BaseUnit } from "@/domain/units";
 import { Forbidden, assertCanChangeMember, canAccessOutlet, canEditLibrary, canManageTeam } from "./session-rules";
 import { addMovement, db, newId, now } from "./store";
@@ -613,6 +614,66 @@ export async function recordWaste(s: Session, outletId: string, lines: { ingredi
   d.events.push(ev);
   for (const l of lines) addMovement(d, { eventId: ev.id, outletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase, countedBase: null, reason: l.reason });
   return ev.id;
+}
+
+/** Moves stock to another outlet, valued at the sender's average cost. */
+export async function recordTransfer(s: Session, fromOutletId: string, toOutletId: string, lines: { ingredientId: string; quantityBase: number }[]) {
+  assertOutlet(s, fromOutletId);
+  assertOutlet(s, toOutletId);
+  if (fromOutletId === toOutletId) throw new Error("Bitte ein anderes Outlet als Ziel wählen.");
+  if (!lines.length) throw new Error("Mindestens eine Position angeben.");
+  const d = db();
+  const ev: StockEvent = { id: newId("ev"), outletId: fromOutletId, type: "transfer", status: "closed", occurredAt: now(), counterpartOutletId: toOutletId, purchaseOrderId: null, note: null, createdBy: s.userId, closedAt: now() };
+  d.events.push(ev);
+  for (const l of lines) {
+    const out = addMovement(d, { eventId: ev.id, outletId: fromOutletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase, countedBase: null, reason: null });
+    addMovement(d, { eventId: ev.id, outletId: toOutletId, ingredientId: l.ingredientId, deltaBase: l.quantityBase, unitCostCents: out.unitCostCents, countedBase: null, reason: null });
+    if (!d.outletIngredients.some((x) => x.outletId === toOutletId && x.ingredientId === l.ingredientId)) {
+      d.outletIngredients.push({ outletId: toOutletId, ingredientId: l.ingredientId, parLevelBase: null, minLevelBase: null });
+    }
+  }
+  return ev.id;
+}
+
+/** Transfers that left or reached the outlet, newest first. */
+export async function listTransfers(s: Session, outletId: string) {
+  assertOutlet(s, outletId);
+  const d = db();
+  const name = (id: string | null) => d.outlets.find((o) => o.id === id)?.name ?? "–";
+  return d.events
+    .filter((e) => e.type === "transfer" && (e.outletId === outletId || e.counterpartOutletId === outletId))
+    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+    .map((e) => {
+      const outgoing = d.movements.filter((m) => m.eventId === e.id && m.outletId === e.outletId);
+      return {
+        id: e.id, occurredAt: e.occurredAt, direction: e.outletId === outletId ? ("out" as const) : ("in" as const),
+        otherOutlet: name(e.outletId === outletId ? e.counterpartOutletId : e.outletId),
+        by: d.members.find((m) => m.userId === e.createdBy)?.name ?? "–",
+        valueCents: outgoing.reduce((t, m) => t - m.deltaBase * m.unitCostCents, 0),
+        lines: outgoing.map((m) => {
+          const i = d.ingredients.find((x) => x.id === m.ingredientId);
+          return { id: m.id, ingredient: i?.name ?? "–", baseUnit: i?.baseUnit ?? ("g" as BaseUnit), quantityBase: -m.deltaBase };
+        }),
+      };
+    });
+}
+
+/** Stock report for the calendar days fromDay..toDay (inclusive) in the outlet's time zone. */
+export async function getStockReport(s: Session, outletId: string, fromDay: string, toDay: string) {
+  assertOutlet(s, outletId);
+  const d = db();
+  const tz = d.outlets.find((o) => o.id === outletId)?.timezone;
+  const events = new Map(d.events.filter((e) => e.status === "closed").map((e) => [e.id, e]));
+  const moves = d.movements.filter((m) => m.outletId === outletId && events.has(m.eventId)).map((m) => {
+    const e = events.get(m.eventId)!;
+    return { ingredientId: m.ingredientId, eventType: e.type, occurredAt: new Date(e.occurredAt).toISOString(), deltaBase: m.deltaBase, unitCostCents: m.unitCostCents };
+  });
+  return stockReport(moves, startOfDay(fromDay, tz), startOfDay(addDays(toDay, 1), tz))
+    .map((r) => {
+      const i = d.ingredients.find((x) => x.id === r.ingredientId)!;
+      return { ...r, name: i.name, baseUnit: i.baseUnit, category: d.categories.find((c) => c.id === i.categoryId)?.name ?? "–" };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
 
 export async function getOpenCount(s: Session, outletId: string) {

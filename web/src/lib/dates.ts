@@ -33,3 +33,20 @@ export function addDays(day: string, n: number): string {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
+
+/** The instant a calendar day starts in the given zone, as an ISO string (for range queries). */
+export function startOfDay(day: string, tz = DEFAULT_TZ): string {
+  const guess = new Date(`${day}T00:00:00Z`);
+  // Offset of the zone at that moment: format the UTC instant as local wall time and compare.
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })
+      .formatToParts(guess).filter((p) => p.type !== "literal").map((p) => [p.type, Number(p.value)]),
+  );
+  const wall = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  const offset = wall - guess.getTime();
+  const first = new Date(guess.getTime() - offset);
+  // Around a DST switch the offset at local midnight can differ from the one at UTC midnight: correct once.
+  const check = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).formatToParts(first);
+  const hour = Number(check.find((p) => p.type === "hour")!.value);
+  return new Date(first.getTime() - (hour === 23 ? -3600_000 : hour === 1 ? 3600_000 : 0)).toISOString();
+}

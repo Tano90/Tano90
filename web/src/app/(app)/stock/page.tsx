@@ -1,4 +1,4 @@
-import { ClipboardList, Trash2 } from "lucide-react";
+import { ArrowLeftRight, ClipboardList, FileBarChart, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { getOpenCount, getStock, listOutlets } from "@/data/repo";
@@ -27,6 +27,8 @@ export default async function StockPage({ searchParams }: { searchParams: Promis
           <>
             <Link href="/stock/count" className={linkCls}><ClipboardList aria-hidden className="size-4" /> {open ? "Inventur fortsetzen" : "Inventur"}</Link>
             <Link href="/stock/waste" className={linkCls}><Trash2 aria-hidden className="size-4" /> Schwund buchen</Link>
+            <Link href="/stock/transfer" className={linkCls}><ArrowLeftRight aria-hidden className="size-4" /> Umbuchen</Link>
+            <Link href="/stock/report" className={linkCls}><FileBarChart aria-hidden className="size-4" /> Bericht</Link>
           </>
         }
       />

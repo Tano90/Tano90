@@ -5,7 +5,8 @@ import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
-import { type CountBreakdown, countTotal, suggestPacks } from "@/domain/stock";
+import { type CountBreakdown, countTotal, stockReport, suggestPacks } from "@/domain/stock";
+import { addDays, startOfDay } from "@/lib/dates";
 import type { BaseUnit } from "@/domain/units";
 import type { Billing, IngredientFilter, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
 import { Forbidden, assertCanChangeMember, canEditLibrary, canManageTeam } from "../session-rules";
@@ -680,6 +681,82 @@ export async function recordWaste(s: Session, outletId: string, lines: { ingredi
     // unit cost is set to the current average by the trigger for outgoing movements
     await tx`insert into stock_movements ${tx(lines.map((l) => ({ stockEventId: ev.id, outletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase, reason: l.reason })))}`;
     return ev.id;
+  });
+}
+
+/** Moves stock to another outlet, valued at the sender's average cost. */
+export async function recordTransfer(s: Session, fromOutletId: string, toOutletId: string, lines: { ingredientId: string; quantityBase: number }[]) {
+  if (fromOutletId === toOutletId) throw new Error("Bitte ein anderes Outlet als Ziel wählen.");
+  if (!lines.length) throw new Error("Mindestens eine Position angeben.");
+  return run(s, async (tx) => {
+    const [access] = await tx<{ from: boolean; to: boolean }[]>`select can_access_outlet(${fromOutletId}) as from, can_access_outlet(${toOutletId}) as to`;
+    if (!access.from || !access.to) throw new Forbidden();
+    const [ev] = await tx<{ id: string }[]>`
+      insert into stock_events (library_id, outlet_id, type, counterpart_outlet_id, created_by, closed_at)
+      values (${s.libraryId}, ${fromOutletId}, 'transfer', ${toOutletId}, ${s.userId}, now()) returning id`;
+    for (const l of lines) {
+      // The trigger books the outgoing line at the sender's average; the receiver takes that value.
+      const [out] = await tx<{ unitCostCents: number }[]>`
+        insert into stock_movements ${tx({ stockEventId: ev.id, outletId: fromOutletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase })} returning unit_cost_cents`;
+      await tx`insert into stock_movements ${tx({ stockEventId: ev.id, outletId: toOutletId, ingredientId: l.ingredientId, deltaBase: l.quantityBase, unitCostCents: out.unitCostCents })}`;
+      await tx`insert into outlet_ingredients (outlet_id, ingredient_id) values (${toOutletId}, ${l.ingredientId}) on conflict do nothing`;
+    }
+    return ev.id;
+  });
+}
+
+/** Transfers that left or reached the outlet, newest first. */
+export async function listTransfers(s: Session, outletId: string) {
+  return run(s, async (tx) => {
+    const visible = await tx<{ id: string; occurredAt: string; outletId: string; counterpartOutletId: string; by: string | null }[]>`
+      select e.id, e.occurred_at, e.outlet_id, e.counterpart_outlet_id,
+        (select m.display_name from memberships m where m.user_id = e.created_by and m.library_id = e.library_id) as by
+      from stock_events e
+      where e.type = 'transfer' and (e.outlet_id = ${outletId} or e.counterpart_outlet_id = ${outletId})
+      order by e.occurred_at desc limit 100`;
+    if (!visible.length) return [];
+    // The other outlet's name and the sender's lines are read with the service role, but only for events
+    // the user may see: staff of the receiving outlet may not read the sending outlet itself.
+    const ids = visible.map((e) => e.id);
+    const names = new Map((await asService((sv) => sv<{ id: string; name: string }[]>`
+      select id, name from outlets where id = any(${[...new Set(visible.flatMap((e) => [e.outletId, e.counterpartOutletId]))]}::uuid[])`)).map((o) => [o.id, o.name]));
+    const events = visible.map((e) => ({ ...e, from: names.get(e.outletId) ?? "–", to: names.get(e.counterpartOutletId) ?? "–" }));
+    const moves = await asService((sv) => sv<{ id: string; eventId: string; ingredient: string; baseUnit: BaseUnit; deltaBase: number; unitCostCents: number }[]>`
+      select m.id, m.stock_event_id as event_id, i.name as ingredient, i.base_unit, m.delta_base, m.unit_cost_cents
+      from stock_movements m join stock_events e on e.id = m.stock_event_id join ingredients i on i.id = m.ingredient_id
+      where m.stock_event_id = any(${ids}::uuid[]) and m.outlet_id = e.outlet_id`);
+    return events.map((e) => {
+      const outgoing = moves.filter((m) => m.eventId === e.id);
+      const out = e.outletId === outletId;
+      return {
+        id: e.id, occurredAt: e.occurredAt, direction: out ? ("out" as const) : ("in" as const), otherOutlet: out ? e.to : e.from, by: e.by ?? "–",
+        valueCents: outgoing.reduce((t, m) => t - m.deltaBase * m.unitCostCents, 0),
+        lines: outgoing.map((m) => ({ id: m.id, ingredient: m.ingredient, baseUnit: m.baseUnit, quantityBase: -m.deltaBase })),
+      };
+    });
+  });
+}
+
+/** Stock report for the calendar days fromDay..toDay (inclusive) in the outlet's time zone. */
+export async function getStockReport(s: Session, outletId: string, fromDay: string, toDay: string) {
+  return run(s, async (tx) => {
+    const [outlet] = await tx<{ timezone: string }[]>`select timezone from outlets where id = ${outletId}`;
+    if (!outlet) return [];
+    const to = startOfDay(addDays(toDay, 1), outlet.timezone);
+    const moves = await tx<{ ingredientId: string; eventType: string; occurredAt: string; deltaBase: number; unitCostCents: number }[]>`
+      select m.ingredient_id, e.type as event_type, e.occurred_at, m.delta_base, m.unit_cost_cents
+      from stock_movements m join stock_events e on e.id = m.stock_event_id
+      where m.outlet_id = ${outletId} and e.status = 'closed' and e.occurred_at < ${to}`;
+    const ings = await tx<{ id: string; name: string; baseUnit: BaseUnit; category: string | null }[]>`
+      select i.id, i.name, i.base_unit, c.name as category from ingredients i left join categories c on c.id = i.category_id
+      where i.id = any(${[...new Set(moves.map((m) => m.ingredientId))]}::uuid[])`;
+    const byId = new Map(ings.map((i) => [i.id, i]));
+    return stockReport(moves.map((m) => ({ ...m, occurredAt: new Date(m.occurredAt).toISOString() })), startOfDay(fromDay, outlet.timezone), to)
+      .map((r) => {
+        const i = byId.get(r.ingredientId)!;
+        return { ...r, name: i.name, baseUnit: i.baseUnit, category: i.category ?? "–" };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, "de"));
   });
 }
 

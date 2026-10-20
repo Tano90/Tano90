@@ -31,3 +31,38 @@ export function countTotal(b: CountBreakdown, packages: { id: string; quantityBa
   }
   return total;
 }
+
+/** How a movement shows up in the stock report. */
+export type ReportColumn = "delivered" | "transfer" | "sold" | "waste" | "countDiff" | "other";
+const COLUMN: Record<string, ReportColumn> = { delivery: "delivered", transfer: "transfer", sale: "sold", waste: "waste", count: "countDiff" };
+
+export type ReportMovement = { ingredientId: string; eventType: string; occurredAt: string; deltaBase: number; unitCostCents: number };
+export type ReportRow = {
+  ingredientId: string;
+  openingBase: number;
+  closingBase: number;
+  /** Quantity and value per column within the period; outgoing quantities are negative. */
+  columns: Record<ReportColumn, { base: number; cents: number }>;
+  /** Book value at the end of the period. With a weighted average cost this is the sum of all booked values. */
+  closingCents: number;
+};
+
+/** Movements in [fromIso, toIso) per ingredient, with the stock before and after. Movements after toIso are ignored. */
+export function stockReport(moves: ReportMovement[], fromIso: string, toIso: string): ReportRow[] {
+  const rows = new Map<string, ReportRow>();
+  const empty = () => Object.fromEntries((["delivered", "transfer", "sold", "waste", "countDiff", "other"] as const).map((c) => [c, { base: 0, cents: 0 }])) as ReportRow["columns"];
+  for (const m of moves) {
+    if (m.occurredAt >= toIso) continue;
+    const row = rows.get(m.ingredientId) ?? { ingredientId: m.ingredientId, openingBase: 0, closingBase: 0, columns: empty(), closingCents: 0 };
+    rows.set(m.ingredientId, row);
+    row.closingBase += m.deltaBase;
+    row.closingCents += m.deltaBase * m.unitCostCents;
+    if (m.occurredAt < fromIso) row.openingBase += m.deltaBase;
+    else {
+      const col = row.columns[COLUMN[m.eventType] ?? "other"];
+      col.base += m.deltaBase;
+      col.cents += m.deltaBase * m.unitCostCents;
+    }
+  }
+  return [...rows.values()];
+}

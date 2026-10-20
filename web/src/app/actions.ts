@@ -431,6 +431,17 @@ export async function recordWaste(lines: z.input<typeof WasteSchema>) {
   return run(async (s) => repo.recordWaste(s, await currentOutletId(s), WasteSchema.parse(lines)), ["/stock", "/"]);
 }
 
+const TransferSchema = z.object({
+  toOutletId: z.string().min(1, "Bitte ein Ziel-Outlet wählen."),
+  lines: z.array(z.object({ ingredientId: z.string().min(1, "Bitte eine Zutat wählen."), quantityBase: positive })).min(1, "Mindestens eine Position angeben."),
+});
+export async function recordTransfer(input: z.input<typeof TransferSchema>) {
+  return run(async (s) => {
+    const t = TransferSchema.parse(input);
+    return repo.recordTransfer(s, await currentOutletId(s), t.toOutletId, t.lines);
+  }, ["/stock", "/"]);
+}
+
 // ---------------------------------------------------------------- settings
 
 export async function updateLibrary(input: { name: string; defaultVatBp: number; wageCentsPerHour: number | null }) {

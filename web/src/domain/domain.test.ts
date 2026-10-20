@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { rollUp } from "./allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, costRecipe, foodCostBp } from "./costing";
-import { applyMovement, suggestPacks } from "./stock";
+import { applyMovement, stockReport, suggestPacks } from "./stock";
+import { startOfDay } from "../lib/dates";
 import { billOfMaterials, summarizeMenu } from "./menus";
 import { toBase } from "./units";
 
@@ -119,5 +120,38 @@ describe("menus", () => {
     expect(Object.fromEntries(bom.lines.map((l) => [l.ingredientId, l.quantityBase]))).toEqual({ spinach: 337.5, onion: 0.9375 * 120 });
     expect(bom.unknown).toBe(0);
     expect(billOfMaterials(menu, ctx(), 10).lines.find((l) => l.ingredientId === "spinach")!.quantityBase).toBe(3375);
+  });
+});
+
+describe("stock report", () => {
+  const mv = (ingredientId: string, eventType: string, occurredAt: string, deltaBase: number, unitCostCents = 1) => ({ ingredientId, eventType, occurredAt, deltaBase, unitCostCents });
+  it("splits movements into opening, columns and closing; ignores what came after the period", () => {
+    const [row] = stockReport([
+      mv("a", "delivery", "2026-09-30T10:00:00Z", 1000),
+      mv("a", "delivery", "2026-10-02T10:00:00Z", 500, 2),
+      mv("a", "waste", "2026-10-03T10:00:00Z", -100, 1.5),
+      mv("a", "count", "2026-10-04T10:00:00Z", -50, 1.5),
+      mv("a", "transfer", "2026-10-05T10:00:00Z", -200, 1.5),
+      mv("a", "sale", "2026-11-02T10:00:00Z", -300, 1.5),
+    ], "2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z");
+    expect(row.openingBase).toBe(1000);
+    expect(row.closingBase).toBe(1150);
+    expect(row.columns.delivered).toEqual({ base: 500, cents: 1000 });
+    expect(row.columns.waste.base).toBe(-100);
+    expect(row.columns.countDiff.base).toBe(-50);
+    expect(row.columns.transfer.cents).toBe(-300);
+    expect(row.columns.sold.base).toBe(0);
+    expect(row.closingCents).toBe(1000 + 1000 - 150 - 75 - 300);
+  });
+});
+
+describe("dates", () => {
+  it("finds local midnight, also on daylight saving days", () => {
+    expect(startOfDay("2026-10-20", "Europe/Berlin")).toBe("2026-10-19T22:00:00.000Z");
+    expect(startOfDay("2026-12-01", "Europe/Berlin")).toBe("2026-11-30T23:00:00.000Z");
+    expect(startOfDay("2026-03-29", "Europe/Berlin")).toBe("2026-03-28T23:00:00.000Z"); // DST starts 02:00 that day
+    expect(startOfDay("2026-10-25", "Europe/Berlin")).toBe("2026-10-24T22:00:00.000Z"); // DST ends 03:00 that day
+    expect(startOfDay("2026-10-20", "America/New_York")).toBe("2026-10-20T04:00:00.000Z");
+    expect(startOfDay("2026-10-20", "UTC")).toBe("2026-10-20T00:00:00.000Z");
   });
 });
