@@ -1,6 +1,6 @@
 # Bugs
 
-Gefunden mit `/replica-test` am 2026-10-20 · Korrekturen: Commits in der Tabelle ·
+Gefunden mit `/replica-test` am 2026-10-20 (zwei Durchgänge) · Korrekturen: Commits in der Tabelle ·
 Chromium 1440 px, de-DE, Europe/Berlin · Produktions-Build auf Postgres 16 mit Demo-Seed.
 
 Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jetzt besteht.
@@ -13,6 +13,7 @@ Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jet
 | BUG-004 | S3 | Inventur offline: Fehlschlag wird nicht angezeigt, nicht wiederholt | behoben in 98af54f |
 | BUG-005 | S3 | Rezept: Neuladen/Schließen verwirft Änderungen ohne Nachfrage | behoben in 733fbb6 |
 | BUG-006 | S4 | „Nicht gefunden“ ohne Überschrift und ohne App-Rahmen | behoben in 7287375 |
+| BUG-007 | S4 | Team ändern ohne Recht meldet „nicht gefunden“ statt „keine Berechtigung“ | behoben in dcfc8dd |
 
 Offen: keine. S1 offen: keine.
 
@@ -115,10 +116,27 @@ Actual: Text ohne Überschrift (Screenreader finden keinen Seitentitel), Navigat
 Evidence: e2e `A01-N2`, `F01-N2`, `F02-N1` (keine Überschrift gefunden).
 Status: fixed in 7287375
 
+### BUG-007: Team ändern ohne Recht meldet „nicht gefunden“ statt „keine Berechtigung“
+
+- Severity: S4 (die Änderung wird korrekt abgelehnt, nur die Meldung führt in die Irre; die Oberfläche zeigt Nicht-Admins keine Knöpfe)
+- Flow / case: A03 / A03-N4
+- Screen: S25 (Server-Aktion)
+- Build: vor dcfc8dd · Postgres 16
+
+Steps
+1. Als Küchenleitung (`chef`) die Server-Aktion `updateMember` für ein anderes Mitglied aufrufen.
+
+Expected: „Dafür fehlt dir die Berechtigung.“
+Actual: „Teammitglied nicht gefunden.“
+Evidence: Integrationstest `team rules hold in the repo and in the database` schlug fehl.
+Suspected cause: Die Mitglieder werden mit `for update` gelesen; Postgres blendet dabei Zeilen aus, die die Update-Policy nicht erlaubt. Die Rollenprüfung kam erst danach.
+Status: fixed in dcfc8dd (Rolle wird vor dem Nachschlagen geprüft, in beiden Backends)
+
 ---
 
 ## Zu prüfen (nicht reproduziert oder nicht automatisierbar)
 
 - Ungespeicherte Änderungen beim Wechsel über die Seitennavigation (nicht nur Neuladen) gehen ohne Nachfrage verloren. Gilt auch für Zutaten- und Bestellformulare.
 - Supabase-Mails (Bestätigung, Magic Link, Reset) und Stripe (Checkout, abgelehnte Karte 4000 0000 0000 0002, Kündigung im Portal): nur mit deinen Konten prüfbar, Checkliste im Testplan (A02, A05).
-- Zwei Personen bearbeiten gleichzeitig dasselbe Rezept: der letzte Speichervorgang gewinnt ohne Hinweis. Nicht getestet, vermutlich zu erwarten.
+- Inventur in Gebinden: wird ein Gebinde gelöscht, während eine Inventur mit genau diesem Gebinde offen ist, lehnt der Server den Zwischenstand ab und das Zählblatt versucht es alle 5 Sekunden erneut („Speichern fehlgeschlagen“), bis neu geladen wird. Nicht reproduziert (dafür müsste jemand parallel ein Gebinde löschen).
+- Zwei Personen bearbeiten gleichzeitig dasselbe Menü oder Rezept: der letzte Speichervorgang gewinnt ohne Hinweis. Nicht getestet, vermutlich zu erwarten.
