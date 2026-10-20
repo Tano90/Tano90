@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
-  archiveIngredient, archiveStockItem, deletePackage, savePackage, saveIngredient, saveStockItem, setAllergens, setNutrition,
+  archiveIngredient, archiveStockItem, deletePackage, savePackage, saveIngredient, saveStockItem, setAllergens, setNutrition, setOutletCarried,
 } from "@/app/actions";
 import { Notice } from "@/components/app/notice";
 import { AllergenMatrix } from "@/components/ui/allergen-matrix";
@@ -33,6 +33,7 @@ type Detail = {
   verified: boolean;
   nutrition: Nutrition | null;
   usedIn: { id: string; name: string }[];
+  outlets: { id: string; name: string; carried: boolean; onHandBase: number }[];
 };
 
 type Props = { detail: Detail | null; categories: Opt[]; suppliers: Opt[]; canEdit: boolean; initialTab: string };
@@ -52,6 +53,7 @@ export function IngredientEditor({ detail, categories, suppliers, canEdit, initi
           {!isNew && <Tab value="packages" warning={missingPrice ? "kein Preis hinterlegt" : undefined}>Gebinde & Preise</Tab>}
           {!isNew && <Tab value="allergens" warning={!detail.verified ? "ungeprüft" : undefined}>Allergene</Tab>}
           {!isNew && <Tab value="nutrition">Nährwerte</Tab>}
+          {!isNew && detail.outlets.length > 1 && <Tab value="outlets">Outlets</Tab>}
           {!isNew && <Tab value="usage">Verwendung ({detail.usedIn.length})</Tab>}
         </TabList>
         <TabPanel value="general"><GeneralForm detail={detail} categories={categories} canEdit={canEdit} /></TabPanel>
@@ -60,6 +62,7 @@ export function IngredientEditor({ detail, categories, suppliers, canEdit, initi
             <TabPanel value="packages"><PackagesAndPrices detail={detail} suppliers={suppliers} canEdit={canEdit} /></TabPanel>
             <TabPanel value="allergens"><AllergenForm detail={detail} canEdit={canEdit} /></TabPanel>
             <TabPanel value="nutrition"><NutritionForm detail={detail} canEdit={canEdit} /></TabPanel>
+            <TabPanel value="outlets"><OutletsForm detail={detail} canEdit={canEdit} /></TabPanel>
             <TabPanel value="usage">
               {detail.usedIn.length === 0 ? (
                 <p className="text-text-muted">Diese Zutat steckt noch in keinem Rezept.</p>
@@ -525,3 +528,37 @@ function NutritionForm({ detail, canEdit }: { detail: Detail; canEdit: boolean }
   );
 }
 
+
+function OutletsForm({ detail, canEdit }: { detail: Detail; canEdit: boolean }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <fieldset disabled={!canEdit || pending} className="flex max-w-(--size-form-max) flex-col gap-3">
+      <legend className="mb-2 text-text-muted">Welche Outlets diese Zutat führen. Nur dort erscheint sie im Lager, in der Inventur und beim Bestellen.</legend>
+      {error && <p role="alert" className="text-danger">{error}</p>}
+      {detail.outlets.map((o) => (
+        <label key={o.id} className="flex items-center justify-between gap-3 rounded-sm border border-border bg-bg px-3 py-2">
+          <span className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={o.carried}
+              onChange={(e) => {
+                const carried = e.target.checked;
+                start(async () => {
+                  const res = await setOutletCarried(detail.ingredient.id, o.id, carried);
+                  if (!res.ok) return setError(res.error);
+                  setError(null);
+                  toast.success(carried ? `Wird in ${o.name} geführt` : `In ${o.name} ausgeblendet`);
+                  router.refresh();
+                });
+              }}
+            />
+            {o.name}
+          </span>
+          <span className="num text-xs text-text-muted">{o.carried ? `Bestand ${formatBase(o.onHandBase, detail.ingredient.baseUnit)}` : "nicht geführt"}</span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}

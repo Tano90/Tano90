@@ -267,7 +267,28 @@ export async function getIngredient(s: Session, id: string) {
       verified: ingredient.allergensVerified,
       nutrition: nutrition ?? null,
       usedIn,
+      outlets: await tx<{ id: string; name: string; carried: boolean; onHandBase: number }[]>`
+        select o.id, o.name, oi.ingredient_id is not null as carried, coalesce(sl.quantity_base, 0)::float8 as on_hand_base
+        from outlets o
+        left join outlet_ingredients oi on oi.outlet_id = o.id and oi.ingredient_id = ${id}
+        left join stock_levels sl on sl.outlet_id = o.id and sl.ingredient_id = ${id}
+        where o.library_id = ${s.libraryId} and o.archived_at is null and can_access_outlet(o.id)
+        order by o.created_at`,
     };
+  });
+}
+
+/** Whether an outlet carries an item (it shows in its stock, counts and orders). Hiding needs zero stock there. */
+export async function setOutletCarried(s: Session, ingredientId: string, outletId: string, carried: boolean) {
+  assertEditor(s);
+  await run(s, async (tx) => {
+    if (carried) {
+      await tx`insert into outlet_ingredients (outlet_id, ingredient_id) values (${outletId}, ${ingredientId}) on conflict do nothing`;
+      return;
+    }
+    const [lvl] = await tx<{ q: number }[]>`select quantity_base as q from stock_levels where outlet_id = ${outletId} and ingredient_id = ${ingredientId}`;
+    if (lvl && Math.abs(lvl.q) > 1e-9) throw new Error("In diesem Outlet liegt noch Bestand. Erst ausbuchen oder umbuchen, dann ausblenden.");
+    await tx`delete from outlet_ingredients where outlet_id = ${outletId} and ingredient_id = ${ingredientId}`;
   });
 }
 

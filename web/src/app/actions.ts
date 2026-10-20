@@ -304,6 +304,10 @@ export async function archiveSupplier(supplierId: string) {
   return run((s) => repo.archiveSupplier(s, supplierId), ["/suppliers", "/ingredients", "/recipes"]);
 }
 
+export async function setOutletCarried(ingredientId: string, outletId: string, carried: boolean) {
+  return run((s) => repo.setOutletCarried(s, ingredientId, outletId, z.boolean().parse(carried)), ["/stock", "/ingredients", "/orders"]);
+}
+
 // ---------------------------------------------------------------- recipes
 
 const RecipeSchema = z.object({

@@ -208,7 +208,7 @@ export async function listIngredients(_s: Session, f: IngredientFilter = {}) {
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
 
-export async function getIngredient(_s: Session, id: string) {
+export async function getIngredient(s: Session, id: string) {
   const d = db();
   const ingredient = d.ingredients.find((i) => i.id === id);
   if (!ingredient) return null;
@@ -228,7 +228,26 @@ export async function getIngredient(_s: Session, id: string) {
     verified: !!d.verified[id],
     nutrition: d.nutrition[id] ?? null,
     usedIn,
+    outlets: visible(d.outlets).filter((o) => canAccessOutlet(s, o.id)).map((o) => ({
+      id: o.id, name: o.name,
+      carried: d.outletIngredients.some((x) => x.outletId === o.id && x.ingredientId === id),
+      onHandBase: d.levels.find((l) => l.outletId === o.id && l.ingredientId === id)?.quantityBase ?? 0,
+    })),
   };
+}
+
+/** Whether an outlet carries an item (it shows in its stock, counts and orders). Hiding needs zero stock there. */
+export async function setOutletCarried(s: Session, ingredientId: string, outletId: string, carried: boolean) {
+  assertEditor(s);
+  assertOutlet(s, outletId);
+  const d = db();
+  const idx = d.outletIngredients.findIndex((x) => x.outletId === outletId && x.ingredientId === ingredientId);
+  if (carried && idx < 0) d.outletIngredients.push({ outletId, ingredientId, parLevelBase: null, minLevelBase: null });
+  if (!carried && idx >= 0) {
+    const onHand = d.levels.find((l) => l.outletId === outletId && l.ingredientId === ingredientId)?.quantityBase ?? 0;
+    if (Math.abs(onHand) > 1e-9) throw new Error("In diesem Outlet liegt noch Bestand. Erst ausbuchen oder umbuchen, dann ausblenden.");
+    d.outletIngredients.splice(idx, 1);
+  }
 }
 
 export type IngredientInput = Pick<Ingredient, "name" | "shortName" | "internalUid" | "categoryId" | "baseUnit" | "gramsPerPiece" | "mlPerGram"> & { id?: string };
