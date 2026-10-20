@@ -18,7 +18,7 @@ export const {
   getLibrary, getBilling, updateLibrary, listOutlets, createOutlet, listMembers, inviteMember, updateMember, removeMember, transferOwnership, listCategories,
   listIngredients, getIngredient, setOutletCarried, saveIngredient, archiveIngredient, savePackage, deletePackage, saveStockItem, archiveStockItem,
   setIngredientAllergens, setNutrition, listSuppliers, getSupplier, saveSupplier, archiveSupplier,
-  listRecipes, getRecipe, lineOptions, previewRecipe, saveRecipe, archiveRecipe, listMenus, getMenu, saveMenu, archiveMenu,
+  listRecipes, getRecipe, lineOptions, previewRecipe, saveRecipe, archiveRecipe, setRecipeOutletPrice, listMenus, getMenu, saveMenu, archiveMenu,
   getStock, getStockReport, listStockEvents, recordWaste, recordTransfer, listTransfers, setStockLevels, getOpenCount, startCount, saveCountLines, closeCount,
   listOrders, orderCounts, getOrder, orderableItems, saveOrderDraft, sendOrder, deleteOrderDraft, receiveDelivery,
   importSales, importSalesWithKey, listPosItems, linkPosItem, listApiKeys, createApiKey, revokeApiKey,

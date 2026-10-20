@@ -2,7 +2,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { listCategories, listRecipes } from "@/data/repo";
-import { canEditLibrary, requireSession } from "@/data/session";
+import { canEditLibrary, currentOutletId, requireSession } from "@/data/session";
 import { RecipeTable } from "./recipe-table";
 
 export const metadata = { title: "Rezepte" };
@@ -10,7 +10,7 @@ export const metadata = { title: "Rezepte" };
 export default async function RecipesPage({ searchParams }: { searchParams: Promise<{ q?: string; cat?: string }> }) {
   const sp = await searchParams;
   const s = await requireSession();
-  const [rows, categories] = await Promise.all([listRecipes(s, { q: sp.q, categoryId: sp.cat }), listCategories(s, "recipe")]);
+  const [rows, categories] = await Promise.all([listRecipes(s, { q: sp.q, categoryId: sp.cat, outletId: await currentOutletId(s) }), listCategories(s, "recipe")]);
   return (
     <>
       <PageHeader

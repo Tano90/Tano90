@@ -13,7 +13,7 @@ import { useUrlFilters } from "@/lib/use-url-filters";
 
 type Row = {
   id: string; name: string; category: string; productType: "finished" | "semi_finished"; perPortionCents: number; missing: number;
-  foodCostBp: number | null; targetFoodCostBp: number | null; sellPriceCents: number | null;
+  foodCostBp: number | null; targetFoodCostBp: number | null; sellPriceCents: number | null; outletPrice: boolean;
 };
 
 const COLUMNS: Column<Row>[] = [
@@ -36,7 +36,7 @@ const COLUMNS: Column<Row>[] = [
       </span>
     ),
   },
-  { key: "sell", header: "Verkaufspreis", align: "right", sortValue: (r) => r.sellPriceCents ?? -1, cell: (r) => (r.sellPriceCents ? formatCents(r.sellPriceCents) : "–") },
+  { key: "sell", header: "Verkaufspreis", align: "right", sortValue: (r) => r.sellPriceCents ?? -1, cell: (r) => (r.sellPriceCents ? <span className="inline-flex items-center gap-1">{r.outletPrice && <Badge>Outlet</Badge>}{formatCents(r.sellPriceCents)}</span> : "–") },
   {
     key: "fc", header: "Wareneinsatz", align: "right", sortValue: (r) => r.foodCostBp ?? -1,
     cell: (r) => {

@@ -21,6 +21,7 @@ export type Db = {
   nutrition: Record<string, Nutrition>;
   recipes: Recipe[];
   menus: Menu[];
+  outletPrices: { recipeId: string; outletId: string; sellPriceCents: number }[];
   posItems: PosItem[];
   sales: Sale[];
   apiKeys: ApiKey[];
@@ -84,7 +85,7 @@ export function seed(): Db {
       ...["Mittagstisch", "Abendkarte"].map((name, i) => ({ id: `cat-m${i}`, kind: "menu" as const, name })),
     ],
     ingredients: [], packages: [], suppliers: [], stockItems: [], allergens: {}, verified: {}, nutrition: {},
-    recipes: [], menus: [], posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
+    recipes: [], menus: [], outletPrices: [], posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
   };
 
   const sup = (id: string, companyName: string, orderEmail: string, leadTimeDays: number) =>

@@ -4,7 +4,7 @@ import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { type RecipeInput, archiveRecipe, previewRecipe, saveRecipe } from "@/app/actions";
+import { type RecipeInput, archiveRecipe, previewRecipe, saveRecipe, setRecipeOutletPrice } from "@/app/actions";
 import { Notice } from "@/components/app/notice";
 import { AllergenMatrix } from "@/components/ui/allergen-matrix";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ type Props = {
   categories: { value: string; label: string }[];
   defaultVatBp: number;
   canEdit: boolean;
+  outlets: { id: string; name: string }[];
+  outletPrices: { outletId: string; sellPriceCents: number }[];
 };
 
 const DEFAULT_UNIT: Record<BaseUnit, Unit> = { g: "g", ml: "ml", piece: "piece" };
@@ -40,7 +42,7 @@ const str = (n: number | null | undefined, f = 1) => (n == null ? "" : String(n 
 const pctToBp = (v: string) => (v.trim() ? Math.round((parseQuantity(v) ?? 0) * 100) : null);
 const cents = (n: number) => formatCents(Math.round(n));
 
-export function RecipeEditor({ recipe, usedIn, options, categories, defaultVatBp, canEdit }: Props) {
+export function RecipeEditor({ recipe, usedIn, options, categories, defaultVatBp, canEdit, outlets, outletPrices }: Props) {
   const router = useRouter();
   const byId = useMemo(() => new Map(options.map((o) => [o.value, o])), [options]);
   const isSub = (id: string | null) => !!id && byId.get(id)?.hint === "Unterrezept";
@@ -235,6 +237,19 @@ export function RecipeEditor({ recipe, usedIn, options, categories, defaultVatBp
                 <Input inputMode="decimal" className="num text-right" value={f.target} onChange={set("target")} />
               </Field>
             </fieldset>
+            {recipe && outlets.length > 1 && (
+              <OutletPrices
+                recipeId={recipe.id}
+                outlets={outlets}
+                prices={outletPrices}
+                perPortionCents={c?.perPortionCents ?? null}
+                vatBp={vatBp}
+                includesVat={f.includesVat}
+                defaultPrice={parseCents(f.sellPrice)}
+                target={target}
+                canEdit={canEdit}
+              />
+            )}
           </TabPanel>
           <TabPanel value="prep">
             <fieldset disabled={!canEdit} className="grid max-w-(--size-form-max) gap-4">
@@ -352,5 +367,59 @@ function ArchiveRecipe({ id, name }: { id: string; name: string }) {
         })
       }
     />
+  );
+}
+
+type OutletPricesProps = {
+  recipeId: string; outlets: { id: string; name: string }[]; prices: { outletId: string; sellPriceCents: number }[];
+  perPortionCents: number | null; vatBp: number; includesVat: boolean; defaultPrice: number | null; target: number | null; canEdit: boolean;
+};
+
+/** Own sell price per outlet (catering, airport branch ...). Empty = the recipe's price above. */
+function OutletPrices({ recipeId, outlets, prices, perPortionCents, vatBp, includesVat, defaultPrice, target, canEdit }: OutletPricesProps) {
+  const router = useRouter();
+  const [values, setValues] = useState<Record<string, string>>(
+    Object.fromEntries(prices.map((p) => [p.outletId, str(p.sellPriceCents, 100)])),
+  );
+  const [pending, start] = useTransition();
+  const save = (o: { id: string; name: string }) =>
+    start(async () => {
+      const raw = values[o.id] ?? "";
+      const cents = raw.trim() ? parseCents(raw) : null;
+      const res = await setRecipeOutletPrice(recipeId, o.id, cents);
+      if (!res.ok) return void toast.error(res.error);
+      toast.success(cents === null ? `${o.name}: Standardpreis` : `${o.name}: eigener Preis gespeichert`);
+      router.refresh();
+    });
+  return (
+    <section aria-labelledby="outlet-prices" className="mt-6 flex max-w-(--size-form-max) flex-col gap-2">
+      <h3 id="outlet-prices" className="font-semibold">Preis pro Outlet</h3>
+      <p className="text-text-muted">Leer lassen, wenn das Outlet den Preis oben verwendet. {includesVat ? "Brutto" : "Netto"}, wie oben.</p>
+      <ul className="flex flex-col gap-2">
+        {outlets.map((o) => {
+          const price = (values[o.id] ?? "").trim() ? parseCents(values[o.id]) : defaultPrice;
+          const net = price ? (includesVat ? price / (1 + vatBp / 10000) : price) : null;
+          const fc = net && perPortionCents !== null ? Math.round((perPortionCents / net) * 10000) : null;
+          const over = fc !== null && target !== null && fc > target;
+          const saved = prices.find((p) => p.outletId === o.id);
+          return (
+            <li key={o.id} className="grid items-center gap-2 sm:grid-cols-[1fr_10rem_6rem_auto]">
+              <span>{o.name}{saved && <span className="ml-2 text-xs text-text-muted">eigener Preis</span>}</span>
+              <MoneyInput
+                aria-label={`Verkaufspreis ${o.name}`}
+                placeholder={defaultPrice ? str(defaultPrice, 100) : "–"}
+                value={values[o.id] ?? ""}
+                disabled={!canEdit}
+                onValueChange={(v) => setValues({ ...values, [o.id]: v })}
+              />
+              <span className={cn("num text-right", fc === null ? "text-text-muted" : over ? "text-danger" : "text-success")} aria-label={`Wareneinsatz ${o.name}`}>
+                {fc === null ? "–" : formatBp(fc)}
+              </span>
+              {canEdit && <Button variant="secondary" size="sm" loading={pending} onClick={() => save(o)}>Speichern</Button>}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

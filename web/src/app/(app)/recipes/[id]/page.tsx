@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/app/page-header";
-import { getLibrary, getRecipe, lineOptions, listCategories } from "@/data/repo";
+import { getLibrary, getRecipe, lineOptions, listCategories, listOutlets } from "@/data/repo";
 import { canEditLibrary, requireSession } from "@/data/session";
 import { RecipeEditor } from "../recipe-editor";
 
@@ -10,7 +10,7 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
   const isNew = id === "new";
   const found = isNew ? null : await getRecipe(s, id);
   if (!isNew && (!found || found.recipe.archivedAt)) notFound();
-  const [options, categories, library] = await Promise.all([lineOptions(s, isNew ? undefined : id), listCategories(s, "recipe"), getLibrary(s)]);
+  const [options, categories, library, outlets] = await Promise.all([lineOptions(s, isNew ? undefined : id), listCategories(s, "recipe"), getLibrary(s), listOutlets(s)]);
   return (
     <>
       <PageHeader title={found?.recipe.name ?? "Neues Rezept"} back={{ href: "/recipes", label: "Rezepte" }} />
@@ -21,6 +21,8 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
         categories={categories.map((c) => ({ value: c.id, label: c.name }))}
         defaultVatBp={library.defaultVatBp}
         canEdit={canEditLibrary(s.role)}
+        outlets={outlets.filter((o) => !o.archivedAt).map((o) => ({ id: o.id, name: o.name }))}
+        outletPrices={found?.outletPrices ?? []}
       />
     </>
   );

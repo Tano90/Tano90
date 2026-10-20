@@ -449,7 +449,8 @@ export async function archiveSupplier(s: Session, id: string): Promise<{ pricesR
 
 // ---------------------------------------------------------------- recipes
 
-export async function listRecipes(s: Session, f: { q?: string; categoryId?: string } = {}) {
+/** `outletId`: show that outlet's own sell price where one is set. */
+export async function listRecipes(s: Session, f: { q?: string; categoryId?: string; outletId?: string } = {}) {
   return run(s, async (tx) => {
     const data = await loadCosting(tx, s.libraryId);
     const [lib] = await tx<{ defaultVatBp: number }[]>`select default_vat_bp from libraries where id = ${s.libraryId}`;
@@ -457,10 +458,14 @@ export async function listRecipes(s: Session, f: { q?: string; categoryId?: stri
     const ctx = contextOf(data);
     const memo = new Map<string, RecipeCost>();
     const q = f.q?.trim().toLowerCase();
+    const own = new Map(f.outletId && isUuid(f.outletId)
+      ? (await tx<{ recipeId: string; sellPriceCents: number }[]>`select recipe_id, sell_price_cents from recipe_outlet_prices where outlet_id = ${f.outletId}`).map((p) => [p.recipeId, p.sellPriceCents])
+      : []);
     return [...data.recipeBy.values()]
       .filter((r) => !r.archivedAt && (!q || r.name.toLowerCase().includes(q)) && (!f.categoryId || r.categoryId === f.categoryId))
       .map((r) => {
         const c = costRecipe(toCostRecipe(r), ctx, memo);
+        const sell = own.get(r.id) ?? r.sellPriceCents;
         return {
           id: r.id,
           name: r.name,
@@ -468,9 +473,10 @@ export async function listRecipes(s: Session, f: { q?: string; categoryId?: stri
           productType: r.productType,
           perPortionCents: c.perPortionCents,
           missing: c.missing,
-          foodCostBp: foodCostBp(c.perPortionCents, r.sellPriceCents, r.sellPriceIncludesVat, r.vatBp ?? lib.defaultVatBp),
+          foodCostBp: foodCostBp(c.perPortionCents, sell, r.sellPriceIncludesVat, r.vatBp ?? lib.defaultVatBp),
           targetFoodCostBp: r.targetFoodCostBp,
-          sellPriceCents: r.sellPriceCents,
+          sellPriceCents: sell,
+          outletPrice: own.has(r.id),
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name, "de"));
@@ -487,7 +493,8 @@ export async function getRecipe(s: Session, id: string) {
     const usedIn = await tx<{ id: string; name: string }[]>`
       select distinct r.id, r.name from recipes r join recipe_lines rl on rl.recipe_id = r.id where rl.sub_recipe_id = ${id} and r.archived_at is null order by r.name`;
     const recipe: Recipe = { ...row, lines, extraAllergens: Object.fromEntries(extra.map((e) => [e.allergen, e.status])) as AllergenRow };
-    return { recipe, usedIn };
+    const outletPrices = await tx<{ outletId: string; sellPriceCents: number }[]>`select outlet_id, sell_price_cents from recipe_outlet_prices where recipe_id = ${id}`;
+    return { recipe, usedIn, outletPrices };
   });
 }
 
@@ -549,6 +556,20 @@ export async function saveRecipe(s: Session, draft: RecipeDraft): Promise<string
     const extra = Object.entries(draft.extraAllergens).map(([allergen, status]) => ({ recipeId: id, allergen, status }));
     if (extra.length) await tx`insert into recipe_extra_allergens ${tx(extra)}`;
     return id!;
+  });
+}
+
+/** An outlet's own sell price for a recipe; null goes back to the recipe's price. */
+export async function setRecipeOutletPrice(s: Session, recipeId: string, outletId: string, sellPriceCents: number | null) {
+  assertEditor(s);
+  if (!isUuid(recipeId) || !isUuid(outletId)) throw new Error("Rezept nicht gefunden.");
+  await run(s, async (tx) => {
+    const [o] = await tx`select 1 from outlets where id = ${outletId} and library_id = ${s.libraryId} and archived_at is null`;
+    if (!o) throw new Error("Outlet nicht gefunden.");
+    if (sellPriceCents === null) await tx`delete from recipe_outlet_prices where recipe_id = ${recipeId} and outlet_id = ${outletId}`;
+    else await tx`
+      insert into recipe_outlet_prices (recipe_id, outlet_id, sell_price_cents) values (${recipeId}, ${outletId}, ${sellPriceCents})
+      on conflict (recipe_id, outlet_id) do update set sell_price_cents = excluded.sell_price_cents`;
   });
 }
 

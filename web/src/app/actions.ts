@@ -334,6 +334,9 @@ export async function previewRecipe(input: RecipeInput) {
 export async function saveRecipe(input: RecipeInput) {
   return run((s) => repo.saveRecipe(s, RecipeSchema.parse(input)), ["/recipes", "/ingredients"]);
 }
+export async function setRecipeOutletPrice(recipeId: string, outletId: string, sellPriceCents: number | null) {
+  return run((s) => repo.setRecipeOutletPrice(s, recipeId, outletId, cents.nullable().parse(sellPriceCents)), ["/recipes", "/menus"]);
+}
 export async function archiveRecipe(recipeId: string) {
   return run((s) => repo.archiveRecipe(s, recipeId), ["/recipes"]);
 }

@@ -400,7 +400,8 @@ export async function archiveSupplier(s: Session, id: string): Promise<{ pricesR
 
 // ---------------------------------------------------------------- recipes
 
-export async function listRecipes(_s: Session, f: { q?: string; categoryId?: string } = {}) {
+/** `outletId`: show that outlet's own sell price where one is set. */
+export async function listRecipes(_s: Session, f: { q?: string; categoryId?: string; outletId?: string } = {}) {
   const d = db();
   const q = f.q?.trim().toLowerCase();
   const ctx = costContext();
@@ -410,6 +411,8 @@ export async function listRecipes(_s: Session, f: { q?: string; categoryId?: str
     .filter((r) => !f.categoryId || r.categoryId === f.categoryId)
     .map((r) => {
       const c = costRecipe(toCostRecipe(r), ctx, memo);
+      const own = f.outletId ? d.outletPrices.find((p) => p.recipeId === r.id && p.outletId === f.outletId) : undefined;
+      const sell = own?.sellPriceCents ?? r.sellPriceCents;
       return {
         id: r.id,
         name: r.name,
@@ -417,9 +420,10 @@ export async function listRecipes(_s: Session, f: { q?: string; categoryId?: str
         productType: r.productType,
         perPortionCents: c.perPortionCents,
         missing: c.missing,
-        foodCostBp: foodCostBp(c.perPortionCents, r.sellPriceCents, r.sellPriceIncludesVat, r.vatBp ?? d.library.defaultVatBp),
+        foodCostBp: foodCostBp(c.perPortionCents, sell, r.sellPriceIncludesVat, r.vatBp ?? d.library.defaultVatBp),
         targetFoodCostBp: r.targetFoodCostBp,
-        sellPriceCents: r.sellPriceCents,
+        sellPriceCents: sell,
+        outletPrice: !!own,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
@@ -429,7 +433,21 @@ export async function getRecipe(_s: Session, id: string) {
   const d = db();
   const recipe = d.recipes.find((r) => r.id === id);
   if (!recipe) return null;
-  return { recipe, usedIn: d.recipes.filter((r) => !r.archivedAt && r.lines.some((l) => l.subRecipeId === id)).map((r) => ({ id: r.id, name: r.name })) };
+  return {
+    recipe,
+    usedIn: d.recipes.filter((r) => !r.archivedAt && r.lines.some((l) => l.subRecipeId === id)).map((r) => ({ id: r.id, name: r.name })),
+    outletPrices: d.outletPrices.filter((p) => p.recipeId === id).map(({ outletId, sellPriceCents }) => ({ outletId, sellPriceCents })),
+  };
+}
+
+/** An outlet's own sell price for a recipe; null goes back to the recipe's price. */
+export async function setRecipeOutletPrice(s: Session, recipeId: string, outletId: string, sellPriceCents: number | null) {
+  assertEditor(s);
+  const d = db();
+  if (!d.recipes.some((r) => r.id === recipeId && !r.archivedAt)) throw new Error("Rezept nicht gefunden.");
+  if (!visible(d.outlets).some((o) => o.id === outletId)) throw new Error("Outlet nicht gefunden.");
+  d.outletPrices = d.outletPrices.filter((p) => !(p.recipeId === recipeId && p.outletId === outletId));
+  if (sellPriceCents !== null) d.outletPrices.push({ recipeId, outletId, sellPriceCents });
 }
 
 /** Options for recipe lines: ingredients plus semi-finished recipes (never the recipe itself). */
