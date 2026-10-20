@@ -1,6 +1,6 @@
 # Bugs
 
-Gefunden mit `/replica-test` am 2026-10-20 (zwei Durchgänge) · Korrekturen: Commits in der Tabelle ·
+Gefunden mit `/replica-test` am 2026-10-20 (drei Durchgänge; BUG-008 bis 011 schon beim Bauen von S18/S20/S21 reproduziert und mit Test behoben) · Korrekturen: Commits in der Tabelle ·
 Chromium 1440 px, de-DE, Europe/Berlin · Produktions-Build auf Postgres 16 mit Demo-Seed.
 
 Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jetzt besteht.
@@ -14,6 +14,12 @@ Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jet
 | BUG-005 | S3 | Rezept: Neuladen/Schließen verwirft Änderungen ohne Nachfrage | behoben in 733fbb6 |
 | BUG-006 | S4 | „Nicht gefunden“ ohne Überschrift und ohne App-Rahmen | behoben in 7287375 |
 | BUG-007 | S4 | Team ändern ohne Recht meldet „nicht gefunden“ statt „keine Berechtigung“ | behoben in dcfc8dd |
+| BUG-008 | S2 | Empfangendes Outlet sieht eingegangene Umbuchungen nicht (Liste und Lagerbericht) | behoben in 161c3b1 |
+| BUG-009 | S4 | Kennzahlen zeigen „−0,00 €“ | behoben in 161c3b1 |
+| BUG-010 | S4 | CSV-Export heißt „download“ statt „lagerbericht-…csv“ | behoben in 161c3b1 |
+| BUG-011 | S3 | Datei, die vor dem fertigen Laden gewählt wird, wird still verworfen | behoben in b987727 |
+| BUG-012 | S3 | Kassen-CSV über 1 MB scheitert, obwohl 5 MB angeboten werden | behoben in 6d2a0f3 |
+| BUG-013 | S3 | CSV-Export führt Zutatennamen mit `=` in Excel als Formel aus (CSV-Injektion) | behoben in 6d2a0f3 |
 
 Offen: keine. S1 offen: keine.
 
@@ -132,11 +138,79 @@ Evidence: Integrationstest `team rules hold in the repo and in the database` sch
 Suspected cause: Die Mitglieder werden mit `for update` gelesen; Postgres blendet dabei Zeilen aus, die die Update-Policy nicht erlaubt. Die Rollenprüfung kam erst danach.
 Status: fixed in dcfc8dd (Rolle wird vor dem Nachschlagen geprüft, in beiden Backends)
 
+### BUG-008: Empfangendes Outlet sieht eingegangene Umbuchungen nicht
+
+- Severity: S2 (Umbuchung beim Empfänger unsichtbar, Lagerbericht des Empfängers ohne Zugang; keine Umgehung für Team-Konten)
+- Flow / case: F10 / F10-E1
+- Screen: S18, S20
+- Build: vor 161c3b1 · Postgres 16
+
+Steps
+1. Als Inhaber 2 kg Zucker von Küche Mitte in die Zentralküche umbuchen.
+2. Als Team-Konto, das nur der Zentralküche zugeordnet ist, /stock/transfer und /stock/report öffnen.
+
+Expected: „Von Küche Mitte · 2 kg Zucker“, im Bericht +2 kg in „Umbuchung“.
+Actual: „Noch nichts umgebucht“; im Bericht fehlt der Zugang.
+Evidence: e2e `F10-E1` schlug fehl.
+Suspected cause: Das Ereignis gehört dem sendenden Outlet, die RLS-Regel ließ nur dessen Team lesen; zusätzlich durfte das Team den Namen des sendenden Outlets nicht lesen.
+Status: fixed in 161c3b1 (Migration `0007_transfer_counterpart_read.sql`, Outlet-Namen über den Dienstzugang nur für sichtbare Ereignisse)
+
+### BUG-009: „−0,00 €“ in Kennzahlen
+
+- Severity: S4 · Flow / case: S20-E1 · Screen: S20 (betraf jede Betragsanzeige)
+Steps: Lagerbericht für Januar 2020 (keine Bewegungen) öffnen.
+Expected: 0,00 €. Actual: „-0,00 €“ bei Verkauf und Schwund.
+Evidence: Screenshot im ersten Lauf von `S20-E1`, Test prüft jetzt auf „-0,00“.
+Status: fixed in 161c3b1 (`formatCents` normalisiert −0)
+
+### BUG-010: CSV-Export ohne Dateinamen
+
+- Severity: S4 · Flow / case: S20-H1 · Screen: S20
+Steps: „Als CSV exportieren“.
+Expected: `lagerbericht-kueche-mitte-2026-10-14-2026-10-20.csv`. Actual: `download`.
+Evidence: e2e `S20-H1` (`suggestedFilename`).
+Status: fixed in 161c3b1 (Link vor dem Klick ins Dokument hängen, Umlaute im Namen ersetzen)
+
+### BUG-011: Vor dem Laden gewählte Datei wird verworfen
+
+- Severity: S3 (Import passiert nicht und nichts sagt es; erneut wählen hilft)
+- Flow / case: F11 / F11-H2, F11-E1, F11-E2 · Screen: S21
+Steps
+1. /analytics/pos öffnen und sofort eine CSV-Datei wählen (langsame Verbindung oder Skript).
+Expected: Import läuft. Actual: nichts passiert, keine Meldung, kein Verkauf gespeichert.
+Evidence: e2e F11-H2/E1/E2 rot und zeitabhängig; Datenbank ohne die Belegpositionen.
+Suspected cause: Das `change`-Ereignis kam vor der Hydrierung, React hörte noch nicht zu.
+Status: fixed in b987727 (`FileUpload` übernimmt beim Einhängen eine schon gewählte Datei)
+
+### BUG-012: Kassen-CSV über 1 MB scheitert
+
+- Severity: S3 (Umgehung: Datei teilen)
+- Flow / case: F11 / F11-E4 · Screen: S21
+Steps: Eine CSV mit 24 000 Verkäufen (1,5 MB) hochladen.
+Expected: alle übernommen (Seite nennt max. 5 MB). Actual: Server „Body exceeded 1 MB limit“, keine Verkäufe übernommen.
+Evidence: e2e `F11-E4`, Serverlog.
+Suspected cause: Server-Aktionen nehmen höchstens 1 MB; Vercel begrenzt Anfragen außerdem auf 4,5 MB, ein höheres Limit allein hätte dort nicht geholfen.
+Status: fixed in 6d2a0f3 (Browser sendet die Datei in Teilen von etwa 700 KB mit Kopfzeile; Zeilennummern in Fehlern bleiben die der Datei)
+
+### BUG-013: CSV-Injektion im Lagerbericht-Export
+
+- Severity: S3 (Sicherheit: ein Teammitglied mit Rezeptrechten kann über einen Zutatennamen eine Formel in die Excel-Datei des Inhabers schleusen)
+- Flow / case: S20 / S20-N1 · Screen: S20
+Steps
+1. Zutat umbenennen in `=HYPERLINK("http://example.com","x")`.
+2. Lagerbericht als CSV exportieren und in Excel öffnen.
+Expected: Name als Text. Actual: Zelle beginnt mit `=`, Excel führt sie als Formel aus.
+Evidence: e2e `S20-N1`.
+Status: fixed in 6d2a0f3 (Textzellen, die mit `= + - @` beginnen, bekommen ein `'` vorangestellt)
+
 ---
 
 ## Zu prüfen (nicht reproduziert oder nicht automatisierbar)
 
 - Ungespeicherte Änderungen beim Wechsel über die Seitennavigation (nicht nur Neuladen) gehen ohne Nachfrage verloren. Gilt auch für Zutaten- und Bestellformulare.
 - Supabase-Mails (Bestätigung, Magic Link, Reset) und Stripe (Checkout, abgelehnte Karte 4000 0000 0000 0002, Kündigung im Portal): nur mit deinen Konten prüfbar, Checkliste im Testplan (A02, A05).
+- Kasse: Stornos (negative Mengen) werden als Fehlerzeile abgelehnt, nicht verarbeitet. Bewusst noch nicht gebaut; Kassen, die Stornos als eigene Zeilen exportieren, brauchen das.
+- Umbuchung aus einem Outlet mit negativem Bestand: der Durchschnittspreis ist dann 0, der Empfänger bekommt die Ware ohne Wert. Nicht reproduziert im Seed.
+- Kassen-API: Ratenlimit greift pro Schlüssel (60/min, geprüft); ein Angreifer ohne Schlüssel bekommt 401, aber auch dafür zählt das Limit nur pro vermutetem Schlüssel. Ein IP-basiertes Limit fehlt.
 - Inventur in Gebinden: wird ein Gebinde gelöscht, während eine Inventur mit genau diesem Gebinde offen ist, lehnt der Server den Zwischenstand ab und das Zählblatt versucht es alle 5 Sekunden erneut („Speichern fehlgeschlagen“), bis neu geladen wird. Nicht reproduziert (dafür müsste jemand parallel ein Gebinde löschen).
 - Zwei Personen bearbeiten gleichzeitig dasselbe Menü oder Rezept: der letzte Speichervorgang gewinnt ohne Hinweis. Nicht getestet, vermutlich zu erwarten.

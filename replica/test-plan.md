@@ -8,7 +8,7 @@ Automatisiert: `cd web && E2E_DATABASE_URL=… npm run e2e` (Specs in `web/e2e/`
 schlägt fehl bei Konsolenfehlern, Seitenfehlern und jeder 5xx-Antwort; Screens werden mit axe (WCAG 2.2 AA)
 geprüft. Datenbank-Integrationstests: `TEST_DATABASE_URL=… npm test`.
 
-Lauf vom 2026-10-20 (2. Durchgang, nach Menüs, Team, Gebinde-Inventur): **101/101 E2E bestanden**, **37/37 Unit- und Integrationstests**. Neu in diesem Durchgang 34 Fälle; im ersten Lauf 5 rot: 1 echter Bug (BUG-007, behoben), 4 Fehler in den Tests selbst. Erster Durchgang: 61 Fälle, 6 Bugs, alle behoben. Ergebnis-Spalte: ✅ bestanden · ❌ fehlgeschlagen (→ `bugs.md`) · ⏸ blockiert · 🖐 manuell offen
+Lauf vom 2026-10-20 (3. Durchgang, nach Umbuchung, Lagerbericht, Bestandsgrenzen, Kasse): **127/127 E2E bestanden**, **45/45 Unit- und Integrationstests**. Neu seit dem 2. Durchgang 26 E2E-Fälle und 8 Unit-/Integrationstests; 6 Bugs (BUG-008 bis 013), alle behoben. 2. Durchgang: 34 Fälle, BUG-007. Erster Durchgang: 61 Fälle, 6 Bugs, alle behoben. Ergebnis-Spalte: ✅ bestanden · ❌ fehlgeschlagen (→ `bugs.md`) · ⏸ blockiert · 🖐 manuell offen
 
 | case | flow | type | steps | expected | auto | result |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -69,8 +69,33 @@ Lauf vom 2026-10-20 (2. Durchgang, nach Menüs, Team, Gebinde-Inventur): **101/1
 | F08-N1 | | negativ: fremdes Gebinde | Quark-Gebinde für Butter senden; ungültiges JSON in der DB | abgelehnt | int + e2e | ✅ |
 | F09-H1 | Schwund | happy | 1,5 kg Quark „Verdorben“ | Bestand −1,5 kg, Eintrag in der Übersicht | e2e | ✅ (zuerst ❌ → BUG-002) |
 | F09-N1 | | negativ: ohne Grund | Grund leer lassen | Fehlermeldung, nichts gebucht | e2e | ✅ (zuerst ❌ → BUG-002) |
-| F10 | Umbuchung | – | – | – | – | ⏸ nicht gebaut |
-| F11 | Kassenverkäufe | – | – | – | – | ⏸ nicht gebaut |
+| F10-H1 | Umbuchung | happy | 1,5 kg Butter → Zentralküche | Bestand −/+1,5 kg, Empfänger übernimmt den Durchschnittspreis, Eintrag „An Zentralküche“ | e2e | ✅ |
+| F10-E1 | | edge: Empfänger mit nur seinem Outlet | Team der Zentralküche öffnet Umbuchung und Bericht | „Von Küche Mitte · 2 kg Zucker“, Bericht +2 kg | e2e | ✅ (zuerst ❌ → BUG-008) |
+| F10-E2 | | edge: mehr als im Bestand, 390 px | 999 kg Zucker | Hinweis „Mehr als im Bestand“, kein Querscrollen | e2e | ✅ |
+| F10-E3 | | edge: Doppelklick | Umbuchen doppelt klicken | genau eine Buchung | e2e | ✅ |
+| F10-N1 | | negativ: leer / ohne Menge | ohne Position, ohne Menge | Meldung, nichts gebucht | e2e | ✅ |
+| S20-H1 | Lagerbericht | happy | „Letzte 7 Tage“, CSV | Spalten je Bewegungsart, Summen, Datei `lagerbericht-…csv` | e2e | ✅ (zuerst ❌ → BUG-010) |
+| S20-E1 | | edge: leerer Zeitraum, vertauschte Daten | 31.01.–01.01.2020 | getauscht, „Keine Bewegungen“, Export aus, keine „−0,00 €“ | e2e | ✅ (zuerst ❌ → BUG-009) |
+| S20-E2 | | edge: Unsinn in der URL, 390 px | ?from=gestern | Standardzeitraum, kein Querscrollen | e2e | ✅ |
+| S20-E3 | | edge: Team-Konto | Bericht öffnen | nur eigenes Outlet | e2e | ✅ |
+| S20-N1 | | negativ: Formel im Namen | Zutat „=HYPERLINK(…)“, exportieren | Zelle als Text | e2e | ✅ (zuerst ❌ → BUG-013) |
+| X-TZ3 | | edge: Tagesgrenzen | Mitternacht Berlin inkl. Zeitumstellung, New York | richtiger UTC-Zeitpunkt | unit | ✅ |
+| S16-H1 | Mindest-/Zielbestand | happy | Butter 3 / 7,5 kg | Spalte „3 kg / 7,5 kg“, „unter Minimum“ | e2e | ✅ |
+| S16-E1 | | edge: leeren | Mindestbestand leeren | Markierung weg | e2e | ✅ |
+| S16-N1 | | negativ: Minimum über Ziel | 9 / 5 | Meldung | e2e | ✅ |
+| S16-N2 | | negativ: keine Zahl | „1,2,3“ | Meldung | e2e | ✅ |
+| F11-H1 | Kassenverkäufe | happy: verknüpfen | Apfelkuchen Stück → Rezept | 8 wartende Verkäufe abgebucht, Butter −133,3 g, im Bericht unter „Verkauf“ | e2e | ✅ |
+| F11-H2 | | happy: CSV-Import | 2 Zeilen (1 verknüpft, 1 neu), dann dieselbe Datei | 2 übernommen, 1 abgebucht, neuer Artikel wartet; zweites Mal 0 übernommen, Bestand unverändert | e2e | ✅ (zuerst ❌ → BUG-011) |
+| F11-H3 | | happy: API | Schlüssel erstellen, senden, wiederholen, widerrufen | 200/imported 1, dann duplicates 1, nach Widerruf 401; nur der Hash gespeichert | e2e | ✅ |
+| F11-E1 | | edge: fehlerhafte Zeilen | „zwei“, −1 | Fehler je Zeile, Gültiges übernommen | e2e | ✅ |
+| F11-E2 | | edge: falsche Datei | ohne Pflichtspalten | „Spalte fehlt: …“ | e2e | ✅ |
+| F11-E3 | | edge: ignorieren, Filter | Espresso ignorieren | Status „ignoriert“, Filter blendet aus | e2e | ✅ |
+| F11-E4 | | edge: großer Export | 24 000 Zeilen, 1,5 MB | alle übernommen | e2e | ✅ (zuerst ❌ → BUG-012) |
+| F11-E5 | | edge: Zeitzonen und Formate | deutsch/englisch, BOM, Anführungszeichen, Zeitumstellung, Leerzeilen | richtige Werte und Zeilennummern | unit | ✅ |
+| F11-E6 | | edge: zwei Importe gleichzeitig | parallel, überlappend | jeder Verkauf genau einmal abgebucht | int | ✅ |
+| F11-N1 | | negativ: Team-Konto, kein Schlüssel | Seite / API ohne Auth | Zuordnen ja, keine Schlüssel; 401 | e2e | ✅ |
+| F11-N2 | | negativ: API-Grenzen | kaputtes JSON, >60/min, fremdes Outlet | 400, 429, Schlüssel bucht nur ins eigene Outlet | e2e | ✅ |
+| F11-N3 | | negativ: fremdes Outlet | Team-Konto importiert in Zentralküche | abgelehnt | int | ✅ |
 | F12 | Rechnungsabgleich | – | – | – | – | ⏸ nicht gebaut |
 | F13 | Zentralküche | – | – | – | – | ⏸ nicht gebaut |
 | A01-H1 | Anmelden/Abmelden | happy | anmelden, abmelden | Übersicht, dann Login-Seite | e2e | ✅ |
