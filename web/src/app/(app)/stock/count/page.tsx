@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/app/page-header";
 import { getOpenCount, getStock, listOutlets, listStockEvents } from "@/data/repo";
 import { currentOutletId, requireSession } from "@/data/session";
+import { formatDateTime } from "@/lib/dates";
 import { CountSheet, StartCount } from "./count-sheet";
 
 export const metadata = { title: "Inventur · Kitchen Ledger" };
@@ -22,7 +23,7 @@ export default async function CountPage() {
   const stock = await getStock(s, outletId);
   return (
     <>
-      <PageHeader title="Inventur läuft" description={`${outlet?.name} · begonnen ${new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(open.event.occurredAt))}`} back={{ href: "/stock", label: "Lager" }} />
+      <PageHeader title="Inventur läuft" description={`${outlet?.name} · begonnen ${formatDateTime(open.event.occurredAt, outlet?.timezone)}`} back={{ href: "/stock", label: "Lager" }} />
       <CountSheet eventId={open.event.id} draft={open.draft} items={stock.map((r) => ({ id: r.id, name: r.name, category: r.category, baseUnit: r.baseUnit, expectedBase: r.quantityBase }))} />
     </>
   );

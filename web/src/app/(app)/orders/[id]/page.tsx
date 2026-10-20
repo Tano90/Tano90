@@ -3,11 +3,11 @@ import { PageHeader } from "@/components/app/page-header";
 import { OrderStatusBadge } from "@/components/ui/badge";
 import { getOrder, listSuppliers } from "@/data/repo";
 import { requireSession } from "@/data/session";
+import { dayIn, formatDate, formatDay } from "@/lib/dates";
 import { formatCents } from "@/lib/format";
 import { OrderForm } from "../order-form";
 import { ReceiveForm } from "../receive-form";
 
-const date = (iso: string | null) => (iso ? new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(new Date(iso)) : "–");
 
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,6 +25,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           order={{ id: order.id, supplierId: order.supplierId, expectedDeliveryDate: order.expectedDeliveryDate, note: order.note, lines: order.lines }}
           suppliers={suppliers.map((x) => ({ value: x.id, label: x.companyName, orderEmail: x.orderEmail, minOrderCents: x.minOrderCents, leadTimeDays: x.leadTimeDays }))}
           initialSupplierId={null}
+          today={dayIn(outlet.timezone)}
         />
       </>
     );
@@ -39,8 +40,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         description={<span className="inline-flex flex-wrap items-center gap-2"><OrderStatusBadge status={order.status} /> {supplier.companyName} · {outlet.name}</span>}
       />
       <dl className="mb-6 grid max-w-3xl grid-cols-2 gap-4 sm:grid-cols-4">
-        <div><dt className="text-xs text-text-muted">Bestellt am</dt><dd>{date(order.orderedAt)}</dd></div>
-        <div><dt className="text-xs text-text-muted">Erwartet</dt><dd>{date(order.expectedDeliveryDate)}</dd></div>
+        <div><dt className="text-xs text-text-muted">Bestellt am</dt><dd>{formatDate(order.orderedAt, outlet.timezone)}</dd></div>
+        <div><dt className="text-xs text-text-muted">Erwartet</dt><dd>{formatDay(order.expectedDeliveryDate)}</dd></div>
         <div><dt className="text-xs text-text-muted">Summe netto</dt><dd className="num">{formatCents(totalCents)}</dd></div>
         <div><dt className="text-xs text-text-muted">Gesendet an</dt><dd className="break-all">{supplier.orderEmail ?? "–"}</dd></div>
         {order.note && <div className="col-span-full"><dt className="text-xs text-text-muted">Hinweis</dt><dd>{order.note}</dd></div>}

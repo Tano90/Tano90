@@ -3,6 +3,7 @@
 // after MAX_ATTEMPTS it is marked dead and stays visible there (the dead-letter log).
 import "server-only";
 import { asService } from "@/data/pg/client";
+import { DEFAULT_TZ, dayIn } from "./dates";
 import { formatBase } from "./units-display";
 import { sendMail } from "./mail";
 import { lowStockMail } from "./mail-templates";
@@ -32,7 +33,7 @@ async function item(job: string, key: string, fn: () => Promise<void>): Promise<
 
 /** Daily: one email per outlet listing items below minimum stock, to the team of that outlet. */
 export async function lowStockAlerts(now = new Date()) {
-  const day = now.toISOString().slice(0, 10);
+  const day = dayIn(DEFAULT_TZ, now); // the outlet's day, so "once per day" means a kitchen day
   const outlets = await asService((tx) => tx<{ outletId: string; outletName: string }[]>`
     select o.id as outlet_id, o.name as outlet_name from outlets o join libraries l on l.id = o.library_id
     where o.archived_at is null and l.plan in ('trial', 'active')`);

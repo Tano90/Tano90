@@ -1,4 +1,5 @@
 // Email texts, written for this product. Plain text first; the HTML is the same content, lightly formatted.
+import { formatDay } from "./dates";
 import { formatCents, formatQty } from "./format";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -9,7 +10,7 @@ export function orderMail(o: {
   libraryName: string; outletName: string; supplierName: string; customerNumber: string | null; orderNumber: string;
   expectedDeliveryDate: string | null; note: string | null; lines: { name: string; packageLabel: string; quantityPacks: number; unitPriceCents: number }[];
 }) {
-  const date = o.expectedDeliveryDate ? new Intl.DateTimeFormat("de-DE", { dateStyle: "full" }).format(new Date(o.expectedDeliveryDate)) : null;
+  const date = o.expectedDeliveryDate ? formatDay(o.expectedDeliveryDate, "full") : null;
   const total = o.lines.reduce((s, l) => s + l.quantityPacks * l.unitPriceCents, 0);
   const subject = `Bestellung ${o.orderNumber} – ${o.libraryName}, ${o.outletName}`;
   const text = [

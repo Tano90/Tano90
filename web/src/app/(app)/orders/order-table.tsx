@@ -6,18 +6,18 @@ import { useRouter } from "next/navigation";
 import { OrderStatusBadge } from "@/components/ui/badge";
 import { type Column, DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { formatDate, formatDay } from "@/lib/dates";
 import { formatCents } from "@/lib/format";
 
 type Row = { id: string; orderNumber: string; supplier: string; status: string; orderedAt: string | null; expectedDeliveryDate: string | null; createdAt: string; totalCents: number };
 
-const date = (iso: string | null) => (iso ? new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(new Date(iso)) : "–");
 
 const COLUMNS: Column<Row>[] = [
   { key: "no", header: "Nummer", sortValue: (r) => r.orderNumber, cell: (r) => <Link href={`/orders/${r.id}`} className="num font-semibold hover:underline">{r.orderNumber}</Link> },
   { key: "sup", header: "Lieferant", sortValue: (r) => r.supplier, cell: (r) => r.supplier },
   { key: "status", header: "Status", cell: (r) => <OrderStatusBadge status={r.status} /> },
-  { key: "date", header: "Bestellt", sortValue: (r) => r.orderedAt ?? r.createdAt, cell: (r) => date(r.orderedAt) },
-  { key: "exp", header: "Erwartet", sortValue: (r) => r.expectedDeliveryDate ?? "", cell: (r) => date(r.expectedDeliveryDate) },
+  { key: "date", header: "Bestellt", sortValue: (r) => r.orderedAt ?? r.createdAt, cell: (r) => formatDate(r.orderedAt) },
+  { key: "exp", header: "Erwartet", sortValue: (r) => r.expectedDeliveryDate ?? "", cell: (r) => formatDay(r.expectedDeliveryDate) },
   { key: "total", header: "Summe netto", align: "right", sortValue: (r) => r.totalCents, cell: (r) => formatCents(r.totalCents) },
 ];
 

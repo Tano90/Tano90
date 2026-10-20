@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/field";
 import { QuantityInput, type Unit, parseQuantity } from "@/components/ui/quantity-input";
 import { toast } from "@/components/ui/toast";
 import { type BaseUnit, toBase } from "@/domain/units";
+import { formatDateTime } from "@/lib/dates";
 import { formatCents } from "@/lib/format";
 import { formatBase } from "@/lib/units-display";
 
@@ -87,7 +88,7 @@ export function WasteOverview({ events }: { events: Ev[] }) {
           {events.map((e) => (
             <li key={e.id} className="rounded-md border border-border bg-bg p-3">
               <p className="flex flex-wrap justify-between gap-2">
-                <span className="font-semibold">{new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(new Date(e.occurredAt))} · {e.by}</span>
+                <span className="font-semibold">{formatDateTime(e.occurredAt)} · {e.by}</span>
                 <span className="num text-danger">−{formatCents(Math.round(e.valueCents))}</span>
               </p>
               <ul className="mt-1 text-text-muted">

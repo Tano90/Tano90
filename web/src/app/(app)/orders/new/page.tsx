@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/app/page-header";
 import { listOutlets, listSuppliers } from "@/data/repo";
 import { currentOutletId, requireSession } from "@/data/session";
+import { dayIn } from "@/lib/dates";
 import { OrderForm } from "../order-form";
 
 export const metadata = { title: "Neue Bestellung · Kitchen Ledger" };
@@ -14,7 +15,7 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <PageHeader title="Neue Bestellung" description={`Für ${outlet?.name ?? "–"}`} back={{ href: "/orders", label: "Bestellungen" }} />
-      <OrderForm order={null} suppliers={suppliers.map((x) => ({ value: x.id, label: x.companyName, orderEmail: x.orderEmail, minOrderCents: x.minOrderCents, leadTimeDays: x.leadTimeDays }))} initialSupplierId={supplier ?? null} />
+      <OrderForm order={null} suppliers={suppliers.map((x) => ({ value: x.id, label: x.companyName, orderEmail: x.orderEmail, minOrderCents: x.minOrderCents, leadTimeDays: x.leadTimeDays }))} initialSupplierId={supplier ?? null} today={dayIn(outlet?.timezone)} />
     </>
   );
 }

@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 import type { BaseUnit } from "@/domain/units";
+import { addDays } from "@/lib/dates";
 import { formatCents } from "@/lib/format";
 import { formatBase } from "@/lib/units-display";
 
@@ -17,16 +18,16 @@ type SupplierOpt = { value: string; label: string; orderEmail: string | null; mi
 type Item = { stockItemId: string; name: string; baseUnit: BaseUnit; packageLabel: string; packPriceCents: number; onHandBase: number; parLevelBase: number | null; suggestedPacks: number };
 type Existing = { id: string; supplierId: string; expectedDeliveryDate: string | null; note: string | null; lines: { stockItemId: string; quantityPacks: number }[] };
 
-const isoDay = (days: number) => new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
 
-export function OrderForm({ order, suppliers, initialSupplierId }: { order: Existing | null; suppliers: SupplierOpt[]; initialSupplierId: string | null }) {
+/** `today` is the outlet's current day (YYYY-MM-DD), computed on the server in the outlet's time zone. */
+export function OrderForm({ order, suppliers, initialSupplierId, today }: { order: Existing | null; suppliers: SupplierOpt[]; initialSupplierId: string | null; today: string }) {
   const router = useRouter();
   const [supplierId, setSupplierId] = useState(order?.supplierId ?? initialSupplierId ?? suppliers[0]?.value ?? "");
   const supplier = suppliers.find((x) => x.value === supplierId);
   const [items, setItems] = useState<Item[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [qty, setQty] = useState<Record<string, string>>(Object.fromEntries((order?.lines ?? []).map((l) => [l.stockItemId, String(l.quantityPacks)])));
-  const [date, setDate] = useState(order?.expectedDeliveryDate ?? isoDay(supplier?.leadTimeDays ?? 1));
+  const [date, setDate] = useState(order?.expectedDeliveryDate ?? addDays(today, supplier?.leadTimeDays ?? 1));
   const [note, setNote] = useState(order?.note ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -86,7 +87,7 @@ export function OrderForm({ order, suppliers, initialSupplierId }: { order: Exis
           </Select>
         </Field>
         <Field label="Gewünschter Liefertermin">
-          <Input type="date" value={date} min={isoDay(0)} onChange={(e) => setDate(e.target.value)} />
+          <Input type="date" value={date} min={today} onChange={(e) => setDate(e.target.value)} />
         </Field>
         <Field label="Hinweis an den Lieferanten" className="md:col-span-2">
           <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />

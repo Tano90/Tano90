@@ -4,12 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { getBilling, listOutlets } from "@/data/repo";
 import { canManageBilling, requireSession } from "@/data/session";
 import { billingConfigured } from "@/lib/billing";
+import { formatDate } from "@/lib/dates";
 import { BillingButtons } from "./billing-buttons";
 
 export const metadata = { title: "Abo & Rechnungen · Kitchen Ledger" };
 
 const PLAN = { trial: { label: "Testphase", tone: "info" }, active: { label: "Aktiv", tone: "success" }, past_due: { label: "Zahlung offen", tone: "warning" }, cancelled: { label: "Gekündigt", tone: "danger" } } as const;
-const date = (iso: string | null) => (iso ? new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(new Date(iso)) : "–");
+const date = (iso: string | null) => formatDate(iso, undefined, "long");
 
 export default async function BillingPage({ searchParams }: { searchParams: Promise<{ checkout?: string }> }) {
   const { checkout } = await searchParams;
