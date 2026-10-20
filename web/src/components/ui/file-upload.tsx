@@ -1,7 +1,7 @@
 "use client";
 
 import { FileSpreadsheet, Upload } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { Spinner } from "./spinner";
 
@@ -13,11 +13,13 @@ type Props = {
   maxBytes?: number;
   state?: "idle" | "uploading" | "done";
   errors?: RowError[];
+  /** What kind of file, e.g. "CSV"; shown in the hint under the label. */
+  formats?: string;
   onFile: (file: File) => void;
 };
 
 /** Drop zone that is also a real file input, so keyboard and screen readers work. */
-export function FileUpload({ label, accept = ".xlsx,.csv", maxBytes = 10 * 1024 * 1024, state = "idle", errors = [], onFile }: Props) {
+export function FileUpload({ label, accept = ".xlsx,.csv", maxBytes = 10 * 1024 * 1024, state = "idle", errors = [], formats = "Excel oder CSV", onFile }: Props) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
@@ -28,6 +30,11 @@ export function FileUpload({ label, accept = ".xlsx,.csv", maxBytes = 10 * 1024 
     setTooBig(file.size > maxBytes);
     if (file.size <= maxBytes) onFile(file);
   };
+  // A file picked before the page finished loading fired its change event before React was listening.
+  useEffect(() => {
+    take(input.current?.files?.[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex flex-col gap-2">
@@ -51,7 +58,7 @@ export function FileUpload({ label, accept = ".xlsx,.csv", maxBytes = 10 * 1024 
       >
         {state === "uploading" ? <Spinner className="size-6" label="Wird hochgeladen" /> : <Upload aria-hidden className="size-6 text-text-muted" />}
         <span className="font-semibold">{label}</span>
-        <span className="text-xs font-normal text-text-muted">Datei hierher ziehen oder klicken · Excel oder CSV, max. {Math.round(maxBytes / 1024 / 1024)} MB</span>
+        <span className="text-xs font-normal text-text-muted">Datei hierher ziehen oder klicken · {formats}, max. {Math.round(maxBytes / 1024 / 1024)} MB</span>
         <input
           ref={input}
           id={id}

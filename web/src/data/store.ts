@@ -3,8 +3,8 @@
 import "server-only";
 import { type CountBreakdown, applyMovement } from "@/domain/stock";
 import type {
-  AllergenRow, Category, CountDraft, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
-  PurchaseOrder, Recipe, RecipeLine, StockEvent, StockItem, StockLevel, StockMovement, Supplier,
+  AllergenRow, ApiKey, Category, CountDraft, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
+  PosItem, PurchaseOrder, Recipe, RecipeLine, Sale, StockEvent, StockItem, StockLevel, StockMovement, Supplier,
 } from "./types";
 
 export type Db = {
@@ -21,6 +21,9 @@ export type Db = {
   nutrition: Record<string, Nutrition>;
   recipes: Recipe[];
   menus: Menu[];
+  posItems: PosItem[];
+  sales: Sale[];
+  apiKeys: ApiKey[];
   outletIngredients: OutletIngredient[];
   orders: PurchaseOrder[];
   events: StockEvent[];
@@ -81,7 +84,7 @@ export function seed(): Db {
       ...["Mittagstisch", "Abendkarte"].map((name, i) => ({ id: `cat-m${i}`, kind: "menu" as const, name })),
     ],
     ingredients: [], packages: [], suppliers: [], stockItems: [], allergens: {}, verified: {}, nutrition: {},
-    recipes: [], menus: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
+    recipes: [], menus: [], posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
   };
 
   const sup = (id: string, companyName: string, orderEmail: string, leadTimeDays: number) =>
@@ -191,6 +194,16 @@ export function seed(): Db {
     targetMarginBp: 7000, validFrom: null, validTo: null, archivedAt: null, updatedAt: t,
     courses: [course(0, "Vorspeise", "rec-linsensuppe"), course(1, "Hauptgang", "rec-ofengemuese"), course(2, "Dessert", "rec-apfelkuchen")],
   });
+
+  // Till items of Küche Mitte: two linked, the cake not yet (its sales wait), espresso has no recipe, water is ignored.
+  const pos = (plu: string, name: string, recipeId: string | null, ignored = false): PosItem => ({ id: `pos-${plu}`, outletId: "out-mitte", plu, name, recipeId, ignored });
+  d.posItems.push(pos("1001", "Linsensuppe", "rec-linsensuppe"), pos("1002", "Ofengemüse", "rec-ofengemuese"), pos("1003", "Apfelkuchen Stück", null), pos("9001", "Espresso", null), pos("9002", "Leitungswasser", null, true));
+  for (let i = 0; i < 8; i++) {
+    d.sales.push({ id: `sale-k${i}`, outletId: "out-mitte", posItemId: "pos-1003", externalId: `K-${100 + i}`, quantity: 1, revenueNetCents: 421, soldAt: daysAgo(1), depletedEventId: null });
+  }
+  for (let i = 0; i < 20; i++) {
+    d.sales.push({ id: `sale-e${i}`, outletId: "out-mitte", posItemId: "pos-9001", externalId: `E-${100 + i}`, quantity: 1, revenueNetCents: 220, soldAt: daysAgo(1), depletedEventId: null });
+  }
 
   // Stock history for Küche Mitte: one delivered order, a waste event, an open order and a draft.
   const priceOf = (id: string) => d.stockItems.find((s) => s.ingredientId === id)!;

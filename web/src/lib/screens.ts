@@ -22,7 +22,7 @@ export const SCREENS: Screen[] = [
   { id: "S18", title: "Umbuchung", route: "/stock/transfer", purpose: "Ware zwischen Outlets verschieben", built: true },
   { id: "S19", title: "Schwund", route: "/stock/waste", purpose: "Verlust mit Grund buchen", built: true },
   { id: "S20", title: "Lagerbericht", route: "/stock/report", purpose: "Bewegungen und Bewertung", built: true },
-  { id: "S21", title: "Kassen-Anbindung", route: "/analytics/pos", purpose: "Kassenartikel mit Rezepten verknüpfen", built: false },
+  { id: "S21", title: "Kassen-Anbindung", route: "/analytics/pos", purpose: "Kassenartikel mit Rezepten verknüpfen", built: true },
   { id: "S22", title: "Menu Engineering", route: "/analytics/menu-engineering", purpose: "Beliebtheit und Marge pro Gericht", built: false },
   { id: "S23", title: "Produktion", route: "/production", purpose: "Zentralküche: Aufträge und Produktionsplan", built: false },
   { id: "S24", title: "Einstellungen", route: "/settings", purpose: "Mehrwertsteuer, Lohnkosten, Name des Betriebs", built: true },

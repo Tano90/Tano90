@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { z } from "zod";
+import { parseSalesCsv } from "@/domain/pos";
+import { zoneOffsetMinutes } from "@/lib/dates";
 import { headers } from "next/headers";
 import * as repo from "@/data/repo";
 import { OUTLET_COOKIE, SESSION_COOKIE, authMode, canManageBilling, currentOutletId, currentUser, demoAllowed, requireSession } from "@/data/session";
@@ -445,6 +447,29 @@ export async function recordTransfer(input: z.input<typeof TransferSchema>) {
     const t = TransferSchema.parse(input);
     return repo.recordTransfer(s, await currentOutletId(s), t.toOutletId, t.lines);
   }, ["/stock", "/"]);
+}
+
+// ---------------------------------------------------------------- point of sale
+
+export async function importSalesCsv(text: string) {
+  return run(async (s) => {
+    if (text.length > 5_000_000) throw new Error("Die Datei ist zu groß (höchstens 5 MB).");
+    const outletId = await currentOutletId(s);
+    const tz = (await repo.listOutlets(s)).find((o) => o.id === outletId)?.timezone;
+    const { rows, errors } = parseSalesCsv(text, (ms) => zoneOffsetMinutes(ms, tz));
+    const result = rows.length ? await repo.importSales(s, outletId, rows) : { imported: 0, duplicates: 0, depleted: 0, unmapped: 0 };
+    return { ...result, errors: errors.slice(0, 50), errorCount: errors.length };
+  }, ["/analytics/pos", "/stock"]);
+}
+const LinkSchema = z.object({ recipeId: z.string().min(1).nullable(), ignored: z.boolean() });
+export async function linkPosItem(posItemId: string, input: z.input<typeof LinkSchema>) {
+  return run((s) => repo.linkPosItem(s, posItemId, LinkSchema.parse(input)), ["/analytics/pos", "/stock"]);
+}
+export async function createApiKey(name: string) {
+  return run(async (s) => repo.createApiKey(s, await currentOutletId(s), z.string().trim().min(1, "Bitte einen Namen angeben, z. B. „Kasse Theke“.").max(80).parse(name)), ["/analytics/pos"]);
+}
+export async function revokeApiKey(keyId: string) {
+  return run((s) => repo.revokeApiKey(s, keyId), ["/analytics/pos"]);
 }
 
 // ---------------------------------------------------------------- settings

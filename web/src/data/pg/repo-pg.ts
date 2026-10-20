@@ -6,9 +6,11 @@ import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { type CountBreakdown, countTotal, stockReport, suggestPacks } from "@/domain/stock";
-import { addDays, startOfDay } from "@/lib/dates";
+import type { SaleInput } from "@/domain/pos";
+import { hashKey, newApiKey } from "@/lib/api-key";
+import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import type { BaseUnit } from "@/domain/units";
-import type { Billing, IngredientFilter, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
+import type { Billing, ImportResult, IngredientFilter, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
 import { Forbidden, assertCanChangeMember, canEditLibrary, canManageTeam } from "../session-rules";
 import type {
   AllergenRow, Category, CountEntry, Ingredient, Library, Member, Menu, MenuCourse, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
@@ -682,6 +684,121 @@ export async function recordWaste(s: Session, outletId: string, lines: { ingredi
     await tx`insert into stock_movements ${tx(lines.map((l) => ({ stockEventId: ev.id, outletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase, reason: l.reason })))}`;
     return ev.id;
   });
+}
+
+// ---------------------------------------------------------------- point of sale
+
+/** Books the ingredients of linked, not yet booked sales out of stock: one sale event per local day. */
+async function depletePending(tx: Tx, libraryId: string, outletId: string, userId: string | null): Promise<number> {
+  const [outlet] = await tx<{ timezone: string }[]>`select timezone from outlets where id = ${outletId}`;
+  // Row locks: a second import running at the same time waits here and then skips what this one booked.
+  const pending = await tx<{ id: string; soldAt: string; quantity: number; recipeId: string }[]>`
+    select s.id, s.sold_at, s.quantity, p.recipe_id from sales s join pos_items p on p.id = s.pos_item_id
+    where s.outlet_id = ${outletId} and s.depleted_event_id is null and p.recipe_id is not null and not p.ignored
+    for update of s`;
+  if (!pending.length) return 0;
+  type Pending = { id: string; soldAt: string; quantity: number; recipeId: string };
+  const byDay = new Map<string, Pending[]>();
+  for (const x of pending) {
+    const iso = new Date(x.soldAt).toISOString();
+    const day = dayIn(outlet.timezone, new Date(iso));
+    byDay.set(day, [...(byDay.get(day) ?? []), { ...x, soldAt: iso }]);
+  }
+  const ctx = contextOf(await loadCosting(tx, libraryId));
+  for (const group of byDay.values()) {
+    const bom = billOfMaterials({ courses: [{ name: "", items: group.map((x) => ({ recipeId: x.recipeId, portions: x.quantity })) }] }, ctx);
+    const occurredAt = group.map((x) => x.soldAt).sort().at(-1)!;
+    const [ev] = await tx<{ id: string }[]>`
+      insert into stock_events (library_id, outlet_id, type, occurred_at, note, created_by, closed_at)
+      values (${libraryId}, ${outletId}, 'sale', ${occurredAt}, ${`${group.length} Verkäufe`}, ${userId}, now()) returning id`;
+    if (bom.lines.length) {
+      await tx`insert into stock_movements ${tx(bom.lines.map((l) => ({ stockEventId: ev.id, outletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase })))}`;
+      await tx`insert into outlet_ingredients ${tx(bom.lines.map((l) => ({ outletId, ingredientId: l.ingredientId })))} on conflict do nothing`;
+    }
+    await tx`update sales set depleted_event_id = ${ev.id} where id = any(${group.map((x) => x.id)}::uuid[])`;
+  }
+  return pending.length;
+}
+
+async function importInto(tx: Tx, libraryId: string, outletId: string, rows: SaleInput[], userId: string | null): Promise<ImportResult> {
+  let imported = 0;
+  for (let i = 0; i < rows.length; i += 1000) {
+    const chunk = rows.slice(i, i + 1000);
+    const plus = [...new Map(chunk.map((r) => [r.plu, r.name])).entries()];
+    await tx`insert into pos_items ${tx(plus.map(([plu, name]) => ({ libraryId, outletId, plu, name })))} on conflict (outlet_id, plu) do nothing`;
+    const items = new Map((await tx<{ id: string; plu: string }[]>`
+      select id, plu from pos_items where outlet_id = ${outletId} and plu = any(${plus.map(([p]) => p)})`).map((p) => [p.plu, p.id]));
+    const inserted = await tx`
+      insert into sales ${tx(chunk.map((r) => ({ libraryId, outletId, posItemId: items.get(r.plu)!, externalId: r.externalId, quantity: r.quantity, revenueNetCents: r.revenueNetCents, soldAt: r.soldAt })))}
+      on conflict (outlet_id, external_id) do nothing returning id`;
+    imported += inserted.length;
+  }
+  const depleted = await depletePending(tx, libraryId, outletId, userId);
+  const [{ unmapped }] = await tx<{ unmapped: number }[]>`
+    select count(*)::int as unmapped from sales s join pos_items p on p.id = s.pos_item_id
+    where s.outlet_id = ${outletId} and s.depleted_event_id is null and not p.ignored`;
+  return { imported, duplicates: rows.length - imported, depleted, unmapped };
+}
+
+export async function importSales(s: Session, outletId: string, rows: SaleInput[]): Promise<ImportResult> {
+  return run(s, (tx) => importInto(tx, s.libraryId, outletId, rows, s.userId));
+}
+
+/** For the POS API: the key decides library and outlet. Returns null for an unknown or revoked key. */
+export async function importSalesWithKey(key: string, rows: SaleInput[]): Promise<ImportResult | null> {
+  return asService(async (tx) => {
+    const [k] = await tx<{ id: string; libraryId: string; outletId: string | null }[]>`
+      update api_keys set last_used_at = now() where key_hash = ${hashKey(key)} and revoked_at is null returning id, library_id, outlet_id`;
+    if (!k?.outletId) return null;
+    return importInto(tx, k.libraryId, k.outletId, rows, null);
+  });
+}
+
+export async function listPosItems(s: Session, outletId: string) {
+  return run(s, async (tx) => {
+    const rows = await tx<{ id: string; outletId: string; plu: string; name: string; recipeId: string | null; ignored: boolean; recipeName: string | null; sold30: number; pending: number }[]>`
+      select p.id, p.outlet_id, p.plu, p.name, p.recipe_id, p.ignored, r.name as recipe_name,
+        coalesce((select sum(quantity) from sales x where x.pos_item_id = p.id and x.sold_at >= now() - interval '30 days'), 0)::float8 as sold30,
+        coalesce((select sum(quantity) from sales x where x.pos_item_id = p.id and x.depleted_event_id is null), 0)::float8 as pending
+      from pos_items p left join recipes r on r.id = p.recipe_id
+      where p.outlet_id = ${outletId}`;
+    return rows.sort((a, b) => a.plu.localeCompare(b.plu, "de", { numeric: true }));
+  });
+}
+
+/** Links a till item to a recipe (or ignores it). Sales waiting for a link are booked right away. */
+export async function linkPosItem(s: Session, posItemId: string, v: { recipeId: string | null; ignored: boolean }) {
+  if (!isUuid(posItemId) || (v.recipeId && !isUuid(v.recipeId))) throw new Error("Kassenartikel nicht gefunden.");
+  return run(s, async (tx) => {
+    if (v.recipeId) {
+      const [r] = await tx`select 1 from recipes where id = ${v.recipeId} and archived_at is null`;
+      if (!r) throw new Error("Dieses Rezept gibt es nicht mehr.");
+    }
+    const [p] = await tx<{ outletId: string }[]>`
+      update pos_items set recipe_id = ${v.ignored ? null : v.recipeId}, ignored = ${v.ignored} where id = ${posItemId} returning outlet_id`;
+    if (!p) throw new Error("Kassenartikel nicht gefunden.");
+    return { depleted: await depletePending(tx, s.libraryId, p.outletId, s.userId) };
+  });
+}
+
+export async function listApiKeys(s: Session, outletId: string) {
+  if (!canManageTeam(s.role)) throw new Forbidden();
+  return run(s, (tx) => tx<{ id: string; libraryId: string; outletId: string | null; name: string; lastUsedAt: string | null; revokedAt: string | null; createdAt: string }[]>`
+    select id, library_id, outlet_id, name, last_used_at, revoked_at, created_at from api_keys where outlet_id = ${outletId} order by created_at desc`);
+}
+
+/** Creates a key for one outlet. The key itself is returned once and only its hash is kept. */
+export async function createApiKey(s: Session, outletId: string, name: string) {
+  if (!canManageTeam(s.role)) throw new Forbidden();
+  const key = newApiKey();
+  const [row] = await run(s, (tx) => tx<{ id: string }[]>`
+    insert into api_keys (library_id, outlet_id, name, key_hash) values (${s.libraryId}, ${outletId}, ${name}, ${hashKey(key)}) returning id`);
+  return { id: row.id, key };
+}
+
+export async function revokeApiKey(s: Session, keyId: string) {
+  if (!canManageTeam(s.role)) throw new Forbidden();
+  await run(s, (tx) => tx`update api_keys set revoked_at = now() where id = ${keyId} and revoked_at is null`);
 }
 
 /** Minimum (warns, daily alert) and target level (order suggestion) of an item in one outlet. null clears. */

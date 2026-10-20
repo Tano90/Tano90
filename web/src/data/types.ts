@@ -81,6 +81,10 @@ export type Nutrition = {
 
 export type RecipeLine = { id: string; ingredientId: string | null; subRecipeId: string | null; quantity: number; unit: LineUnit; position: number; note: string | null };
 
+export type PosItem = { id: string; outletId: string; plu: string; name: string; recipeId: string | null; ignored: boolean };
+export type Sale = { id: string; outletId: string; posItemId: string; externalId: string; quantity: number; revenueNetCents: number; soldAt: string; depletedEventId: string | null };
+export type ApiKey = { id: string; libraryId: string; outletId: string | null; name: string; keyHash: string; lastUsedAt: string | null; revokedAt: string | null; createdAt: string };
+
 export type MenuItem = { id: string; recipeId: string; portions: number; position: number };
 export type MenuCourse = { id: string; name: string; position: number; items: MenuItem[] };
 export type Menu = {

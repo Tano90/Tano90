@@ -5,7 +5,9 @@ import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { type CountBreakdown, countTotal, stockReport, suggestPacks } from "@/domain/stock";
-import { addDays, startOfDay } from "@/lib/dates";
+import { hashKey, newApiKey } from "@/lib/api-key";
+import { addDays, dayIn, startOfDay } from "@/lib/dates";
+import type { SaleInput } from "@/domain/pos";
 import { type BaseUnit } from "@/domain/units";
 import { Forbidden, assertCanChangeMember, canAccessOutlet, canEditLibrary, canManageTeam } from "./session-rules";
 import { addMovement, db, newId, now } from "./store";
@@ -615,6 +617,121 @@ export async function recordWaste(s: Session, outletId: string, lines: { ingredi
   d.events.push(ev);
   for (const l of lines) addMovement(d, { eventId: ev.id, outletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase, countedBase: null, reason: l.reason });
   return ev.id;
+}
+
+// ---------------------------------------------------------------- point of sale
+
+export type ImportResult = { imported: number; duplicates: number; depleted: number; unmapped: number };
+
+/** Books the ingredients of linked, not yet booked sales out of stock: one sale event per local day. */
+function depletePending(outletId: string, userId: string | null): number {
+  const d = db();
+  const tz = d.outlets.find((o) => o.id === outletId)?.timezone;
+  const items = new Map(d.posItems.filter((p) => p.outletId === outletId && p.recipeId && !p.ignored).map((p) => [p.id, p]));
+  const pending = d.sales.filter((x) => x.outletId === outletId && !x.depletedEventId && items.has(x.posItemId));
+  const byDay = new Map<string, typeof pending>();
+  for (const x of pending) {
+    const day = dayIn(tz, new Date(x.soldAt));
+    byDay.set(day, [...(byDay.get(day) ?? []), x]);
+  }
+  const ctx = costContext();
+  for (const group of byDay.values()) {
+    const bom = billOfMaterials({ courses: [{ name: "", items: group.map((x) => ({ recipeId: items.get(x.posItemId)!.recipeId!, portions: x.quantity })) }] }, ctx);
+    const occurredAt = group.map((x) => x.soldAt).sort().at(-1)!;
+    const ev: StockEvent = { id: newId("ev"), outletId, type: "sale", status: "closed", occurredAt, counterpartOutletId: null, purchaseOrderId: null, note: `${group.length} Verkäufe`, createdBy: userId, closedAt: now() };
+    d.events.push(ev);
+    for (const l of bom.lines) {
+      addMovement(d, { eventId: ev.id, outletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase, countedBase: null, reason: null });
+      if (!d.outletIngredients.some((x) => x.outletId === outletId && x.ingredientId === l.ingredientId)) {
+        d.outletIngredients.push({ outletId, ingredientId: l.ingredientId, parLevelBase: null, minLevelBase: null });
+      }
+    }
+    for (const x of group) x.depletedEventId = ev.id;
+  }
+  return pending.length;
+}
+
+function importInto(outletId: string, rows: SaleInput[], userId: string | null): ImportResult {
+  const d = db();
+  let imported = 0;
+  let duplicates = 0;
+  for (const r of rows) {
+    if (d.sales.some((x) => x.outletId === outletId && x.externalId === r.externalId)) { duplicates++; continue; }
+    let item = d.posItems.find((p) => p.outletId === outletId && p.plu === r.plu);
+    if (!item) {
+      item = { id: newId("pos"), outletId, plu: r.plu, name: r.name, recipeId: null, ignored: false };
+      d.posItems.push(item);
+    }
+    d.sales.push({ id: newId("sale"), outletId, posItemId: item.id, externalId: r.externalId, quantity: r.quantity, revenueNetCents: r.revenueNetCents, soldAt: r.soldAt, depletedEventId: null });
+    imported++;
+  }
+  const depleted = depletePending(outletId, userId);
+  const unmapped = d.sales.filter((x) => x.outletId === outletId && !x.depletedEventId && !d.posItems.find((p) => p.id === x.posItemId)?.ignored).length;
+  return { imported, duplicates, depleted, unmapped };
+}
+
+export async function importSales(s: Session, outletId: string, rows: SaleInput[]): Promise<ImportResult> {
+  assertOutlet(s, outletId);
+  return importInto(outletId, rows, s.userId);
+}
+
+/** For the POS API: the key decides library and outlet. Returns null for an unknown or revoked key. */
+export async function importSalesWithKey(key: string, rows: SaleInput[]): Promise<ImportResult | null> {
+  const k = db().apiKeys.find((x) => x.keyHash === hashKey(key) && !x.revokedAt);
+  if (!k || !k.outletId) return null;
+  k.lastUsedAt = now();
+  return importInto(k.outletId, rows, null);
+}
+
+export async function listPosItems(s: Session, outletId: string) {
+  assertOutlet(s, outletId);
+  const d = db();
+  const since = new Date(Date.now() - 30 * 86400_000).toISOString();
+  return d.posItems
+    .filter((p) => p.outletId === outletId)
+    .map((p) => {
+      const sales = d.sales.filter((x) => x.posItemId === p.id);
+      return {
+        ...p,
+        recipeName: d.recipes.find((r) => r.id === p.recipeId)?.name ?? null,
+        sold30: sales.filter((x) => x.soldAt >= since).reduce((t, x) => t + x.quantity, 0),
+        pending: sales.filter((x) => !x.depletedEventId).reduce((t, x) => t + x.quantity, 0),
+      };
+    })
+    .sort((a, b) => a.plu.localeCompare(b.plu, "de", { numeric: true }));
+}
+
+/** Links a till item to a recipe (or ignores it). Sales waiting for a link are booked right away. */
+export async function linkPosItem(s: Session, posItemId: string, v: { recipeId: string | null; ignored: boolean }) {
+  const d = db();
+  const p = d.posItems.find((x) => x.id === posItemId);
+  if (!p) throw new Error("Kassenartikel nicht gefunden.");
+  assertOutlet(s, p.outletId);
+  if (v.recipeId && !d.recipes.some((r) => r.id === v.recipeId && !r.archivedAt)) throw new Error("Dieses Rezept gibt es nicht mehr.");
+  p.recipeId = v.ignored ? null : v.recipeId;
+  p.ignored = v.ignored;
+  return { depleted: depletePending(p.outletId, s.userId) };
+}
+
+export async function listApiKeys(s: Session, outletId: string) {
+  if (!canManageTeam(s.role)) throw new Forbidden();
+  return db().apiKeys.filter((k) => k.outletId === outletId).map(({ keyHash: _, ...k }) => k).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/** Creates a key for one outlet. The key itself is returned once and only its hash is kept. */
+export async function createApiKey(s: Session, outletId: string, name: string) {
+  if (!canManageTeam(s.role)) throw new Forbidden();
+  assertOutlet(s, outletId);
+  const key = newApiKey();
+  const row = { id: newId("key"), libraryId: db().library.id, outletId, name, keyHash: hashKey(key), lastUsedAt: null, revokedAt: null, createdAt: now() };
+  db().apiKeys.push(row);
+  return { id: row.id, key };
+}
+
+export async function revokeApiKey(s: Session, keyId: string) {
+  if (!canManageTeam(s.role)) throw new Forbidden();
+  const k = db().apiKeys.find((x) => x.id === keyId);
+  if (k && !k.revokedAt) k.revokedAt = now();
 }
 
 /** Minimum (warns, daily alert) and target level (order suggestion) of an item in one outlet. null clears. */

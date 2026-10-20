@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { rollUp } from "./allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, costRecipe, foodCostBp } from "./costing";
 import { applyMovement, stockReport, suggestPacks } from "./stock";
-import { startOfDay } from "../lib/dates";
+import { startOfDay, zoneOffsetMinutes } from "../lib/dates";
 import { billOfMaterials, summarizeMenu } from "./menus";
+import { parseSalesCsv } from "./pos";
 import { toBase } from "./units";
 
 const gram = { baseUnit: "g" as const, gramsPerPiece: null, mlPerGram: null };
@@ -153,5 +154,30 @@ describe("dates", () => {
     expect(startOfDay("2026-10-25", "Europe/Berlin")).toBe("2026-10-24T22:00:00.000Z"); // DST ends 03:00 that day
     expect(startOfDay("2026-10-20", "America/New_York")).toBe("2026-10-20T04:00:00.000Z");
     expect(startOfDay("2026-10-20", "UTC")).toBe("2026-10-20T00:00:00.000Z");
+  });
+});
+
+describe("pos csv", () => {
+  it("reads a German export with BOM, quotes, decimal comma and local times", () => {
+    const csv = "﻿Belegposition;PLU;Artikel;Menge;Umsatz netto;Zeitpunkt\r\nB1-1;1001;\"Suppe; groß\";2;14,80;20.10.2026 12:30\r\nB1-2;1002;Ofengemüse;1;1.234,50;2026-10-20 13:05\r\n";
+    const { rows, errors } = parseSalesCsv(csv, (ms) => zoneOffsetMinutes(ms, "Europe/Berlin"));
+    expect(errors).toEqual([]);
+    expect(rows[0]).toEqual({ externalId: "B1-1", plu: "1001", name: "Suppe; groß", quantity: 2, revenueNetCents: 1480, soldAt: "2026-10-20T10:30:00.000Z" });
+    expect(rows[1].revenueNetCents).toBe(123450);
+  });
+  it("uses the offset of each sale's own date across daylight saving", () => {
+    const berlin = (ms: number) => zoneOffsetMinutes(ms, "Europe/Berlin");
+    const { rows } = parseSalesCsv("Beleg;PLU;Menge;Zeitpunkt\na;1;1;24.10.2026 20:00\nb;1;1;26.10.2026 20:00\n", berlin);
+    expect(rows.map((r) => r.soldAt)).toEqual(["2026-10-24T18:00:00.000Z", "2026-10-26T19:00:00.000Z"]);
+  });
+  it("reads comma-separated English headers and ISO times with zone", () => {
+    const { rows } = parseSalesCsv("id,sku,item,qty,net,timestamp\nx1,77,Tea,1.5,3.20,2026-10-20T08:00:00Z\n");
+    expect(rows[0]).toMatchObject({ externalId: "x1", plu: "77", quantity: 1.5, revenueNetCents: 320, soldAt: "2026-10-20T08:00:00.000Z" });
+  });
+  it("names every bad row and a missing column", () => {
+    const { rows, errors } = parseSalesCsv("Beleg;PLU;Menge;Zeitpunkt\n;1;1;20.10.2026\nb;1;-1;20.10.2026\nc;1;eins;20.10.2026\nd;1;1;31.02.2026\ne;1;1;20.10.2026\n");
+    expect(rows).toHaveLength(1);
+    expect(errors.map((e) => e.row)).toEqual([2, 3, 4, 5]);
+    expect(parseSalesCsv("PLU;Menge\n1;1").errors[0].message).toMatch(/Spalte fehlt: Belegposition, Zeitpunkt/);
   });
 });

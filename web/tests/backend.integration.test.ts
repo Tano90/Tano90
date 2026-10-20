@@ -146,6 +146,22 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
   });
 
+  describe("point of sale", () => {
+    it("two imports at the same time book each sale once", async () => {
+      const rows = (tag: string) => Array.from({ length: 5 }, (_, i) => ({ externalId: `${tag}-${i}`, plu: "1001", name: "Linsensuppe", quantity: 1, revenueNetCents: 739, soldAt: "2026-10-20T10:00:00.000Z" }));
+      const before = (await repo.getStock(owner, sid("out-mitte"))).find((r) => r.name === "Rote Linsen")!.quantityBase;
+      const [a, b] = await Promise.all([repo.importSales(owner, sid("out-mitte"), rows("P")), repo.importSales(owner, sid("out-mitte"), [...rows("P"), ...rows("Q")])]);
+      expect(a.imported + b.imported).toBe(10);
+      expect(a.depleted + b.depleted).toBe(10);
+      const after = (await repo.getStock(owner, sid("out-mitte"))).find((r) => r.name === "Rote Linsen")!.quantityBase;
+      expect(before - after).toBeCloseTo(10 * 80, 6); // 10 portions of a 10-portion soup with 800 g lentils
+    });
+    it("staff cannot import into an outlet they are not assigned to", async () => {
+      await expect(repo.importSales(staff, sid("out-zentral"), [{ externalId: "Z-1", plu: "1", name: "x", quantity: 1, revenueNetCents: 0, soldAt: "2026-10-20T10:00:00.000Z" }])).rejects.toThrow(/Berechtigung/);
+      expect(await repo.importSalesWithKey("pantra_unbekannt", [])).toBeNull();
+    });
+  });
+
   describe("prices", () => {
     it("BUG-001: an editor can save and change a supplier price (with price history)", async () => {
       const ing = await repo.saveIngredient(owner, { name: `Preis-Test ${Date.now()}`, shortName: null, internalUid: null, categoryId: null, baseUnit: "g", gramsPerPiece: null, mlPerGram: null });

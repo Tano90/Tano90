@@ -50,3 +50,12 @@ export function startOfDay(day: string, tz = DEFAULT_TZ): string {
   const hour = Number(check.find((p) => p.type === "hour")!.value);
   return new Date(first.getTime() - (hour === 23 ? -3600_000 : hour === 1 ? 3600_000 : 0)).toISOString();
 }
+
+/** Minutes the zone is ahead of UTC at a given instant (Berlin: 60 in winter, 120 in summer). */
+export function zoneOffsetMinutes(utcMs: number, tz = DEFAULT_TZ): number {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })
+      .formatToParts(new Date(utcMs)).filter((x) => x.type !== "literal").map((x) => [x.type, Number(x.value)]),
+  );
+  return Math.round((Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(utcMs / 1000) * 1000) / 60_000);
+}
