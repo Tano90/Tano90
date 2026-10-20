@@ -51,6 +51,12 @@ async function open<T>(fn: () => Promise<T>): Promise<Result<T>> {
   }
 }
 
+/** Only same-site paths: "//evil.example" or "/\\evil.example" would leave the site after sign-in. */
+function safeNext(value: FormDataEntryValue | null): string {
+  const next = typeof value === "string" ? value : "";
+  return /^\/(?![/\\])/.test(next) ? next : "/app";
+}
+
 export async function signIn(_: Result | null, form: FormData): Promise<Result> {
   const res = await open(async () => {
     const email = emailSchema.parse(form.get("email"));
@@ -68,7 +74,7 @@ export async function signIn(_: Result | null, form: FormData): Promise<Result> 
     return null;
   });
   if (!res.ok) return res;
-  redirect(String(form.get("next") ?? "") .startsWith("/") ? String(form.get("next")) : "/");
+  redirect(safeNext(form.get("next")));
 }
 
 export async function sendMagicLink(_: Result<string> | null, form: FormData): Promise<Result<string>> {
@@ -119,7 +125,7 @@ export async function updatePassword(_: Result | null, form: FormData): Promise<
     return null;
   });
   if (!res.ok) return res;
-  redirect("/");
+  redirect("/app");
 }
 
 export async function signOut() {
@@ -165,7 +171,7 @@ export async function createLibrary(_: Result | null, form: FormData): Promise<R
     return null;
   });
   if (!res.ok) return res;
-  redirect("/");
+  redirect("/app");
 }
 
 export async function acceptInvitation(_: Result | null, form: FormData): Promise<Result> {
@@ -176,7 +182,7 @@ export async function acceptInvitation(_: Result | null, form: FormData): Promis
     return null;
   });
   if (!res.ok) return res;
-  redirect("/");
+  redirect("/app");
 }
 
 export async function setOutlet(outletId: string) {
@@ -186,12 +192,12 @@ export async function setOutlet(outletId: string) {
 
 // ---------------------------------------------------------------- billing
 
-export async function startCheckout(): Promise<Result<string>> {
+export async function startCheckout(interval: "month" | "year" = "month"): Promise<Result<string>> {
   return run(async (s) => {
     if (!canManageBilling(s.role)) throw new Error("Nur Inhaber können das Abo verwalten.");
     if (!billingConfigured()) throw new Error("Die Abrechnung ist noch nicht eingerichtet.");
     const billing = await repo.getBilling(s);
-    return createCheckout({ libraryId: s.libraryId, email: s.email, outletCount: (await repo.listOutlets(s)).length, customerId: billing.stripeCustomerId });
+    return createCheckout({ libraryId: s.libraryId, email: s.email, outletCount: (await repo.listOutlets(s)).length, customerId: billing.stripeCustomerId, interval: z.enum(["month", "year"]).parse(interval) });
   });
 }
 

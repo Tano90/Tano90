@@ -1,0 +1,17 @@
+{
+  "_note": "For the native app, once it exists (Expo, see architecture.md). Pantra currently runs in the browser only; do not submit before a native build exists.",
+  "avoid": ["Apicbase", "Apic base", "Apicbase NV"],
+  "app_store": {
+    "name": "Pantra: Küchenkalkulation",
+    "subtitle": "Wareneinsatz, Lager, Einkauf",
+    "promotional_text": "Inventur auf dem Handy: jede Zahl wird sofort gespeichert, auch wenn im Kühlhaus das Netz wegfällt.",
+    "description": "Pantra zeigt, was jeder Teller kostet, und hält das Lager dazu.\n\nLege Zutaten so an, wie dein Lieferant sie verkauft, mit dem Preis von der Rechnung. Baue Rezepte und Grundrezepte: Pantra rechnet Gramm, Liter und Stück um und zeigt schon beim Tippen den Wareneinsatz pro Portion. Ändert sich ein Einkaufspreis, rechnet jedes Rezept mit.\n\nAuf dem Handy:\n- Inventur mit großen Eingabefeldern, Zwischenstand wird sofort gespeichert\n- Wareneingang: bestellte Mengen sind vorausgefüllt, Teillieferungen bleiben offen\n- Schwund mit Grund buchen\n\nAllergene: Eine ungeprüfte Zutat macht ein Gericht „unbekannt“, nie „frei“.\n\nFür Küchen mit einem oder mehreren Standorten. Beliebig viele Nutzer, jedes Teammitglied sieht nur seinen Standort.\n\n14 Tage kostenlos. Danach 49 € im Monat für einen Standort, 39 € für jeden weiteren (netto). Kündigen mit einem Klick.",
+    "keywords": "Rezept,Rezeptur,Inventur,Gastronomie,Bestellung,Allergene,Restaurant,Food Cost,Zutaten,Koch,Bistro",
+    "whats_new": "Inventur speichert jetzt auch ohne Netz zwischen und sendet nach, sobald es zurück ist."
+  },
+  "google_play": {
+    "title": "Pantra: Küchenkalkulation",
+    "short_description": "Wareneinsatz pro Teller, Inventur und Bestellungen für deine Küche.",
+    "full_description": "Pantra zeigt, was jeder Teller kostet, und hält das Lager dazu.\n\nLege Zutaten so an, wie dein Lieferant sie verkauft, mit dem Preis von der Rechnung. Baue Rezepte und Grundrezepte: Pantra rechnet Gramm, Liter und Stück um und zeigt schon beim Tippen den Wareneinsatz pro Portion.\n\nAuf dem Handy: Inventur mit sofortigem Zwischenspeichern, Wareneingang mit vorausgefüllten Mengen, Schwund mit Grund.\n\nAllergene: Eine ungeprüfte Zutat macht ein Gericht „unbekannt“, nie „frei“.\n\n14 Tage kostenlos. Danach 49 € im Monat für einen Standort, 39 € für jeden weiteren (netto)."
+  }
+}

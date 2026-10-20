@@ -11,7 +11,7 @@ import { cn } from "@/lib/cn";
 import { Select } from "./field";
 
 const NAV = [
-  { href: "/", label: "Übersicht", icon: LayoutDashboard },
+  { href: "/app", label: "Übersicht", icon: LayoutDashboard },
   { href: "/ingredients", label: "Zutaten", icon: Package },
   { href: "/recipes", label: "Rezepte", icon: ChefHat },
   { href: "/menus", label: "Menüs", icon: UtensilsCrossed },
@@ -56,7 +56,7 @@ export function AppShell({ outlets, outletId, onOutletChange, user, children }: 
         </div>
         <ul className="mt-2 flex flex-col gap-1">
           {NAV.map(({ href, label, icon: Icon }) => {
-            const active = href === "/" ? pathname === "/" : pathname?.startsWith(href.split("/").slice(0, 2).join("/"));
+            const active = pathname?.startsWith(href.split("/").slice(0, 2).join("/"));
             return (
               <li key={href}>
                 <Link

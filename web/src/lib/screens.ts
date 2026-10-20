@@ -3,7 +3,7 @@ export type Screen = { id: string; title: string; route: string; purpose: string
 
 export const SCREENS: Screen[] = [
   { id: "S01", title: "Anmeldung", route: "/login", purpose: "Anmelden", built: true },
-  { id: "S02", title: "Übersicht", route: "/", purpose: "Kennzahlen und offene Aufgaben auf einen Blick", built: true },
+  { id: "S02", title: "Übersicht", route: "/app", purpose: "Kennzahlen und offene Aufgaben auf einen Blick", built: true },
   { id: "S03", title: "Zutaten", route: "/ingredients", purpose: "Zutaten suchen, filtern, anlegen", built: true },
   { id: "S04", title: "Zutat", route: "/ingredients/ing-zwiebeln", purpose: "Stammdaten, Gebinde, Lieferantenpreise, Allergene", built: true },
   { id: "S05", title: "Rezepte", route: "/recipes", purpose: "Rezepte mit Kosten und Wareneinsatz", built: true },

@@ -8,10 +8,20 @@ test.describe("A01 Anmelden, Sitzung, fremde Daten", () => {
     await axe();
     await page.getByRole("button", { name: "Anmelden" }).click();
     await expect(page.getByRole("heading", { name: "Guten Tag, Demo" })).toBeVisible();
+    await expect(page).toHaveURL(/\/app$/);
     await page.getByRole("button", { name: "Abmelden" }).click();
     await expect(page).toHaveURL(/\/login/);
-    await page.goto("/");
+    await page.goto("/app");
     await expect(page).toHaveURL(/\/login/);
+  });
+
+  test("A01-N4 keine offene Weiterleitung nach der Anmeldung", async ({ page }) => {
+    for (const next of ["//evil.example/phish", "/\\evil.example", "https://evil.example"]) {
+      await page.context().clearCookies();
+      await page.goto(`/login?next=${encodeURIComponent(next)}`);
+      await page.getByRole("button", { name: "Anmelden" }).click();
+      await expect(page).toHaveURL(/localhost:\d+\/app$/);
+    }
   });
 
   test("A01-N1 unbekannte E-Mail", async ({ page }) => {

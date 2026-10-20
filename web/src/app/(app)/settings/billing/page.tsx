@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
 import { getBilling, listOutlets } from "@/data/repo";
 import { canManageBilling, requireSession } from "@/data/session";
-import { billingConfigured } from "@/lib/billing";
+import { billingConfigured, yearlyConfigured } from "@/lib/billing";
 import { formatDate } from "@/lib/dates";
 import { BillingButtons } from "./billing-buttons";
 
@@ -34,7 +34,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
           {billing.currentPeriodEnd && <div><dt className="text-xs text-text-muted">{billing.plan === "cancelled" ? "Zugang bis" : "Nächste Abrechnung"}</dt><dd>{date(billing.currentPeriodEnd)}</dd></div>}
         </dl>
         {billing.plan === "past_due" && <Notice tone="warning">Die letzte Zahlung ist fehlgeschlagen. Aktualisiere deine Zahlungsart, damit der Zugang erhalten bleibt.</Notice>}
-        <BillingButtons hasCustomer={!!billing.stripeCustomerId} configured={billingConfigured()} />
+        <BillingButtons hasCustomer={!!billing.stripeCustomerId} configured={billingConfigured()} yearly={yearlyConfigured()} />
         <p className="text-xs font-normal text-text-muted">Kündigen geht jederzeit mit einem Klick über „Abo verwalten“. Bezahlung und Rechnungen laufen über Stripe; deine Kartendaten sehen wir nie.</p>
       </div>
     </>

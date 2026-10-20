@@ -10,7 +10,7 @@ export default function NotFound() {
         as="h1"
         title="Nicht gefunden"
         body="Diesen Eintrag gibt es nicht oder nicht mehr."
-        action={<Link className="font-semibold text-accent underline" href="/">Zur Übersicht</Link>}
+        action={<Link className="font-semibold text-accent underline" href="/">Zur Startseite</Link>}
       />
     </main>
   );

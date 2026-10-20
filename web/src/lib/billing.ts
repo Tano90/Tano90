@@ -5,6 +5,7 @@ import Stripe from "stripe";
 import { asService } from "@/data/pg/client";
 
 export const billingConfigured = () => !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_ID);
+export const yearlyConfigured = () => !!process.env.STRIPE_PRICE_ID_YEARLY;
 
 export function stripe(): Stripe {
   if (!process.env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not set.");
@@ -17,13 +18,16 @@ export function stripe(): Stripe {
 const appUrl = () => process.env.APP_URL ?? "http://localhost:3000";
 
 /** Checkout for the per-outlet plan. client_reference_id ties the session to the library. */
-export async function createCheckout(input: { libraryId: string; email: string; outletCount: number; customerId: string | null }) {
+/** Checkout for the per-outlet plan (a graduated price: first outlet, then each further one). */
+export async function createCheckout(input: { libraryId: string; email: string; outletCount: number; customerId: string | null; interval: "month" | "year" }) {
+  const price = input.interval === "year" ? process.env.STRIPE_PRICE_ID_YEARLY : process.env.STRIPE_PRICE_ID;
+  if (!price) throw new Error("Für diesen Zahlungsrhythmus ist kein Preis eingerichtet.");
   const session = await stripe().checkout.sessions.create({
     mode: "subscription",
     client_reference_id: input.libraryId,
     customer: input.customerId ?? undefined,
     customer_email: input.customerId ? undefined : input.email,
-    line_items: [{ price: process.env.STRIPE_PRICE_ID!, quantity: Math.max(1, input.outletCount) }],
+    line_items: [{ price, quantity: Math.max(1, input.outletCount) }],
     subscription_data: { metadata: { library_id: input.libraryId } },
     allow_promotion_codes: true,
     automatic_tax: { enabled: process.env.STRIPE_AUTOMATIC_TAX === "1" },

@@ -19,7 +19,7 @@ const axe = readFileSync(require.resolve("axe-core/axe.min.js"), "utf8");
 // Kept in sync with src/lib/screens.ts (built screens only).
 const SCREENS = [
   ["S01", "/login", null],
-  ["S02", "/", "usr-owner"],
+  ["S02", "/app", "usr-owner"],
   ["S03", "/ingredients", "usr-owner"],
   ["S04", "/ingredients/ing-olivenoel?tab=packages", "usr-owner"],
   ["S05", "/recipes", "usr-owner"],

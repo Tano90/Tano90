@@ -10,7 +10,7 @@ export default function NotFound() {
         icon={SearchX}
         title="Nicht gefunden"
         body="Diesen Eintrag gibt es nicht, nicht mehr, oder er gehört zu einem anderen Betrieb."
-        action={<Link className="font-semibold text-accent underline" href="/">Zur Übersicht</Link>}
+        action={<Link className="font-semibold text-accent underline" href="/app">Zur Übersicht</Link>}
       />
     </div>
   );

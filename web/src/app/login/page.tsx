@@ -9,7 +9,7 @@ export const metadata = { title: "Anmelden" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ signedout?: string; deleted?: string; next?: string; error?: string }> }) {
   const sp = await searchParams;
-  if (await getSession()) redirect("/");
+  if (await getSession()) redirect("/app");
   const supabase = authMode() === "supabase";
   return (
     <AuthCard
