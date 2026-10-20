@@ -18,8 +18,9 @@ create type allergen as enum (
   'gluten', 'crustaceans', 'eggs', 'fish', 'peanuts', 'soybeans', 'milk', 'nuts',
   'celery', 'mustard', 'sesame', 'sulphites', 'lupin', 'molluscs'
 );
--- order matters: higher wins when allergens roll up from ingredients to recipes
-create type allergen_status as enum ('unknown', 'free', 'may_contain', 'contains');
+-- order matters: higher wins when allergens roll up from ingredients to recipes.
+-- unknown ranks above free, so one unchecked ingredient makes the dish "unknown", never "free".
+create type allergen_status as enum ('free', 'unknown', 'may_contain', 'contains');
 create type product_type as enum ('finished', 'semi_finished');
 create type price_type as enum ('per_pack', 'per_unit');
 create type po_status as enum ('draft', 'ordered', 'partially_delivered', 'delivered', 'cancelled');
