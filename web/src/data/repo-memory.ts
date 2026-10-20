@@ -5,7 +5,7 @@ import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
 import { suggestPacks } from "@/domain/stock";
 import { type BaseUnit } from "@/domain/units";
-import { Forbidden, canAccessOutlet, canEditLibrary, canManageTeam } from "./session-rules";
+import { Forbidden, assertCanChangeMember, canAccessOutlet, canEditLibrary, canManageTeam } from "./session-rules";
 import { addMovement, db, newId, now } from "./store";
 import type {
   AllergenRow, Ingredient, Nutrition, Package, PurchaseOrder, Recipe, RecipeLine, Session, StockEvent, StockItem, Supplier,
@@ -92,6 +92,37 @@ export async function inviteMember(s: Session, input: { name: string; email: str
   if (d.members.some((m) => m.email.toLowerCase() === input.email.toLowerCase())) throw new Error("Diese E-Mail-Adresse ist schon im Team.");
   d.members.push({ id: newId("mem"), userId: newId("usr"), name: input.name, email: input.email, role: input.role, allOutlets: input.outletIds.length === 0, outletIds: input.outletIds });
   return { token: null };
+}
+
+export async function updateMember(s: Session, memberId: string, input: { role: Exclude<Session["role"], "owner">; outletIds: string[] }) {
+  const d = db();
+  const m = d.members.find((x) => x.id === memberId);
+  if (!m) throw new Error("Teammitglied nicht gefunden.");
+  assertCanChangeMember(s, m, { role: input.role }, d.members.filter((x) => x.role === "owner").length);
+  m.role = input.role;
+  m.allOutlets = input.role !== "outlet_staff";
+  m.outletIds = input.role === "outlet_staff" ? input.outletIds : [];
+}
+
+export async function removeMember(s: Session, memberId: string) {
+  const d = db();
+  const m = d.members.find((x) => x.id === memberId);
+  if (!m) return;
+  assertCanChangeMember(s, m, { remove: true }, d.members.filter((x) => x.role === "owner").length);
+  d.members = d.members.filter((x) => x.id !== memberId);
+}
+
+/** The owner hands ownership to another member and becomes admin. */
+export async function transferOwnership(s: Session, memberId: string) {
+  if (s.role !== "owner") throw new Forbidden("Nur der Inhaber kann die Inhaberschaft übertragen.");
+  const d = db();
+  const target = d.members.find((x) => x.id === memberId);
+  const me = d.members.find((x) => x.userId === s.userId);
+  if (!target || !me || target.id === me.id) throw new Error("Bitte ein anderes Teammitglied wählen.");
+  target.role = "owner";
+  target.allOutlets = true;
+  target.outletIds = [];
+  me.role = "admin";
 }
 
 export async function listCategories(_s: Session, kind: "ingredient" | "recipe") {

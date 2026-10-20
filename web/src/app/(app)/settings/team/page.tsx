@@ -20,7 +20,7 @@ export default async function TeamPage() {
   return (
     <>
       <PageHeader title="Outlets & Team" description="Wer in welchem Outlet arbeitet und was er darf." back={{ href: "/settings", label: "Einstellungen" }} />
-      <TeamAdmin members={members} outlets={outlets.map((o) => ({ id: o.id, name: o.name, isCentralKitchen: o.isCentralKitchen }))} />
+      <TeamAdmin members={members} outlets={outlets.map((o) => ({ id: o.id, name: o.name, isCentralKitchen: o.isCentralKitchen }))} me={{ userId: s.userId, role: s.role }} />
     </>
   );
 }

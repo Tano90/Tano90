@@ -7,7 +7,7 @@ import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost
 import { suggestPacks } from "@/domain/stock";
 import type { BaseUnit } from "@/domain/units";
 import type { Billing, IngredientFilter, IngredientInput, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
-import { Forbidden, canEditLibrary, canManageTeam } from "../session-rules";
+import { Forbidden, assertCanChangeMember, canEditLibrary, canManageTeam } from "../session-rules";
 import type {
   AllergenRow, Category, Ingredient, Library, Member, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
   StockEvent, StockItem, StockMovement, Supplier,
@@ -92,6 +92,48 @@ export async function inviteMember(s: Session, input: { name: string; email: str
 export async function sha256(text: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return Buffer.from(buf).toString("hex");
+}
+
+async function memberAndOwners(tx: Tx, s: Session, memberId: string) {
+  const members = await tx<Member[]>`
+    select m.id, m.user_id, m.display_name as name, m.email, m.role, m.all_outlets, '{}'::uuid[] as outlet_ids
+    from memberships m where m.library_id = ${s.libraryId} for update`;
+  const target = members.find((m) => m.id === memberId);
+  if (!target) throw new Error("Teammitglied nicht gefunden.");
+  return { target, owners: members.filter((m) => m.role === "owner").length, members };
+}
+
+export async function updateMember(s: Session, memberId: string, input: { role: Exclude<Session["role"], "owner">; outletIds: string[] }) {
+  await run(s, async (tx) => {
+    const { target, owners } = await memberAndOwners(tx, s, memberId);
+    assertCanChangeMember(s, target, { role: input.role }, owners);
+    await tx`update memberships set role = ${input.role}, all_outlets = ${input.role !== "outlet_staff"} where id = ${memberId}`;
+    await tx`delete from membership_outlets where membership_id = ${memberId}`;
+    if (input.role === "outlet_staff" && input.outletIds.length) {
+      await tx`insert into membership_outlets (membership_id, outlet_id)
+        select ${memberId}, o.id from outlets o where o.id = any(${input.outletIds}::uuid[]) and o.library_id = ${s.libraryId}`;
+    }
+  });
+}
+
+export async function removeMember(s: Session, memberId: string) {
+  await run(s, async (tx) => {
+    const { target, owners } = await memberAndOwners(tx, s, memberId);
+    assertCanChangeMember(s, target, { remove: true }, owners);
+    await tx`delete from memberships where id = ${memberId}`;
+  });
+}
+
+export async function transferOwnership(s: Session, memberId: string) {
+  if (s.role !== "owner") throw new Forbidden("Nur der Inhaber kann die Inhaberschaft übertragen.");
+  await run(s, async (tx) => {
+    const { target, members } = await memberAndOwners(tx, s, memberId);
+    const me = members.find((m) => m.userId === s.userId);
+    if (!me || me.id === target.id) throw new Error("Bitte ein anderes Teammitglied wählen.");
+    await tx`update memberships set role = 'owner', all_outlets = true where id = ${target.id}`;
+    await tx`delete from membership_outlets where membership_id = ${target.id}`;
+    await tx`update memberships set role = 'admin' where id = ${me.id}`;
+  });
 }
 
 export async function listCategories(s: Session, kind: "ingredient" | "recipe"): Promise<Category[]> {

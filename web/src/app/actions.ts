@@ -417,6 +417,18 @@ export async function createOutlet(outletName: string, isCentralKitchen: boolean
     return id;
   }, ["/"]);
 }
+const MemberSchema = z.object({ role: z.enum(["admin", "chef", "outlet_staff"]), outletIds: z.array(id) })
+  .refine((v) => v.role !== "outlet_staff" || v.outletIds.length > 0, "Bitte mindestens ein Outlet wählen.");
+export async function updateMember(memberId: string, input: z.input<typeof MemberSchema>) {
+  return run((s) => repo.updateMember(s, memberId, MemberSchema.parse(input)), ["/settings/team"]);
+}
+export async function removeMember(memberId: string) {
+  return run((s) => repo.removeMember(s, memberId), ["/settings/team"]);
+}
+export async function transferOwnership(memberId: string) {
+  return run((s) => repo.transferOwnership(s, memberId), ["/"]);
+}
+
 const ROLE_LABEL = { admin: "Admin", chef: "Küchenleitung", outlet_staff: "Teammitglied" } as const;
 
 export async function inviteMember(input: { name: string; email: string; role: string; outletIds: string[] }) {
