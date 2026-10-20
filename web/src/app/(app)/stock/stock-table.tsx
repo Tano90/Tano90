@@ -1,16 +1,24 @@
 "use client";
 
-import { Boxes } from "lucide-react";
+import { Boxes, SlidersHorizontal } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { setStockLevels } from "@/app/actions";
+import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
+import { Field, Input } from "@/components/ui/field";
+import { parseQuantity } from "@/components/ui/quantity-input";
+import { toast } from "@/components/ui/toast";
 import { Badge } from "@/components/ui/badge";
 import { type Column, DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import type { BaseUnit } from "@/domain/units";
-import { formatCents } from "@/lib/format";
+import { formatCents, formatQty } from "@/lib/format";
 import { formatBase, formatUnitPrice } from "@/lib/units-display";
 import { useUrlFilters } from "@/lib/use-url-filters";
 
-type Row = { id: string; name: string; category: string; baseUnit: BaseUnit; quantityBase: number; avgCostCents: number; valueCents: number; belowMin: boolean; minLevelBase: number | null };
+type Row = { id: string; name: string; category: string; baseUnit: BaseUnit; quantityBase: number; avgCostCents: number; valueCents: number; belowMin: boolean; minLevelBase: number | null; parLevelBase: number | null };
 
 const COLUMNS: Column<Row>[] = [
   { key: "name", header: "Zutat", sortValue: (r) => r.name, cell: (r) => r.name },
@@ -21,6 +29,15 @@ const COLUMNS: Column<Row>[] = [
       <span className="inline-flex items-center justify-end gap-2">
         {r.quantityBase < 0 ? <Badge tone="danger">negativ</Badge> : r.belowMin && <Badge tone="warning">unter Minimum</Badge>}
         {formatBase(r.quantityBase, r.baseUnit)}
+      </span>
+    ),
+  },
+  {
+    key: "levels", header: "Min / Ziel", align: "right", sortValue: (r) => r.minLevelBase ?? -1,
+    cell: (r) => (
+      <span className="inline-flex items-center justify-end gap-1">
+        <span className="text-text-muted">{r.minLevelBase === null ? "–" : formatBase(r.minLevelBase, r.baseUnit)} / {r.parLevelBase === null ? "–" : formatBase(r.parLevelBase, r.baseUnit)}</span>
+        <EditLevels row={r} />
       </span>
     ),
   },
@@ -46,5 +63,52 @@ export function StockTable({ rows, filtered }: { rows: Row[]; filtered: boolean 
         empty={<EmptyState icon={Boxes} title="Noch kein Bestand" body="Bestand entsteht durch Lieferungen und Inventuren." />}
       />
     </div>
+  );
+}
+
+// Levels are entered the way kitchens think (kg, l, pieces) and stored in base units.
+const FACTOR: Record<BaseUnit, number> = { g: 1000, ml: 1000, piece: 1 };
+const UNIT: Record<BaseUnit, string> = { g: "kg", ml: "l", piece: "Stk." };
+
+function EditLevels({ row }: { row: Row }) {
+  const router = useRouter();
+  const f = FACTOR[row.baseUnit];
+  const show = (v: number | null) => (v === null ? "" : formatQty(v / f));
+  const [open, setOpen] = useState(false);
+  const [min, setMin] = useState(show(row.minLevelBase));
+  const [par, setPar] = useState(show(row.parLevelBase));
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const toBase = (v: string) => (v.trim() ? (parseQuantity(v) ?? NaN) * f : null);
+  const save = () =>
+    start(async () => {
+      const [m, p] = [toBase(min), toBase(par)];
+      if ([m, p].some((x) => x !== null && Number.isNaN(x))) return setError("Bitte eine Zahl angeben.");
+      const res = await setStockLevels(row.id, { minLevelBase: m, parLevelBase: p });
+      if (!res.ok) return setError(res.error);
+      setError(null);
+      setOpen(false);
+      toast.success("Bestände gespeichert");
+      router.refresh();
+    });
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => { setOpen(o); if (o) { setMin(show(row.minLevelBase)); setPar(show(row.parLevelBase)); setError(null); } }}
+      trigger={<Button variant="ghost" size="icon" aria-label={`${row.name}: Mindest- und Zielbestand`} onClick={(e) => e.stopPropagation()}><SlidersHorizontal aria-hidden className="size-4" /></Button>}
+      title={row.name}
+      description="Unter dem Mindestbestand wird der Artikel markiert und am Morgen gemeldet. Der Bestellvorschlag füllt bis zum Zielbestand auf."
+      footer={<Button onClick={save} loading={pending}>Speichern</Button>}
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        {error && <p role="alert" className="text-danger sm:col-span-2">{error}</p>}
+        <Field label={`Mindestbestand (${UNIT[row.baseUnit]})`} hint="Leer = keine Warnung">
+          <Input inputMode="decimal" className="text-right" value={min} onChange={(e) => setMin(e.target.value.replace(/[^\d,]/g, ""))} />
+        </Field>
+        <Field label={`Zielbestand (${UNIT[row.baseUnit]})`} hint="Leer = kein Vorschlag">
+          <Input inputMode="decimal" className="text-right" value={par} onChange={(e) => setPar(e.target.value.replace(/[^\d,]/g, ""))} />
+        </Field>
+      </div>
+    </Dialog>
   );
 }

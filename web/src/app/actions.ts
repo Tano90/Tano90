@@ -431,6 +431,11 @@ export async function recordWaste(lines: z.input<typeof WasteSchema>) {
   return run(async (s) => repo.recordWaste(s, await currentOutletId(s), WasteSchema.parse(lines)), ["/stock", "/"]);
 }
 
+const LevelsSchema = z.object({ minLevelBase: z.number().min(0).nullable(), parLevelBase: z.number().min(0).nullable() });
+export async function setStockLevels(ingredientId: string, input: z.input<typeof LevelsSchema>) {
+  return run(async (s) => repo.setStockLevels(s, await currentOutletId(s), ingredientId, LevelsSchema.parse(input)), ["/stock", "/orders"]);
+}
+
 const TransferSchema = z.object({
   toOutletId: z.string().min(1, "Bitte ein Ziel-Outlet wählen."),
   lines: z.array(z.object({ ingredientId: z.string().min(1, "Bitte eine Zutat wählen."), quantityBase: positive })).min(1, "Mindestens eine Position angeben."),

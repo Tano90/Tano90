@@ -634,8 +634,8 @@ export async function archiveMenu(s: Session, id: string) {
 export async function getStock(s: Session, outletId: string, q = "") {
   const like = q.trim() ? `%${q.trim().toLowerCase()}%` : null;
   return run(s, async (tx) => {
-    const rows = await tx<{ id: string; name: string; baseUnit: BaseUnit; category: string | null; quantityBase: number | null; avgCostCents: number | null; minLevelBase: number | null }[]>`
-      select i.id, i.name, i.base_unit, c.name as category, sl.quantity_base, sl.avg_cost_cents, oi.min_level_base
+    const rows = await tx<{ id: string; name: string; baseUnit: BaseUnit; category: string | null; quantityBase: number | null; avgCostCents: number | null; minLevelBase: number | null; parLevelBase: number | null }[]>`
+      select i.id, i.name, i.base_unit, c.name as category, sl.quantity_base, sl.avg_cost_cents, oi.min_level_base, oi.par_level_base
       from outlet_ingredients oi
       join ingredients i on i.id = oi.ingredient_id and i.archived_at is null
       left join categories c on c.id = i.category_id
@@ -647,7 +647,7 @@ export async function getStock(s: Session, outletId: string, q = "") {
         const avg = r.avgCostCents ?? 0;
         return {
           id: r.id, name: r.name, baseUnit: r.baseUnit, category: r.category ?? "–", quantityBase: qty, avgCostCents: avg,
-          valueCents: Math.max(qty, 0) * avg, minLevelBase: r.minLevelBase, belowMin: r.minLevelBase != null && qty < r.minLevelBase,
+          valueCents: Math.max(qty, 0) * avg, minLevelBase: r.minLevelBase, parLevelBase: r.parLevelBase, belowMin: r.minLevelBase != null && qty < r.minLevelBase,
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name, "de"));
@@ -681,6 +681,17 @@ export async function recordWaste(s: Session, outletId: string, lines: { ingredi
     // unit cost is set to the current average by the trigger for outgoing movements
     await tx`insert into stock_movements ${tx(lines.map((l) => ({ stockEventId: ev.id, outletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase, reason: l.reason })))}`;
     return ev.id;
+  });
+}
+
+/** Minimum (warns, daily alert) and target level (order suggestion) of an item in one outlet. null clears. */
+export async function setStockLevels(s: Session, outletId: string, ingredientId: string, v: { minLevelBase: number | null; parLevelBase: number | null }) {
+  if (v.minLevelBase !== null && v.parLevelBase !== null && v.minLevelBase > v.parLevelBase) throw new Error("Der Mindestbestand liegt über dem Zielbestand.");
+  await run(s, async (tx) => {
+    const updated = await tx`
+      update outlet_ingredients set min_level_base = ${v.minLevelBase}, par_level_base = ${v.parLevelBase}
+      where outlet_id = ${outletId} and ingredient_id = ${ingredientId} returning 1`;
+    if (!updated.length) throw new Error("Diese Zutat wird in diesem Outlet nicht geführt.");
   });
 }
 

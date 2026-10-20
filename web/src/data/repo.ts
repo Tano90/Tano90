@@ -19,7 +19,7 @@ export const {
   listIngredients, getIngredient, saveIngredient, archiveIngredient, savePackage, deletePackage, saveStockItem, archiveStockItem,
   setIngredientAllergens, setNutrition, listSuppliers, getSupplier, saveSupplier, archiveSupplier,
   listRecipes, getRecipe, lineOptions, previewRecipe, saveRecipe, archiveRecipe, listMenus, getMenu, saveMenu, archiveMenu,
-  getStock, getStockReport, listStockEvents, recordWaste, recordTransfer, listTransfers, getOpenCount, startCount, saveCountLines, closeCount,
+  getStock, getStockReport, listStockEvents, recordWaste, recordTransfer, listTransfers, setStockLevels, getOpenCount, startCount, saveCountLines, closeCount,
   listOrders, orderCounts, getOrder, orderableItems, saveOrderDraft, sendOrder, deleteOrderDraft, receiveDelivery,
   dashboard,
 } = impl;

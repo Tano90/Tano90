@@ -583,6 +583,7 @@ export async function getStock(s: Session, outletId: string, q = "") {
         avgCostCents: level?.avgCostCents ?? 0,
         valueCents: Math.max(qty, 0) * (level?.avgCostCents ?? 0),
         minLevelBase: oi?.minLevelBase ?? null,
+        parLevelBase: oi?.parLevelBase ?? null,
         belowMin: oi?.minLevelBase != null && qty < oi.minLevelBase,
       };
     })
@@ -614,6 +615,15 @@ export async function recordWaste(s: Session, outletId: string, lines: { ingredi
   d.events.push(ev);
   for (const l of lines) addMovement(d, { eventId: ev.id, outletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase, countedBase: null, reason: l.reason });
   return ev.id;
+}
+
+/** Minimum (warns, daily alert) and target level (order suggestion) of an item in one outlet. null clears. */
+export async function setStockLevels(s: Session, outletId: string, ingredientId: string, v: { minLevelBase: number | null; parLevelBase: number | null }) {
+  assertOutlet(s, outletId);
+  if (v.minLevelBase !== null && v.parLevelBase !== null && v.minLevelBase > v.parLevelBase) throw new Error("Der Mindestbestand liegt über dem Zielbestand.");
+  const oi = db().outletIngredients.find((x) => x.outletId === outletId && x.ingredientId === ingredientId);
+  if (!oi) throw new Error("Diese Zutat wird in diesem Outlet nicht geführt.");
+  Object.assign(oi, v);
 }
 
 /** Moves stock to another outlet, valued at the sender's average cost. */
