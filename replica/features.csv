@@ -1,40 +1,40 @@
 feature,area,priority,original,clone,notes
-Login mit E-Mail und Passwort,auth,must,yes,no,S01
-Bibliothek (Mandant) mit mehreren Outlets,setup,must,yes,no,S24 S25; Library vs. outlet-gebundene Daten
-Benutzer einladen und Outlets zuweisen,setup,must,yes,no,S25; Rollenmodell geraten
-Zutatenliste mit Suche und Filter,library,must,yes,no,S03
-Zutat anlegen mit Kategorie,library,must,yes,no,S04 F01
-Gebinde-Hierarchie (z. B. 30x150 g),library,must,yes,no,S04; Quelle 7
-Lieferantenpreis pro Pack oder pro Einheit (netto),library,must,yes,no,S04 S11; Quelle 9 30
-Automatische Einheitenumrechnung (g/kg/ml/cl/l/Stück),library,must,yes,no,F01 F02
-Rezept anlegen mit Portionen und Zutatenzeilen,recipes,must,yes,no,S06 F02
-Wareneinsatz und Food-Cost-% pro Portion live,recipes,must,yes,no,S06; Quelle 6
-Unterrezepte (Semi-finished) mit Nettomenge,recipes,must,yes,no,F03; Zyklen verhindern
-Preisänderung aktualisiert alle Rezepte und Menüs,recipes,must,yes,no,F04
-VK-Preis mit/ohne MwSt. und Marge,recipes,must,yes,no,S06 Financial-Tab
-Allergene pro Zutat (enthält/Spuren/frei/unbekannt),allergens,must,yes,no,S04; 14 EU-Allergene
-Allergene im Rezept automatisch vererbt + manuell ergänzbar,allergens,must,yes,no,S06; Quelle 12
-Lieferanten verwalten,procurement,must,yes,no,S10 S11
-Bestellung pro Lieferant und Outlet anlegen und per E-Mail senden,procurement,must,yes,no,S13 F06
-Wareneingang inkl. Teillieferung,procurement,must,yes,no,S14 F07
-Inventur pro Outlet (Packungen und Teilmengen),inventory,must,yes,no,S17 F08
-Lagerbestand und Lagerwert (WAC) pro Outlet,inventory,must,yes,no,S16; Quelle 20
-Schwund buchen mit Grund,inventory,must,yes,no,S19 F09
+Login mit E-Mail und Passwort,auth,must,yes,partial,S01; Demo-Login ohne echte Passwörter – Supabase Auth folgt mit /replica-backend
+Bibliothek (Mandant) mit mehreren Outlets,setup,must,yes,yes,"S24 S25; Library vs. outlet-gebundene Daten; Outlet-Switch im Header, Outlet anlegen"
+Benutzer einladen und Outlets zuweisen,setup,must,yes,partial,"S25; Rollenmodell geraten; Mitglied wird direkt angelegt, keine Einladungs-Mail, Rolle nachträglich ändern fehlt"
+Zutatenliste mit Suche und Filter,library,must,yes,yes,S03
+Zutat anlegen mit Kategorie,library,must,yes,yes,S04 F01
+Gebinde-Hierarchie (z. B. 30x150 g),library,must,yes,yes,S04; Quelle 7
+Lieferantenpreis pro Pack oder pro Einheit (netto),library,must,yes,yes,S04 S11; Quelle 9 30
+Automatische Einheitenumrechnung (g/kg/ml/cl/l/Stück),library,must,yes,yes,F01 F02; über Gewicht pro Stück und Dichte; Unit-Tests
+Rezept anlegen mit Portionen und Zutatenzeilen,recipes,must,yes,yes,S06 F02
+Wareneinsatz und Food-Cost-% pro Portion live,recipes,must,yes,yes,S06; Quelle 6
+Unterrezepte (Semi-finished) mit Nettomenge,recipes,must,yes,yes,F03; Zyklen verhindern; inkl. Portion als Einheit; Zyklen werden abgelehnt
+Preisänderung aktualisiert alle Rezepte und Menüs,recipes,must,yes,partial,"F04; Rezepte ja (live berechnet, E2E geprüft); Menüs gibt es noch nicht"
+VK-Preis mit/ohne MwSt. und Marge,recipes,must,yes,yes,S06 Financial-Tab
+Allergene pro Zutat (enthält/Spuren/frei/unbekannt),allergens,must,yes,yes,S04; 14 EU-Allergene
+Allergene im Rezept automatisch vererbt + manuell ergänzbar,allergens,must,yes,yes,S06; Quelle 12; unbekannt schlägt frei
+Lieferanten verwalten,procurement,must,yes,partial,"S10 S11; anlegen/bearbeiten ja, archivieren fehlt"
+Bestellung pro Lieferant und Outlet anlegen und per E-Mail senden,procurement,must,yes,partial,"S13 F06; S13; Status wird gesetzt, E-Mail-Versand erst mit /replica-backend (Resend)"
+Wareneingang inkl. Teillieferung,procurement,must,yes,yes,S14 F07; S14; Überlieferung wird abgelehnt
+Inventur pro Outlet (Packungen und Teilmengen),inventory,must,yes,partial,"S17 F08; S17; Zählen in kg/l/Stk. mit Dezimalstellen, Zählen in Gebinden fehlt"
+Lagerbestand und Lagerwert (WAC) pro Outlet,inventory,must,yes,yes,S16; Quelle 20
+Schwund buchen mit Grund,inventory,must,yes,yes,S19 F09
 Menüs mit Gängen und Zielmarge,menus,should,yes,no,S08 F05
-Nährwerte pro 100 g und pro Portion berechnet,allergens,should,yes,no,S04 S06
+Nährwerte pro 100 g und pro Portion berechnet,allergens,should,yes,partial,"S04 S06; Eingabe pro Zutat ja, Berechnung pro Rezept fehlt"
 Allergen- und Nährwertlabel drucken,allergens,should,yes,no,S09
 Stückliste (BoM) für Menü,menus,should,yes,no,S09; Quelle 14
 Outlet-spezifische Verkaufspreise,recipes,should,yes,no,S06
-Zubereitungsschritte und Produktionszeit / Personalkosten,recipes,should,yes,no,S06; Prime Cost
-Sichtbarkeit von Zutaten pro Outlet,inventory,should,yes,no,Quelle 21
+Zubereitungsschritte und Produktionszeit / Personalkosten,recipes,should,yes,yes,S06; Prime Cost
+Sichtbarkeit von Zutaten pro Outlet,inventory,should,yes,partial,"Quelle 21; wird beim Bestellen und Zählen beachtet, keine Oberfläche zum Ändern"
 Transfer zwischen Outlets,inventory,should,yes,no,S18 F10
-Par-Level und Bestellvorschlag,procurement,should,yes,no,S13; Quelle 35
-Gewogene Artikel (Bestellung nach Gewicht),procurement,should,yes,no,Quelle 10
+Par-Level und Bestellvorschlag,procurement,should,yes,partial,"S13; Quelle 35; Vorschlag ja, Mindest-/Zielbestand nur aus Seed, keine Oberfläche"
+Gewogene Artikel (Bestellung nach Gewicht),procurement,should,yes,partial,Quelle 10; Kennzeichen und Gewicht beim Wareneingang; Bestellen nach Gewicht fehlt
 Lagerbericht mit Bewegungen und Zähldifferenzen,inventory,should,yes,no,S20
 Excel-Import für Gebinde und Preise,library,should,yes,no,S26
 Generischer POS-Import (CSV/API) und PLU-Mapping,pos,should,yes,no,S21 F11; eigene Schnittstelle statt Partner-Integrationen
 Lagerabzug durch Verkäufe bis auf Rohware,pos,should,yes,no,F11
-Dashboard mit KPIs,analytics,should,yes,no,S02
+Dashboard mit KPIs,analytics,should,yes,yes,S02
 Menu Engineering Matrix (Beliebtheit × Marge),analytics,could,yes,no,S22
 Rechnungsabgleich 3-Way-Match,procurement,could,yes,no,S15 F12
 Mobile Inventur mit Barcode-Scan,inventory,could,yes,no,S17 mobil
