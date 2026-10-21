@@ -9,7 +9,7 @@ import { applyImport, planImport } from "@/lib/price-import";
 import { addDays, zoneOffsetMinutes } from "@/lib/dates";
 import { headers } from "next/headers";
 import * as repo from "@/data/repo";
-import { Forbidden, OUTLET_COOKIE, SESSION_COOKIE, authMode, canEditLibrary, canManageBilling, currentOutletId, currentUser, demoAllowed, requireSession } from "@/data/session";
+import { Forbidden, OUTLET_COOKIE, SESSION_COOKIE, authMode, canEditLibrary, canManageBilling, canManageTeam, currentOutletId, currentUser, demoAllowed, requireSession } from "@/data/session";
 import type { Session } from "@/data/types";
 import { createLead, updateLead } from "@/data/leads";
 import { READ_ONLY_MESSAGE, accessOf } from "@/domain/access";
@@ -19,6 +19,7 @@ import { billingConfigured, changeAddon, createCheckout, createPortal, syncOutle
 import { sendMail } from "@/lib/mail";
 import { invitationMail, leadNotifyMail, leadThanksMail, linenOrderMail, orderMail } from "@/lib/mail-templates";
 import { parsePlanCsv } from "@/domain/linen";
+import { einvoicePriceRows, parseEInvoice } from "@/domain/einvoice";
 import { APP_NAME } from "@/lib/brand";
 import { OPERATOR } from "@/lib/legal";
 import { isOperator } from "@/lib/operator";
@@ -829,4 +830,47 @@ export async function inviteMember(input: { name: string; email: string; role: s
     await sendMail({ to: data.email, replyTo: s.email, ...invitationMail({ libraryName: lib.name, inviterName: s.name, roleLabel: ROLE_LABEL[data.role], link: `${appUrl()}/invite/${token}` }) });
     return { sent: true };
   }, ["/settings/team"]);
+}
+
+// ---------------------------------------------------------------- e-invoices and DATEV
+
+/**
+ * Saves an e-invoice (XRechnung / ZUGFeRD XML, re-read here: the browser's reading is only the preview) and, if
+ * asked, takes its prices into the supplier's items.
+ */
+export async function saveEInvoice(xml: string, supplierId: string, applyPrices: boolean, createIngredients = false) {
+  return run(async (s) => {
+    const doc = z.string().min(1).max(2_000_000, "Die Datei ist zu groß.").parse(xml);
+    const inv = parseEInvoice(doc);
+    const sid = id.parse(supplierId);
+    const invoiceId = await repo.saveEInvoice(s, {
+      supplierId: sid, number: inv.number.slice(0, 60), date: inv.date, netCents: inv.netCents, grossCents: inv.grossCents,
+      taxLines: inv.taxes, sellerVatId: inv.seller.vatId?.slice(0, 40) ?? null, document: doc,
+    });
+    let prices = null;
+    if (applyPrices) {
+      const rows = PriceRowsSchema.parse(einvoicePriceRows(inv).slice(0, 500));
+      // Invoices carry non-food too (cleaning agent, deposit): by default only known ingredients get the new price.
+      const plan = createIngredients ? null : await planImport(s, sid, rows);
+      prices = await applyImport(s, sid, plan ? rows.filter((_, i) => plan[i].kind !== "new_ingredient") : rows);
+    }
+    return { invoiceId, prices };
+  }, ["/invoices", "/ingredients", "/recipes", "/menus", "/suppliers"]);
+}
+
+const DatevSchema = z.object({
+  consultantNumber: z.number().int().min(1001, "Beraternummer: 4 bis 7 Stellen.").max(9999999, "Beraternummer: 4 bis 7 Stellen."),
+  clientNumber: z.number().int().min(1, "Mandantennummer: 1 bis 5 Stellen.").max(99999, "Mandantennummer: 1 bis 5 Stellen."),
+  chart: z.enum(["03", "04"]),
+  accountLength: z.number().int().min(4).max(8),
+  fiscalYearStartMonth: z.number().int().min(1).max(12),
+  defaultCreditor: z.number().int().min(1, "Bitte ein Kreditorenkonto angeben.").max(999999999),
+  accounts: z.record(z.string().regex(/^\d{1,5}$/), z.number().int().min(1).max(99999999)),
+});
+export async function saveDatevSettings(input: z.input<typeof DatevSchema>, creditors: { supplierId: string; creditor: number | null }[]) {
+  return run(async (s) => {
+    if (!canManageTeam(s.role)) throw new Error("Die DATEV-Einstellungen ändern Inhaber und Admins.");
+    const v = DatevSchema.parse(input);
+    await repo.saveDatevSettings(s, v, z.array(z.object({ supplierId: id, creditor: z.number().int().min(1).max(999999999).nullable() })).max(1000).parse(creditors));
+  }, ["/invoices", "/settings/datev"], { readOnlyOk: true });
 }

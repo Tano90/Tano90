@@ -58,3 +58,5 @@ Wäschelager und Zählung mit Verbrauch und Schwund,hotel,should,no,yes,"Verbrau
 Wäschebestellung mit Prognose aus Belegung,hotel,should,no,yes,"Anreisen/Abreisen/Bleiber je Zimmertyp, Wechselrhythmus, Set je Zimmertyp, Reserve, Packungen; Mail an Wäscherei"
 Belegungsplan mit CSV-Import aus dem Hotelprogramm,hotel,should,no,yes,"keine PMS-Schnittstelle; CSV Datum;Zimmertyp;Anreisen;Abreisen;Bleiber"
 Dienstplan Housekeeping mit Personalbedarf,hotel,should,no,yes,"Schichten je Tag, auch Personen ohne Konto, Vorwoche übernehmen, Bedarf aus Minuten je Zimmer"
+E-Rechnung (XRechnung UBL/CII und ZUGFeRD-PDF) einlesen mit Preisabgleich,procurement,should,no,yes,"eigene Ergänzung; Zuordnung per Artikelnummer, Preissprung-Warnung ab 5 %, Originaldatei archiviert; E2E F37"
+DATEV-Export Eingangsrechnungen (Buchungsstapel EXTF),integrations,should,no,yes,"eine Buchung je Steuersatz, Kreditor je Lieferant; erste Datei mit Steuerberater prüfen"

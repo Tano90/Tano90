@@ -17,6 +17,8 @@ import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import { controlling } from "@/domain/controlling";
 import { STATUS_LABEL, canSetStatus, needsServiceToday } from "@/domain/housekeeping";
 import { DEFAULT_SETTINGS, type HkSettings, type PlanRow } from "@/domain/linen";
+import type { DatevSettings } from "@/domain/datev";
+import type { DatevSetup, EInvoiceSave, InvoiceListRow } from "./finance-types";
 import type { HkSetup, LinenCountLine, LinenItemInput, LinenMovementRow, LinenOrderInput, LinenOrderMailData, LinenOrderRow, ShiftInput, ShiftRow } from "./linen-types";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
@@ -1061,8 +1063,9 @@ export async function getInvoice(s: Session, orderId: string) {
   assertOutlet(s, o.outletId);
   const inv = db().invoices.find((i) => i.orderId === orderId);
   if (!inv) return null;
-  const { lines, ...rest } = inv;
-  return { ...rest, approvedByName: memberName(inv.approvedBy), lines };
+  const { lines, grossCents: _g, taxLines: _t, source: _s, sellerVatId: _v, document: _d, ...rest } = inv;
+  // An invoice saved against an order is always matched one way or the other.
+  return { ...rest, status: rest.status === "unmatched" ? ("mismatch" as const) : rest.status, approvedByName: memberName(inv.approvedBy), lines };
 }
 const memberName = (userId: string | null) => (userId ? db().members.find((m) => m.userId === userId)?.name ?? "–" : null);
 
@@ -1696,4 +1699,48 @@ export async function deleteShift(s: Session, shiftId: string) {
   if (!shift) return;
   assertOutlet(s, shift.outletId);
   d.hkShifts = d.hkShifts.filter((x) => x.id !== shiftId);
+}
+
+// ---------------------------------------------------------------- e-invoices and DATEV
+
+export async function saveEInvoice(s: Session, input: EInvoiceSave): Promise<string> {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  const d = db();
+  if (!d.suppliers.some((x) => x.id === input.supplierId)) throw new Error("Lieferant nicht gefunden.");
+  if (d.invoices.some((i) => i.supplierId === input.supplierId && i.invoiceNumber === input.number)) throw new Error(`Rechnung ${input.number} dieses Lieferanten ist schon erfasst.`);
+  const id = newId("inv");
+  d.invoices.push({
+    id, orderId: null, supplierId: input.supplierId, invoiceNumber: input.number, invoiceDate: input.date, status: "unmatched", totalNetCents: input.netCents,
+    note: null, approvedAt: null, approvedBy: null, lines: {}, grossCents: input.grossCents, taxLines: input.taxLines, source: "einvoice", sellerVatId: input.sellerVatId, document: input.document,
+  });
+  return id;
+}
+
+export async function listInvoices(_s: Session, from: string, to: string): Promise<InvoiceListRow[]> {
+  const d = db();
+  return d.invoices.filter((i) => i.invoiceDate >= from && i.invoiceDate <= to)
+    .sort((a, b) => b.invoiceDate.localeCompare(a.invoiceDate) || a.invoiceNumber.localeCompare(b.invoiceNumber))
+    .map((i) => {
+      const sup = d.suppliers.find((x) => x.id === i.supplierId);
+      return {
+        id: i.id, supplierId: i.supplierId, supplierName: sup?.companyName ?? "–", creditor: d.creditors[i.supplierId] ?? null, number: i.invoiceNumber, date: i.invoiceDate,
+        netCents: i.totalNetCents, grossCents: i.grossCents ?? null, taxLines: i.taxLines ?? [], status: i.status, source: i.source ?? "manual", orderId: i.orderId,
+      };
+    });
+}
+
+export async function getDatevSetup(s: Session): Promise<DatevSetup> {
+  if (!canManageTeam(s.role)) throw new Forbidden();
+  const d = db();
+  return { settings: d.datev, suppliers: visible(d.suppliers).map((x) => ({ id: x.id, name: x.companyName, creditor: d.creditors[x.id] ?? null })).sort((a, b) => a.name.localeCompare(b.name, "de")), defaultVatBp: d.library.defaultVatBp };
+}
+
+export async function saveDatevSettings(s: Session, v: DatevSettings, creditors: { supplierId: string; creditor: number | null }[]) {
+  if (!canManageTeam(s.role)) throw new Forbidden();
+  const d = db();
+  d.datev = { ...v, accounts: { ...v.accounts } };
+  for (const c of creditors) {
+    if (c.creditor === null) delete d.creditors[c.supplierId];
+    else d.creditors[c.supplierId] = c.creditor;
+  }
 }

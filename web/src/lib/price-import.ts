@@ -5,10 +5,18 @@ import * as repo from "@/data/repo";
 import type { Session } from "@/data/types";
 import { type PlanRow, type PriceRow, type Snapshot, planPriceList } from "@/domain/price-list";
 
-async function snapshot(s: Session, rows: PriceRow[]): Promise<Snapshot> {
+async function snapshot(s: Session, rows: PriceRow[], supplierId: string): Promise<Snapshot> {
   const ingredients = (await repo.listIngredients(s)).map((i) => ({ id: i.id, name: i.name, baseUnit: i.baseUnit }));
-  const wanted = new Set(rows.map((r) => r.ingredient.toLocaleLowerCase("de")));
-  const snap: Snapshot = { ingredients, packages: new Map(), items: new Map() };
+  const skus = new Set(rows.filter((r) => r.sku).map((r) => r.sku!.toLocaleLowerCase("de")));
+  const bySku = new Map<string, { ingredientId: string; itemId: string; packageId: string }>();
+  if (skus.size) {
+    for (const x of (await repo.getSupplier(s, supplierId))?.items ?? []) {
+      const key = x.supplierSku?.toLocaleLowerCase("de");
+      if (key && skus.has(key)) bySku.set(key, { ingredientId: x.ingredientId, itemId: x.id, packageId: x.packageId });
+    }
+  }
+  const wanted = new Set([...rows.map((r) => r.ingredient.toLocaleLowerCase("de")), ...[...bySku.values()].map((h) => ingredients.find((i) => i.id === h.ingredientId)?.name.toLocaleLowerCase("de") ?? "")]);
+  const snap: Snapshot = { ingredients, packages: new Map(), items: new Map(), bySku };
   for (const i of ingredients.filter((x) => wanted.has(x.name.toLocaleLowerCase("de")))) {
     const d = await repo.getIngredient(s, i.id);
     if (!d) continue;
@@ -19,7 +27,7 @@ async function snapshot(s: Session, rows: PriceRow[]): Promise<Snapshot> {
 }
 
 export async function planImport(s: Session, supplierId: string, rows: PriceRow[]): Promise<PlanRow[]> {
-  return planPriceList(rows, supplierId, await snapshot(s, rows));
+  return planPriceList(rows, supplierId, await snapshot(s, rows, supplierId));
 }
 
 /** Applies a fresh plan. Returns what was done; a failing row is reported and the rest continues. */

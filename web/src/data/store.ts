@@ -5,6 +5,8 @@ import type { CostContext } from "@/domain/costing";
 import { billOfMaterials } from "@/domain/menus";
 import { type CountBreakdown, applyMovement } from "@/domain/stock";
 import type { HkSettings, PlanRow } from "@/domain/linen";
+import type { DatevSettings } from "@/domain/datev";
+import type { TaxLine } from "./finance-types";
 import type { LinenItemRow, LinenMovementRow, LinenOrderRow, ShiftRow } from "./linen-types";
 import type {
   AllergenRow, ApiKey, Category, CountDraft, HaccpChecklist, HaccpRecord, HkChecklistItem, ProductionRequest, Room, RoomEvent, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
@@ -37,11 +39,14 @@ export type Db = {
   linenMovements: (LinenMovementRow & { outletId: string })[];
   linenOrders: (LinenOrderRow & { outletId: string })[];
   hkShifts: (ShiftRow & { outletId: string })[];
+  datev: DatevSettings | null;
+  creditors: Record<string, number>;
   haccpRecords: HaccpRecord[];
   invoices: {
-    id: string; orderId: string; supplierId: string; invoiceNumber: string; invoiceDate: string; status: "matched" | "mismatch" | "approved";
+    id: string; orderId: string | null; supplierId: string; invoiceNumber: string; invoiceDate: string; status: "unmatched" | "matched" | "mismatch" | "approved";
     totalNetCents: number; note: string | null; approvedAt: string | null; approvedBy: string | null;
     lines: Record<string, { quantityPacks: number; unitPriceCents: number }>;
+    grossCents?: number | null; taxLines?: TaxLine[]; source?: "manual" | "einvoice"; sellerVatId?: string | null; document?: string;
   }[];
   posItems: PosItem[];
   sales: Sale[];
@@ -106,7 +111,7 @@ export function seed(): Db {
       ...["Mittagstisch", "Abendkarte"].map((name, i) => ({ id: `cat-m${i}`, kind: "menu" as const, name })),
     ],
     ingredients: [], packages: [], suppliers: [], stockItems: [], allergens: {}, verified: {}, nutrition: {},
-    recipes: [], menus: [], outletPrices: [], invoices: [], haccpChecklists: [], haccpRecords: [], production: [], rooms: [], roomEvents: [], hkChecklist: [], hkSettings: {}, linenItems: [], occupancy: [], linenMovements: [], linenOrders: [], hkShifts: [], posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
+    recipes: [], menus: [], outletPrices: [], invoices: [], haccpChecklists: [], haccpRecords: [], production: [], rooms: [], roomEvents: [], hkChecklist: [], hkSettings: {}, linenItems: [], occupancy: [], linenMovements: [], linenOrders: [], hkShifts: [], datev: null, creditors: {}, posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
   };
 
   const sup = (id: string, companyName: string, orderEmail: string, leadTimeDays: number) =>

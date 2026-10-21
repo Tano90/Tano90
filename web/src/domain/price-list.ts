@@ -85,6 +85,8 @@ export type Snapshot = {
   ingredients: { id: string; name: string; baseUnit: BaseUnit }[];
   packages: Map<string, { id: string; label: string; quantityBase: number }[]>;
   items: Map<string, { id: string; supplierId: string | null; packageId: string; priceType: "per_pack" | "per_unit"; priceCents: number; priceUnitQuantity: number | null }[]>;
+  /** This supplier's items by their article number (lower case), to match invoice lines named differently. */
+  bySku?: Map<string, { ingredientId: string; itemId: string; packageId: string }>;
 };
 export type PlanRow = PriceRow & {
   kind: "new_ingredient" | "new_price" | "changed" | "same" | "error";
@@ -98,10 +100,25 @@ export type PlanRow = PriceRow & {
 
 const lower = (s: string) => s.toLocaleLowerCase("de");
 
-/** What importing each row would do for one supplier. Rows are matched by ingredient name and package size. */
+/** A row whose article number is known for this supplier, rewritten to that ingredient and package. */
+function bySku(r: PriceRow, snap: Snapshot): PriceRow {
+  const hit = r.sku ? snap.bySku?.get(lower(r.sku)) : undefined;
+  const ing = hit && snap.ingredients.find((i) => i.id === hit.ingredientId);
+  const pack = hit && (snap.packages.get(hit.ingredientId) ?? []).find((p) => p.id === hit.packageId);
+  if (!ing || !pack) return r;
+  // A per-kg or per-litre price stays one; a package price applies to the known package.
+  if (r.perUnitBase !== null && r.baseUnit !== ing.baseUnit) return r;
+  return { ...r, ingredient: ing.name, baseUnit: ing.baseUnit, packLabel: pack.label, packBase: pack.quantityBase };
+}
+
+/**
+ * What importing each row would do for one supplier. Rows are matched by the supplier's article number first (an
+ * invoice names "Butter 82 %, Karton" what the kitchen calls "Butter"), then by ingredient name and package size.
+ */
 export function planPriceList(rows: PriceRow[], supplierId: string, snap: Snapshot): PlanRow[] {
   const seen = new Map<string, number>();
-  return rows.map((r): PlanRow => {
+  return rows.map((input): PlanRow => {
+    const r = bySku(input, snap);
     const key = `${lower(r.ingredient)}|${r.packBase}|${r.baseUnit}`;
     if (seen.has(key)) return { ...r, kind: "error", message: `Doppelt in der Datei (wie Zeile ${seen.get(key)}).` };
     seen.set(key, r.row);

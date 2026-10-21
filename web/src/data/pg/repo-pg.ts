@@ -18,6 +18,8 @@ import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import { type ControllingRow, controlling } from "@/domain/controlling";
 import { STATUS_LABEL, canSetStatus, needsServiceToday } from "@/domain/housekeeping";
 import { DEFAULT_SETTINGS, type HkSettings, type LinenItem, type PlanRow } from "@/domain/linen";
+import type { DatevSettings } from "@/domain/datev";
+import type { DatevSetup, EInvoiceSave, InvoiceListRow } from "../finance-types";
 import type { HkSetup, LinenCountLine, LinenItemInput, LinenMovementRow, LinenOrderInput, LinenOrderMailData, LinenOrderRow, ShiftInput, ShiftRow } from "../linen-types";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
@@ -139,7 +141,7 @@ const EXPORT: [table: string, where: string, omit?: string[]][] = [
   ["production_requests", BY_LIBRARY],
   ["rooms", BY_LIBRARY], ["room_events", "room_id in (select id from rooms where library_id = $1)"], ["hk_checklist_items", BY_LIBRARY],
   ["hk_settings", BY_LIBRARY], ["linen_items", BY_LIBRARY], ["linen_set_items", "item_id in (select id from linen_items where library_id = $1)"], ["occupancy_plan", BY_LIBRARY],
-  ["linen_orders", BY_LIBRARY], ["linen_order_lines", "order_id in (select id from linen_orders where library_id = $1)"], ["linen_movements", BY_LIBRARY], ["hk_shifts", BY_LIBRARY],
+  ["linen_orders", BY_LIBRARY], ["linen_order_lines", "order_id in (select id from linen_orders where library_id = $1)"], ["linen_movements", BY_LIBRARY], ["hk_shifts", BY_LIBRARY], ["datev_settings", BY_LIBRARY],
 ];
 
 export async function exportLibrary(s: Session): Promise<Record<string, Record<string, unknown>[]>> {
@@ -2063,4 +2065,57 @@ export async function deleteShift(s: Session, shiftId: string) {
   assertEditor(s);
   if (!isUuid(shiftId)) throw new Error("Schicht nicht gefunden.");
   await run(s, (tx) => tx`delete from hk_shifts where id = ${shiftId}`);
+}
+
+// ---------------------------------------------------------------- e-invoices and DATEV
+
+export async function saveEInvoice(s: Session, input: EInvoiceSave): Promise<string> {
+  assertEditor(s);
+  if (!isUuid(input.supplierId)) throw new Error("Lieferant nicht gefunden.");
+  return run(s, async (tx) => {
+    const [dup] = await tx`select 1 from invoices where supplier_id = ${input.supplierId} and invoice_number = ${input.number}`;
+    if (dup) throw new Error(`Rechnung ${input.number} dieses Lieferanten ist schon erfasst.`);
+    const [{ id }] = await tx<{ id: string }[]>`
+      insert into invoices ${tx({
+        libraryId: s.libraryId, supplierId: input.supplierId, invoiceNumber: input.number, invoiceDate: input.date, totalNetCents: input.netCents,
+        grossCents: input.grossCents, taxLines: tx.json(input.taxLines), source: "einvoice", sellerVatId: input.sellerVatId, document: input.document, matchStatus: "unmatched",
+      })} returning id`;
+    return id;
+  });
+}
+
+export async function listInvoices(s: Session, from: string, to: string): Promise<InvoiceListRow[]> {
+  return run(s, (tx) => tx<InvoiceListRow[]>`
+    select i.id, i.supplier_id, sp.company_name as supplier_name, sp.creditor_account as creditor, i.invoice_number as number, i.invoice_date as date,
+      i.total_net_cents as net_cents, i.gross_cents, i.tax_lines, i.match_status as status, i.source, i.purchase_order_id as order_id
+    from invoices i join suppliers sp on sp.id = i.supplier_id
+    where i.library_id = ${s.libraryId} and i.invoice_date between ${from} and ${to}
+    order by i.invoice_date desc, i.invoice_number`);
+}
+
+export async function getDatevSetup(s: Session): Promise<DatevSetup> {
+  assertTeam(s);
+  return run(s, async (tx) => {
+    const [settings] = await tx<DatevSettings[]>`
+      select consultant_number, client_number, chart, account_length, fiscal_year_start_month, default_creditor, accounts from datev_settings where library_id = ${s.libraryId}`;
+    const suppliers = await tx<{ id: string; name: string; creditor: number | null }[]>`
+      select id, company_name as name, creditor_account as creditor from suppliers where library_id = ${s.libraryId} and archived_at is null order by company_name`;
+    const [lib] = await tx<{ defaultVatBp: number }[]>`select default_vat_bp from libraries where id = ${s.libraryId}`;
+    return { settings: settings ?? null, suppliers, defaultVatBp: lib?.defaultVatBp ?? 700 };
+  });
+}
+
+export async function saveDatevSettings(s: Session, v: DatevSettings, creditors: { supplierId: string; creditor: number | null }[]) {
+  assertTeam(s);
+  await run(s, async (tx) => {
+    const row = { libraryId: s.libraryId, consultantNumber: v.consultantNumber, clientNumber: v.clientNumber, chart: v.chart, accountLength: v.accountLength, fiscalYearStartMonth: v.fiscalYearStartMonth, defaultCreditor: v.defaultCreditor, accounts: tx.json(v.accounts) };
+    await tx`
+      insert into datev_settings ${tx(row)} on conflict (library_id) do update set consultant_number = excluded.consultant_number, client_number = excluded.client_number,
+        chart = excluded.chart, account_length = excluded.account_length, fiscal_year_start_month = excluded.fiscal_year_start_month,
+        default_creditor = excluded.default_creditor, accounts = excluded.accounts`;
+    for (const c of creditors) {
+      if (!isUuid(c.supplierId)) continue;
+      await tx`update suppliers set creditor_account = ${c.creditor} where id = ${c.supplierId} and library_id = ${s.libraryId}`;
+    }
+  });
 }
