@@ -52,6 +52,18 @@ Die Tabellen legt Vercel beim ersten Deploy selbst an (`vercel-build` führt die
 
 `ALLOW_DEMO` **nie** setzen. Stripe-Variablen bleiben in dieser Phase leer.
 
+**Schneller per Skript** (auf deinem Rechner, Node.js nötig; Mac/Linux, unter Windows in Git Bash oder WSL):
+
+```bash
+git clone https://github.com/tano90/Tano90.git && cd Tano90/web
+npx vercel@latest login     # einmal im Browser bestätigen
+npx vercel@latest link      # dein Mirepa-Projekt auswählen
+bash scripts/setup-vercel-env.sh
+```
+
+Das Skript fragt jeden Wert einzeln ab (Geheimes verdeckt), trägt ihn für Production ein und erzeugt `CRON_SECRET`
+selbst. Die Werte gehen nur von deiner Tastatur zu Vercel. Danach auf vercel.com „Redeploy“.
+
 5. **Deploy**. Dann die Adresse öffnen: Die Startseite zeigt „Vorführung anfragen“.
 
 ## 4. Prüfen (10 Minuten)
