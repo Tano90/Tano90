@@ -24,6 +24,11 @@ const NAV = [
   { href: "/settings", label: "Einstellungen", icon: Settings },
 ];
 
+const section = (href: string) => href.split("/").slice(0, 2).join("/");
+/** The one item to highlight: the item whose full path matches (Service Funnel), else the first of the section (/analytics/...). */
+const activeHref = (pathname: string | null) =>
+  pathname ? (NAV.find((n) => pathname.startsWith(n.href)) ?? NAV.find((n) => pathname.startsWith(section(n.href))))?.href : undefined;
+
 type Props = {
   outlets: { id: string; name: string }[];
   outletId: string;
@@ -58,9 +63,7 @@ export function AppShell({ outlets, outletId, onOutletChange, user, children }: 
         </div>
         <ul className="mt-2 flex flex-col gap-1">
           {NAV.map(({ href, label, icon: Icon }) => {
-            // An item whose full path matches wins (Service Funnel); otherwise the section (/analytics/...) does.
-            const exact = NAV.find((n) => pathname?.startsWith(n.href));
-            const active = exact ? exact.href === href : pathname?.startsWith(href.split("/").slice(0, 2).join("/"));
+            const active = activeHref(pathname) === href;
             return (
               <li key={href}>
                 <Link

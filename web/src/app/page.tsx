@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, BedDouble, BookOpen, Calculator, Check, ChefHat, ClipboardCheck, CookingPot, Download, FileCheck2, Lock, MapPin, MousePointerClick, Package, Plus, Receipt, ReceiptText, ScanBarcode, ShieldCheck, ShoppingCart, Tags, Truck, Users, UtensilsCrossed, WifiOff, Wrench } from "lucide-react";
+import { ArrowRight, BarChart3, BookOpen, Calculator, Check, ChefHat, ClipboardCheck, CookingPot, Download, FileCheck2, Funnel, Lock, MapPin, MousePointerClick, Package, Plus, Receipt, ReceiptText, ScanBarcode, ShieldCheck, ShoppingCart, Tags, Truck, Users, UtensilsCrossed, WifiOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
@@ -16,6 +16,8 @@ import { PRICE_TAX_NOTE } from "@/lib/legal";
 import { PRICING } from "@/lib/pricing";
 import shot from "../../public/landing/rezept-kalkulation.png";
 import shotInvoice from "../../public/landing/e-rechnung.png";
+import shotFunnel from "../../public/landing/service-funnel.png";
+import shotContribution from "../../public/landing/deckungsbeitrag.png";
 
 // Public landing page. Static: no session lookup, so it is fast and cacheable.
 // Copy follows replica/brand.md (voice) and replica/launch/landing.md. No testimonials, logos or user
@@ -31,7 +33,8 @@ const MODULES = [
   { icon: ScanBarcode, label: "Inventur & Barcode", tone: "celery" }, { icon: BookOpen, label: "Lagerbericht & Schwund", tone: "accent" },
   { icon: CookingPot, label: "Zentralküche", tone: "carrot" }, { icon: ReceiptText, label: "Rechnungsabgleich", tone: "celery" },
   { icon: ClipboardCheck, label: "HACCP", tone: "accent" }, { icon: BarChart3, label: "Kasse & Menu Engineering", tone: "carrot" },
-  { icon: UtensilsCrossed, label: "Menüs mit Stückliste", tone: "celery" }, { icon: Package, label: "Preislisten-Import", tone: "accent" }, { icon: FileCheck2, label: "E-Rechnung & DATEV", tone: "carrot" },
+  { icon: UtensilsCrossed, label: "Menüs mit Stückliste", tone: "celery" }, { icon: Package, label: "Preislisten-Import", tone: "accent" }, { icon: FileCheck2, label: "E-Rechnung", tone: "carrot" },
+  { icon: Funnel, label: "Service Funnel", tone: "celery" }, { icon: Calculator, label: "Deckungsbeitrag & Zielpreis", tone: "accent" },
 ] as const;
 const TONE = { carrot: "bg-carrot text-on-saffron", celery: "bg-celery text-on-saffron", accent: "bg-accent text-on-accent" } as const;
 
@@ -45,7 +48,7 @@ const FACTS = [
   { icon: WifiOff, title: "Zählen ohne Netz", body: "Die Inventur speichert jede Zahl sofort und reicht sie nach, wenn das WLAN zurück ist." },
 ];
 
-const TICKER = ["Wareneinsatz live", "Grundrezepte", "Allergene", "Inventur offline", "Barcode-Scanner", "Zentralküche", "Rechnungsabgleich", "HACCP", "Kassen-Import", "Mindestbestand", "Lagerbericht", "Mehrere Standorte", "E-Rechnung", "DATEV-Export", "Soll-Ist", "Bestell-Forecast"];
+const TICKER = ["Wareneinsatz live", "Grundrezepte", "Allergene", "Inventur offline", "Barcode-Scanner", "Zentralküche", "Rechnungsabgleich", "HACCP", "Kassen-Import", "Mindestbestand", "Lagerbericht", "Mehrere Standorte", "E-Rechnung", "Service Funnel", "Deckungsbeitrag", "Soll-Ist", "Bestell-Forecast"];
 
 const STEPS = [
   { title: "Einkauf erfassen", body: "Zutaten so anlegen, wie dein Lieferant sie verkauft – Karton, Sack, Flasche – mit dem Preis von der Rechnung." },
@@ -59,17 +62,32 @@ const FEATURES = [
   { icon: ScanBarcode, title: "Inventur, die ein Funkloch übersteht", body: `Zählen in Kartons plus Rest oder per Barcode-Scanner. Jede Zahl wird sofort zwischengespeichert; fällt im Kühlhaus das Netz weg, speichert ${APP_NAME} nach, sobald es zurück ist.` },
   { icon: ReceiptText, title: "Rechnung gegen Lieferung", body: "Jede Rechnungszeile steht neben Bestellung und Wareneingang. Abweichungen bei Menge und Preis sind markiert, freigeben lässt sich eine abweichende Rechnung nur mit Begründung." },
   { icon: ClipboardCheck, title: "HACCP im Grundpreis", body: "Eigene Checklisten mit Grenzwerten, Tageskontrolle pro Standort, Abweichungen nur mit Maßnahme. Das Protokoll der letzten 30 Tage geht als CSV an die Lebensmittelkontrolle." },
-  { icon: FileCheck2, title: "E-Rechnung rein, DATEV raus", body: "XRechnung und ZUGFeRD des Lieferanten hochladen: Jede Position steht neben deinem bisherigen Preis, Preissprünge sind markiert, die neuen Preise gehen auf Wunsch direkt in die Rezepte. Für den Steuerberater gibt es den Buchungsstapel im DATEV-Format." },
+  { icon: FileCheck2, title: "E-Rechnung rein, Preise aktuell", body: "XRechnung und ZUGFeRD des Lieferanten hochladen: Jede Position steht neben deinem bisherigen Preis, Preissprünge sind markiert, die neuen Preise gehen auf Wunsch direkt in die Rezepte." },
+  { icon: Funnel, title: "Service Funnel statt Bauchgefühl", body: "Nach dem Service Gäste und verkaufte Extras eintragen: Aperitif, Wasser, Upgrades, Beilagen, Desserts, Kaffee. Du siehst die Quote je 100 Gäste und was die Zielquote im Monat an Deckungsbeitrag bringt. Das Service-Team sieht Quoten, aber keine Kosten." },
   { icon: ShieldCheck, title: "Fehler, bevor sie Geld kosten", body: "„2.5“ und „2,5“ ergeben dieselbe Menge, eine Bestellung kommt auch bei Doppelklick nur einmal an, und eine ungeprüfte Zutat macht ein Gericht „unbekannt“, nie „allergenfrei“." },
 ];
 
 // "Neu": only features that exist, shown with screenshots of the app (demo data).
 const NEWS = [
   {
-    icon: FileCheck2, kicker: "Einkauf & Buchhaltung", title: "E-Rechnung rein, DATEV raus",
+    icon: Funnel, kicker: "Service & Verkauf", title: "Service Funnel",
+    body: "Wie oft verkauft dein Service Aperitif, Wasser, Upgrades, Beilagen, Desserts und Kaffee? Pro Tag und Outlet erfasst, gegen deine Zielquote gestellt.",
+    points: ["Quote je 100 Gäste für jede Stufe, Abweichung vom Ziel markiert", "Schieberegler für Zielquote und Gästeentwicklung, Ergebnis sofort", "Hochrechnung auf den Monat, mit Umsatz und Deckungsbeitrag II", "Tageserfassung oder CSV-Import; nichts davon wird als Umsatz gebucht"],
+    note: "Das Service-Team sieht Quoten und Umsatz, Kosten und Deckungsbeitrag nur Inhaber und Leitung.",
+    shot: shotFunnel, alt: `Service Funnel in der ${APP_NAME}: Gäste der letzten 28 Tage, Schieberegler je Stufe und eine Tabelle mit Ist-Quote, Ziel, Zusatzmenge, Umsatz und DB II.`,
+  },
+  {
+    icon: Calculator, kicker: "Controlling", title: "Deckungsbeitrag und Zielpreis",
+    body: "Aus Kassenverkäufen, Rezeptkosten, variablen Kosten und Fixkosten: DB I und DB II je Artikel, Betriebsergebnis und Break-even-Umsatz für jeden Zeitraum.",
+    points: ["DB I und DB II je Artikel, höchster Beitrag zuerst", "Fixkosten pro Monat, anteilig auf den Zeitraum gerechnet", "Break-even-Umsatz und Betriebsergebnis auf einen Blick", "Zielpreis aus Wareneinsatz-Ziel oder gewünschtem DB II"],
+    note: null,
+    shot: shotContribution, alt: `Deckungsbeitrag in der ${APP_NAME}: Kacheln mit Umsatz netto, Wareneinsatz, DB I, DB II, Fixkosten, Betriebsergebnis und Break-even-Umsatz.`,
+  },
+  {
+    icon: FileCheck2, kicker: "Einkauf", title: "E-Rechnung rein, Preise aktuell",
     body: "Seit 2025 müssen Betriebe E-Rechnungen empfangen können. Lade XRechnung oder ZUGFeRD hoch, und die Suite stellt jede Position neben deinen bisherigen Preis.",
-    points: ["XRechnung (UBL, CII) und ZUGFeRD/Factur-X-PDF", "Zuordnung über die Artikelnummer des Lieferanten", "Preissprünge ab 5 % markiert, neue Preise gehen auf Wunsch in alle Rezepte", "Buchungsstapel im DATEV-Format für den Steuerberater"],
-    note: "Die erste DATEV-Datei bitte gemeinsam mit dem Steuerberater prüfen.",
+    points: ["XRechnung (UBL, CII) und ZUGFeRD/Factur-X-PDF", "Zuordnung über die Artikelnummer des Lieferanten", "Preissprünge ab 5 % markiert", "Neue Preise gehen auf Wunsch in alle Rezepte"],
+    note: null,
     shot: shotInvoice, alt: `E-Rechnung in der ${APP_NAME}: Positionen mit bisherigem Preis, Preis laut Rechnung und markiertem Preissprung von 18,2 Prozent bei Knollensellerie.`,
   },
 ];
@@ -78,7 +96,7 @@ const FAQ = [
   { q: "Kann ich meine Zutaten und Preise importieren?", a: `Ja. Die Preisliste deines Lieferanten als Excel- oder CSV-Datei hochladen: ${APP_NAME} zeigt vor dem Übernehmen jede Zeile als neu, geändert oder fehlerhaft. Übernommen wird erst, wenn du zustimmst.` },
   { q: `Funktioniert ${APP_NAME} mit meiner Kasse?`, a: "Über eine Datei oder eine Schnittstelle: Verkäufe als CSV hochladen oder von der Kasse per API senden lassen. Verknüpfte Gerichte werden über ihre Rezepte vom Lager abgebucht, Stornos zurückgebucht. Fertige Anbindungen an einzelne Kassenhersteller gibt es nicht." },
   { q: "Brauche ich für HACCP oder die Zentralküche ein Zusatzmodul?", a: "Nein. Alle Funktionen sind in jedem Tarif enthalten. Bezahlt wird nur pro Standort." },
-  { q: `Kann die ${APP_NAME} E-Rechnungen lesen und an DATEV übergeben?`, a: `Ja. ${APP_NAME} liest XRechnung (UBL und CII) und ZUGFeRD/Factur-X-PDFs, gleicht die Preise mit deinen ab und legt die Rechnung mit Steueraufteilung ab. Für die Buchhaltung gibt es einen DATEV-Buchungsstapel mit Wareneingang je Steuersatz und Kreditor je Lieferant. Die erste Datei bitte gemeinsam mit dem Steuerberater prüfen. Eine Finanzbuchhaltung ersetzt ${APP_NAME} nicht.` },
+  { q: `Kann die ${APP_NAME} E-Rechnungen lesen?`, a: `Ja. ${APP_NAME} liest XRechnung (UBL und CII) und ZUGFeRD/Factur-X-PDFs, gleicht die Preise mit deinen ab und übernimmt neue Preise auf Wunsch in die Kalkulation. ${APP_NAME} ist ein Reporting- und Steuerungswerkzeug, keine Buchhaltung: Die Buchhaltung bleibt bei deinem Steuerberater.` },
   { q: "Wer haftet für die Allergenangaben?", a: `${APP_NAME} rechnet aus deinen Angaben, die Kennzeichnung gegenüber Gästen verantwortet dein Betrieb. Deshalb zeigt ${APP_NAME} ungeprüfte Zutaten offen an, statt sie als allergenfrei durchzuwinken.` },
   { q: "Wo liegen meine Daten?", a: "In der EU (Frankfurt). Zahlungen laufen über Stripe; deine Kartendaten sehen wir nie." },
   { q: "Was passiert nach der Testphase?", a: "Drei Tage vorher bekommst du eine E-Mail. Schließt du kein Abo ab, bleiben alle Daten erhalten: Du kannst sie ansehen und als Datei herunterladen, nur ändern geht erst wieder mit einem Abo. Es verlängert sich nichts automatisch." },
@@ -116,7 +134,7 @@ export default function LandingPage() {
           <div className="min-w-0 animate-rise">
             <a href="#neu" className="mb-5 inline-flex max-w-full items-center gap-2 rounded-pill border border-border bg-bg py-1 pr-3 pl-1 text-sm shadow-card hover:bg-row-hover">
               <span className="rounded-pill bg-accent px-2 py-0.5 text-xs font-bold text-on-accent">Neu</span>
-              <span className="truncate">E-Rechnung, DATEV, Soll-Ist und Bestell-Forecast</span>
+              <span className="truncate">Service Funnel, Deckungsbeitrag, Soll-Ist und Forecast</span>
               <ArrowRight aria-hidden className="size-4 shrink-0" />
             </a>
             <h1 id="hero" className="text-display lg:text-hero">
@@ -151,7 +169,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
           <Reveal>
             <p className="text-sm font-bold uppercase tracking-wide text-accent">Neu in der {APP_NAME}</p>
-            <h2 id="new" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Lieferschein bis zum Steuerberater.</h2>
+            <h2 id="new" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Service bis zum Ergebnis.</h2>
           </Reveal>
           <div className="mt-12 flex flex-col gap-20">
             {NEWS.map((n, i) => (

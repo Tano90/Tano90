@@ -1,7 +1,6 @@
 "use client";
 
-import { AlertTriangle, Download, FileCheck2, Settings } from "lucide-react";
-import Link from "next/link";
+import { AlertTriangle, FileCheck2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { previewPriceList, saveEInvoice } from "@/app/actions";
@@ -139,26 +138,6 @@ export function EInvoiceInbox({ suppliers }: { suppliers: Supplier[] }) {
           </div>
         </div>
       )}
-    </section>
-  );
-}
-
-export function DatevExport({ from, to, configured, count, withoutSplit, defaultVatBp }: { from: string; to: string; configured: boolean; count: number; withoutSplit: number; defaultVatBp: number }) {
-  return (
-    <section aria-labelledby="datev" className="rounded-lg border border-border bg-bg p-4">
-      <h2 id="datev" className="text-lg">DATEV-Export</h2>
-      <p className="mt-1 max-w-3xl text-sm text-text-muted">
-        Die Rechnungen von {formatDay(from, "medium")} bis {formatDay(to, "medium")} als DATEV-Buchungsstapel (Wareneingang an Kreditor, je Steuersatz eine Buchung) für den Import beim Steuerberater.
-        Bitte die erste Datei gemeinsam mit dem Steuerberater prüfen.
-      </p>
-      {withoutSplit > 0 && <p className="mt-2 flex items-start gap-2 text-sm text-warning"><AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />{withoutSplit} von Hand erfasste {withoutSplit === 1 ? "Rechnung hat" : "Rechnungen haben"} keine Steueraufteilung und {withoutSplit === 1 ? "wird" : "werden"} mit {defaultVatBp / 100} % gebucht.</p>}
-      <div className="mt-3 flex flex-wrap gap-2">
-        {configured ? (
-          count ? <a href={`/api/datev?from=${from}&to=${to}`} className="inline-flex h-(--size-control-md) items-center gap-2 rounded-md bg-accent px-4 font-semibold text-on-accent hover:bg-accent-hover"><Download aria-hidden className="size-4" /> DATEV-Datei herunterladen</a>
-            : <span className="text-sm text-text-muted">Keine Rechnungen im Zeitraum.</span>
-        ) : <p className="text-sm">Erst Berater- und Mandantennummer und die Konten eintragen.</p>}
-        <Link href="/settings/datev" className="inline-flex h-(--size-control-md) items-center gap-2 rounded-md border border-border-input px-4 font-semibold hover:bg-row-hover"><Settings aria-hidden className="size-4" /> DATEV-Einstellungen</Link>
-      </div>
     </section>
   );
 }

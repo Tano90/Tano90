@@ -16,10 +16,9 @@ import { hashKey, newApiKey } from "@/lib/api-key";
 import { type BillingState, accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import { ORDER_RESERVE_PCT, forecastUse, orderCoverDays, suggestFromUse, weekdayUsage } from "@/domain/stock";
-import type { DatevSettings } from "@/domain/datev";
 import type { CostSetup, FixedCost, FixedCostInput, FunnelDayInput, FunnelEntry, FunnelSetup } from "../cost-types";
 import { type StepSetting, defaultSteps } from "@/domain/funnel";
-import type { DatevSetup, EInvoiceSave, InvoiceListRow } from "../finance-types";
+import type { EInvoiceSave, InvoiceListRow } from "../finance-types";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
 import type { BaseUnit } from "@/domain/units";
@@ -138,7 +137,7 @@ const EXPORT: [table: string, where: string, omit?: string[]][] = [
   ["haccp_checklists", BY_LIBRARY], ["haccp_items", "checklist_id in (select id from haccp_checklists where library_id = $1)"],
   ["haccp_records", "item_id in (select i.id from haccp_items i join haccp_checklists c on c.id = i.checklist_id where c.library_id = $1)"],
   ["production_requests", BY_LIBRARY],
-  ["datev_settings", BY_LIBRARY], ["cost_settings", BY_LIBRARY], ["fixed_costs", BY_LIBRARY], ["funnel_days", BY_LIBRARY, ["updated_by"]], ["funnel_steps", BY_LIBRARY], ["funnel_settings", BY_LIBRARY],
+  ["cost_settings", BY_LIBRARY], ["fixed_costs", BY_LIBRARY], ["funnel_days", BY_LIBRARY, ["updated_by"]], ["funnel_steps", BY_LIBRARY], ["funnel_settings", BY_LIBRARY],
 ];
 
 export async function exportLibrary(s: Session): Promise<Record<string, Record<string, unknown>[]>> {
@@ -1754,7 +1753,7 @@ export async function deleteAccountData(userId: string): Promise<{ ok: boolean; 
 
 
 
-// ---------------------------------------------------------------- e-invoices and DATEV
+// ---------------------------------------------------------------- e-invoices
 
 export async function saveEInvoice(s: Session, input: EInvoiceSave): Promise<string> {
   assertEditor(s);
@@ -1773,39 +1772,14 @@ export async function saveEInvoice(s: Session, input: EInvoiceSave): Promise<str
 
 export async function listInvoices(s: Session, from: string, to: string): Promise<InvoiceListRow[]> {
   return run(s, (tx) => tx<InvoiceListRow[]>`
-    select i.id, i.supplier_id, sp.company_name as supplier_name, sp.creditor_account as creditor, i.invoice_number as number, i.invoice_date as date,
+    select i.id, i.supplier_id, sp.company_name as supplier_name, i.invoice_number as number, i.invoice_date as date,
       i.total_net_cents as net_cents, i.gross_cents, i.tax_lines, i.match_status as status, i.source, i.purchase_order_id as order_id
     from invoices i join suppliers sp on sp.id = i.supplier_id
     where i.library_id = ${s.libraryId} and i.invoice_date between ${from} and ${to}
     order by i.invoice_date desc, i.invoice_number`);
 }
 
-export async function getDatevSetup(s: Session): Promise<DatevSetup> {
-  assertTeam(s);
-  return run(s, async (tx) => {
-    const [settings] = await tx<DatevSettings[]>`
-      select consultant_number, client_number, chart, account_length, fiscal_year_start_month, default_creditor, accounts from datev_settings where library_id = ${s.libraryId}`;
-    const suppliers = await tx<{ id: string; name: string; creditor: number | null }[]>`
-      select id, company_name as name, creditor_account as creditor from suppliers where library_id = ${s.libraryId} and archived_at is null order by company_name`;
-    const [lib] = await tx<{ defaultVatBp: number }[]>`select default_vat_bp from libraries where id = ${s.libraryId}`;
-    return { settings: settings ?? null, suppliers, defaultVatBp: lib?.defaultVatBp ?? 700 };
-  });
-}
 
-export async function saveDatevSettings(s: Session, v: DatevSettings, creditors: { supplierId: string; creditor: number | null }[]) {
-  assertTeam(s);
-  await run(s, async (tx) => {
-    const row = { libraryId: s.libraryId, consultantNumber: v.consultantNumber, clientNumber: v.clientNumber, chart: v.chart, accountLength: v.accountLength, fiscalYearStartMonth: v.fiscalYearStartMonth, defaultCreditor: v.defaultCreditor, accounts: tx.json(v.accounts) };
-    await tx`
-      insert into datev_settings ${tx(row)} on conflict (library_id) do update set consultant_number = excluded.consultant_number, client_number = excluded.client_number,
-        chart = excluded.chart, account_length = excluded.account_length, fiscal_year_start_month = excluded.fiscal_year_start_month,
-        default_creditor = excluded.default_creditor, accounts = excluded.accounts`;
-    for (const c of creditors) {
-      if (!isUuid(c.supplierId)) continue;
-      await tx`update suppliers set creditor_account = ${c.creditor} where id = ${c.supplierId} and library_id = ${s.libraryId}`;
-    }
-  });
-}
 
 
 

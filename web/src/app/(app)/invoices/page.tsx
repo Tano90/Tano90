@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
-import { getDatevSetup, listInvoices, listSuppliers } from "@/data/repo";
-import { canEditLibrary, canManageTeam, requireSession } from "@/data/session";
+import { listInvoices, listSuppliers } from "@/data/repo";
+import { canEditLibrary, requireSession } from "@/data/session";
 import { dayIn, formatDay } from "@/lib/dates";
 import { formatCents } from "@/lib/format";
-import { DatevExport, EInvoiceInbox } from "./invoices-client";
+import { EInvoiceInbox } from "./invoices-client";
 
 export const metadata = { title: "Rechnungen" };
 export const dynamic = "force-dynamic";
@@ -19,14 +19,13 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const from = sp.from && DAY.test(sp.from) ? sp.from : `${today.slice(0, 7)}-01`;
   const to = sp.to && DAY.test(sp.to) && sp.to >= from ? sp.to : today < from ? from : today;
-  const [invoices, suppliers, datev] = await Promise.all([
+  const [invoices, suppliers] = await Promise.all([
     listInvoices(s, from, to),
     canEditLibrary(s.role) ? listSuppliers(s) : Promise.resolve([]),
-    canManageTeam(s.role) ? getDatevSetup(s) : Promise.resolve(null),
   ]);
   return (
     <>
-      <PageHeader title="Rechnungen" description="Eingangsrechnungen der Lieferanten: E-Rechnungen einlesen, Preise abgleichen, für die Buchhaltung exportieren." />
+      <PageHeader title="Rechnungen" description="Eingangsrechnungen der Lieferanten: E-Rechnungen einlesen und neue Preise in die Kalkulation übernehmen." />
       <div className="flex flex-col gap-6">
         {canEditLibrary(s.role) && <EInvoiceInbox suppliers={suppliers.map((x) => ({ id: x.id, name: x.companyName }))} />}
 
@@ -61,7 +60,6 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
           ) : <p className="mt-2 text-text-muted">Keine Rechnungen in diesem Zeitraum.</p>}
         </section>
 
-        {datev && <DatevExport from={from} to={to} configured={!!datev.settings} count={invoices.length} withoutSplit={invoices.filter((i) => !i.taxLines.length).length} defaultVatBp={datev.defaultVatBp} />}
       </div>
     </>
   );

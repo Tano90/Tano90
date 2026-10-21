@@ -674,7 +674,7 @@ export async function inviteMember(input: { name: string; email: string; role: s
   }, ["/settings/team"]);
 }
 
-// ---------------------------------------------------------------- e-invoices and DATEV
+// ---------------------------------------------------------------- e-invoices
 
 /**
  * Saves an e-invoice (XRechnung / ZUGFeRD XML, re-read here: the browser's reading is only the preview) and, if
@@ -698,23 +698,6 @@ export async function saveEInvoice(xml: string, supplierId: string, applyPrices:
     }
     return { invoiceId, prices };
   }, ["/invoices", "/ingredients", "/recipes", "/menus", "/suppliers"]);
-}
-
-const DatevSchema = z.object({
-  consultantNumber: z.number().int().min(1001, "Beraternummer: 4 bis 7 Stellen.").max(9999999, "Beraternummer: 4 bis 7 Stellen."),
-  clientNumber: z.number().int().min(1, "Mandantennummer: 1 bis 5 Stellen.").max(99999, "Mandantennummer: 1 bis 5 Stellen."),
-  chart: z.enum(["03", "04"]),
-  accountLength: z.number().int().min(4).max(8),
-  fiscalYearStartMonth: z.number().int().min(1).max(12),
-  defaultCreditor: z.number().int().min(1, "Bitte ein Kreditorenkonto angeben.").max(999999999),
-  accounts: z.record(z.string().regex(/^\d{1,5}$/), z.number().int().min(1).max(99999999)),
-});
-export async function saveDatevSettings(input: z.input<typeof DatevSchema>, creditors: { supplierId: string; creditor: number | null }[]) {
-  return run(async (s) => {
-    if (!canManageTeam(s.role)) throw new Error("Die DATEV-Einstellungen ändern Inhaber und Admins.");
-    const v = DatevSchema.parse(input);
-    await repo.saveDatevSettings(s, v, z.array(z.object({ supplierId: id, creditor: z.number().int().min(1).max(999999999).nullable() })).max(1000).parse(creditors));
-  }, ["/invoices", "/settings/datev"], { readOnlyOk: true });
 }
 
 // ---------------------------------------------------------------- recipe import

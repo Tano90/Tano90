@@ -50,7 +50,8 @@ Integrierte Allergen-Datenbanken von Drittanbietern,allergens,could,yes,skip,liz
 Hilfecenter-Inhalte und Vorlagen des Originals,content,could,yes,skip,urheberrechtlich geschützt; eigene Doku schreiben
 Kundendaten und Rezeptbibliotheken,data,could,yes,skip,gehören dem Original und seinen Kunden
 E-Rechnung (XRechnung UBL/CII und ZUGFeRD-PDF) einlesen mit Preisabgleich,procurement,should,no,yes,"eigene Ergänzung; Zuordnung per Artikelnummer, Preissprung-Warnung ab 5 %, Originaldatei archiviert; E2E F37"
-DATEV-Export Eingangsrechnungen (Buchungsstapel EXTF),integrations,should,no,yes,"eine Buchung je Steuersatz, Kreditor je Lieferant; erste Datei mit Steuerberater prüfen"
+DATEV-Export Eingangsrechnungen (Buchungsstapel EXTF),integrations,should,no,skip,"entfernt: GLB ist ein Reporting-Tool, keine Buchhaltung"
 Rezepte aus Excel/CSV importieren,library,should,no,yes,"eigene Ergänzung gegen die häufigste Beschwerde (Einrichtung); Grundrezepte in derselben Datei, Vorschau; E2E F39"
 Soll-Ist-Vergleich je Zutat in Euro,inventory,should,no,yes,"Soll aus Verkäufen/Schwund/Produktion, Ist aus Inventur, größte Verluste zuerst; E2E F40"
 Bestellvorschlag aus Verkäufen je Wochentag,procurement,should,no,yes,"4 Wochen Verbrauch je Wochentag bis zur übernächsten Lieferung + 10 % Reserve, mindestens Zielbestand; E2E F06-H2"
+Service Funnel (Upselling-Quoten je Stufe, Szenario, Monatshochrechnung),analytics,should,no,yes,"Tageserfassung und CSV; Kosten nur für Inhaber/Leitung; nie als Umsatz gebucht"

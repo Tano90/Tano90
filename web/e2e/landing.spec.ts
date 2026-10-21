@@ -39,10 +39,11 @@ test.describe("L01 Landingpage", () => {
 
   test("L01-E4 Neu: Hinweis oben, Neuheit mit echtem Bild", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("link", { name: /Neu E-Rechnung, DATEV, Soll-Ist und Bestell-Forecast/ }).click();
-    const news = page.getByRole("region", { name: /Vom Lieferschein bis zum Steuerberater/ });
-    await expect(news.getByRole("heading", { name: "E-Rechnung rein, DATEV raus" })).toBeVisible();
-    await expect(news.getByRole("img")).toHaveCount(1);
+    await page.getByRole("link", { name: /Neu Service Funnel, Deckungsbeitrag, Soll-Ist und Forecast/ }).click();
+    const news = page.getByRole("region", { name: /Vom Service bis zum Ergebnis/ });
+    for (const h of ["Service Funnel", "Deckungsbeitrag und Zielpreis", "E-Rechnung rein, Preise aktuell"]) await expect(news.getByRole("heading", { name: h })).toBeVisible();
+    await expect(news.getByRole("img")).toHaveCount(3);
+    await expect(page.locator("body")).not.toContainText("DATEV");
     await page.goto("/branchen/restaurant");
     await expect(page.getByRole("img", { name: /Rezept Linsensuppe/ })).toBeVisible();
   });

@@ -24,7 +24,7 @@ export const {
   listProduction, requestProduction, cancelProductionRequest, produce, deliverProduction,
   getInvoice, saveInvoice, approveInvoice, listChecklists, getHaccpDay, saveHaccpRecords, haccpDeviations, saveChecklist, archiveChecklist, getMenuEngineering, importSales, importSalesWithKey, listPosItems, linkPosItem, listApiKeys, createApiKey, revokeApiKey,
   dashboard, exportLibrary,
-  saveEInvoice, listInvoices, getDatevSetup, saveDatevSettings,
+  saveEInvoice, listInvoices,
   getCostSetup, saveCostSettings, saveFixedCost, archiveFixedCost,
   getFunnel, saveFunnelDays, deleteFunnelDay, saveFunnelSettings,
 } = impl;

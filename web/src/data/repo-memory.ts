@@ -13,10 +13,9 @@ import { type CountBreakdown, ORDER_RESERVE_PCT, countTotal, forecastUse, orderC
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
-import type { DatevSettings } from "@/domain/datev";
 import type { CostSetup, FixedCost, FixedCostInput, FunnelDayInput, FunnelSetup } from "./cost-types";
 import { type StepSetting, defaultSteps } from "@/domain/funnel";
-import type { DatevSetup, EInvoiceSave, InvoiceListRow } from "./finance-types";
+import type { EInvoiceSave, InvoiceListRow } from "./finance-types";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
 import type { SaleInput } from "@/domain/pos";
@@ -1436,7 +1435,7 @@ export async function dashboard(s: Session, outletId: string) {
 
 
 
-// ---------------------------------------------------------------- e-invoices and DATEV
+// ---------------------------------------------------------------- e-invoices
 
 export async function saveEInvoice(s: Session, input: EInvoiceSave): Promise<string> {
   if (!canEditLibrary(s.role)) throw new Forbidden();
@@ -1458,27 +1457,13 @@ export async function listInvoices(_s: Session, from: string, to: string): Promi
     .map((i) => {
       const sup = d.suppliers.find((x) => x.id === i.supplierId);
       return {
-        id: i.id, supplierId: i.supplierId, supplierName: sup?.companyName ?? "–", creditor: d.creditors[i.supplierId] ?? null, number: i.invoiceNumber, date: i.invoiceDate,
+        id: i.id, supplierId: i.supplierId, supplierName: sup?.companyName ?? "–", number: i.invoiceNumber, date: i.invoiceDate,
         netCents: i.totalNetCents, grossCents: i.grossCents ?? null, taxLines: i.taxLines ?? [], status: i.status, source: i.source ?? "manual", orderId: i.orderId,
       };
     });
 }
 
-export async function getDatevSetup(s: Session): Promise<DatevSetup> {
-  if (!canManageTeam(s.role)) throw new Forbidden();
-  const d = db();
-  return { settings: d.datev, suppliers: visible(d.suppliers).map((x) => ({ id: x.id, name: x.companyName, creditor: d.creditors[x.id] ?? null })).sort((a, b) => a.name.localeCompare(b.name, "de")), defaultVatBp: d.library.defaultVatBp };
-}
 
-export async function saveDatevSettings(s: Session, v: DatevSettings, creditors: { supplierId: string; creditor: number | null }[]) {
-  if (!canManageTeam(s.role)) throw new Forbidden();
-  const d = db();
-  d.datev = { ...v, accounts: { ...v.accounts } };
-  for (const c of creditors) {
-    if (c.creditor === null) delete d.creditors[c.supplierId];
-    else d.creditors[c.supplierId] = c.creditor;
-  }
-}
 
 
 

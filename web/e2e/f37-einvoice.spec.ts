@@ -14,7 +14,7 @@ function zugferdPdf(xml: string) {
   ]);
 }
 
-test.describe("Rechnungen: E-Rechnung und DATEV", () => {
+test.describe("Rechnungen: E-Rechnung", () => {
   test.beforeEach(async ({ login }) => {
     reseed();
     await login("owner");
@@ -62,39 +62,11 @@ test.describe("Rechnungen: E-Rechnung und DATEV", () => {
     await expect(page.getByText(/In dieser PDF ist keine E-Rechnung eingebettet/)).toBeVisible();
   });
 
-  test("ER-H3 DATEV: Einstellungen, Export mit einer Buchung je Steuersatz", async ({ page, axe }) => {
-    await page.goto("/invoices");
-    await page.getByLabel("E-Rechnung hochladen").setInputFiles({ name: "x.xml", mimeType: "application/xml", buffer: Buffer.from(CII.replace("20261020", new Date().toISOString().slice(0, 10).replace(/-/g, ""))) });
-    await page.getByLabel("Preise bekannter Zutaten übernehmen").uncheck();
-    await page.getByRole("button", { name: "Rechnung speichern" }).click();
-    await expect(page.getByText("Rechnung gespeichert", { exact: true })).toBeVisible();
-
-    const datev = page.getByRole("region", { name: "DATEV-Export" });
-    await expect(datev).toContainText("Erst Berater- und Mandantennummer");
-    await datev.getByRole("link", { name: "DATEV-Einstellungen" }).click();
-    await page.getByLabel("Beraternummer").fill("29098");
-    await page.getByLabel("Mandantennummer").fill("55003");
-    await page.getByLabel("Kreditorenkonto Frischehof Lindner").fill("70001");
-    await axe();
-    await page.getByRole("button", { name: "Speichern" }).click();
-    await expect(page.getByText("DATEV-Einstellungen gespeichert")).toBeVisible();
-
-    await page.goto("/invoices");
-    const href = await page.getByRole("link", { name: "DATEV-Datei herunterladen" }).getAttribute("href");
-    const res = await page.request.get(href!);
-    expect(res.status()).toBe(200);
-    expect(res.headers()["content-disposition"]).toMatch(/EXTF_Buchungsstapel_/);
-    const lines = (await res.body()).toString("latin1").split("\r\n");
-    expect(lines[0]).toMatch(/^"EXTF";700;21;"Buchungsstapel";13;\d{17};;"RE";"GLB AI Suite";"";29098;55003;\d{8};4;/);
-    expect(lines[2]).toMatch(/^67,20;"S";"EUR";;;"";3300;70001;"";\d{4};"RE-2026-1042";"";;"Frischehof Lindner"$/);
-    expect(lines[3]).toMatch(/^14,28;"S";"EUR";;;"";3400;70001;/);
-  });
-
-  test("ER-N1 Team-Konto: kein Einlesen, kein DATEV", async ({ page, login }) => {
+  test("ER-N1 Team-Konto: kein Einlesen; DATEV gibt es nicht mehr", async ({ page, login }) => {
     await login("staff");
     await page.goto("/invoices");
     await expect(page.getByRole("region", { name: "E-Rechnung einlesen" })).toHaveCount(0);
-    await expect(page.getByRole("region", { name: "DATEV-Export" })).toHaveCount(0);
-    expect((await page.request.get("/api/datev?from=2026-01-01&to=2026-01-31")).status()).toBe(403);
+    await expect(page.getByText("DATEV")).toHaveCount(0);
+    expect((await page.request.get("/api/datev?from=2026-01-01&to=2026-01-31")).status()).toBe(404);
   });
 });
