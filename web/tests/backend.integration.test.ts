@@ -290,55 +290,7 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
   });
 
-  describe("controlling", () => {
-    it("food cost per outlet adds up; staff and other libraries see nothing", async () => {
-      const today = new Date().toISOString().slice(0, 10);
-      const rows = await repo.getControlling(owner, "2020-01-01", today);
-      expect(rows.map((r) => r.name).sort()).toEqual(["Küche Mitte", "Zentralküche"]);
-      for (const r of rows) {
-        expect(r.foodCostCents).toBe(r.openingCents + r.purchasesCents + r.transfersCents - r.closingCents);
-        expect(r.openingCents).toBe(0); // nothing before 2020
-      }
-      const mitte = rows.find((r) => r.name === "Küche Mitte")!;
-      expect(mitte.purchasesCents).toBeGreaterThan(0);
-      expect(mitte.revenueCents).toBeGreaterThan(0); // seeded POS sales
-      await repo.setOutletCostCenter(owner, sid("out-mitte"), "4100");
-      expect((await repo.getControlling(owner, "2020-01-01", today)).find((r) => r.name === "Küche Mitte")!.costCenter).toBe("4100");
-      await expect(repo.getControlling(staff, "2020-01-01", today)).rejects.toThrow(/Berechtigung/);
-      await expect(repo.setOutletCostCenter(staff, sid("out-mitte"), "x")).rejects.toThrow(/Berechtigung/);
-      expect((await repo.getControlling(stranger, "2020-01-01", today)).every((r) => r.name !== "Küche Mitte")).toBe(true);
-      await repo.setOutletCostCenter(owner, sid("out-mitte"), null);
-    });
-  });
 
-  describe("housekeeping", () => {
-    it("rooms per outlet, checklist before cleaned, staff only report cleaning, start of day, no access across outlets or libraries", async () => {
-      await admin`delete from rooms where outlet_id = ${sid("out-mitte")}`;
-      expect(await repo.createRooms(owner, sid("out-mitte"), { numbers: ["101", "102", "103", "Suite 1"], floor: "1", roomType: "DZ" })).toEqual({ added: 4, skipped: [] });
-      expect(await repo.createRooms(owner, sid("out-mitte"), { numbers: ["103", "104"], floor: "1", roomType: "DZ" })).toEqual({ added: 1, skipped: ["103"] });
-      await expect(repo.createRooms(staff, sid("out-mitte"), { numbers: ["999"], floor: null, roomType: null })).rejects.toThrow(/Berechtigung/);
-      await repo.saveHkChecklist(owner, ["Bett beziehen", "Bad reinigen"]);
-      const view = await repo.listRooms(staff, sid("out-mitte"));
-      expect(view.rooms).toHaveLength(5);
-      const r101 = view.rooms.find((r) => r.number === "101")!;
-      await expect(repo.updateRoom(staff, r101.id, { status: "clean", checked: [view.checklist[0].id] })).rejects.toThrow(/Noch nicht abgehakt: Bad reinigen/);
-      await repo.updateRoom(staff, r101.id, { status: "clean", checked: view.checklist.map((i) => i.id) });
-      await expect(repo.updateRoom(staff, r101.id, { status: "inspected" })).rejects.toThrow(/nur die Leitung/);
-      await expect(repo.updateRoom(staff, r101.id, { occupancy: "occupied" })).rejects.toThrow(/Belegung ändert die Leitung/);
-      await repo.updateRoom(owner, r101.id, { status: "inspected", occupancy: "occupied" });
-      expect(await repo.assignRooms(owner, [r101.id], view.me ?? view.staff[0].id)).toBe(1);
-      await expect(repo.assignRooms(staff, [r101.id], null)).rejects.toThrow(/Berechtigung/);
-      expect(await repo.startHousekeepingDay(owner, sid("out-mitte"))).toBe(1);
-      const after = (await repo.listRooms(owner, sid("out-mitte"))).rooms.find((r) => r.number === "101")!;
-      expect([after.status, after.assignedTo]).toEqual(["dirty", null]);
-      expect((await repo.listRooms(owner, sid("out-mitte"))).recent.map((e) => e.toStatus)).toEqual(["dirty", "inspected", "clean"]);
-      await expect(repo.listRooms(staff, sid("out-zentral"))).rejects.toThrow(/Berechtigung/);
-      await expect(repo.listRooms({ ...stranger, libraryId: owner.libraryId }, sid("out-mitte"))).rejects.toThrow(/Berechtigung/);
-      expect((await repo.exportLibrary(owner)).rooms).toHaveLength(5);
-      await admin`delete from rooms where outlet_id = ${sid("out-mitte")}`;
-      await repo.saveHkChecklist(owner, []);
-    });
-  });
 
   describe("invoices", () => {
     it("editors match and approve; staff and other libraries cannot", async () => {
@@ -475,26 +427,6 @@ describe.skipIf(!url)("backend against Postgres", () => {
       expect(await handleStripeEvent(deleted)).toBe("applied");
       [lib] = await admin`select plan, stripe_subscription_id from libraries where id = ${stranger.libraryId}`;
       expect(lib).toMatchObject({ plan: "cancelled", stripe_subscription_id: null });
-    });
-    it("takes the booked add-ons from the subscription's prices", async () => {
-      const { handleStripeEvent } = await import("../src/lib/billing");
-      process.env.STRIPE_PRICE_ADDON_HOUSEKEEPING = "price_hk";
-      process.env.STRIPE_PRICE_ADDON_CONTROLLING_YEARLY = "price_fc_y";
-      await admin`delete from processed_webhooks where event_id like 'evt_addon_%'`;
-      const sub = (id: string, prices: string[]) => JSON.parse(event(id, "customer.subscription.updated", {
-        object: "subscription", id: "sub_addon", status: "active", metadata: { library_id: stranger.libraryId },
-        items: { data: prices.map((p) => ({ price: { id: p }, current_period_end: 1893456000 })) },
-      }));
-      expect(await handleStripeEvent(sub("evt_addon_1", ["price_base", "price_hk", "price_fc_y"]))).toBe("applied");
-      let [lib] = await admin`select addons from libraries where id = ${stranger.libraryId}`;
-      expect(lib.addons).toEqual(["housekeeping", "controlling"]);
-      expect(await handleStripeEvent(sub("evt_addon_2", ["price_base"]))).toBe("applied");
-      [lib] = await admin`select addons from libraries where id = ${stranger.libraryId}`;
-      expect(lib.addons).toEqual([]);
-    });
-    it("does not let a member book add-ons by writing the column", async () => {
-      const { asUser } = await import("../src/data/pg/client");
-      await expect(asUser(stranger.userId, (tx) => tx`update libraries set addons = '{housekeeping}' where id = ${stranger.libraryId}`)).rejects.toThrow(/permission denied/);
     });
   });
 });

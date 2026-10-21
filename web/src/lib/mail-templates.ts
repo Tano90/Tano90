@@ -82,28 +82,3 @@ export function leadThanksMail(t: { appName: string; name: string }) {
   return { subject, text, html };
 }
 
-
-export function linenOrderMail(o: { libraryName: string; outletName: string; deliveryDay: string; note: string | null; lines: { name: string; qty: number; priceCents: number }[] }) {
-  const date = formatDay(o.deliveryDay, "full");
-  const total = o.lines.reduce((s, l) => s + l.qty * l.priceCents, 0);
-  const subject = `Wäschebestellung – ${o.libraryName}, ${o.outletName}, ${date}`;
-  const text = [
-    `Guten Tag,`, ``,
-    `bitte liefern Sie an ${o.libraryName}, ${o.outletName} am ${date}:`, ``,
-    ...o.lines.map((l) => `- ${l.qty} × ${l.name}`), ``,
-    total ? `Summe netto laut unseren Preisen: ${formatCents(total)}` : null,
-    o.note ? `\nHinweis: ${o.note}` : null,
-    `Rückfragen beantworten Sie einfach direkt auf diese E-Mail.`,
-  ].filter((x) => x !== null).join("\n");
-  const html = wrap(`
-    <p>Guten Tag,</p>
-    <p>bitte liefern Sie an <strong>${esc(o.libraryName)}, ${esc(o.outletName)}</strong> am <strong>${esc(date)}</strong>:</p>
-    <table style="border-collapse:collapse;width:100%">
-      <thead><tr><th align="left" style="border-bottom:1px solid #e3e6ea;padding:4px">Artikel</th><th align="right" style="border-bottom:1px solid #e3e6ea;padding:4px">Stück</th></tr></thead>
-      <tbody>${o.lines.map((l) => `<tr><td style="padding:4px">${esc(l.name)}</td><td align="right" style="padding:4px">${l.qty}</td></tr>`).join("")}</tbody>
-    </table>
-    ${total ? `<p>Summe netto laut unseren Preisen: <strong>${esc(formatCents(total))}</strong></p>` : ""}
-    ${o.note ? `<p>Hinweis: ${esc(o.note)}</p>` : ""}
-    <p>Rückfragen beantworten Sie einfach direkt auf diese E-Mail.</p>`);
-  return { subject, text, html };
-}

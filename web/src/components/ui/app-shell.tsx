@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, BedDouble, BookOpen, ChefHat, CookingPot, LayoutDashboard, Menu as MenuIcon, Package, ReceiptText, Settings, ShieldCheck, ShoppingCart, Truck, UtensilsCrossed, X } from "lucide-react";
+import { BarChart3, BookOpen, ChefHat, CookingPot, LayoutDashboard, Menu as MenuIcon, Package, ReceiptText, Settings, ShieldCheck, ShoppingCart, Truck, UtensilsCrossed, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -20,7 +20,6 @@ const NAV = [
   { href: "/production", label: "Zentralküche", icon: CookingPot },
   { href: "/analytics/pos", label: "Auswertungen", icon: BarChart3 },
   { href: "/haccp", label: "HACCP", icon: ShieldCheck },
-  { href: "/housekeeping", label: "Housekeeping", icon: BedDouble },
   { href: "/settings", label: "Einstellungen", icon: Settings },
 ];
 

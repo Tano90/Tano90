@@ -14,7 +14,7 @@ export type Library = {
   wageCentsPerHour: number | null;
 };
 
-export type Outlet = { id: string; libraryId: string; name: string; isCentralKitchen: boolean; timezone: string; archivedAt: string | null; costCenter?: string | null };
+export type Outlet = { id: string; libraryId: string; name: string; isCentralKitchen: boolean; timezone: string; archivedAt: string | null };
 
 export type Member = { id: string; userId: string; name: string; email: string; role: Role; allOutlets: boolean; outletIds: string[] };
 

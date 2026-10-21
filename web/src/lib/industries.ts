@@ -1,18 +1,13 @@
 // Pages per industry. Every feature named here exists in the app today; limits are said out loud.
 import type { LucideIcon } from "lucide-react";
-import { BedDouble, Calculator, ChefHat, ClipboardCheck, CookingPot, Package, ReceiptText, ScanBarcode, ShoppingCart, Tags, UtensilsCrossed, WifiOff } from "lucide-react";
+import { Calculator, ChefHat, ClipboardCheck, CookingPot, Package, ReceiptText, ScanBarcode, ShoppingCart, Tags, UtensilsCrossed, WifiOff } from "lucide-react";
 
 import type { StaticImageData } from "next/image";
-import shotHk from "../../public/landing/housekeeping-uebersicht.png";
 import shotInvoice from "../../public/landing/e-rechnung.png";
 import shotRecipe from "../../public/landing/rezept-kalkulation.png";
-import { formatCents } from "./format";
-import { PRICING } from "./pricing";
-
-const ADDON_PRICE = formatCents(PRICING.addonMonthly).replace(",00", "");
 
 export type Industry = {
-  slug: "hotel" | "restaurant" | "catering" | "kantine";
+  slug: "restaurant" | "catering" | "kantine";
   name: string;
   title: string;
   lead: string;
@@ -25,28 +20,6 @@ export type Industry = {
 };
 
 export const INDUSTRIES: Industry[] = [
-  {
-    slug: "hotel",
-    name: "Hotel",
-    title: "F&B und Housekeeping für Hotels. In einem Werkzeug.",
-    lead: "Frühstück, Restaurant, Bankett und Bar als eigene Kostenstellen, die Küche kalkuliert live, und die Hausdame sieht jedes Zimmer auf einen Blick.",
-    pains: [
-      "Der Wareneinsatz pro Outlet kommt erst mit dem Monatsabschluss, zu spät zum Gegensteuern.",
-      "Frühstück, Bankett und Restaurant greifen auf dasselbe Lager zu, und niemand weiß, wer was verbraucht hat.",
-      "Zimmerstatus auf Zetteln und per Funk: Die Rezeption weiß nicht, ob das Zimmer für die Anreise fertig ist.",
-    ],
-    features: [
-      { icon: Calculator, title: "F&B-Controlling je Kostenstelle", body: `Wareneinsatz je Outlet und Monat, wie die Buchhaltung ihn rechnet, mit Schwund, Inventurdifferenz, Umsatz und Quote. Export als CSV für die Buchhaltung. Add-on, ${ADDON_PRICE} im Monat.` },
-      { icon: BedDouble, title: "Housekeeping", body: `Zimmertafel mit „Bitte nicht stören“, VIP und Anreisezeit, automatische Verteilung nach Minuten, Schäden und Fundsachen mit Foto, Minuten pro Zimmer. Dazu Wäschelager, Wäschebestellung aus der Belegung und Dienstplan. Add-on, ${ADDON_PRICE} im Monat.` },
-      { icon: CookingPot, title: "Bankett aus der Zentralküche", body: "Outlets fordern an, die Produktion sieht pro Tag, was zu kochen ist und welche Rohware fehlt, und bucht sie aus." },
-      { icon: UtensilsCrossed, title: "Frühstück und Menüs", body: "Buffet und Bankettmenüs mit Kosten pro Gast; die Stückliste rechnet auf die Gästezahl hoch, über alle Grundrezepte." },
-      { icon: Tags, title: "Allergene fürs Buffet", body: "Allergene und Nährwerte pro Rezept, als Etikett druckbar. Ungeprüfte Zutaten machen ein Gericht „unbekannt“, nie „frei“." },
-      { icon: ClipboardCheck, title: "HACCP pro Outlet", body: "Eigene Checklisten mit Grenzwerten für Küche, Bar und Frühstück; Abweichungen nur mit Maßnahme, Protokoll als CSV." },
-    ],
-    note: "Noch keine Anbindung an das Hotelprogramm (PMS): Die Belegung trägt die Hausdame ein. Mirepa ist keine Finanzbuchhaltung, sondern liefert ihr die F&B-Zahlen.",
-    cards: [{ title: "Zimmer 214 kontrolliert", detail: "Anreise 15:00 · freigegeben" }, { title: "Frühstück: 23,4 %", detail: "Wareneinsatz Oktober" }],
-    shot: { src: shotHk, alt: "Housekeeping-Übersicht mit Belegung, Anreisen, Personalstunden, Wäschekosten pro Zimmernacht und Hinweisen.", caption: "Die Housekeeping-Übersicht: Belegung, Wäschebedarf, Personal und Kosten, und was jetzt wichtig ist." },
-  },
   {
     slug: "restaurant",
     name: "Restaurant",

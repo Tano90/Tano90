@@ -23,7 +23,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
     <>
       <PageHeader
         title="Kassen-Anbindung"
-        actions={<span className="flex flex-wrap gap-2"><Link href="/analytics/controlling" className="inline-flex h-(--size-control-md) items-center gap-2 rounded-sm border border-border-input bg-bg px-4 font-semibold hover:bg-row-hover"><Calculator aria-hidden className="size-4" /> F&B-Controlling</Link><Link href="/analytics/menu-engineering" className="inline-flex h-(--size-control-md) items-center gap-2 rounded-sm border border-border-input bg-bg px-4 font-semibold hover:bg-row-hover"><BarChart3 aria-hidden className="size-4" /> Menu Engineering</Link></span>}
+        actions={<span className="flex flex-wrap gap-2"><Link href="/analytics/menu-engineering" className="inline-flex h-(--size-control-md) items-center gap-2 rounded-sm border border-border-input bg-bg px-4 font-semibold hover:bg-row-hover"><BarChart3 aria-hidden className="size-4" /> Menu Engineering</Link></span>}
         description={`Verkäufe aus der Kasse von ${outlet?.name}. Ist ein Kassenartikel mit einem Rezept verknüpft, bucht jeder Verkauf die Zutaten bis auf die Rohware aus dem Lager.`}
       />
       <div className="flex flex-col gap-10">

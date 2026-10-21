@@ -15,7 +15,7 @@ const impl: Repo = process.env.DATABASE_URL ? pg : misconfigured ? refuse : memo
 export const usingDatabase = !!process.env.DATABASE_URL;
 export const {
   getMembership, findUserIdByEmail, createLibrary, invitationPreview, acceptInvitation, deleteAccountData,
-  getLibrary, getBilling, updateLibrary, listOutlets, createOutlet, archiveOutlet, setOutletCostCenter, getControlling, listMembers, inviteMember, updateMember, removeMember, transferOwnership, listCategories,
+  getLibrary, getBilling, updateLibrary, listOutlets, createOutlet, archiveOutlet, listMembers, inviteMember, updateMember, removeMember, transferOwnership, listCategories,
   listIngredients, getIngredient, setOutletCarried, saveIngredient, archiveIngredient, savePackage, deletePackage, saveStockItem, archiveStockItem,
   setIngredientAllergens, setNutrition, listSuppliers, getSupplier, saveSupplier, archiveSupplier,
   listRecipes, getRecipe, lineOptions, previewRecipe, saveRecipe, archiveRecipe, setRecipeOutletPrice, getRecipeLabel, listMenus, getMenu, saveMenu, archiveMenu,
@@ -24,12 +24,7 @@ export const {
   listProduction, requestProduction, cancelProductionRequest, produce, deliverProduction,
   getInvoice, saveInvoice, approveInvoice, listChecklists, getHaccpDay, saveHaccpRecords, haccpDeviations, saveChecklist, archiveChecklist, getMenuEngineering, importSales, importSalesWithKey, listPosItems, linkPosItem, listApiKeys, createApiKey, revokeApiKey,
   dashboard, exportLibrary,
-  listRooms, createRooms, updateRoom, assignRooms, startHousekeepingDay, archiveRoom, saveHkChecklist,
-  getHkSetup, saveHkSettings, saveLinenItem, archiveLinenItem, getOccupancyPlan, saveOccupancyPlan, countLinen, listLinenMovements,
-  listLinenOrders, saveLinenOrder, sendLinenOrder, receiveLinenOrder, deleteLinenOrder, listShifts, saveShift, deleteShift,
   saveEInvoice, listInvoices, getDatevSetup, saveDatevSettings,
-  listTickets, createTicket, closeTicket, getTicketPhoto, listCleaningTimes,
 } = impl;
-export type * from "./linen-types";
 export type * from "./finance-types";
-export type { Billing, ChecklistDraft, RoomPatch, HaccpEntry, IngredientFilter, ProductionInput, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "./repo-memory";
+export type { Billing, ChecklistDraft, HaccpEntry, IngredientFilter, ProductionInput, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "./repo-memory";

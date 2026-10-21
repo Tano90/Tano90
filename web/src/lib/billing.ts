@@ -3,7 +3,6 @@
 import "server-only";
 import Stripe from "stripe";
 import { asService } from "@/data/pg/client";
-import { ADDON_KEYS, type AddonKey } from "@/domain/addons";
 import { SMALL_BUSINESS } from "./legal";
 
 export const billingConfigured = () => !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_ID);
@@ -19,36 +18,17 @@ export function stripe(): Stripe {
 
 const appUrl = () => process.env.APP_URL ?? "http://localhost:3000";
 
-type Interval = "month" | "year";
-const basePrice = (interval: Interval) => (interval === "year" ? process.env.STRIPE_PRICE_ID_YEARLY : process.env.STRIPE_PRICE_ID);
-// STRIPE_PRICE_ADDON_HOUSEKEEPING, STRIPE_PRICE_ADDON_CONTROLLING, and the same with _YEARLY.
-const addonPrice = (key: AddonKey, interval: Interval) => process.env[`STRIPE_PRICE_ADDON_${key.toUpperCase()}${interval === "year" ? "_YEARLY" : ""}`];
-export const addonConfigured = (key: AddonKey) => billingConfigured() && !!addonPrice(key, "month");
-
-/** Which add-ons a subscription's items pay for, by price id. */
-export function addonsFromPrices(priceIds: string[]): AddonKey[] {
-  return ADDON_KEYS.filter((k) => priceIds.some((id) => id && (id === addonPrice(k, "month") || id === addonPrice(k, "year"))));
-}
-const priceIds = (sub: Stripe.Subscription) => sub.items.data.map((i) => i.price?.id).filter((id): id is string => !!id);
-
-/**
- * Checkout for the per-outlet plan (a graduated price: first outlet, then each further one), plus the chosen
- * add-ons at quantity 1. client_reference_id ties the session to the library.
- */
-export async function createCheckout(input: { libraryId: string; email: string; outletCount: number; customerId: string | null; interval: Interval; addons: AddonKey[] }) {
-  const price = basePrice(input.interval);
+/** Checkout for the per-outlet plan. client_reference_id ties the session to the library. */
+/** Checkout for the per-outlet plan (a graduated price: first outlet, then each further one). */
+export async function createCheckout(input: { libraryId: string; email: string; outletCount: number; customerId: string | null; interval: "month" | "year" }) {
+  const price = input.interval === "year" ? process.env.STRIPE_PRICE_ID_YEARLY : process.env.STRIPE_PRICE_ID;
   if (!price) throw new Error("Für diesen Zahlungsrhythmus ist kein Preis eingerichtet.");
-  const addonItems = input.addons.map((k) => {
-    const p = addonPrice(k, input.interval);
-    if (!p) throw new Error("Für dieses Add-on ist in diesem Zahlungsrhythmus kein Preis eingerichtet.");
-    return { price: p, quantity: 1 };
-  });
   const session = await stripe().checkout.sessions.create({
     mode: "subscription",
     client_reference_id: input.libraryId,
     customer: input.customerId ?? undefined,
     customer_email: input.customerId ? undefined : input.email,
-    line_items: [{ price, quantity: Math.max(1, input.outletCount) }, ...addonItems],
+    line_items: [{ price, quantity: Math.max(1, input.outletCount) }],
     subscription_data: { metadata: { library_id: input.libraryId } },
     allow_promotion_codes: true,
     // A Kleinunternehmer (§ 19 UStG) must not charge VAT, whatever the environment says.
@@ -67,26 +47,10 @@ export async function createPortal(customerId: string) {
 /** Keep the subscription quantity equal to the number of active outlets. */
 export async function syncOutletQuantity(subscriptionId: string, outletCount: number) {
   const sub = await stripe().subscriptions.retrieve(subscriptionId);
-  const item = sub.items.data.find((i) => addonsFromPrices([i.price.id]).length === 0);
+  const item = sub.items.data[0];
   if (item && item.quantity !== outletCount) {
     await stripe().subscriptionItems.update(item.id, { quantity: Math.max(1, outletCount), proration_behavior: "create_prorations" });
   }
-}
-
-/** Adds or removes one add-on on a running subscription (prorated), then stores what Stripe now bills. */
-export async function changeAddon(libraryId: string, subscriptionId: string, key: AddonKey, on: boolean): Promise<AddonKey[]> {
-  const sub = await stripe().subscriptions.retrieve(subscriptionId);
-  const existing = sub.items.data.find((i) => addonsFromPrices([i.price.id]).includes(key));
-  if (on && !existing) {
-    const interval = sub.items.data[0]?.price.recurring?.interval === "year" ? "year" : "month";
-    const price = addonPrice(key, interval);
-    if (!price) throw new Error("Für dieses Add-on ist in deinem Zahlungsrhythmus kein Preis eingerichtet.");
-    await stripe().subscriptionItems.create({ subscription: subscriptionId, price, quantity: 1, proration_behavior: "create_prorations" });
-  }
-  if (!on && existing) await stripe().subscriptionItems.del(existing.id, { proration_behavior: "create_prorations" });
-  const addons = addonsFromPrices(priceIds(await stripe().subscriptions.retrieve(subscriptionId)));
-  await asService((tx) => tx`update libraries set addons = ${addons}::text[] where id = ${libraryId}`);
-  return addons;
 }
 
 export function planFromStatus(status: Stripe.Subscription.Status): "trial" | "active" | "past_due" | "cancelled" {
@@ -130,9 +94,8 @@ export async function handleStripeEvent(event: Stripe.Event): Promise<"duplicate
         const sub = event.data.object;
         const status = event.type === "customer.subscription.deleted" ? "canceled" : sub.status;
         const periodEnd = sub.items.data[0]?.current_period_end;
-        const addons = event.type === "customer.subscription.deleted" ? [] : addonsFromPrices(priceIds(sub));
         const updated = await tx`
-          update libraries set plan = ${planFromStatus(status)}, subscription_status = ${status}, addons = ${addons}::text[],
+          update libraries set plan = ${planFromStatus(status)}, subscription_status = ${status},
             current_period_end = ${periodEnd ? new Date(periodEnd * 1000).toISOString() : null},
             stripe_subscription_id = ${event.type === "customer.subscription.deleted" ? null : sub.id}
           where stripe_subscription_id = ${sub.id} or id = ${sub.metadata?.library_id ?? null}::uuid

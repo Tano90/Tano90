@@ -37,14 +37,14 @@ test.describe("L01 Landingpage", () => {
     await expect(page.locator("body")).not.toContainText("Noch nicht.");
   });
 
-  test("L01-E4 Neu in Mirepa: Hinweis oben, drei Neuheiten mit echten Bildern", async ({ page }) => {
+  test("L01-E4 Neu: Hinweis oben, Neuheit mit echtem Bild", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("link", { name: /Neu E-Rechnung, DATEV und das Housekeeping-Paket/ }).click();
+    await page.getByRole("link", { name: /Neu E-Rechnung, DATEV, Soll-Ist und Bestell-Forecast/ }).click();
     const news = page.getByRole("region", { name: /Vom Lieferschein bis zum Steuerberater/ });
-    for (const h of ["E-Rechnung rein, DATEV raus", "Belegung, Wäsche, Personal und Kosten auf einen Blick", "Die Zimmertafel, die mitdenkt"]) await expect(news.getByRole("heading", { name: h })).toBeVisible();
-    await expect(news.getByRole("img")).toHaveCount(3);
-    await page.goto("/branchen/hotel");
-    await expect(page.getByRole("img", { name: /Housekeeping-Übersicht/ })).toBeVisible();
+    await expect(news.getByRole("heading", { name: "E-Rechnung rein, DATEV raus" })).toBeVisible();
+    await expect(news.getByRole("img")).toHaveCount(1);
+    await page.goto("/branchen/restaurant");
+    await expect(page.getByRole("img", { name: /Rezept Linsensuppe/ })).toBeVisible();
   });
 
   test("L01-N1 Rechtsseiten verlinkt", async ({ page }) => {

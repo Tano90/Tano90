@@ -15,13 +15,9 @@ import type { SaleInput } from "@/domain/pos";
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { type BillingState, accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
-import { type ControllingRow, controlling } from "@/domain/controlling";
-import { STATUS_LABEL, canSetStatus, needsServiceToday } from "@/domain/housekeeping";
-import { DEFAULT_SETTINGS, type HkSettings, type LinenItem, type PlanRow } from "@/domain/linen";
 import { ORDER_RESERVE_PCT, forecastUse, orderCoverDays, suggestFromUse, weekdayUsage } from "@/domain/stock";
 import type { DatevSettings } from "@/domain/datev";
 import type { DatevSetup, EInvoiceSave, InvoiceListRow } from "../finance-types";
-import type { CleaningTime, HkSetup, LinenCountLine, TicketInput, TicketRow, LinenItemInput, LinenMovementRow, LinenOrderInput, LinenOrderMailData, LinenOrderRow, ShiftInput, ShiftRow } from "../linen-types";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
 import type { BaseUnit } from "@/domain/units";
@@ -60,7 +56,7 @@ export async function getLibrary(s: Session): Promise<Library> {
 
 export async function getBilling(s: Session): Promise<Billing> {
   return run(s, async (tx) => one(await tx<Billing[]>`
-    select plan, subscription_status, trial_ends_at, current_period_end, stripe_customer_id, stripe_subscription_id, addons from libraries where id = ${s.libraryId}`, "Betrieb"));
+    select plan, subscription_status, trial_ends_at, current_period_end, stripe_customer_id, stripe_subscription_id from libraries where id = ${s.libraryId}`, "Betrieb"));
 }
 
 export async function updateLibrary(s: Session, patch: { name: string; defaultVatBp: number; wageCentsPerHour: number | null }) {
@@ -71,7 +67,7 @@ export async function updateLibrary(s: Session, patch: { name: string; defaultVa
 export async function listOutlets(s: Session): Promise<Outlet[]> {
   // RLS (outlets_read) already limits staff to their own outlets.
   return run(s, (tx) => tx<Outlet[]>`
-    select id, library_id, name, is_central_kitchen, timezone, archived_at, cost_center from outlets
+    select id, library_id, name, is_central_kitchen, timezone, archived_at from outlets
     where library_id = ${s.libraryId} and archived_at is null order by name`);
 }
 
@@ -140,9 +136,7 @@ const EXPORT: [table: string, where: string, omit?: string[]][] = [
   ["haccp_checklists", BY_LIBRARY], ["haccp_items", "checklist_id in (select id from haccp_checklists where library_id = $1)"],
   ["haccp_records", "item_id in (select i.id from haccp_items i join haccp_checklists c on c.id = i.checklist_id where c.library_id = $1)"],
   ["production_requests", BY_LIBRARY],
-  ["rooms", BY_LIBRARY], ["room_events", "room_id in (select id from rooms where library_id = $1)"], ["hk_checklist_items", BY_LIBRARY],
-  ["hk_settings", BY_LIBRARY], ["linen_items", BY_LIBRARY], ["linen_set_items", "item_id in (select id from linen_items where library_id = $1)"], ["occupancy_plan", BY_LIBRARY],
-  ["linen_orders", BY_LIBRARY], ["linen_order_lines", "order_id in (select id from linen_orders where library_id = $1)"], ["linen_movements", BY_LIBRARY], ["hk_shifts", BY_LIBRARY], ["datev_settings", BY_LIBRARY], ["hk_tickets", BY_LIBRARY, ["photo"]],
+  ["datev_settings", BY_LIBRARY],
 ];
 
 export async function exportLibrary(s: Session): Promise<Record<string, Record<string, unknown>[]>> {
@@ -158,41 +152,7 @@ export async function exportLibrary(s: Session): Promise<Record<string, Record<s
 }
 const camel = (x: string) => x.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 
-export async function setOutletCostCenter(s: Session, outletId: string, costCenter: string | null) {
-  assertTeam(s);
-  if (!isUuid(outletId)) throw new Error("Outlet nicht gefunden.");
-  const rows = await run(s, (tx) => tx`update outlets set cost_center = ${costCenter} where id = ${outletId} and library_id = ${s.libraryId} returning id`);
-  if (!rows.length) throw new Error("Outlet nicht gefunden.");
-}
 
-export type ControllingOutlet = ControllingRow & { outletId: string; name: string; costCenter: string | null };
-
-/** Food cost per outlet (cost centre) for the period, in each outlet's own days. Managers only. */
-export async function getControlling(s: Session, fromDay: string, toDay: string): Promise<ControllingOutlet[]> {
-  if (!canEditLibrary(s.role)) throw new Forbidden();
-  return run(s, async (tx) => {
-    const outlets = await tx<{ id: string; name: string; timezone: string; costCenter: string | null }[]>`
-      select id, name, timezone, cost_center from outlets where library_id = ${s.libraryId} and archived_at is null order by name`;
-    const out: ControllingOutlet[] = [];
-    for (const o of outlets) {
-      const from = startOfDay(fromDay, o.timezone), to = startOfDay(addDays(toDay, 1), o.timezone);
-      const moves = await tx<{ ingredientId: string; eventType: string; occurredAt: string; deltaBase: number; unitCostCents: number }[]>`
-        select m.ingredient_id, e.type as event_type, e.occurred_at, m.delta_base::float8 as delta_base, m.unit_cost_cents::float8 as unit_cost_cents
-        from stock_movements m join stock_events e on e.id = m.stock_event_id
-        where m.outlet_id = ${o.id} and e.status = 'closed' and e.occurred_at < ${to}`;
-      const [{ revenue }] = await tx<{ revenue: number }[]>`
-        select coalesce(sum(revenue_net_cents), 0)::float8 as revenue from sales where outlet_id = ${o.id} and sold_at >= ${from} and sold_at < ${to}`;
-      out.push({ outletId: o.id, name: o.name, costCenter: o.costCenter, ...controlling(moves.map((m) => ({ ...m, occurredAt: new Date(m.occurredAt).toISOString() })), from, to, revenue) });
-    }
-    return out;
-  });
-}
-
-// ---------------------------------------------------------------- housekeeping
-
-export type RoomPatch = { status?: Room["status"]; occupancy?: Room["occupancy"]; note?: string | null; checked?: string[]; dnd?: boolean; vip?: boolean; arrivalTime?: string | null; start?: boolean };
-export type RoomRow = Room & { assigneeName: string | null };
-export type RoomLog = { at: string; number: string; fromStatus: string | null; toStatus: string; byName: string };
 
 async function assertOutletAccess(tx: Tx, outletId: string) {
   if (!isUuid(outletId)) throw new Error("Outlet nicht gefunden.");
@@ -200,118 +160,12 @@ async function assertOutletAccess(tx: Tx, outletId: string) {
   if (!ok) throw new Forbidden();
 }
 
-/** Rooms of an outlet with who cleans them, the cleaning checklist, the people who can be assigned and the latest changes. */
-export async function listRooms(s: Session, outletId: string) {
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    const rooms = await tx<RoomRow[]>`
-      select r.*, m.display_name as assignee_name from rooms r left join memberships m on m.id = r.assigned_to
-      where r.outlet_id = ${outletId} and r.archived_at is null
-      order by coalesce(r.floor, ''), length(r.number), r.number`;
-    const checklist = await tx<HkChecklistItem[]>`select id, position, label from hk_checklist_items where library_id = ${s.libraryId} order by position`;
-    // Through the service role: staff may not read other memberships, but the board shows who cleans which room.
-    const staff = await asService((sv) => sv<{ id: string; name: string; userId: string }[]>`
-      select m.id, m.display_name as name, m.user_id from memberships m where m.library_id = ${s.libraryId}
-        and (m.role in ('owner', 'admin', 'chef') or m.all_outlets or exists (select 1 from membership_outlets mo where mo.membership_id = m.id and mo.outlet_id = ${outletId}))
-      order by m.display_name`);
-    const recent = await tx<RoomLog[]>`
-      select e.at, r.number, e.from_status, e.to_status, coalesce((select m.display_name from memberships m where m.user_id = e.by_user and m.library_id = r.library_id), '–') as by_name
-      from room_events e join rooms r on r.id = e.room_id where r.outlet_id = ${outletId} order by e.at desc limit 30`;
-    const me = staff.find((m) => m.userId === s.userId)?.id ?? null;
-    return { rooms, checklist, staff: staff.map(({ id, name }) => ({ id, name })), recent, me };
-  });
-}
 
-export async function createRooms(s: Session, outletId: string, input: { numbers: string[]; floor: string | null; roomType: string | null }) {
-  if (!canEditLibrary(s.role)) throw new Forbidden();
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    const added = await tx<{ number: string }[]>`
-      insert into rooms ${tx(input.numbers.map((number) => ({ libraryId: s.libraryId, outletId, number, floor: input.floor, roomType: input.roomType, updatedBy: s.userId })))}
-      on conflict (outlet_id, lower(number)) where archived_at is null do nothing returning number`;
-    return { added: added.length, skipped: input.numbers.filter((n) => !added.some((a) => a.number === n)) };
-  });
-}
 
-export async function updateRoom(s: Session, roomId: string, patch: RoomPatch) {
-  if (!isUuid(roomId)) throw new Error("Zimmer nicht gefunden.");
-  const manager = canEditLibrary(s.role);
-  return run(s, async (tx) => {
-    const [room] = await tx<Room[]>`select * from rooms where id = ${roomId} and archived_at is null for update`;
-    if (!room) throw new Error("Zimmer nicht gefunden.");
-    if (patch.occupancy !== undefined && patch.occupancy !== room.occupancy && !manager) throw new Error("Die Belegung ändert die Leitung.");
-    if ((patch.vip !== undefined && patch.vip !== room.vip) || (patch.arrivalTime !== undefined && patch.arrivalTime !== room.arrivalTime)) {
-      if (!manager) throw new Error("VIP und Anreisezeit trägt die Leitung ein.");
-    }
-    const set: Record<string, unknown> = {};
-    if (patch.start && room.status === "dirty") set.cleaningStartedAt = new Date();
-    if (patch.status !== undefined && patch.status !== room.status) {
-      if (!canSetStatus(s.role, room.status, patch.status)) throw new Error(`Von „${STATUS_LABEL[room.status]}“ auf „${STATUS_LABEL[patch.status]}“ stellt nur die Leitung um.`);
-      if (patch.status === "clean") {
-        const items = await tx<{ id: string; label: string }[]>`select id, label from hk_checklist_items where library_id = ${room.libraryId} order by position`;
-        const missing = items.filter((i) => !patch.checked?.includes(i.id));
-        if (missing.length) throw new Error(`Noch nicht abgehakt: ${missing.map((i) => i.label).join(", ")}.`);
-      }
-      set.status = patch.status;
-      set.cleaningStartedAt = null;
-      if (patch.status === "clean") set.dnd = false;
-      const minutes = patch.status === "clean" && room.cleaningStartedAt ? Math.min(600, Math.round((Date.now() - Date.parse(room.cleaningStartedAt)) / 60000)) : null;
-      await tx`insert into room_events ${tx({ roomId, fromStatus: room.status, toStatus: patch.status, checked: tx.json(patch.checked ?? []), byUser: s.userId, minutes })}`;
-    }
-    if (patch.dnd !== undefined) set.dnd = patch.dnd;
-    if (patch.vip !== undefined) set.vip = patch.vip;
-    if (patch.arrivalTime !== undefined) set.arrivalTime = patch.arrivalTime;
-    if (patch.occupancy !== undefined) set.occupancy = patch.occupancy;
-    if (patch.note !== undefined) set.note = patch.note;
-    if (!Object.keys(set).length) return;
-    await tx`update rooms set ${tx({ ...set, updatedAt: new Date(), updatedBy: s.userId })} where id = ${roomId}`;
-  });
-}
 
-export async function assignRooms(s: Session, roomIds: string[], membershipId: string | null) {
-  if (!canEditLibrary(s.role)) throw new Forbidden();
-  if (roomIds.some((x) => !isUuid(x)) || (membershipId && !isUuid(membershipId))) throw new Error("Zimmer nicht gefunden.");
-  return run(s, async (tx) => {
-    if (membershipId) {
-      const [m] = await asService((sv) => sv`select 1 from memberships where id = ${membershipId} and library_id = ${s.libraryId}`);
-      if (!m) throw new Error("Diese Person gehört nicht zum Betrieb.");
-    }
-    const done = await tx`update rooms set assigned_to = ${membershipId}, updated_at = now(), updated_by = ${s.userId}
-      where id = any(${roomIds}::uuid[]) and library_id = ${s.libraryId} and archived_at is null returning id`;
-    return done.length;
-  });
-}
 
-/** Start of the day: occupied and departing rooms go to dirty, assignments are cleared. */
-export async function startHousekeepingDay(s: Session, outletId: string) {
-  if (!canEditLibrary(s.role)) throw new Forbidden();
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    const rooms = await tx<Room[]>`select * from rooms where outlet_id = ${outletId} and archived_at is null for update`;
-    const due = rooms.filter(needsServiceToday);
-    for (const r of due) await tx`insert into room_events ${tx({ roomId: r.id, fromStatus: r.status, toStatus: "dirty", byUser: s.userId })}`;
-    if (due.length) await tx`update rooms set status = 'dirty', updated_at = now(), updated_by = ${s.userId} where id = any(${due.map((r) => r.id)}::uuid[])`;
-    await tx`update rooms set assigned_to = null, dnd = false, cleaning_started_at = null where outlet_id = ${outletId}`;
-    return due.length;
-  });
-}
 
-export async function archiveRoom(s: Session, roomId: string) {
-  if (!canEditLibrary(s.role)) throw new Forbidden();
-  if (!isUuid(roomId)) throw new Error("Zimmer nicht gefunden.");
-  await run(s, async (tx) => {
-    const done = await tx`update rooms set archived_at = now(), assigned_to = null where id = ${roomId} and library_id = ${s.libraryId} and archived_at is null returning id`;
-    if (!done.length) throw new Error("Zimmer nicht gefunden.");
-  });
-}
 
-export async function saveHkChecklist(s: Session, labels: string[]) {
-  if (!canEditLibrary(s.role)) throw new Forbidden();
-  await run(s, async (tx) => {
-    await tx`delete from hk_checklist_items where library_id = ${s.libraryId}`;
-    if (labels.length) await tx`insert into hk_checklist_items ${tx(labels.map((label, position) => ({ libraryId: s.libraryId, position, label })))}`;
-  });
-}
 
 export async function listMembers(s: Session): Promise<Member[]> {
   assertTeam(s);
@@ -1880,223 +1734,23 @@ export async function deleteAccountData(userId: string): Promise<{ ok: boolean; 
   });
 }
 
-// ---------------------------------------------------------------- housekeeping: linen, occupancy plan, roster
 
-const hkPeopleQuery = (libraryId: string, outletId: string) => asService((sv) => sv<{ id: string; name: string }[]>`
-  select m.id, m.display_name as name from memberships m where m.library_id = ${libraryId}
-    and (m.role in ('owner', 'admin', 'chef') or m.all_outlets or exists (select 1 from membership_outlets mo where mo.membership_id = m.id and mo.outlet_id = ${outletId}))
-  order by m.display_name`);
 
-export async function getHkSetup(s: Session, outletId: string): Promise<HkSetup> {
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    const [settings] = await tx<HkSettings[]>`
-      select bed_every_days, bath_every_days, minutes_departure, minutes_stayover, minutes_arrival, safety_pct, cover_days from hk_settings where outlet_id = ${outletId}`;
-    const items = await tx<(LinenItem & { sets: { roomType: string; qty: number }[] })[]>`
-      select i.id, i.name, i.kind, i.price_cents, i.pack_size, i.stock_clean,
-        coalesce((select json_agg(json_build_object('roomType', l.room_type, 'qty', l.qty) order by l.room_type) from linen_set_items l where l.item_id = i.id), '[]') as sets
-      from linen_items i where i.outlet_id = ${outletId} and i.archived_at is null order by i.kind, i.name`;
-    const types = await tx<{ t: string }[]>`
-      select distinct coalesce(room_type, '') as t from rooms where outlet_id = ${outletId} and archived_at is null
-      union select distinct l.room_type from linen_set_items l join linen_items i on i.id = l.item_id where i.outlet_id = ${outletId} and i.archived_at is null`;
-    return { settings: settings ?? DEFAULT_SETTINGS, items, roomTypes: [...new Set(["", ...types.map((r) => r.t)])].sort((a, b) => a.localeCompare(b, "de")), people: await hkPeopleQuery(s.libraryId, outletId) };
-  });
-}
 
-export async function saveHkSettings(s: Session, outletId: string, v: HkSettings) {
-  assertEditor(s);
-  await run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    await tx`
-      insert into hk_settings ${tx({ outletId, libraryId: s.libraryId, ...v })}
-      on conflict (outlet_id) do update set bed_every_days = excluded.bed_every_days, bath_every_days = excluded.bath_every_days,
-        minutes_departure = excluded.minutes_departure, minutes_stayover = excluded.minutes_stayover, minutes_arrival = excluded.minutes_arrival,
-        safety_pct = excluded.safety_pct, cover_days = excluded.cover_days`;
-  });
-}
 
-export async function saveLinenItem(s: Session, outletId: string, input: LinenItemInput): Promise<string> {
-  assertEditor(s);
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    const values = { name: input.name, kind: input.kind, priceCents: input.priceCents, packSize: input.packSize };
-    let id = input.id;
-    if (id) {
-      if (!isUuid(id)) throw new Error("Wäscheartikel nicht gefunden.");
-      const done = await tx`update linen_items set ${tx(values)} where id = ${id} and outlet_id = ${outletId} and archived_at is null returning id`;
-      if (!done.length) throw new Error("Wäscheartikel nicht gefunden.");
-      await tx`delete from linen_set_items where item_id = ${id}`;
-    } else {
-      [{ id }] = await tx<{ id: string }[]>`insert into linen_items ${tx({ ...values, libraryId: s.libraryId, outletId })} returning id`;
-    }
-    if (input.sets.length) await tx`insert into linen_set_items ${tx(input.sets.map((l) => ({ itemId: id!, roomType: l.roomType, qty: l.qty })))}`;
-    return id!;
-  });
-}
 
-export async function archiveLinenItem(s: Session, itemId: string) {
-  assertEditor(s);
-  if (!isUuid(itemId)) throw new Error("Wäscheartikel nicht gefunden.");
-  await run(s, (tx) => tx`update linen_items set archived_at = now() where id = ${itemId} and archived_at is null`);
-}
 
-export async function getOccupancyPlan(s: Session, outletId: string, from: string, to: string): Promise<PlanRow[]> {
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    return tx<PlanRow[]>`select day, room_type, arrivals, departures, stayovers from occupancy_plan where outlet_id = ${outletId} and day between ${from} and ${to} order by day, room_type`;
-  });
-}
 
-/** Upserts plan rows; a row with all zeros is removed. */
-export async function saveOccupancyPlan(s: Session, outletId: string, rows: PlanRow[]): Promise<number> {
-  assertEditor(s);
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    for (const r of rows) {
-      if (!r.arrivals && !r.departures && !r.stayovers) {
-        await tx`delete from occupancy_plan where outlet_id = ${outletId} and day = ${r.day} and room_type = ${r.roomType}`;
-        continue;
-      }
-      await tx`
-        insert into occupancy_plan ${tx({ outletId, libraryId: s.libraryId, day: r.day, roomType: r.roomType, arrivals: r.arrivals, departures: r.departures, stayovers: r.stayovers })}
-        on conflict (outlet_id, day, room_type) do update set arrivals = excluded.arrivals, departures = excluded.departures, stayovers = excluded.stayovers`;
-    }
-    return rows.length;
-  });
-}
 
-/** A linen count: optional discards first, then the counted clean stock replaces the expected one. */
-export async function countLinen(s: Session, outletId: string, lines: LinenCountLine[]): Promise<number> {
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    let n = 0;
-    for (const l of lines) {
-      if (!isUuid(l.itemId)) continue;
-      const [item] = await tx<{ stockClean: number; priceCents: number }[]>`select stock_clean, price_cents from linen_items where id = ${l.itemId} and outlet_id = ${outletId} and archived_at is null for update`;
-      if (!item) continue;
-      let before = item.stockClean;
-      if (l.discarded > 0) {
-        if (!canEditLibrary(s.role)) throw new Error("Aussondern trägt die Leitung ein.");
-        await tx`insert into linen_movements ${tx({ libraryId: s.libraryId, outletId, itemId: l.itemId, kind: "discard", qty: l.discarded, before, priceCents: item.priceCents, byUser: s.userId })}`;
-        before = Math.max(0, before - l.discarded);
-      }
-      await tx`insert into linen_movements ${tx({ libraryId: s.libraryId, outletId, itemId: l.itemId, kind: "count", qty: l.counted, before, priceCents: item.priceCents, byUser: s.userId })}`;
-      await tx`update linen_items set stock_clean = ${l.counted} where id = ${l.itemId}`;
-      n++;
-    }
-    return n;
-  });
-}
 
-export async function listLinenMovements(s: Session, outletId: string, since: string): Promise<LinenMovementRow[]> {
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    return tx<LinenMovementRow[]>`select item_id, kind, qty, before, price_cents, at from linen_movements where outlet_id = ${outletId} and at >= ${since} order by at`;
-  });
-}
 
-export async function listLinenOrders(s: Session, outletId: string): Promise<LinenOrderRow[]> {
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    return tx<LinenOrderRow[]>`
-      select o.id, o.supplier_id, sp.company_name as supplier_name, o.delivery_day, o.status, o.note, o.created_at,
-        coalesce((select json_agg(json_build_object('itemId', l.item_id, 'name', i.name, 'qty', l.qty, 'priceCents', l.price_cents) order by i.name)
-          from linen_order_lines l join linen_items i on i.id = l.item_id where l.order_id = o.id), '[]') as lines
-      from linen_orders o left join suppliers sp on sp.id = o.supplier_id
-      where o.outlet_id = ${outletId} order by (o.status = 'received'), o.delivery_day desc, o.created_at desc limit 40`;
-  });
-}
 
-export async function saveLinenOrder(s: Session, outletId: string, input: LinenOrderInput): Promise<string> {
-  assertEditor(s);
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    if (input.supplierId && !isUuid(input.supplierId)) throw new Error("Lieferant nicht gefunden.");
-    const items = await tx<{ id: string; priceCents: number }[]>`select id, price_cents from linen_items where outlet_id = ${outletId} and archived_at is null`;
-    const lines = input.lines.filter((l) => l.qty > 0 && items.some((i) => i.id === l.itemId));
-    if (!lines.length) throw new Error("Die Bestellung hat keine Positionen.");
-    const [{ id }] = await tx<{ id: string }[]>`insert into linen_orders ${tx({ libraryId: s.libraryId, outletId, supplierId: input.supplierId, deliveryDay: input.deliveryDay, note: input.note, createdBy: s.userId })} returning id`;
-    await tx`insert into linen_order_lines ${tx(lines.map((l) => ({ orderId: id, itemId: l.itemId, qty: l.qty, priceCents: items.find((i) => i.id === l.itemId)!.priceCents })))}`;
-    return id;
-  });
-}
 
-export async function sendLinenOrder(s: Session, orderId: string): Promise<LinenOrderMailData & { alreadySent: boolean }> {
-  assertEditor(s);
-  if (!isUuid(orderId)) throw new Error("Bestellung nicht gefunden.");
-  return run(s, async (tx) => {
-    const [row] = await tx<{ status: string; deliveryDay: string; note: string | null; orderEmail: string | null; supplierName: string | null; outletName: string; libraryName: string }[]>`
-      select o.status, o.delivery_day, o.note, sp.order_email, sp.company_name as supplier_name, ou.name as outlet_name, lib.name as library_name
-      from linen_orders o join outlets ou on ou.id = o.outlet_id join libraries lib on lib.id = o.library_id left join suppliers sp on sp.id = o.supplier_id
-      where o.id = ${orderId} for update of o`;
-    if (!row) throw new Error("Bestellung nicht gefunden.");
-    const { orderEmail, ...o } = row;
-    const lines = await tx<{ name: string; qty: number; priceCents: number }[]>`select i.name, l.qty, l.price_cents from linen_order_lines l join linen_items i on i.id = l.item_id where l.order_id = ${orderId} order by i.name`;
-    if (o.status !== "draft") return { ...o, to: orderEmail, lines, alreadySent: true };
-    await tx`update linen_orders set status = 'sent', sent_at = now() where id = ${orderId}`;
-    return { ...o, to: orderEmail, lines, alreadySent: false };
-  });
-}
 
-export async function receiveLinenOrder(s: Session, orderId: string): Promise<number> {
-  assertEditor(s);
-  if (!isUuid(orderId)) throw new Error("Bestellung nicht gefunden.");
-  return run(s, async (tx) => {
-    const [o] = await tx<{ status: string; outletId: string }[]>`select status, outlet_id from linen_orders where id = ${orderId} for update`;
-    if (!o) throw new Error("Bestellung nicht gefunden.");
-    if (o.status === "received") throw new Error("Diese Lieferung ist schon gebucht.");
-    const lines = await tx<{ itemId: string; qty: number; priceCents: number }[]>`select item_id, qty, price_cents from linen_order_lines where order_id = ${orderId}`;
-    for (const l of lines) {
-      const [it] = await tx<{ stockClean: number }[]>`update linen_items set stock_clean = stock_clean + ${l.qty} where id = ${l.itemId} returning stock_clean - ${l.qty} as stock_clean`;
-      await tx`insert into linen_movements ${tx({ libraryId: s.libraryId, outletId: o.outletId, itemId: l.itemId, kind: "received", qty: l.qty, before: it?.stockClean ?? null, priceCents: l.priceCents, orderId, byUser: s.userId })}`;
-    }
-    await tx`update linen_orders set status = 'received', received_at = now() where id = ${orderId}`;
-    return lines.reduce((n, l) => n + l.qty, 0);
-  });
-}
 
-export async function deleteLinenOrder(s: Session, orderId: string) {
-  assertEditor(s);
-  if (!isUuid(orderId)) throw new Error("Bestellung nicht gefunden.");
-  await run(s, async (tx) => {
-    const [o] = await tx<{ status: string }[]>`select status from linen_orders where id = ${orderId}`;
-    if (!o) return;
-    if (o.status !== "draft") throw new Error("Nur Entwürfe können gelöscht werden.");
-    await tx`delete from linen_orders where id = ${orderId}`;
-  });
-}
 
-export async function listShifts(s: Session, outletId: string, from: string, to: string): Promise<ShiftRow[]> {
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    return tx<ShiftRow[]>`
-      select id, day, membership_id, person, to_char(starts, 'HH24:MI') as starts, to_char(ends, 'HH24:MI') as ends, break_minutes
-      from hk_shifts where outlet_id = ${outletId} and day between ${from} and ${to} order by day, starts, person`;
-  });
-}
 
-export async function saveShift(s: Session, outletId: string, input: ShiftInput): Promise<string> {
-  assertEditor(s);
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    if (input.membershipId && !isUuid(input.membershipId)) throw new Error("Person nicht gefunden.");
-    const values = { day: input.day, membershipId: input.membershipId, person: input.person, starts: input.starts, ends: input.ends, breakMinutes: input.breakMinutes };
-    if (input.id) {
-      if (!isUuid(input.id)) throw new Error("Schicht nicht gefunden.");
-      const done = await tx`update hk_shifts set ${tx(values)} where id = ${input.id} and outlet_id = ${outletId} returning id`;
-      if (!done.length) throw new Error("Schicht nicht gefunden.");
-      return input.id;
-    }
-    const [{ id }] = await tx<{ id: string }[]>`insert into hk_shifts ${tx({ ...values, libraryId: s.libraryId, outletId })} returning id`;
-    return id;
-  });
-}
 
-export async function deleteShift(s: Session, shiftId: string) {
-  assertEditor(s);
-  if (!isUuid(shiftId)) throw new Error("Schicht nicht gefunden.");
-  await run(s, (tx) => tx`delete from hk_shifts where id = ${shiftId}`);
-}
 
 // ---------------------------------------------------------------- e-invoices and DATEV
 
@@ -2151,63 +1805,8 @@ export async function saveDatevSettings(s: Session, v: DatevSettings, creditors:
   });
 }
 
-// ---------------------------------------------------------------- housekeeping: reports and cleaning times
 
-export async function listTickets(s: Session, outletId: string): Promise<TicketRow[]> {
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    return tx<TicketRow[]>`
-      select t.id, t.kind, t.title, t.note, t.status, t.resolution, t.room_id, r.number as room_number, t.photo is not null as has_photo, t.created_at, t.closed_at,
-        (select m.display_name from memberships m where m.user_id = t.created_by and m.library_id = t.library_id) as created_by_name
-      from hk_tickets t left join rooms r on r.id = t.room_id
-      where t.outlet_id = ${outletId} and (t.status = 'open' or t.closed_at > now() - interval '30 days')
-      order by (t.status = 'done'), t.created_at desc limit 200`;
-  });
-}
 
-export async function createTicket(s: Session, outletId: string, input: TicketInput): Promise<string> {
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    if (input.roomId) {
-      if (!isUuid(input.roomId)) throw new Error("Zimmer nicht gefunden.");
-      const [r] = await tx`select 1 from rooms where id = ${input.roomId} and outlet_id = ${outletId}`;
-      if (!r) throw new Error("Zimmer nicht gefunden.");
-    }
-    const [{ id }] = await tx<{ id: string }[]>`
-      insert into hk_tickets ${tx({
-        libraryId: s.libraryId, outletId, roomId: input.roomId, kind: input.kind, title: input.title, note: input.note, createdBy: s.userId,
-        photo: input.photo ? Buffer.from(input.photo.base64, "base64") : null, photoType: input.photo?.type ?? null,
-      })} returning id`;
-    return id;
-  });
-}
 
-export async function closeTicket(s: Session, ticketId: string, resolution: string | null) {
-  if (!isUuid(ticketId)) throw new Error("Meldung nicht gefunden.");
-  await run(s, async (tx) => {
-    const done = await tx`update hk_tickets set status = 'done', resolution = ${resolution}, closed_by = ${s.userId}, closed_at = now() where id = ${ticketId} and status = 'open' returning id`;
-    if (!done.length) throw new Error("Meldung nicht gefunden oder schon erledigt.");
-  });
-}
 
-export async function getTicketPhoto(s: Session, ticketId: string): Promise<{ data: Uint8Array; type: string } | null> {
-  if (!isUuid(ticketId)) return null;
-  return run(s, async (tx) => {
-    const [t] = await tx<{ photo: Uint8Array | null; photoType: string | null }[]>`select photo, photo_type from hk_tickets where id = ${ticketId}`;
-    return t?.photo && t.photoType ? { data: t.photo, type: t.photoType } : null;
-  });
-}
 
-/** Average minutes from "start cleaning" to "cleaned" per person since a day. */
-export async function listCleaningTimes(s: Session, outletId: string, since: string): Promise<CleaningTime[]> {
-  return run(s, async (tx) => {
-    await assertOutletAccess(tx, outletId);
-    const rows = await tx<{ person: string; rooms: number; avgMinutes: number }[]>`
-      select coalesce((select m.display_name from memberships m where m.user_id = e.by_user and m.library_id = r.library_id), '–') as person,
-        count(*)::int as rooms, round(avg(e.minutes))::int as avg_minutes
-      from room_events e join rooms r on r.id = e.room_id
-      where r.outlet_id = ${outletId} and e.minutes is not null and e.at >= ${since}
-      group by 1 order by 3`;
-    return rows;
-  });
-}

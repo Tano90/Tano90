@@ -14,12 +14,9 @@ import { Forbidden, OUTLET_COOKIE, SESSION_COOKIE, authMode, canEditLibrary, can
 import type { Session } from "@/data/types";
 import { createLead, updateLead } from "@/data/leads";
 import { READ_ONLY_MESSAGE, accessOf } from "@/domain/access";
-import { type AddonKey, addonLockedMessage, addonOpen, isAddonKey } from "@/domain/addons";
-import { autoAssign, parseRoomNumbers } from "@/domain/housekeeping";
-import { billingConfigured, changeAddon, createCheckout, createPortal, syncOutletQuantity } from "@/lib/billing";
+import { billingConfigured, createCheckout, createPortal, syncOutletQuantity } from "@/lib/billing";
 import { sendMail } from "@/lib/mail";
-import { invitationMail, leadNotifyMail, leadThanksMail, linenOrderMail, orderMail } from "@/lib/mail-templates";
-import { parsePlanCsv } from "@/domain/linen";
+import { invitationMail, leadNotifyMail, leadThanksMail, orderMail } from "@/lib/mail-templates";
 import { einvoicePriceRows, parseEInvoice } from "@/domain/einvoice";
 import { APP_NAME } from "@/lib/brand";
 import { OPERATOR } from "@/lib/legal";
@@ -32,16 +29,13 @@ export type Result<T = null> = { ok: true; data: T } | { ok: false; error: strin
 /**
  * Every signed-in action. After the trial or a cancelled subscription the library is read-only: the action is refused
  * here unless it is one that must keep working then (billing, team, previews), marked `readOnlyOk`.
- * Actions of a paid add-on (`addon`) also need it booked once the trial is over.
  */
-async function run<T>(fn: (s: Session) => Promise<T>, paths: string[] = [], opts: { readOnlyOk?: boolean; addon?: AddonKey } = {}): Promise<Result<T>> {
+async function run<T>(fn: (s: Session) => Promise<T>, paths: string[] = [], opts: { readOnlyOk?: boolean } = {}): Promise<Result<T>> {
   try {
     const s = await requireSession();
-    if (!opts.readOnlyOk || opts.addon) {
-      const billing = await repo.getBilling(s);
-      const access = accessOf(billing);
-      if (!opts.readOnlyOk && access.readOnly) throw new Error(READ_ONLY_MESSAGE[access.kind]);
-      if (opts.addon && !addonOpen(access, billing.addons, opts.addon)) throw new Error(addonLockedMessage(opts.addon));
+    if (!opts.readOnlyOk) {
+      const access = accessOf(await repo.getBilling(s));
+      if (access.readOnly) throw new Error(READ_ONLY_MESSAGE[access.kind]);
     }
     const data = await fn(s);
     for (const p of paths) revalidatePath(p, "layout");
@@ -255,24 +249,13 @@ export async function updateLeadStatus(leadId: string, input: z.input<typeof Lea
 
 // ---------------------------------------------------------------- billing
 
-export async function startCheckout(interval: "month" | "year" = "month", addons: AddonKey[] = []): Promise<Result<string>> {
+export async function startCheckout(interval: "month" | "year" = "month"): Promise<Result<string>> {
   return run(async (s) => {
     if (!canManageBilling(s.role)) throw new Error("Nur Inhaber können das Abo verwalten.");
     if (!billingConfigured()) throw new Error("Die Abrechnung ist noch nicht eingerichtet.");
     const billing = await repo.getBilling(s);
-    return createCheckout({ libraryId: s.libraryId, email: s.email, outletCount: (await repo.listOutlets(s)).length, customerId: billing.stripeCustomerId, interval: z.enum(["month", "year"]).parse(interval), addons: [...new Set(addons.filter(isAddonKey))] });
+    return createCheckout({ libraryId: s.libraryId, email: s.email, outletCount: (await repo.listOutlets(s)).length, customerId: billing.stripeCustomerId, interval: z.enum(["month", "year"]).parse(interval) });
   }, [], { readOnlyOk: true });
-}
-
-/** Books or cancels one add-on on the running subscription. */
-export async function setAddon(key: AddonKey, on: boolean): Promise<Result<AddonKey[]>> {
-  return run(async (s) => {
-    if (!canManageBilling(s.role)) throw new Error("Nur Inhaber können das Abo verwalten.");
-    if (!isAddonKey(key)) throw new Error("Unbekanntes Add-on.");
-    const billing = await repo.getBilling(s);
-    if (!billing.stripeSubscriptionId || billing.plan === "cancelled") throw new Error("Schließe zuerst das Abo ab; Add-ons wählst du dabei mit aus.");
-    return changeAddon(s.libraryId, billing.stripeSubscriptionId, key, on);
-  }, ["/settings/billing", "/housekeeping", "/analytics/controlling"], { readOnlyOk: true });
 }
 
 export async function openBillingPortal(): Promise<Result<string>> {
@@ -549,183 +532,6 @@ export async function deliverProduction(requestIds: string[]) {
   return run(async (s) => repo.deliverProduction(s, await currentOutletId(s), z.array(id).min(1).max(200).parse(requestIds)), ["/production"]);
 }
 
-// ---------------------------------------------------------------- housekeeping
-
-const HK = { addon: "housekeeping" } as const;
-
-const roomStatus = z.enum(["dirty", "clean", "inspected", "out_of_order"]);
-const occupancy = z.enum(["vacant", "occupied", "departure", "arrival"]);
-const shortText = (max: number) => z.string().trim().max(max).transform((v) => v || null).nullable();
-
-export async function createRooms(input: { numbers: string; floor: string; roomType: string }) {
-  return run(async (s) => {
-    const numbers = parseRoomNumbers(z.string().max(4000).parse(input.numbers));
-    return repo.createRooms(s, await currentOutletId(s), { numbers, floor: shortText(20).parse(input.floor), roomType: shortText(60).parse(input.roomType) });
-  }, ["/housekeeping"], HK);
-}
-const RoomPatchSchema = z.object({
-  status: roomStatus.optional(), occupancy: occupancy.optional(), note: shortText(300).optional(), checked: z.array(id).max(100).optional(),
-  dnd: z.boolean().optional(), vip: z.boolean().optional(), start: z.boolean().optional(),
-  arrivalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Anreisezeit als Uhrzeit, z. B. 15:00.").nullable().optional(),
-});
-export async function updateRoom(roomId: string, patch: z.input<typeof RoomPatchSchema>) {
-  return run((s) => repo.updateRoom(s, id.parse(roomId), RoomPatchSchema.parse(patch)), ["/housekeeping"], HK);
-}
-export async function assignRooms(roomIds: string[], membershipId: string | null) {
-  return run((s) => repo.assignRooms(s, z.array(id).min(1).max(500).parse(roomIds), membershipId ? id.parse(membershipId) : null), ["/housekeeping"], HK);
-}
-export async function startHousekeepingDay() {
-  return run(async (s) => repo.startHousekeepingDay(s, await currentOutletId(s)), ["/housekeeping"], HK);
-}
-export async function archiveRoom(roomId: string) {
-  return run((s) => repo.archiveRoom(s, id.parse(roomId)), ["/housekeeping"], HK);
-}
-export async function saveHkChecklist(labels: string[]) {
-  return run((s) => repo.saveHkChecklist(s, z.array(z.string().trim().min(1).max(120)).max(40, "Höchstens 40 Punkte.").parse(labels.filter((l) => l.trim()))), ["/housekeeping"], HK);
-}
-
-const HK_PATHS = ["/housekeeping", "/housekeeping/dashboard", "/housekeeping/belegung", "/housekeeping/waesche", "/housekeeping/dienstplan"];
-const count = (max: number) => z.number().int("Bitte ganze Zahlen eingeben.").min(0, "Keine negativen Zahlen.").max(max, `Höchstens ${max}.`);
-const roomType = z.string().trim().max(60);
-const HkSettingsSchema = z.object({
-  bedEveryDays: z.number().int().min(1).max(14), bathEveryDays: z.number().int().min(1).max(14),
-  minutesDeparture: z.number().int().min(1, "Minuten pro Abreise: mindestens 1.").max(240), minutesStayover: z.number().int().min(0).max(240), minutesArrival: z.number().int().min(0).max(240),
-  safetyPct: z.number().int().min(0).max(100), coverDays: z.number().int().min(1).max(28),
-});
-const PlanRowSchema = z.object({ day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Ungültiges Datum."), roomType, arrivals: count(5000), departures: count(5000), stayovers: count(5000) });
-const LinenItemSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().trim().min(1, "Bitte einen Namen angeben.").max(80, "Der Name ist zu lang (max. 80 Zeichen)."),
-  kind: z.enum(["bed", "bath", "other"]),
-  priceCents: z.number().int().min(0, "Preise dürfen nicht negativ sein.").max(100000),
-  packSize: z.number().int().min(1, "Packungsgröße mindestens 1.").max(1000),
-  sets: z.array(z.object({ roomType, qty: z.number().int().min(1).max(50) })).max(50),
-});
-const ShiftSchema = z.object({
-  id: z.string().optional(), day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Bitte einen Tag wählen."),
-  membershipId: z.string().nullable(), person: z.string().trim().min(1, "Bitte eine Person wählen oder einen Namen eingeben.").max(80),
-  starts: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Beginn als Uhrzeit, z. B. 07:00."), ends: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Ende als Uhrzeit, z. B. 15:30."),
-  breakMinutes: z.number().int().min(0).max(240),
-}).refine((v) => v.ends > v.starts, { message: "Das Ende muss nach dem Beginn liegen." });
-
-export async function saveHkSettings(input: z.input<typeof HkSettingsSchema>) {
-  return run(async (s) => repo.saveHkSettings(s, await currentOutletId(s), HkSettingsSchema.parse(input)), HK_PATHS, HK);
-}
-export async function saveLinenItem(input: z.input<typeof LinenItemSchema>) {
-  return run(async (s) => {
-    const v = LinenItemSchema.parse(input);
-    return repo.saveLinenItem(s, await currentOutletId(s), { ...v, sets: [...new Map(v.sets.map((l) => [l.roomType, l])).values()] });
-  }, HK_PATHS, HK);
-}
-export async function archiveLinenItem(itemId: string) {
-  return run((s) => repo.archiveLinenItem(s, id.parse(itemId)), HK_PATHS, HK);
-}
-export async function saveOccupancyPlan(rows: z.input<typeof PlanRowSchema>[]) {
-  return run(async (s) => repo.saveOccupancyPlan(s, await currentOutletId(s), z.array(PlanRowSchema).max(2000).parse(rows)), HK_PATHS, HK);
-}
-/** A PMS report as CSV. Nothing is saved when a row cannot be read. */
-export async function importOccupancyCsv(text: string) {
-  return run(async (s) => {
-    const { rows, errors } = parsePlanCsv(z.string().max(500_000, "Die Datei ist zu groß.").parse(text));
-    if (errors.length) throw new Error(errors.slice(0, 5).join(" "));
-    if (!rows.length) throw new Error("Die Datei enthält keine Zeilen.");
-    return repo.saveOccupancyPlan(s, await currentOutletId(s), z.array(PlanRowSchema).max(2000, "Höchstens 2000 Zeilen pro Datei.").parse(rows));
-  }, HK_PATHS, HK);
-}
-export async function countLinen(lines: { itemId: string; counted: number; discarded: number }[]) {
-  return run(async (s) => repo.countLinen(s, await currentOutletId(s), z.array(z.object({ itemId: id, counted: count(1_000_000), discarded: count(1_000_000) })).min(1, "Bitte mindestens einen Artikel zählen.").max(500).parse(lines)), HK_PATHS, HK);
-}
-export async function saveLinenOrder(input: { supplierId: string | null; deliveryDay: string; note: string; lines: { itemId: string; qty: number }[] }) {
-  return run(async (s) => repo.saveLinenOrder(s, await currentOutletId(s), {
-    supplierId: input.supplierId ? id.parse(input.supplierId) : null,
-    deliveryDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Bitte einen Liefertag wählen.").parse(input.deliveryDay),
-    note: shortText(500).parse(input.note),
-    lines: z.array(z.object({ itemId: id, qty: count(100_000) })).max(500).parse(input.lines),
-  }), HK_PATHS, HK);
-}
-export async function sendLinenOrder(orderId: string) {
-  return run(async (s) => {
-    const order = (await repo.listLinenOrders(s, await currentOutletId(s))).find((o) => o.id === id.parse(orderId));
-    if (!order) throw new Error("Bestellung nicht gefunden.");
-    if (order.status !== "draft") return { mailed: false };
-    const supplier = order.supplierId ? (await repo.getSupplier(s, order.supplierId))?.supplier : null;
-    const to = supplier?.orderEmail ?? null;
-    if (to) {
-      if (!(await allow(`order-mail:${s.libraryId}`, 100, 3600))) throw new RateLimited();
-      const outletId = await currentOutletId(s);
-      const outlet = (await repo.listOutlets(s)).find((o) => o.id === outletId);
-      // Mail first, then mark as sent; the order id is the idempotency key, so a retry mails exactly once.
-      await sendMail({
-        to, replyTo: s.email, idempotencyKey: `linen-order-${order.id}`,
-        ...linenOrderMail({ libraryName: (await repo.getLibrary(s)).name, outletName: outlet?.name ?? "", deliveryDay: order.deliveryDay, note: order.note, lines: order.lines }),
-      });
-    }
-    await repo.sendLinenOrder(s, order.id);
-    return { mailed: !!to };
-  }, HK_PATHS, HK);
-}
-export async function receiveLinenOrder(orderId: string) {
-  return run((s) => repo.receiveLinenOrder(s, id.parse(orderId)), HK_PATHS, HK);
-}
-export async function deleteLinenOrder(orderId: string) {
-  return run((s) => repo.deleteLinenOrder(s, id.parse(orderId)), HK_PATHS, HK);
-}
-export async function saveShift(input: z.input<typeof ShiftSchema>) {
-  return run(async (s) => {
-    const v = ShiftSchema.parse(input);
-    return repo.saveShift(s, await currentOutletId(s), { ...v, membershipId: v.membershipId || null });
-  }, HK_PATHS, HK);
-}
-const TicketSchema = z.object({
-  kind: z.enum(["defect", "lost_found"]),
-  title: z.string().trim().min(1, "Bitte kurz beschreiben, was los ist.").max(120, "Höchstens 120 Zeichen."),
-  note: shortText(500),
-  roomId: z.string().nullable(),
-  photo: z.object({ base64: z.string().max(1_100_000, "Das Foto ist zu groß.").regex(/^[A-Za-z0-9+/=]+$/), type: z.enum(["image/jpeg", "image/png", "image/webp"]) }).nullable(),
-});
-/** A defect or a lost item, from any member of the hotel's team. */
-export async function createTicket(input: z.input<typeof TicketSchema>) {
-  return run(async (s) => {
-    const v = TicketSchema.parse(input);
-    return repo.createTicket(s, await currentOutletId(s), { ...v, roomId: v.roomId ? id.parse(v.roomId) : null });
-  }, [...HK_PATHS, "/housekeeping/meldungen"], HK);
-}
-export async function closeTicket(ticketId: string, resolution: string) {
-  return run((s) => repo.closeTicket(s, id.parse(ticketId), shortText(300).parse(resolution)), [...HK_PATHS, "/housekeeping/meldungen"], HK);
-}
-/** Splits today's dirty rooms among the chosen people by minutes, in floor blocks; replaces their current assignment. */
-export async function autoAssignRooms(membershipIds: string[]) {
-  return run(async (s) => {
-    if (!canEditLibrary(s.role)) throw new Forbidden();
-    const people = z.array(id).min(1, "Bitte mindestens eine Person wählen.").max(100).parse([...new Set(membershipIds)]);
-    const outletId = await currentOutletId(s);
-    const [{ rooms, staff }, setup] = await Promise.all([repo.listRooms(s, outletId), repo.getHkSetup(s, outletId)]);
-    if (people.some((p) => !staff.some((m) => m.id === p))) throw new Error("Diese Person gehört nicht zu diesem Hotel.");
-    const plan = autoAssign(rooms, people, { departure: setup.settings.minutesDeparture, stayover: setup.settings.minutesStayover || 1 });
-    for (const p of people) {
-      const ids = [...plan].filter(([, who]) => who === p).map(([room]) => room);
-      if (ids.length) await repo.assignRooms(s, ids, p);
-    }
-    return plan.size;
-  }, HK_PATHS, HK);
-}
-
-/** Copies last week's shifts into the week starting `weekStart` (a Monday); days that already have shifts are skipped. */
-export async function copyShiftWeek(weekStart: string) {
-  return run(async (s) => {
-    const start = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).parse(weekStart);
-    const outletId = await currentOutletId(s);
-    const [prev, current] = await Promise.all([repo.listShifts(s, outletId, addDays(start, -7), addDays(start, -1)), repo.listShifts(s, outletId, start, addDays(start, 6))]);
-    const busy = new Set(current.map((x) => x.day));
-    const copy = prev.filter((x) => !busy.has(addDays(x.day, 7)));
-    for (const x of copy) await repo.saveShift(s, outletId, { day: addDays(x.day, 7), membershipId: x.membershipId, person: x.person, starts: x.starts, ends: x.ends, breakMinutes: x.breakMinutes });
-    return copy.length;
-  }, HK_PATHS, HK);
-}
-export async function deleteShift(shiftId: string) {
-  return run((s) => repo.deleteShift(s, id.parse(shiftId)), HK_PATHS, HK);
-}
-
 // ---------------------------------------------------------------- HACCP
 
 const daySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -845,9 +651,6 @@ export async function archiveOutlet(outletId: string) {
       await syncOutletQuantity(billing.stripeSubscriptionId, (await repo.listOutlets(s)).length).catch((e) => console.error("[billing] quantity sync failed", e));
     }
   }, ["/"]);
-}
-export async function setOutletCostCenter(outletId: string, costCenter: string) {
-  return run((s) => repo.setOutletCostCenter(s, id.parse(outletId), z.string().trim().max(20, "Höchstens 20 Zeichen.").parse(costCenter) || null), ["/analytics/controlling"], { addon: "controlling" });
 }
 export async function removeMember(memberId: string) {
   return run((s) => repo.removeMember(s, memberId), ["/settings/team"], { readOnlyOk: true });

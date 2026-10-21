@@ -16,8 +16,6 @@ import { PRICE_TAX_NOTE } from "@/lib/legal";
 import { PRICING } from "@/lib/pricing";
 import shot from "../../public/landing/rezept-kalkulation.png";
 import shotInvoice from "../../public/landing/e-rechnung.png";
-import shotHkOverview from "../../public/landing/housekeeping-uebersicht.png";
-import shotHkRooms from "../../public/landing/housekeeping-zimmer.png";
 
 // Public landing page. Static: no session lookup, so it is fast and cacheable.
 // Copy follows replica/brand.md (voice) and replica/launch/landing.md. No testimonials, logos or user
@@ -26,7 +24,7 @@ import shotHkRooms from "../../public/landing/housekeeping-zimmer.png";
 const cta = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-pill bg-saffron px-6 text-base font-bold text-on-saffron transition-transform duration-fast hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-saffron";
 const ctaLight = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-pill bg-accent px-6 text-base font-bold text-on-accent shadow-glow transition-transform duration-fast hover:-translate-y-0.5 hover:bg-accent-hover";
 const eur = (cents: number) => formatCents(cents).replace(",00", "");
-// "Alles drin": every tile is a screen that exists in the app today. `addon` tiles cost extra.
+// "Alles drin": every tile is a screen that exists in the app today.
 const MODULES = [
   { icon: ChefHat, label: "Rezepte & Grundrezepte", tone: "carrot" }, { icon: Tags, label: "Allergene & Etiketten", tone: "celery" },
   { icon: ShoppingCart, label: "Bestellungen", tone: "accent" }, { icon: Truck, label: "Wareneingang", tone: "carrot" },
@@ -34,7 +32,6 @@ const MODULES = [
   { icon: CookingPot, label: "Zentralküche", tone: "carrot" }, { icon: ReceiptText, label: "Rechnungsabgleich", tone: "celery" },
   { icon: ClipboardCheck, label: "HACCP", tone: "accent" }, { icon: BarChart3, label: "Kasse & Menu Engineering", tone: "carrot" },
   { icon: UtensilsCrossed, label: "Menüs mit Stückliste", tone: "celery" }, { icon: Package, label: "Preislisten-Import", tone: "accent" }, { icon: FileCheck2, label: "E-Rechnung & DATEV", tone: "carrot" },
-  { icon: Calculator, label: "F&B-Controlling", tone: "carrot", addon: true }, { icon: BedDouble, label: "Housekeeping", tone: "celery", addon: true },
 ] as const;
 const TONE = { carrot: "bg-carrot text-on-saffron", celery: "bg-celery text-on-saffron", accent: "bg-accent text-on-accent" } as const;
 
@@ -48,7 +45,7 @@ const FACTS = [
   { icon: WifiOff, title: "Zählen ohne Netz", body: "Die Inventur speichert jede Zahl sofort und reicht sie nach, wenn das WLAN zurück ist." },
 ];
 
-const TICKER = ["Wareneinsatz live", "Grundrezepte", "Allergene", "Inventur offline", "Barcode-Scanner", "Zentralküche", "Rechnungsabgleich", "HACCP", "Kassen-Import", "Mindestbestand", "Lagerbericht", "Mehrere Standorte", "E-Rechnung", "DATEV-Export", "F&B-Controlling", "Housekeeping"];
+const TICKER = ["Wareneinsatz live", "Grundrezepte", "Allergene", "Inventur offline", "Barcode-Scanner", "Zentralküche", "Rechnungsabgleich", "HACCP", "Kassen-Import", "Mindestbestand", "Lagerbericht", "Mehrere Standorte", "E-Rechnung", "DATEV-Export", "Soll-Ist", "Bestell-Forecast"];
 
 const STEPS = [
   { title: "Einkauf erfassen", body: "Zutaten so anlegen, wie dein Lieferant sie verkauft – Karton, Sack, Flasche – mit dem Preis von der Rechnung." },
@@ -75,26 +72,12 @@ const NEWS = [
     note: "Die erste DATEV-Datei bitte gemeinsam mit dem Steuerberater prüfen.",
     shot: shotInvoice, alt: "E-Rechnung in Mirepa: Positionen mit bisherigem Preis, Preis laut Rechnung und markiertem Preissprung von 18,2 Prozent bei Knollensellerie.",
   },
-  {
-    icon: BedDouble, kicker: "Housekeeping-Paket für Hotels", title: "Belegung, Wäsche, Personal und Kosten auf einen Blick",
-    body: "Die Übersicht rechnet aus Anreisen, Abreisen und Bleibern, was morgen an Wäsche und Stunden gebraucht wird, und sagt, was jetzt wichtig ist.",
-    points: ["Wäschebedarf und Bestellvorschlag je Artikel, mit Reichweite in Tagen", "Personal: benötigte gegen geplante Stunden für 14 Tage", "Wäschekosten pro belegter Zimmernacht, Mehrverbrauch als Schwund-Hinweis", "Dienstplan mit „Vorwoche übernehmen“"],
-    note: `Add-on für ${eur(PRICING.addonMonthly)} im Monat, in der Testphase enthalten. Belegung per Hand oder als CSV aus dem Hotelprogramm.`,
-    shot: shotHkOverview, alt: "Housekeeping-Übersicht: Belegung 82 Prozent, Anreisen, Abreisen, Bleiber, Personalstunden, Wäschekosten pro Zimmernacht und eine Liste mit Hinweisen.",
-  },
-  {
-    icon: Wrench, kicker: "Housekeeping-Paket für Hotels", title: "Die Zimmertafel, die mitdenkt",
-    body: "Anreisen nach Uhrzeit und VIP zuerst, „Bitte nicht stören“ zuletzt. Ein Klick verteilt die Zimmer gerecht nach Minuten auf das Team.",
-    points: ["„Bitte nicht stören“, VIP und Anreisezeit je Zimmer", "Automatisch verteilen, in Blöcken je Etage", "Schäden und Fundsachen mit Foto vom Handy", "Minuten pro Zimmer und Person, Checkliste vor „gereinigt“"],
-    note: null,
-    shot: shotHkRooms, alt: "Zimmertafel: Zimmer farbig nach Status, mit VIP-Stern, Anreisezeiten, Belegung und dem Knopf „Automatisch verteilen“.",
-  },
 ];
 
 const FAQ = [
   { q: "Kann ich meine Zutaten und Preise importieren?", a: `Ja. Die Preisliste deines Lieferanten als Excel- oder CSV-Datei hochladen: ${APP_NAME} zeigt vor dem Übernehmen jede Zeile als neu, geändert oder fehlerhaft. Übernommen wird erst, wenn du zustimmst.` },
   { q: `Funktioniert ${APP_NAME} mit meiner Kasse?`, a: "Über eine Datei oder eine Schnittstelle: Verkäufe als CSV hochladen oder von der Kasse per API senden lassen. Verknüpfte Gerichte werden über ihre Rezepte vom Lager abgebucht, Stornos zurückgebucht. Fertige Anbindungen an einzelne Kassenhersteller gibt es nicht." },
-  { q: "Brauche ich für HACCP oder die Zentralküche ein Zusatzmodul?", a: `Nein. Alle Küchenfunktionen sind in jedem Tarif enthalten, bezahlt wird pro Standort. Nur Housekeeping und F&B-Controlling für Hotels sind Add-ons für je ${eur(PRICING.addonMonthly)} im Monat.` },
+  { q: "Brauche ich für HACCP oder die Zentralküche ein Zusatzmodul?", a: "Nein. Alle Funktionen sind in jedem Tarif enthalten. Bezahlt wird nur pro Standort." },
   { q: "Kann Mirepa E-Rechnungen lesen und an DATEV übergeben?", a: `Ja. ${APP_NAME} liest XRechnung (UBL und CII) und ZUGFeRD/Factur-X-PDFs, gleicht die Preise mit deinen ab und legt die Rechnung mit Steueraufteilung ab. Für die Buchhaltung gibt es einen DATEV-Buchungsstapel mit Wareneingang je Steuersatz und Kreditor je Lieferant. Die erste Datei bitte gemeinsam mit dem Steuerberater prüfen. Eine Finanzbuchhaltung ersetzt ${APP_NAME} nicht.` },
   { q: "Wer haftet für die Allergenangaben?", a: `${APP_NAME} rechnet aus deinen Angaben, die Kennzeichnung gegenüber Gästen verantwortet dein Betrieb. Deshalb zeigt ${APP_NAME} ungeprüfte Zutaten offen an, statt sie als allergenfrei durchzuwinken.` },
   { q: "Wo liegen meine Daten?", a: "In der EU (Frankfurt). Zahlungen laufen über Stripe; deine Kartendaten sehen wir nie." },
@@ -133,14 +116,14 @@ export default function LandingPage() {
           <div className="min-w-0 animate-rise">
             <a href="#neu" className="mb-5 inline-flex max-w-full items-center gap-2 rounded-pill border border-border bg-bg py-1 pr-3 pl-1 text-sm shadow-card hover:bg-row-hover">
               <span className="rounded-pill bg-accent px-2 py-0.5 text-xs font-bold text-on-accent">Neu</span>
-              <span className="truncate">E-Rechnung, DATEV und das Housekeeping-Paket</span>
+              <span className="truncate">E-Rechnung, DATEV, Soll-Ist und Bestell-Forecast</span>
               <ArrowRight aria-hidden className="size-4 shrink-0" />
             </a>
             <h1 id="hero" className="text-display lg:text-hero">
               Was jeder Teller kostet. <span className="relative isolate inline-block whitespace-nowrap text-accent">Live.<span aria-hidden className="absolute inset-x-0 bottom-1 -z-10 h-4 -rotate-1 rounded-sm bg-saffron/70" /></span>
             </h1>
             <p className="mt-6 max-w-xl text-base text-text-muted lg:text-lg lg:font-normal">
-              Rezepte, Einkauf, Lager und Zentralküche in einem Werkzeug, für Restaurants, Catering und Hotels. Ändert sich ein Einkaufspreis, rechnet jedes Rezept mit,
+              Rezepte, Einkauf, Lager und Zentralküche in einem Werkzeug, für Restaurants, Bars, Catering und Kantinen. Ändert sich ein Einkaufspreis, rechnet jedes Rezept mit,
               und du siehst den echten Wareneinsatz, bevor die Karte gedruckt ist.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -168,7 +151,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
           <Reveal>
             <p className="text-sm font-bold uppercase tracking-wide text-accent">Neu in {APP_NAME}</p>
-            <h2 id="new" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Lieferschein bis zum Steuerberater. Und das ganze Housekeeping.</h2>
+            <h2 id="new" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Lieferschein bis zum Steuerberater.</h2>
           </Reveal>
           <div className="mt-12 flex flex-col gap-20">
             {NEWS.map((n, i) => (
@@ -232,7 +215,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
             <Reveal>
               <p className="text-sm font-bold uppercase tracking-wide text-accent">Für deine Branche</p>
-              <h2 id="industries" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Bistro bis zum Hotel mit Bankett</h2>
+              <h2 id="industries" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Bistro bis zur Kantine</h2>
             </Reveal>
             <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {INDUSTRIES.map((i, n) => (
@@ -254,7 +237,7 @@ export default function LandingPage() {
           <dl className="mx-auto grid max-w-(--size-content-max) grid-cols-2 gap-8 px-4 py-14 lg:grid-cols-4 lg:px-8">
             {[
               { value: 14, suffix: "", label: "EU-Allergene pro Zutat, vererbt auf jedes Gericht" },
-              { value: MODULES.filter((m) => !("addon" in m)).length, suffix: "", label: "Bereiche im Grundpreis, ohne Zusatzmodule" },
+              { value: MODULES.length, suffix: "", label: "Bereiche in einem Abo, ohne Zusatzmodule" },
               { value: 0, suffix: " €", label: "für jeden weiteren Nutzer im Team" },
               { value: PRICING.trialDays, suffix: " Tage", label: "kostenlos testen, ohne Kreditkarte" },
             ].map((x) => (
@@ -323,12 +306,11 @@ export default function LandingPage() {
                 <p className="text-sm font-bold uppercase tracking-wide text-accent">Alles drin</p>
                 <h2 id="modules" className="mt-2 max-w-2xl text-xl lg:text-display">Ein Werkzeug statt zehn Listen</h2>
               </div>
-              <p className="max-w-sm text-text-muted">Alles für die Küche im Grundpreis. Für Hotels gibt es Housekeeping und F&B-Controlling als Add-on. Jede Kachel ist ein Teil von {APP_NAME}, den es heute gibt.</p>
+              <p className="max-w-sm text-text-muted">Kein Modul extra, kein Zusatzpreis. Jede Kachel ist ein Teil von {APP_NAME}, den es heute gibt.</p>
             </div>
             <ul className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {MODULES.map(({ icon: Icon, label, tone, ...m }, i) => (
+              {MODULES.map(({ icon: Icon, label, tone }, i) => (
                 <li key={label} className={`relative flex flex-col items-start gap-4 rounded-lg bg-bg p-5 shadow-card transition-transform duration-base hover:-translate-y-1 hover:rotate-[-1deg] ${i % 2 ? "lg:translate-y-4" : ""}`}>
-                  {"addon" in m && <span className="absolute top-3 right-3 rounded-pill bg-saffron px-2 py-0.5 text-xs font-bold text-on-saffron">Add-on</span>}
                   <span className={`inline-flex size-11 items-center justify-center rounded-md ${TONE[tone]}`}><Icon aria-hidden className="size-5" /></span>
                   <span className="font-semibold">{label}</span>
                 </li>
@@ -358,7 +340,7 @@ export default function LandingPage() {
         <section id="preise" aria-labelledby="pricing" className="bg-surface">
           <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
             <h2 id="pricing" className="text-xl lg:text-display">Preise</h2>
-            <p className="mt-2 text-text-muted">Alle Küchenfunktionen in jedem Tarif. Beliebig viele Nutzer. {PRICE_TAX_NOTE}</p>
+            <p className="mt-2 text-text-muted">Alle Funktionen in jedem Tarif. Beliebig viele Nutzer. {PRICE_TAX_NOTE}</p>
             <div className="mt-10 grid gap-6 md:grid-cols-2">
               <div className="rounded-lg border border-border bg-bg p-8">
                 <h3 className="text-lg">Eine Küche</h3>
@@ -385,13 +367,6 @@ export default function LandingPage() {
               </div>
             </div>
             <p className="mt-4 text-xs font-normal text-text-muted">Beispiel: drei Standorte = {eur(PRICING.firstOutletMonthly + 2 * PRICING.extraOutletMonthly)} pro Monat.</p>
-            <div className="mt-8 flex flex-col gap-4 rounded-lg border-2 border-dashed border-saffron bg-bg p-6 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h3 className="flex items-center gap-2 text-lg"><BedDouble aria-hidden className="size-5 text-accent" /> Add-ons für Hotels</h3>
-                <p className="mt-1 max-w-2xl text-text-muted">Housekeeping und F&B-Controlling, einzeln buchbar, je {eur(PRICING.addonMonthly)} pro Monat und Betrieb (jährlich {eur(PRICING.addonYearly)}), egal wie viele Standorte. In der Testphase enthalten, monatlich kündbar.</p>
-              </div>
-              <Link href="/branchen/hotel" className="inline-flex shrink-0 items-center gap-1 font-semibold text-accent hover:underline">Mehr für Hotels <ArrowRight aria-hidden className="size-4" /></Link>
-            </div>
           </div>
         </section>
 
