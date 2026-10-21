@@ -36,7 +36,7 @@ test.describe("L02 Rechtsseiten", () => {
     }
     await page.goto("/legal/privacy");
     await expect(page.getByText("kl_outlet")).toBeVisible();
-    await expect(page.locator("main")).toContainText(/die dein Betrieb in \S+ eingetragen hat/); // no word glued to the app name
+    await expect(page.locator("main")).toContainText(/die dein Betrieb in der \S.*?\S eingetragen hat/); // no word glued to the app name
     await expect(page.getByRole("link", { name: "Auftragsverarbeitung" })).toHaveAttribute("href", "/legal/dpa");
   });
 

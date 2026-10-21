@@ -12,7 +12,7 @@ const eur = (cents: number) => formatCents(cents).replace(",00", "");
 export default function TermsPage() {
   return (
     <LegalPage title="Nutzungsbedingungen">
-      <p className="mt-4">Allgemeine Geschäftsbedingungen für die Nutzung von {APP_NAME} zwischen <Op field="company" /> („wir“) und dem Betrieb, der {APP_NAME} nutzt („Kunde“).</p>
+      <p className="mt-4">Allgemeine Geschäftsbedingungen für die Nutzung der {APP_NAME} zwischen <Op field="company" /> („wir“) und dem Betrieb, der {APP_NAME} nutzt („Kunde“).</p>
 
       <Section title="1. Geltung">
         <p>{APP_NAME} richtet sich ausschließlich an Unternehmer im Sinne von § 14 BGB, juristische Personen des öffentlichen Rechts und öffentlich-rechtliche Sondervermögen. Mit der Registrierung bestätigt der Kunde, dass er {APP_NAME} für seine gewerbliche oder selbständige berufliche Tätigkeit nutzt. Abweichende Bedingungen des Kunden gelten nicht, auch wenn wir ihnen nicht ausdrücklich widersprechen.</p>
@@ -35,7 +35,7 @@ export default function TermsPage() {
 
       <Section title="5. Laufzeit und Kündigung">
         <p>Ein Abo läuft je nach Wahl einen Monat oder ein Jahr und verlängert sich jeweils um denselben Zeitraum. Der Kunde kann jederzeit zum Ende des bezahlten Zeitraums kündigen, mit einem Klick unter Einstellungen → Abo &amp; Rechnungen. Wir können mit einer Frist von einem Monat zum Ende eines Abrechnungszeitraums kündigen. Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt.</p>
-        <p>Kommt der Kunde mit einer Zahlung in Verzug, weisen wir in {APP_NAME} darauf hin. Bleibt die Zahlung auch nach einer Erinnerung aus, dürfen wir den Zugang bis zum Ausgleich auf Lesen beschränken. Nach dem Ende eines Abos bleibt der Zugang zum Lesen und Exportieren bestehen.</p>
+        <p>Kommt der Kunde mit einer Zahlung in Verzug, weisen wir in der {APP_NAME} darauf hin. Bleibt die Zahlung auch nach einer Erinnerung aus, dürfen wir den Zugang bis zum Ausgleich auf Lesen beschränken. Nach dem Ende eines Abos bleibt der Zugang zum Lesen und Exportieren bestehen.</p>
       </Section>
 
       <Section title="6. Pflichten des Kunden">

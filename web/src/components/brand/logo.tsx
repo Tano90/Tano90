@@ -1,7 +1,7 @@
 import { APP_NAME, APP_SHORT } from "@/lib/brand";
 import { cn } from "@/lib/cn";
 
-// The mark: three rising bars on an aubergine tile (the leadership board: numbers that go up) and a saffron dot
+// The mark: three rising bars on a petrol tile (the leadership board: numbers that go up) and a saffron dot
 // for the assistant. Drawn on a 32 grid so it stays crisp at 16 px (favicon) and scales to the 1024 px app icon.
 export function LogoMark({ className, title }: { className?: string; title?: string }) {
   return (

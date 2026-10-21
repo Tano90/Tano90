@@ -45,7 +45,7 @@ export function orderMail(o: {
 export function invitationMail(i: { libraryName: string; inviterName: string; link: string; roleLabel: string }) {
   const subject = `${i.inviterName} lädt dich zu ${i.libraryName} ein`;
   const text = `Hallo,\n\n${i.inviterName} hat dich als ${i.roleLabel} zu ${i.libraryName} eingeladen.\n\nEinladung annehmen: ${i.link}\n\nDer Link gilt 7 Tage. Wenn du damit nichts anfangen kannst, ignoriere diese E-Mail einfach.`;
-  const html = wrap(`<p>Hallo,</p><p>${esc(i.inviterName)} hat dich als <strong>${esc(i.roleLabel)}</strong> zu <strong>${esc(i.libraryName)}</strong> eingeladen.</p><p><a href="${esc(i.link)}" style="display:inline-block;background:#7a2e6e;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Einladung annehmen</a></p><p style="color:#5b6470">Der Link gilt 7 Tage. Wenn du damit nichts anfangen kannst, ignoriere diese E-Mail einfach.</p>`);
+  const html = wrap(`<p>Hallo,</p><p>${esc(i.inviterName)} hat dich als <strong>${esc(i.roleLabel)}</strong> zu <strong>${esc(i.libraryName)}</strong> eingeladen.</p><p><a href="${esc(i.link)}" style="display:inline-block;background:#0f7570;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Einladung annehmen</a></p><p style="color:#5b6470">Der Link gilt 7 Tage. Wenn du damit nichts anfangen kannst, ignoriere diese E-Mail einfach.</p>`);
   return { subject, text, html };
 }
 
@@ -62,7 +62,7 @@ export function trialMail(t: { appName: string; libraryName: string; link: strin
     ? `die Testphase von ${t.libraryName} in ${t.appName} ist am ${t.endsOn} zu Ende gegangen. Eure Rezepte, Bestände und Bestellungen sind alle noch da und lassen sich ansehen und exportieren. Ändern und neue Buchungen gehen wieder, sobald ein Abo läuft.`
     : `die Testphase von ${t.libraryName} in ${t.appName} endet am ${t.endsOn}. Danach lassen sich die Daten nur noch ansehen. Mit einem Abo geht alles ohne Unterbrechung weiter.`;
   const text = `Hallo,\n\n${lead}\n\nAbo abschließen: ${t.link}\n\nKündigen geht jederzeit mit einem Klick. Fragen? Antworte einfach auf diese E-Mail.`;
-  const html = wrap(`<p>Hallo,</p><p>${esc(lead)}</p><p><a href="${esc(t.link)}" style="display:inline-block;background:#7a2e6e;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Abo abschließen</a></p><p style="color:#5b6470">Kündigen geht jederzeit mit einem Klick. Fragen? Antworte einfach auf diese E-Mail.</p>`);
+  const html = wrap(`<p>Hallo,</p><p>${esc(lead)}</p><p><a href="${esc(t.link)}" style="display:inline-block;background:#0f7570;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Abo abschließen</a></p><p style="color:#5b6470">Kündigen geht jederzeit mit einem Klick. Fragen? Antworte einfach auf diese E-Mail.</p>`);
   return { subject, text, html };
 }
 

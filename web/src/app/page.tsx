@@ -70,7 +70,7 @@ const NEWS = [
     body: "Seit 2025 müssen Betriebe E-Rechnungen empfangen können. Lade XRechnung oder ZUGFeRD hoch, und die Suite stellt jede Position neben deinen bisherigen Preis.",
     points: ["XRechnung (UBL, CII) und ZUGFeRD/Factur-X-PDF", "Zuordnung über die Artikelnummer des Lieferanten", "Preissprünge ab 5 % markiert, neue Preise gehen auf Wunsch in alle Rezepte", "Buchungsstapel im DATEV-Format für den Steuerberater"],
     note: "Die erste DATEV-Datei bitte gemeinsam mit dem Steuerberater prüfen.",
-    shot: shotInvoice, alt: `E-Rechnung in ${APP_NAME}: Positionen mit bisherigem Preis, Preis laut Rechnung und markiertem Preissprung von 18,2 Prozent bei Knollensellerie.`,
+    shot: shotInvoice, alt: `E-Rechnung in der ${APP_NAME}: Positionen mit bisherigem Preis, Preis laut Rechnung und markiertem Preissprung von 18,2 Prozent bei Knollensellerie.`,
   },
 ];
 
@@ -150,7 +150,7 @@ export default function LandingPage() {
       <section id="neu" aria-labelledby="new" className="bg-bg">
         <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
           <Reveal>
-            <p className="text-sm font-bold uppercase tracking-wide text-accent">Neu in {APP_NAME}</p>
+            <p className="text-sm font-bold uppercase tracking-wide text-accent">Neu in der {APP_NAME}</p>
             <h2 id="new" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Lieferschein bis zum Steuerberater.</h2>
           </Reveal>
           <div className="mt-12 flex flex-col gap-20">
@@ -266,8 +266,8 @@ export default function LandingPage() {
               ))}
             </ol>
             <figure className="mt-12 overflow-hidden rounded-lg border border-border shadow-pop">
-              <Image src={shot} alt={`Rezept „Linsensuppe“ in ${APP_NAME}: Zutatenzeilen mit Kosten, daneben Wareneinsatz pro Portion 0,63 € und 8,5 % Wareneinsatz.`} placeholder="blur" className="h-auto w-full" sizes="(min-width: 1280px) 1200px, 100vw" />
-              <figcaption className="bg-bg px-4 py-3 text-sm text-text-muted">So sieht ein Rezept in {APP_NAME} aus: Kosten pro Zeile, rechts der Wareneinsatz, während du tippst.</figcaption>
+              <Image src={shot} alt={`Rezept „Linsensuppe“ in der ${APP_NAME}: Zutatenzeilen mit Kosten, daneben Wareneinsatz pro Portion 0,63 € und 8,5 % Wareneinsatz.`} placeholder="blur" className="h-auto w-full" sizes="(min-width: 1280px) 1200px, 100vw" />
+              <figcaption className="bg-bg px-4 py-3 text-sm text-text-muted">So sieht ein Rezept in der {APP_NAME} aus: Kosten pro Zeile, rechts der Wareneinsatz, während du tippst.</figcaption>
             </figure>
           </div>
         </section>
@@ -306,7 +306,7 @@ export default function LandingPage() {
                 <p className="text-sm font-bold uppercase tracking-wide text-accent">Alles drin</p>
                 <h2 id="modules" className="mt-2 max-w-2xl text-xl lg:text-display">Ein Werkzeug statt zehn Listen</h2>
               </div>
-              <p className="max-w-sm text-text-muted">Kein Modul extra, kein Zusatzpreis. Jede Kachel ist ein Teil von {APP_NAME}, den es heute gibt.</p>
+              <p className="max-w-sm text-text-muted">Kein Modul extra, kein Zusatzpreis. Jede Kachel ist ein Teil der {APP_NAME}, den es heute gibt.</p>
             </div>
             <ul className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {MODULES.map(({ icon: Icon, label, tone }, i) => (

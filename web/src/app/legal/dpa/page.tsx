@@ -16,7 +16,7 @@ export default function DpaPage() {
       </p>
 
       <Section title="1. Gegenstand, Art und Zweck">
-        <p>Der Auftragsverarbeiter stellt {APP_NAME} als Software im Browser bereit. Er speichert und verarbeitet dabei die Daten, die der Verantwortliche einträgt, ausschließlich, um die Funktionen von {APP_NAME} zu erbringen: speichern, anzeigen, berechnen, E-Mails in seinem Auftrag versenden (etwa Bestellungen an Lieferanten), sichern und auf Weisung löschen.</p>
+        <p>Der Auftragsverarbeiter stellt die {APP_NAME} als Software im Browser bereit. Er speichert und verarbeitet dabei die Daten, die der Verantwortliche einträgt, ausschließlich, um die Funktionen von {APP_NAME} zu erbringen: speichern, anzeigen, berechnen, E-Mails in seinem Auftrag versenden (etwa Bestellungen an Lieferanten), sichern und auf Weisung löschen.</p>
       </Section>
 
       <Section title="2. Arten der Daten und betroffene Personen">
@@ -29,7 +29,7 @@ export default function DpaPage() {
       </Section>
 
       <Section title="3. Weisungen">
-        <p>Der Auftragsverarbeiter verarbeitet die Daten nur auf dokumentierte Weisung des Verantwortlichen. Die Weisung ergibt sich aus den Nutzungsbedingungen und aus der Nutzung von {APP_NAME} durch den Verantwortlichen; weitere Weisungen erteilt er in Textform. Hält der Auftragsverarbeiter eine Weisung für rechtswidrig, teilt er das unverzüglich mit.</p>
+        <p>Der Auftragsverarbeiter verarbeitet die Daten nur auf dokumentierte Weisung des Verantwortlichen. Die Weisung ergibt sich aus den Nutzungsbedingungen und aus der Nutzung der {APP_NAME} durch den Verantwortlichen; weitere Weisungen erteilt er in Textform. Hält der Auftragsverarbeiter eine Weisung für rechtswidrig, teilt er das unverzüglich mit.</p>
       </Section>
 
       <Section title="4. Vertraulichkeit">

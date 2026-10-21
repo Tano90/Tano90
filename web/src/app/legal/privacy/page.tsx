@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <LegalPage title="Datenschutzerklärung">
       <Section title="Verantwortlich">
         <p>
-          Verantwortlich für die Verarbeitung personenbezogener Daten auf dieser Website und in {APP_NAME} ist:<br />
+          Verantwortlich für die Verarbeitung personenbezogener Daten auf dieser Website und in der {APP_NAME} ist:<br />
           <Op field="company" />, <Op field="street" />, <Op field="postalCodeCity" />, <Op field="country" /><br />
           E-Mail: <Op field="email" />
         </p>
@@ -20,7 +20,7 @@ export default function PrivacyPage() {
 
       <Section title="Unsere Rolle: Verantwortliche und Auftragsverarbeiter">
         <p>
-          Für Konten, Abrechnung und den Betrieb der Website sind wir Verantwortliche. Was dein Betrieb in {APP_NAME} einträgt und
+          Für Konten, Abrechnung und den Betrieb der Website sind wir Verantwortliche. Was dein Betrieb in der {APP_NAME} einträgt und
           dabei Personen betrifft, etwa Namen von Teammitgliedern, Ansprechpartner bei Lieferanten oder wer eine HACCP-Kontrolle
           eingetragen hat, verarbeiten wir im Auftrag deines Betriebs (Art. 28 DSGVO). Verantwortlich ist dafür dein Betrieb;
           wir schließen dazu einen Auftragsverarbeitungsvertrag ab (siehe Nutzungsbedingungen).
@@ -96,7 +96,7 @@ export default function PrivacyPage() {
         <p>
           Du hast das Recht auf Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung (Art. 18),
           Datenübertragbarkeit (Art. 20) und Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 21
-          DSGVO). Schreib dafür an <Op field="privacyContact" />. Betrifft deine Anfrage Daten, die dein Betrieb in {APP_NAME}{" "}
+          DSGVO). Schreib dafür an <Op field="privacyContact" />. Betrifft deine Anfrage Daten, die dein Betrieb in der {APP_NAME}{" "}
           eingetragen hat, leiten wir sie an den Betrieb weiter.
         </p>
         <p>Du kannst dich bei einer Datenschutz-Aufsichtsbehörde beschweren, zum Beispiel bei der für uns zuständigen: <Op field="supervisoryAuthority" />.</p>
