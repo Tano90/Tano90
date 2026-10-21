@@ -65,3 +65,20 @@ export function trialMail(t: { appName: string; libraryName: string; link: strin
   const html = wrap(`<p>Hallo,</p><p>${esc(lead)}</p><p><a href="${esc(t.link)}" style="display:inline-block;background:#7a2e6e;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Abo abschließen</a></p><p style="color:#5b6470">Kündigen geht jederzeit mit einem Klick. Fragen? Antworte einfach auf diese E-Mail.</p>`);
   return { subject, text, html };
 }
+
+export function leadNotifyMail(l: { name: string; company: string; email: string; phone: string | null; outlets: number | null; message: string | null; source: string | null; campaign: string | null; link: string }) {
+  const subject = `Neue Anfrage: ${l.company}${l.outlets ? ` (${l.outlets} ${l.outlets === 1 ? "Standort" : "Standorte"})` : ""}`;
+  const rows: [string, string | null][] = [["Name", l.name], ["Betrieb", l.company], ["E-Mail", l.email], ["Telefon", l.phone], ["Standorte", l.outlets ? String(l.outlets) : null], ["Herkunft", [l.source, l.campaign].filter(Boolean).join(" / ") || "direkt"], ["Nachricht", l.message]];
+  const shown = rows.filter((r): r is [string, string] => !!r[1]);
+  const text = `${shown.map(([k, v]) => `${k}: ${v}`).join("\n")}\n\nAlle Anfragen: ${l.link}\nAntworten: einfach auf diese E-Mail.`;
+  const html = wrap(`<table style="border-collapse:collapse">${shown.map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#5b6470;vertical-align:top">${esc(k)}</td><td style="padding:4px 0;white-space:pre-wrap">${esc(v)}</td></tr>`).join("")}</table><p><a href="${esc(l.link)}">Alle Anfragen</a> · Antworten: einfach auf diese E-Mail.</p>`);
+  return { subject, text, html };
+}
+
+export function leadThanksMail(t: { appName: string; name: string }) {
+  const subject = `Danke für deine Anfrage bei ${t.appName}`;
+  const text = `Hallo ${t.name},\n\ndanke für dein Interesse an ${t.appName}. Wir melden uns in den nächsten zwei Werktagen persönlich bei dir, um eine kurze Vorführung mit deinen eigenen Rezepten zu vereinbaren.\n\nWenn du vorher eine Frage hast, antworte einfach auf diese E-Mail.`;
+  const html = wrap(`<p>Hallo ${esc(t.name)},</p><p>danke für dein Interesse an ${esc(t.appName)}. Wir melden uns in den nächsten zwei Werktagen persönlich bei dir, um eine kurze Vorführung mit deinen eigenen Rezepten zu vereinbaren.</p><p style="color:#5b6470">Wenn du vorher eine Frage hast, antworte einfach auf diese E-Mail.</p>`);
+  return { subject, text, html };
+}
+

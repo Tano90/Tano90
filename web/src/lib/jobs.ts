@@ -2,6 +2,7 @@
 // Each item is processed on its own: a failure is recorded in job_runs and retried on the next run;
 // after MAX_ATTEMPTS it is marked dead and stays visible there (the dead-letter log).
 import "server-only";
+import { deleteStaleLeads } from "@/data/leads";
 import { asService } from "@/data/pg/client";
 import { DEFAULT_TZ, dayIn, formatDate } from "./dates";
 import { formatBase } from "./units-display";
@@ -94,6 +95,7 @@ export async function cleanup() {
     const rl = await tx`delete from rate_limit_events where at < now() - interval '1 day'`;
     const wh = await tx`delete from processed_webhooks where received_at < now() - interval '90 days'`;
     const jr = await tx`delete from job_runs where status = 'ok' and updated_at < now() - interval '30 days'`;
-    return { invitations: inv.count, rateLimitEvents: rl.count, webhooks: wh.count, jobRuns: jr.count };
+    const leads = await deleteStaleLeads();
+    return { invitations: inv.count, rateLimitEvents: rl.count, webhooks: wh.count, jobRuns: jr.count, leads };
   });
 }

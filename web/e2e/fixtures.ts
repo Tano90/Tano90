@@ -61,7 +61,7 @@ export const test = base.extend<{ login: (u: User) => Promise<void>; axe: () => 
 export { expect, sid, reseed, db };
 
 /** Mails written to the dev outbox (no RESEND_API_KEY in tests). */
-export function outbox(): { to: string; subject: string; idempotencyKey?: string; text: string }[] {
+export function outbox(): { to: string; subject: string; idempotencyKey?: string; replyTo?: string; text: string }[] {
   const dir = fileURLToPath(new URL("../.outbox", import.meta.url));
   try {
     return readdirSync(dir).sort().map((f) => JSON.parse(readFileSync(join(dir, f), "utf8")));

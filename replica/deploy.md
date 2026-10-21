@@ -101,6 +101,14 @@ Keine native App. Mirepa läuft im Browser (Handy-Layout geprüft). `launch/list
    Link, Passwort zurücksetzen, falsches Passwort.
 5. Diese Checkliste erneut ausführen (`/replica-deploy`). Erst wenn alles ✅ ist, frage ich nach deinem Go.
 
+## Vorstart: Nachfrage messen (2026-10-21)
+
+Die Seite kann vor Domain und Abrechnung online gehen: `NEXT_PUBLIC_LAUNCH_MODE=waitlist` lenkt alle Knöpfe auf das
+Anfrageformular. Anfragen und Aufrufe stehen unter `/admin/leads` (nur für `OPERATOR_EMAILS`). Plan, Kanäle und
+Schwellen: `replica/marketing/plan.md`; Texte: `replica/marketing/content.md`. Migration 0014 legt `leads` und
+`page_views` an (nur über die Service-Verbindung erreichbar). Getestet: E2E `f32-demand.spec.ts`, Integrationstest
+„demand“, Build mit `waitlist` von Hand geprüft (keine Registrierungs-Links).
+
 ## Lücken im Produkt, beim Schreiben der Rechtsseiten gefunden (geschlossen 2026-10-21)
 
 - **Ende der Testphase:** Nach 14 Tagen ohne Abo ist der Betrieb nur noch lesbar. Jede schreibende Aktion wird auf dem

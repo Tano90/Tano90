@@ -40,7 +40,7 @@ test.describe("L01 Landingpage", () => {
   test("L01-N1 Rechtsseiten verlinkt", async ({ page }) => {
     await page.goto("/");
     for (const name of ["Datenschutz", "Nutzungsbedingungen", "Impressum"]) {
-      await expect(page.getByRole("link", { name })).toHaveAttribute("href", /\/legal\//);
+      await expect(page.getByRole("link", { name, exact: true })).toHaveAttribute("href", /\/legal\//);
     }
   });
 });

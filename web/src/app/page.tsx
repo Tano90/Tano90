@@ -1,8 +1,10 @@
 import { ArrowRight, Check, ClipboardCheck, CookingPot, Receipt, ReceiptText, ScanBarcode, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { LeadForm, ViewBeacon } from "@/components/landing/lead-form";
 import { APP_NAME } from "@/lib/brand";
 import { formatCents } from "@/lib/format";
+import { LAUNCH_MODE } from "@/lib/launch";
 import { PRICING } from "@/lib/pricing";
 import shot from "../../public/landing/rezept-kalkulation.png";
 
@@ -40,16 +42,19 @@ const FAQ = [
 ];
 
 const eur = (cents: number) => formatCents(cents).replace(",00", "");
+const waitlist = LAUNCH_MODE === "waitlist";
+const mainCta = waitlist ? { href: "#anfrage", label: "Vorführung anfragen" } : { href: "/signup", label: `${PRICING.trialDays} Tage kostenlos testen` };
 
 export default function LandingPage() {
   return (
     <div className="bg-bg">
+      <ViewBeacon />
       <header className="mx-auto flex max-w-(--size-content-max) items-center justify-between px-4 py-4 lg:px-8">
         <span className="text-lg font-semibold">{APP_NAME}</span>
         <nav aria-label="Konto" className="flex items-center gap-4">
           <Link href="/login" className="font-semibold hover:underline">Anmelden</Link>
-          <Link href="/signup" className="hidden h-(--size-control-md) items-center rounded-sm bg-accent px-4 font-semibold text-on-accent hover:bg-accent-hover sm:inline-flex">
-            Kostenlos testen
+          <Link href={waitlist ? "#anfrage" : "/signup"} className="hidden h-(--size-control-md) items-center rounded-sm bg-accent px-4 font-semibold text-on-accent hover:bg-accent-hover sm:inline-flex">
+            {waitlist ? "Vorführung anfragen" : "Kostenlos testen"}
           </Link>
         </nav>
       </header>
@@ -63,10 +68,10 @@ export default function LandingPage() {
               und der Wareneinsatz stimmt, auch wenn sich Preise jede Woche ändern.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/signup" className={cta}>{PRICING.trialDays} Tage kostenlos testen <ArrowRight aria-hidden className="size-4" /></Link>
-              <a href="#preise" className={ctaSecondary}>Preise</a>
+              <Link href={mainCta.href} className={cta}>{mainCta.label} <ArrowRight aria-hidden className="size-4" /></Link>
+              <a href={waitlist ? "#preise" : "#anfrage"} className={ctaSecondary}>{waitlist ? "Preise" : "Vorführung anfragen"}</a>
             </div>
-            <p className="mt-3 text-xs font-normal text-text-muted">Ohne Kreditkarte. Kündigen mit einem Klick.</p>
+            <p className="mt-3 text-xs font-normal text-text-muted">{waitlist ? "30 Minuten mit deinen eigenen Rezepten. Unverbindlich." : "Ohne Kreditkarte. Kündigen mit einem Klick."}</p>
           </div>
           <figure className="overflow-hidden rounded-lg border border-border shadow-pop">
             <Image src={shot} alt={`Rezept „Linsensuppe“ in ${APP_NAME}: Zutatenzeilen mit Kosten, daneben Wareneinsatz pro Portion 0,63 € und 8,5 % Wareneinsatz.`} priority placeholder="blur" sizes="(min-width: 1024px) 58vw, 100vw" />
@@ -142,6 +147,17 @@ export default function LandingPage() {
           <p className="mt-4 text-xs font-normal text-text-muted">Beispiel: drei Standorte = {eur(PRICING.firstOutletMonthly + 2 * PRICING.extraOutletMonthly)} pro Monat.</p>
         </section>
 
+        <section id="anfrage" aria-labelledby="lead" className="mx-auto grid max-w-(--size-content-max) gap-8 px-4 py-16 lg:grid-cols-[5fr_7fr] lg:px-8">
+          <div>
+            <h2 id="lead" className="text-xl">Zeig uns dein teuerstes Gericht</h2>
+            <p className="mt-2 text-text-muted">
+              In einer halben Stunde legen wir zusammen deine wichtigsten Zutaten und ein Rezept an, und du siehst, was der Teller
+              wirklich kostet. Für einen oder viele Standorte, mit oder ohne Zentralküche.
+            </p>
+          </div>
+          <LeadForm appName={APP_NAME} />
+        </section>
+
         <section aria-labelledby="faq" className="bg-surface">
           <div className="mx-auto max-w-(--size-form-max) px-4 py-16">
             <h2 id="faq" className="text-xl">Häufige Fragen</h2>
@@ -158,7 +174,7 @@ export default function LandingPage() {
 
         <section aria-labelledby="final" className="mx-auto max-w-(--size-content-max) px-4 py-20 text-center lg:px-8">
           <h2 id="final" className="text-xl">Leg dein teuerstes Gericht an und sieh, was es wirklich kostet.</h2>
-          <div className="mt-8 flex justify-center"><Link href="/signup" className={cta}>{PRICING.trialDays} Tage kostenlos testen <ArrowRight aria-hidden className="size-4" /></Link></div>
+          <div className="mt-8 flex justify-center"><Link href={mainCta.href} className={cta}>{mainCta.label} <ArrowRight aria-hidden className="size-4" /></Link></div>
         </section>
       </main>
 

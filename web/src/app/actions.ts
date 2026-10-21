@@ -11,10 +11,14 @@ import { headers } from "next/headers";
 import * as repo from "@/data/repo";
 import { Forbidden, OUTLET_COOKIE, SESSION_COOKIE, authMode, canEditLibrary, canManageBilling, currentOutletId, currentUser, demoAllowed, requireSession } from "@/data/session";
 import type { Session } from "@/data/types";
+import { createLead, updateLead } from "@/data/leads";
 import { READ_ONLY_MESSAGE, accessOf } from "@/domain/access";
 import { billingConfigured, createCheckout, createPortal, syncOutletQuantity } from "@/lib/billing";
 import { sendMail } from "@/lib/mail";
-import { invitationMail, orderMail } from "@/lib/mail-templates";
+import { invitationMail, leadNotifyMail, leadThanksMail, orderMail } from "@/lib/mail-templates";
+import { APP_NAME } from "@/lib/brand";
+import { OPERATOR } from "@/lib/legal";
+import { isOperator } from "@/lib/operator";
 import { RateLimited, allow } from "@/lib/rate-limit";
 import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 
@@ -200,6 +204,44 @@ export async function acceptInvitation(_: Result | null, form: FormData): Promis
 export async function setOutlet(outletId: string) {
   (await cookies()).set(OUTLET_COOKIE, outletId, { sameSite: "lax", path: "/" });
   revalidatePath("/", "layout");
+}
+
+// ---------------------------------------------------------------- inquiries (website)
+
+const optional = (max: number) => z.string().trim().max(max).transform((v) => v || null).nullable();
+const LeadSchema = z.object({
+  name: z.string().trim().min(1, "Bitte deinen Namen angeben.").max(120),
+  company: z.string().trim().min(1, "Bitte den Namen des Betriebs angeben.").max(160),
+  email: emailSchema,
+  phone: optional(40),
+  outlets: z.number().int().min(1).max(1000).nullable(),
+  message: optional(2000),
+  source: optional(100), medium: optional(100), campaign: optional(100), referrer: optional(300),
+  website: z.string().max(0, "Bitte das Feld „Website“ leer lassen.").optional(), // honeypot: people never see it
+});
+
+/** Public: an inquiry from the landing page. The operator gets a mail, the person a short confirmation. */
+export async function submitLead(input: z.input<typeof LeadSchema>): Promise<Result<null>> {
+  return open(async () => {
+    if (!(await allow(`lead:${await clientKey()}`, 5, 3600))) throw new RateLimited();
+    const { website: _, ...lead } = LeadSchema.parse(input);
+    await createLead(lead);
+    const notify = process.env.LEADS_NOTIFY_EMAIL || OPERATOR.email;
+    const mails = [];
+    if (notify) mails.push(sendMail({ to: notify, ...leadNotifyMail({ ...lead, link: `${appUrl()}/admin/leads` }), replyTo: lead.email }));
+    mails.push(sendMail({ to: lead.email, ...leadThanksMail({ appName: APP_NAME, name: lead.name }) }));
+    // The inquiry is saved either way; a mail that fails is logged, not shown to the visitor.
+    for (const r of await Promise.allSettled(mails)) if (r.status === "rejected") console.error("[leads] mail failed", r.reason);
+    return null;
+  });
+}
+
+const LeadUpdateSchema = z.object({ status: z.enum(["new", "contacted", "demo", "won", "lost"]), notes: optional(4000) });
+export async function updateLeadStatus(leadId: string, input: z.input<typeof LeadUpdateSchema>) {
+  return run(async (s) => {
+    if (!isOperator(s)) throw new Forbidden();
+    await updateLead(id.parse(leadId), LeadUpdateSchema.parse(input));
+  }, ["/admin/leads"], { readOnlyOk: true });
 }
 
 // ---------------------------------------------------------------- billing

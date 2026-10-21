@@ -259,6 +259,27 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
   });
 
+  describe("demand", () => {
+    it("inquiries and cookie-free views add up per week and source; stale inquiries go after 12 months", async () => {
+      const leads = await import("../src/data/leads");
+      await admin`delete from leads where email like '%@it-demand.example'`;
+      await admin`delete from page_views where source in ('it-a', 'it-b')`;
+      const base = { phone: null, outlets: null, message: null, medium: null, campaign: null, referrer: null };
+      await leads.createLead({ ...base, name: "A", company: "A", email: "a@it-demand.example", source: "it-a" });
+      await leads.createLead({ ...base, name: "B", company: "B", email: "b@it-demand.example", source: "it-b" });
+      for (let i = 0; i < 4; i++) await leads.countView("/", "it-a");
+      const stats = await leads.demandStats(12);
+      expect(stats.sources.find((x) => x.source === "it-a")).toEqual({ source: "it-a", views: 4, leads: 1 });
+      expect(stats.sources.find((x) => x.source === "it-b")).toEqual({ source: "it-b", views: 0, leads: 1 });
+      expect(stats.weeks.at(-1)!.leads).toBeGreaterThanOrEqual(2);
+      await admin`update leads set updated_at = now() - interval '13 months' where email = 'a@it-demand.example'`;
+      expect(await leads.deleteStaleLeads()).toBeGreaterThanOrEqual(1);
+      expect(await admin`select 1 from leads where email like '%@it-demand.example'`).toHaveLength(1);
+      await admin`delete from leads where email like '%@it-demand.example'`;
+      await admin`delete from page_views where source in ('it-a', 'it-b')`;
+    });
+  });
+
   describe("invoices", () => {
     it("editors match and approve; staff and other libraries cannot", async () => {
       const order = (await repo.getOrder(owner, sid("po-1")))!;

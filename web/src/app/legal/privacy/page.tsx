@@ -36,6 +36,8 @@ export default function PrivacyPage() {
             </thead>
             <tbody className="align-top">
               <tr className="border-t border-border"><td className="py-2 pr-3">Aufruf der Website: IP-Adresse, Zeitpunkt, aufgerufene Adresse, Browser-Kennung (Server-Protokolle)</td><td className="pr-3">Auslieferung, Fehlersuche, Abwehr von Angriffen</td><td className="pr-3">Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einem sicheren Betrieb)</td><td>nach den Fristen von Vercel, danach gelöscht</td></tr>
+              <tr className="border-t border-border"><td className="py-2 pr-3">Anfrage über die Website: Name, Betrieb, E-Mail, freiwillig Telefon, Zahl der Standorte und Nachricht; dazu, über welchen Link du gekommen bist (Kampagnenkennung, Herkunftsseite)</td><td className="pr-3">deine Anfrage beantworten und eine Vorführung vereinbaren; sehen, welche Kanäle Interesse wecken</td><td className="pr-3">Art. 6 Abs. 1 lit. b DSGVO (vorvertragliche Anfrage); für die Herkunft lit. f</td><td>zwölf Monate nach dem letzten Kontakt, danach automatisch gelöscht; früher auf Wunsch</td></tr>
+              <tr className="border-t border-border"><td className="py-2 pr-3">Aufrufe der Startseite: nur eine Zahl pro Tag und Kampagnenkennung, ohne IP-Adresse, ohne Cookie, ohne Kennung des Geräts</td><td className="pr-3">Reichweite der Website messen</td><td className="pr-3">Art. 6 Abs. 1 lit. f DSGVO; es werden keine Informationen auf deinem Gerät gespeichert oder ausgelesen</td><td>als Tageszahl ohne Personenbezug</td></tr>
               <tr className="border-t border-border"><td className="py-2 pr-3">Konto: Name, E-Mail-Adresse, Passwort (nur als Hash), Rolle und Standorte im Betrieb</td><td className="pr-3">Anmeldung, Zugriff auf die Daten deines Betriebs</td><td className="pr-3">Art. 6 Abs. 1 lit. b DSGVO (Vertrag)</td><td>bis du dein Konto löschst</td></tr>
               <tr className="border-t border-border"><td className="py-2 pr-3">Einladungen: E-Mail-Adresse der eingeladenen Person, Rolle, Standorte</td><td className="pr-3">Einladung ins Team</td><td className="pr-3">Art. 6 Abs. 1 lit. b DSGVO; für die eingeladene Person lit. f</td><td>Link 7 Tage gültig; nicht angenommene Einladungen löschen wir einen Tag nach Ablauf</td></tr>
               <tr className="border-t border-border"><td className="py-2 pr-3">Abo und Zahlung: Firma, Rechnungsanschrift, E-Mail, Zahlungsart (Kartendaten nur bei Stripe), Rechnungen</td><td className="pr-3">Abrechnung</td><td className="pr-3">Art. 6 Abs. 1 lit. b und c DSGVO</td><td>Rechnungen und Buchungsbelege 10 Jahre (§ 147 AO, § 257 HGB), sonst bis Vertragsende</td></tr>
@@ -54,7 +56,7 @@ export default function PrivacyPage() {
           <li><strong>Anmeldung</strong> (Supabase, beginnt mit <code>sb-</code>): hält dich angemeldet; gelöscht beim Abmelden oder nach Ablauf der Sitzung.</li>
           <li><strong>kl_outlet</strong>: merkt sich den gewählten Standort; gelöscht, wenn du den Browser schließt.</li>
         </ul>
-        <p>Wir nutzen keine Analyse-, Werbe- oder Tracking-Dienste. Die Schrift ist auf unserem Server eingebunden; beim Laden der Seite wird keine Verbindung zu Schriftanbietern aufgebaut.</p>
+        <p>Wir nutzen keine Analyse-, Werbe- oder Tracking-Dienste; die Aufrufe der Startseite zählen wir selbst, ohne Cookie und ohne Personenbezug. Die Schrift ist auf unserem Server eingebunden; beim Laden der Seite wird keine Verbindung zu Schriftanbietern aufgebaut.</p>
       </Section>
 
       <Section title="Dienstleister">
