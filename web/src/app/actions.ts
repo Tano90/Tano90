@@ -6,6 +6,7 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import { parseSalesCsv } from "@/domain/pos";
 import { applyImport, planImport } from "@/lib/price-import";
+import { applyRecipes, planRecipes } from "@/lib/recipe-import";
 import { addDays, zoneOffsetMinutes } from "@/lib/dates";
 import { headers } from "next/headers";
 import * as repo from "@/data/repo";
@@ -911,4 +912,21 @@ export async function saveDatevSettings(input: z.input<typeof DatevSchema>, cred
     const v = DatevSchema.parse(input);
     await repo.saveDatevSettings(s, v, z.array(z.object({ supplierId: id, creditor: z.number().int().min(1).max(999999999).nullable() })).max(1000).parse(creditors));
   }, ["/invoices", "/settings/datev"], { readOnlyOk: true });
+}
+
+// ---------------------------------------------------------------- recipe import
+
+const ImportRecipesSchema = z.array(z.object({
+  row: z.number().int().positive(), name: z.string().trim().min(1).max(120), portions: z.number().positive().max(100000),
+  category: z.string().max(120).nullable(), semiFinished: z.boolean(), sellPriceCents: cents.max(100_000_000).nullable(), instructions: z.string().max(10000).nullable(),
+  lines: z.array(z.object({ row: z.number().int().positive(), name: z.string().trim().min(1).max(120), quantity: z.number().positive().max(10_000_000), unit: lineUnit })).min(1).max(200),
+})).max(300, "Höchstens 300 Rezepte pro Datei.");
+export async function previewRecipeImport(recipes: z.input<typeof ImportRecipesSchema>, createIngredients: boolean) {
+  return run(async (s) => {
+    if (!canEditLibrary(s.role)) throw new Forbidden();
+    return planRecipes(s, ImportRecipesSchema.parse(recipes), createIngredients);
+  }, [], { readOnlyOk: true });
+}
+export async function importRecipes(recipes: z.input<typeof ImportRecipesSchema>, createIngredients: boolean) {
+  return run((s) => applyRecipes(s, ImportRecipesSchema.parse(recipes), createIngredients), ["/recipes", "/ingredients", "/menus"]);
 }

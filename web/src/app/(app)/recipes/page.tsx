@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { listCategories, listRecipes } from "@/data/repo";
@@ -18,9 +18,14 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
         description="Was eine Portion kostet und wie viel vom Verkaufspreis beim Wareneinsatz bleibt."
         actions={
           canEditLibrary(s.role) && (
-            <Link href="/recipes/new" className="inline-flex h-(--size-control-md) items-center gap-2 rounded-sm bg-accent px-4 font-semibold text-on-accent hover:bg-accent-hover">
-              <Plus aria-hidden className="size-4" /> Rezept anlegen
-            </Link>
+<>
+              <Link href="/recipes/import" className="inline-flex h-(--size-control-md) items-center gap-2 rounded-sm border border-border-input px-4 font-semibold hover:bg-row-hover">
+                <Upload aria-hidden className="size-4" /> Aus Excel importieren
+              </Link>
+              <Link href="/recipes/new" className="inline-flex h-(--size-control-md) items-center gap-2 rounded-sm bg-accent px-4 font-semibold text-on-accent hover:bg-accent-hover">
+                <Plus aria-hidden className="size-4" /> Rezept anlegen
+              </Link>
+            </>
           )
         }
       />
