@@ -18,10 +18,12 @@ test.describe("L02 Rechtsseiten", () => {
     });
   }
 
-  test("L02-E1 fehlende Betreiberangaben sind sichtbar markiert, nicht erfunden", async ({ page }) => {
+  test("L02-E1 Impressum vollständig, keine Lücke markiert", async ({ page }) => {
     await page.goto("/legal/imprint");
-    await expect(page.getByRole("note")).toContainText("Angaben des Betreibers fehlen");
-    await expect(page.getByText("[fehlt: E-Mail-Adresse]").first()).toBeVisible();
+    await expect(page.getByRole("note")).toHaveCount(0); // all operator details are filled in
+    await expect(page.locator("main")).not.toContainText("[fehlt");
+    await expect(page.locator("main")).toContainText("mattiassegato1990@gmail.com");
+    await expect(page.locator("main")).toContainText("0178 2498827");
     await expect(page.locator("main")).toContainText("Mattias Segato Consulting (Einzelunternehmen)");
     await expect(page.locator("main")).toContainText("Inhaber: Mattias Segato");
     await expect(page.locator("main")).toContainText("Hohenzollernstraße 12");

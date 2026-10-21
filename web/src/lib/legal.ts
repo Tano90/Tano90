@@ -9,12 +9,12 @@ export const OPERATOR = {
   street: "Hohenzollernstraße 12" as string | null,
   postalCodeCity: "52351 Düren" as string | null,
   country: "Deutschland",
-  email: null as string | null, // a monitored address, e.g. kontakt@your-domain
-  phone: null as string | null, // or another fast way to reach you (§ 5 DDG)
+  email: "mattiassegato1990@gmail.com" as string | null, // a monitored address, e.g. kontakt@your-domain
+  phone: "0178 2498827" as string | null, // or another fast way to reach you (§ 5 DDG)
   register: "nicht eingetragen" as string | null, // e.g. "Amtsgericht München, HRB 123456"; "nicht eingetragen" for a sole trader
   vatId: "nicht vorhanden (Kleinunternehmer nach § 19 UStG)" as string | null, // USt-IdNr. per § 27a UStG, or "nicht vorhanden"
   contentResponsible: "Mattias Segato, Hohenzollernstraße 12, 52351 Düren" as string | null, // § 18 Abs. 2 MStV: name and address of the person responsible for content
-  privacyContact: null as string | null, // e-mail for data protection requests (may be the same as email)
+  privacyContact: "mattiassegato1990@gmail.com" as string | null, // e-mail for data protection requests (may be the same as email)
   dataProtectionOfficer: "nicht bestellt (nicht verpflichtend)" as string | null, // change if you appoint one
   supervisoryAuthority: "Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen, Kavalleriestraße 2–4, 40213 Düsseldorf" as string | null, // the data protection authority of your federal state, with its address
   jurisdictionCity: "Düren" as string | null, // court for disputes with merchants, usually your registered seat
