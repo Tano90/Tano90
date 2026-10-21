@@ -2,7 +2,7 @@
 
 import { BedDouble, BellOff, Check, PackageSearch, Play, Star, Sunrise, UserRound, Wand2, Wrench } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { archiveRoom, assignRooms, autoAssignRooms, createRooms, saveHkChecklist, startHousekeepingDay, updateRoom } from "@/app/actions";
 import { Notice } from "@/components/app/notice";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 import type { HkChecklistItem, Room } from "@/data/types";
 import { OCCUPANCY_LABEL, type Occupancy, type RoomStatus, STATUS_LABEL, byUrgency, canSetStatus, summary } from "@/domain/housekeeping";
+import { type QueuedPatch, type Queued, dropQueued, enqueue, isNetworkError, onOutboxChange, readOutbox } from "@/lib/hk-outbox";
 import { TicketDialog } from "./ticket-dialog";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/dates";
@@ -30,8 +31,65 @@ const TILE: Record<RoomStatus, string> = {
 const DOT: Record<RoomStatus, string> = { dirty: "bg-danger", clean: "bg-info", inspected: "bg-success", out_of_order: "bg-text-muted" };
 const STATUSES = Object.keys(STATUS_LABEL) as RoomStatus[];
 
-export function HousekeepingBoard({ rooms, checklist, staff, recent, me, manager, timezone }: Props) {
+/** The board as the server sent it, with the changes still waiting on this device applied on top. */
+function withQueued(rooms: RoomRow[], queued: Queued[]): RoomRow[] {
+  if (!queued.length) return rooms;
+  return rooms.map((r) => queued.filter((q) => q.roomId === r.id).reduce<RoomRow>((room, q) => ({
+    ...room,
+    ...(q.patch.status ? { status: q.patch.status, cleaningStartedAt: null } : {}),
+    ...(q.patch.status === "clean" ? { dnd: false } : {}),
+    ...(q.patch.dnd !== undefined ? { dnd: q.patch.dnd } : {}),
+    ...(q.patch.start ? { cleaningStartedAt: q.at } : {}),
+    ...(q.patch.note !== undefined ? { note: q.patch.note } : {}),
+  }), r));
+}
+
+/** Network state and the outbox: registers the offline copy and sends waiting changes when the network is back. */
+function useOutbox() {
   const router = useRouter();
+  const [queued, setQueued] = useState<Queued[]>([]);
+  const [online, setOnline] = useState(true);
+  const [sending, setSending] = useState(false);
+  const busy = useRef(false);
+  const flush = useCallback(async () => {
+    if (!navigator.onLine || busy.current) return;
+    const items = readOutbox();
+    if (!items.length) return;
+    busy.current = true;
+    setSending(true);
+    for (const q of items) {
+      try {
+        const res = await updateRoom(q.roomId, q.patch);
+        dropQueued(q.id);
+        if (!res.ok) toast.error(`Zimmer ${q.number}: ${res.error}`);
+      } catch (e) {
+        if (isNetworkError(e)) break;
+        dropQueued(q.id);
+      }
+    }
+    busy.current = false;
+    setSending(false);
+    router.refresh();
+  }, [router]);
+  useEffect(() => {
+    setQueued(readOutbox());
+    setOnline(navigator.onLine);
+    navigator.serviceWorker?.register("/hk-sw.js", { scope: "/housekeeping" }).catch(() => {});
+    const off = onOutboxChange(() => setQueued(readOutbox()));
+    const up = () => { setOnline(true); void flush(); };
+    const down = () => setOnline(false);
+    window.addEventListener("online", up);
+    window.addEventListener("offline", down);
+    if (navigator.onLine) void flush();
+    return () => { off(); window.removeEventListener("online", up); window.removeEventListener("offline", down); };
+  }, [flush]);
+  return { queued, online, sending };
+}
+
+export function HousekeepingBoard({ rooms: serverRooms, checklist, staff, recent, me, manager, timezone }: Props) {
+  const router = useRouter();
+  const { queued, online, sending } = useOutbox();
+  const rooms = withQueued(serverRooms, queued);
   const [filter, setFilter] = useState<RoomStatus | "all">("all");
   const [mine, setMine] = useState(!manager && !!me);
   const [picked, setPicked] = useState<string[]>([]);
@@ -52,6 +110,11 @@ export function HousekeepingBoard({ rooms, checklist, staff, recent, me, manager
 
   return (
     <div className="flex flex-col gap-6">
+      {!online ? (
+        <Notice tone="warning">Kein Netz. Deine Änderungen bleiben auf diesem Gerät{queued.length ? ` (${countOf(queued.length, "Änderung wartet", "Änderungen warten")})` : ""} und gehen raus, sobald wieder WLAN da ist.</Notice>
+      ) : queued.length > 0 ? (
+        <Notice>{sending ? "Sende" : "Warte auf Senden:"} {countOf(queued.length, "Änderung", "Änderungen")} von diesem Gerät …</Notice>
+      ) : null}
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
         {([["schmutzig", sum.dirty, "dirty"], ["gereinigt", sum.clean, "clean"], ["kontrolliert", sum.inspected, "inspected"], ["gesperrt", sum.outOfOrder, "out_of_order"]] as const).map(([label, n, st]) => (
           <div key={st} className="rounded-md border border-border bg-bg p-3">
@@ -179,15 +242,22 @@ function RoomDialog({ room, checklist, manager, timezone, trigger }: { room: Roo
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const role = manager ? "chef" : "outlet_staff";
+  const done = (message: string) => { setError(null); setOpen(false); setChecked([]); toast.success(message); };
   const save = (patch: Parameters<typeof updateRoom>[1], message: string) =>
     start(async () => {
-      const res = await updateRoom(room.id, patch);
-      if (!res.ok) return setError(res.error);
-      setError(null);
-      setOpen(false);
-      setChecked([]);
-      toast.success(message);
-      router.refresh();
+      // The cleaning staff's own steps can wait for the network; changes for the head of housekeeping cannot.
+      const queueable = Object.keys(patch).every((k) => ["status", "dnd", "start", "note", "checked"].includes(k)) && (!patch.status || patch.status === "clean" || patch.status === "dirty");
+      const later = () => { enqueue(room.id, room.number, patch as QueuedPatch); done(`${message} (offline gespeichert)`); };
+      if (queueable && !navigator.onLine) return later();
+      try {
+        const res = await updateRoom(room.id, patch);
+        if (!res.ok) return setError(res.error);
+        done(message);
+        router.refresh();
+      } catch (e) {
+        if (queueable && isNetworkError(e)) return later();
+        setError("Keine Verbindung. Bitte gleich noch einmal versuchen.");
+      }
     });
   const allTicked = checklist.every((i) => checked.includes(i.id));
   return (
