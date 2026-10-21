@@ -75,3 +75,22 @@ export function suggestWeight(parBase: number | null, onHandBase: number, onOrde
   const step = unit === "piece" ? 1 : 100;
   return Math.ceil(missing / step - 1e-9) * step;
 }
+
+export type VarianceRow = { ingredientId: string; theoreticalBase: number; actualBase: number; diffBase: number; diffCents: number; theoreticalCents: number; pct: number | null };
+
+/**
+ * Theoretical against actual use per ingredient (Soll-Ist). Theoretical: what sales (through the recipes), waste and
+ * production booked out. Actual: theoretical minus the count difference (a missing amount counts as used).
+ * Sorted by money lost, largest first. Meaningful only for periods that end with a count.
+ */
+export function variance(rows: ReportRow[]): VarianceRow[] {
+  return rows.map((r) => {
+    const theoreticalBase = -(r.columns.sold.base + r.columns.waste.base + r.columns.other.base);
+    const theoreticalCents = -(r.columns.sold.cents + r.columns.waste.cents + r.columns.other.cents);
+    const diffBase = r.columns.countDiff.base;
+    return {
+      ingredientId: r.ingredientId, theoreticalBase, actualBase: theoreticalBase - diffBase, diffBase, diffCents: r.columns.countDiff.cents, theoreticalCents,
+      pct: theoreticalBase > 1e-9 ? Math.round((-diffBase / theoreticalBase) * 1000) / 10 : null,
+    };
+  }).filter((v) => Math.abs(v.theoreticalBase) > 1e-9 || Math.abs(v.diffBase) > 1e-9).sort((a, b) => a.diffCents - b.diffCents);
+}

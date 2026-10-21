@@ -299,3 +299,19 @@ describe("production", () => {
     expect(shareCost(90, [{ id: "a", plannedCents: 0, portions: 1 }, { id: "b", plannedCents: 0, portions: 2 }])).toEqual({ a: 30, b: 60 });
   });
 });
+
+describe("variance (Soll-Ist)", () => {
+  it("theoretical from sales, waste and production; actual includes what the count found missing", async () => {
+    const { stockReport, variance } = await import("./stock");
+    const m = (ingredientId: string, eventType: string, deltaBase: number, at = "2026-10-10T10:00:00Z") => ({ ingredientId, eventType, occurredAt: at, deltaBase, unitCostCents: 0.01 });
+    const rows = stockReport([
+      m("butter", "delivery", 5000, "2026-10-01T08:00:00Z"), m("butter", "sale", -2000), m("butter", "waste", -200), m("butter", "production", -300), m("butter", "count", -500),
+      m("salz", "sale", -100), m("salz", "count", 50),
+    ], "2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z");
+    const v = variance(rows);
+    expect(v.map((x) => x.ingredientId)).toEqual(["butter", "salz"]);
+    expect(v[0]).toMatchObject({ theoreticalBase: 2500, actualBase: 3000, diffBase: -500, pct: 20 });
+    expect(v[0].diffCents).toBeCloseTo(-5);
+    expect(v[1]).toMatchObject({ theoreticalBase: 100, actualBase: 50, pct: -50 });
+  });
+});

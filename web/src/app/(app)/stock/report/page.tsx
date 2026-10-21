@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { StatTile } from "@/components/ui/stat-tile";
 import { getStockReport, listOutlets } from "@/data/repo";
@@ -31,6 +32,7 @@ export default async function ReportPage({ searchParams }: { searchParams: Promi
         title="Lagerbericht"
         description={`${outlet?.name} · ${formatDay(from)} bis ${formatDay(to)} · Werte zum gleitenden Durchschnittspreis der jeweiligen Buchung.`}
         back={{ href: "/stock", label: "Lager" }}
+        actions={<Link href={`/stock/variance?from=${from}&to=${to}`} className="inline-flex h-(--size-control-md) items-center rounded-md border border-border-input px-4 font-semibold hover:bg-row-hover">Soll-Ist-Vergleich</Link>}
       />
       <div className="flex flex-col gap-6">
         <PeriodPicker from={from} to={to} today={today} presets={[
