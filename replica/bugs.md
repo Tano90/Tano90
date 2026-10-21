@@ -29,8 +29,9 @@ Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jet
 | BUG-020 | S3 | Dialog „Produzieren“ bleibt nach dem Buchen offen und zeigt „0 Anforderungen“ | behoben in 5be2517 |
 | BUG-021 | S3 | Rechnungsseite bei 390 px seitlich 778 px breit | behoben in b6ae12b |
 | BUG-022 | S2 | Angemeldete Nutzer können das Migrations-Protokoll lesen, ändern und leeren | behoben in 2e6fd5b |
+| BUG-023 | S4 | Einblende-Abschnitte blenden beim Laden erst sichtbar aus | behoben mit „build: Branchenseiten“ |
 
-Offen: keine. S1 offen: keine. (22 gefunden, 22 behoben)
+Offen: keine. S1 offen: keine. (23 gefunden, 23 behoben)
 
 ---
 
@@ -373,6 +374,24 @@ Actual: alle Einträge gelöscht. (Beim Reproduzieren lokal tatsächlich geleert
 Evidence: Integrationstest, vor dem Fix rot („promise resolved [] instead of rejecting“).
 Suspected cause: Die Tabelle legt `scripts/migrate.ts` an; sie hatte keine Zeilenrechte und bekam über die Standardrechte aus Migration 0009 alle Rechte für `authenticated`.
 Status: fixed (Migration 0015 schaltet Zeilenrechte an und entzieht `anon`/`authenticated` alle Rechte; `migrate.ts` legt sie für neue Projekte gleich geschlossen an). Gefunden beim Vorbereiten des ersten Supabase-Deploys.
+
+---
+
+### BUG-023: Einblende-Abschnitte blenden beim Laden erst sichtbar aus
+
+- Severity: S4 (für Besucher unsichtbar, weil unterhalb des Bildschirms; der Barrierefreiheits-Scan sah aber halbtransparenten Text)
+- Flow / case: L01-H1, L02-H2 (nur im vollen, parallelen Lauf)
+- Screen: Startseite, Branchenseiten
+- Build: vor „build: Branchenseiten“ · Chromium 1440 px
+
+Steps
+1. Startseite laden, sofort den axe-Scan laufen lassen, während der Rechner ausgelastet ist.
+
+Expected: Abschnitte unterhalb des Bildschirms sind entweder sichtbar oder ganz verborgen.
+Actual: axe meldet zu schwachen Kontrast bei Text, der gerade auf 0 ausgeblendet wird.
+Evidence: 2 Fehler im vollen Lauf (219/221), einzeln grün.
+Suspected cause: `Reveal` hatte den Übergang schon beim Verbergen aktiv, verbarg also über 700 ms statt sofort.
+Status: fixed (Übergang nur beim Einblenden; voller Lauf 221/221).
 
 ---
 

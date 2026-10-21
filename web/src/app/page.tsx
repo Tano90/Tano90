@@ -1,11 +1,15 @@
-import { ArrowRight, BarChart3, BookOpen, Check, ChefHat, ClipboardCheck, CookingPot, Download, Lock, MapPin, MousePointerClick, Package, Plus, Receipt, ReceiptText, ScanBarcode, ShieldCheck, ShoppingCart, Tags, Truck, Users, UtensilsCrossed, WifiOff } from "lucide-react";
+import { ArrowRight, BarChart3, BedDouble, BookOpen, Calculator, Check, ChefHat, ClipboardCheck, CookingPot, Download, Lock, MapPin, MousePointerClick, Package, Plus, Receipt, ReceiptText, ScanBarcode, ShieldCheck, ShoppingCart, Tags, Truck, Users, UtensilsCrossed, WifiOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { LeadForm, ViewBeacon } from "@/components/landing/lead-form";
 import { HeroArt } from "@/components/landing/hero-art";
 import { LiveCalc } from "@/components/landing/live-calc";
+import { CountUp, Reveal } from "@/components/landing/motion";
+import { Scene } from "@/components/landing/scenes";
+import { SiteFooter } from "@/components/landing/site-chrome";
 import { APP_NAME } from "@/lib/brand";
+import { INDUSTRIES } from "@/lib/industries";
 import { formatCents } from "@/lib/format";
 import { LAUNCH_MODE } from "@/lib/launch";
 import { PRICE_TAX_NOTE } from "@/lib/legal";
@@ -26,6 +30,7 @@ const MODULES = [
   { icon: CookingPot, label: "Zentralküche", tone: "carrot" }, { icon: ReceiptText, label: "Rechnungsabgleich", tone: "celery" },
   { icon: ClipboardCheck, label: "HACCP", tone: "accent" }, { icon: BarChart3, label: "Kasse & Menu Engineering", tone: "carrot" },
   { icon: UtensilsCrossed, label: "Menüs mit Stückliste", tone: "celery" }, { icon: Package, label: "Preislisten-Import", tone: "accent" },
+  { icon: Calculator, label: "F&B-Controlling", tone: "carrot" }, { icon: BedDouble, label: "Housekeeping", tone: "celery" },
 ] as const;
 const TONE = { carrot: "bg-carrot text-on-saffron", celery: "bg-celery text-on-saffron", accent: "bg-accent text-on-accent" } as const;
 
@@ -39,7 +44,7 @@ const FACTS = [
   { icon: WifiOff, title: "Zählen ohne Netz", body: "Die Inventur speichert jede Zahl sofort und reicht sie nach, wenn das WLAN zurück ist." },
 ];
 
-const TICKER = ["Wareneinsatz live", "Grundrezepte", "Allergene", "Inventur offline", "Barcode-Scanner", "Zentralküche", "Rechnungsabgleich", "HACCP", "Kassen-Import", "Mindestbestand", "Lagerbericht", "Mehrere Standorte"];
+const TICKER = ["Wareneinsatz live", "Grundrezepte", "Allergene", "Inventur offline", "Barcode-Scanner", "Zentralküche", "Rechnungsabgleich", "HACCP", "Kassen-Import", "Mindestbestand", "Lagerbericht", "Mehrere Standorte", "F&B-Controlling", "Housekeeping"];
 
 const STEPS = [
   { title: "Einkauf erfassen", body: "Zutaten so anlegen, wie dein Lieferant sie verkauft – Karton, Sack, Flasche – mit dem Preis von der Rechnung." },
@@ -83,6 +88,7 @@ export default function LandingPage() {
           <Link href="/" aria-label={`${APP_NAME} Startseite`}><Logo /></Link>
           <nav aria-label="Konto" className="flex items-center gap-5">
             <a href="#funktionen" className="hidden font-semibold text-text-muted hover:text-text md:inline">Funktionen</a>
+            <a href="#branchen" className="hidden font-semibold text-text-muted hover:text-text lg:inline">Branchen</a>
             <a href="#ausprobieren" className="hidden font-semibold text-text-muted hover:text-text md:inline">Ausprobieren</a>
             <a href="#preise" className="hidden font-semibold text-text-muted hover:text-text md:inline">Preise</a>
             <Link href="/login" className="font-semibold hover:underline">Anmelden</Link>
@@ -148,19 +154,62 @@ export default function LandingPage() {
       <main>
         {/* ------------------------------------------------ problem */}
         <section aria-labelledby="problem" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-          <p className="text-sm font-bold uppercase tracking-wide text-accent">Das Problem</p>
-          <h2 id="problem" className="mt-2 max-w-3xl text-xl lg:text-display">Die Kalkulation stimmt am Tag, an dem sie gemacht wird</h2>
+          <Reveal>
+            <p className="text-sm font-bold uppercase tracking-wide text-accent">Das Problem</p>
+            <h2 id="problem" className="mt-2 max-w-3xl text-xl lg:text-display">Die Kalkulation stimmt am Tag, an dem sie gemacht wird</h2>
+          </Reveal>
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             <p className="rounded-lg border border-border bg-surface p-6 text-base text-text-muted">Butter wird teurer, der Lieferant ändert die Gebindegröße, ein Grundrezept bekommt eine Zutat mehr. Die Tabelle von letztem Quartal weiß davon nichts, und der Wareneinsatz auf der Karte ist eine Schätzung.</p>
             <p className="rounded-lg border border-border bg-surface p-6 text-base text-text-muted">Einkauf, Lager und Rezepte liegen in verschiedenen Listen. Wer bestellt, sieht nicht, was noch da ist; wer zählt, weiß nicht, was seit der letzten Inventur geliefert oder weggeworfen wurde.</p>
           </div>
         </section>
 
+        {/* ------------------------------------------------ industries */}
+        <section id="branchen" aria-labelledby="industries" className="bg-cream">
+          <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
+            <Reveal>
+              <p className="text-sm font-bold uppercase tracking-wide text-accent">Für deine Branche</p>
+              <h2 id="industries" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Bistro bis zum Hotel mit Bankett</h2>
+            </Reveal>
+            <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {INDUSTRIES.map((i, n) => (
+                <li key={i.slug}><Reveal delay={n * 100} className="h-full">
+                  <Link href={`/branchen/${i.slug}`} className="group flex h-full flex-col rounded-lg bg-bg p-5 shadow-card transition-transform duration-base hover:-translate-y-1">
+                    <Scene industry={i.slug} className="h-auto w-full transition-transform duration-base group-hover:scale-105" />
+                    <span className="mt-4 text-lg font-bold">{APP_NAME} für {i.name}</span>
+                    <span className="mt-1 flex-1 text-sm text-text-muted">{i.lead}</span>
+                    <span className="mt-4 inline-flex items-center gap-1 font-semibold text-accent">Mehr erfahren <ArrowRight aria-hidden className="size-4 transition-transform duration-fast group-hover:translate-x-1" /></span>
+                  </Link>
+                </Reveal></li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------ numbers, all true of the product today */}
+        <section aria-label="In Zahlen" className="bg-ink text-on-ink">
+          <dl className="mx-auto grid max-w-(--size-content-max) grid-cols-2 gap-8 px-4 py-14 lg:grid-cols-4 lg:px-8">
+            {[
+              { value: 14, suffix: "", label: "EU-Allergene pro Zutat, vererbt auf jedes Gericht" },
+              { value: MODULES.length, suffix: "", label: "Bereiche in einem Abo, ohne Zusatzmodule" },
+              { value: 0, suffix: " €", label: "für jeden weiteren Nutzer im Team" },
+              { value: PRICING.trialDays, suffix: " Tage", label: "kostenlos testen, ohne Kreditkarte" },
+            ].map((x) => (
+              <div key={x.label} className="flex flex-col-reverse justify-end gap-1">
+                <dt className="text-sm text-on-ink-muted">{x.label}</dt>
+                <dd className="num text-display text-saffron"><CountUp value={x.value} suffix={x.suffix} /></dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
         {/* ------------------------------------------------ how */}
         <section aria-labelledby="how" className="bg-surface">
           <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-            <p className="text-sm font-bold uppercase tracking-wide text-accent">So funktioniert es</p>
-            <h2 id="how" className="mt-2 text-xl lg:text-display">In drei Schritten zum echten Wareneinsatz</h2>
+            <Reveal>
+              <p className="text-sm font-bold uppercase tracking-wide text-accent">So funktioniert es</p>
+              <h2 id="how" className="mt-2 text-xl lg:text-display">In drei Schritten zum echten Wareneinsatz</h2>
+            </Reveal>
             <ol className="mt-10 grid gap-6 md:grid-cols-3">
               {STEPS.map((s, i) => (
                 <li key={s.title} className="relative rounded-lg border border-border bg-bg p-6 shadow-card">
@@ -171,7 +220,7 @@ export default function LandingPage() {
               ))}
             </ol>
             <figure className="mt-12 overflow-hidden rounded-lg border border-border shadow-pop">
-              <Image src={shot} alt={`Rezept „Linsensuppe“ in ${APP_NAME}: Zutatenzeilen mit Kosten, daneben Wareneinsatz pro Portion 0,63 € und 8,5 % Wareneinsatz.`} placeholder="blur" sizes="(min-width: 1280px) 1200px, 100vw" />
+              <Image src={shot} alt={`Rezept „Linsensuppe“ in ${APP_NAME}: Zutatenzeilen mit Kosten, daneben Wareneinsatz pro Portion 0,63 € und 8,5 % Wareneinsatz.`} placeholder="blur" className="h-auto w-full" sizes="(min-width: 1280px) 1200px, 100vw" />
               <figcaption className="bg-bg px-4 py-3 text-sm text-text-muted">So sieht ein Rezept in {APP_NAME} aus: Kosten pro Zeile, rechts der Wareneinsatz, während du tippst.</figcaption>
             </figure>
           </div>
@@ -179,8 +228,10 @@ export default function LandingPage() {
 
         {/* ------------------------------------------------ features */}
         <section id="funktionen" aria-labelledby="features" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-          <p className="text-sm font-bold uppercase tracking-wide text-accent">Funktionen</p>
-          <h2 id="features" className="mt-2 max-w-3xl text-xl lg:text-display">Gebaut für die Momente, in denen es sonst schiefgeht</h2>
+          <Reveal>
+            <p className="text-sm font-bold uppercase tracking-wide text-accent">Funktionen</p>
+            <h2 id="features" className="mt-2 max-w-3xl text-xl lg:text-display">Gebaut für die Momente, in denen es sonst schiefgeht</h2>
+          </Reveal>
           <ul className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map(({ icon: Icon, title, body }, i) => (
               <li key={title} className={i === 0 ? "rounded-lg bg-ink p-7 text-on-ink md:col-span-2 lg:row-span-2 lg:p-9" : "rounded-lg border border-border bg-surface p-6 transition-transform duration-base hover:-translate-y-1"}>
@@ -224,8 +275,10 @@ export default function LandingPage() {
 
         {/* ------------------------------------------------ trust, facts only */}
         <section aria-labelledby="facts" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-          <p className="text-sm font-bold uppercase tracking-wide text-accent">Fair und sicher</p>
-          <h2 id="facts" className="mt-2 max-w-2xl text-xl lg:text-display">Worauf du dich verlassen kannst</h2>
+          <Reveal>
+            <p className="text-sm font-bold uppercase tracking-wide text-accent">Fair und sicher</p>
+            <h2 id="facts" className="mt-2 max-w-2xl text-xl lg:text-display">Worauf du dich verlassen kannst</h2>
+          </Reveal>
           <ul className="mt-10 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
             {FACTS.map(({ icon: Icon, title, body }) => (
               <li key={title}>
@@ -318,17 +371,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="bg-ink text-on-ink-muted">
-        <div className="mx-auto flex max-w-(--size-content-max) flex-wrap items-center justify-between gap-4 border-t border-ink-raised px-4 py-8 text-xs font-normal lg:px-8">
-          <span className="flex items-center gap-3"><Logo tone="light" /> <span>© {APP_NAME}</span></span>
-          <nav aria-label="Rechtliches" className="flex flex-wrap gap-x-4 gap-y-1">
-            <Link href="/legal/privacy" className="hover:text-on-ink hover:underline">Datenschutz</Link>
-            <Link href="/legal/terms" className="hover:text-on-ink hover:underline">Nutzungsbedingungen</Link>
-            <Link href="/legal/dpa" className="hover:text-on-ink hover:underline">Auftragsverarbeitung</Link>
-            <Link href="/legal/imprint" className="hover:text-on-ink hover:underline">Impressum</Link>
-          </nav>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

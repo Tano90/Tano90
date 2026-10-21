@@ -106,3 +106,10 @@ erfundenen Kundenstimmen oder Zahlen.
 | **Summe** | **ca. 20 bis 250 €** |
 
 Preise der Anbieter vor dem Abschluss selbst prüfen; sie ändern sich.
+
+## Branchenseiten (neu)
+
+Für Anzeigen und Mails je Zielgruppe direkt auf die passende Seite verlinken, mit `utm_source`, damit die Anfrage
+die Quelle trägt: `/branchen/hotel`, `/branchen/restaurant`, `/branchen/catering`, `/branchen/kantine`.
+Hotels zuerst mit F&B-Controlling und Housekeeping ansprechen; die Seite sagt offen, dass es noch keine
+PMS-Anbindung gibt und Mirepa keine Finanzbuchhaltung ersetzt.
