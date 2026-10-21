@@ -10,7 +10,7 @@ import { productionNeeds, shareCost } from "@/domain/production";
 import { classifyDishes } from "@/domain/menu-engineering";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { recipeNutrition } from "@/domain/nutrition";
-import { type CountBreakdown, countTotal, stockReport, suggestPacks, suggestWeight } from "@/domain/stock";
+import { type CountBreakdown, ORDER_RESERVE_PCT, countTotal, forecastUse, orderCoverDays, stockReport, suggestFromUse, suggestPacks, suggestWeight, weekdayUsage } from "@/domain/stock";
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
@@ -1379,6 +1379,21 @@ export async function orderableItems(s: Session, outletId: string, supplierId: s
         const si = d.stockItems.find((x) => x.id === l.stockItemId)!;
         return sum + (l.quantityPacks - (o.received[l.id] ?? 0)) * packOf(si).quantityBase;
       }, 0);
+  const tz = d.outlets.find((o) => o.id === outletId)?.timezone;
+  const today = dayIn(tz);
+  const coverDays = orderCoverDays(d.suppliers.find((x) => x.id === supplierId)?.leadTimeDays ?? null);
+  const since = Date.now() - 29 * 86_400_000;
+  const forecastOf = (ingredientId: string) => {
+    const days: Record<string, number> = {};
+    for (const m of d.movements) {
+      if (m.outletId !== outletId || m.ingredientId !== ingredientId || m.deltaBase >= 0) continue;
+      const e = d.events.find((x) => x.id === m.eventId);
+      if (!e || e.status !== "closed" || !["sale", "production", "waste"].includes(e.type) || Date.parse(e.occurredAt) < since) continue;
+      const day = dayIn(tz, new Date(e.occurredAt));
+      days[day] = (days[day] ?? 0) - m.deltaBase;
+    }
+    return forecastUse(weekdayUsage(days, today), today, coverDays);
+  };
   return visible(d.stockItems)
     .filter((si) => si.supplierId === supplierId && visibleIds.has(si.ingredientId))
     .map((si) => {
@@ -1388,8 +1403,12 @@ export async function orderableItems(s: Session, outletId: string, supplierId: s
       const packPrice = si.priceType === "per_pack" ? si.priceCents : Math.round(unitCostOf(si) * pack.quantityBase);
       const baseUnit = d.ingredients.find((i) => i.id === si.ingredientId)!.baseUnit;
       const onHand = level?.quantityBase ?? 0;
+      const forecastBase = forecastOf(si.ingredientId);
+      const s2 = suggestFromUse({ forecastBase, reservePct: ORDER_RESERVE_PCT, parBase: oi?.parLevelBase ?? null, onHandBase: onHand, onOrderBase: onOrder(si.ingredientId), packBase: pack.quantityBase });
+      const target = Math.max(forecastBase * (1 + ORDER_RESERVE_PCT / 100), oi?.parLevelBase ?? 0);
       return {
         stockItemId: si.id,
+        forecastBase: Math.round(forecastBase), coverDays, suggestedReason: s2.reason,
         name: si.name,
         baseUnit,
         packageLabel: pack.label,
@@ -1398,9 +1417,7 @@ export async function orderableItems(s: Session, outletId: string, supplierId: s
         packPriceCents: packPrice,
         onHandBase: onHand,
         parLevelBase: oi?.parLevelBase ?? null,
-        suggestedPacks: si.weighted
-          ? suggestWeight(oi?.parLevelBase ?? null, onHand, onOrder(si.ingredientId), baseUnit) / pack.quantityBase
-          : suggestPacks(oi?.parLevelBase ?? null, onHand, onOrder(si.ingredientId), pack.quantityBase),
+        suggestedPacks: si.weighted ? suggestWeight(target || null, onHand, onOrder(si.ingredientId), baseUnit) / pack.quantityBase : s2.packs,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "de"));

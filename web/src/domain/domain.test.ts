@@ -315,3 +315,23 @@ describe("variance (Soll-Ist)", () => {
     expect(v[1]).toMatchObject({ theoreticalBase: 100, actualBase: 50, pct: -50 });
   });
 });
+
+describe("order suggestion from use", () => {
+  it("averages by weekday over four weeks and forecasts the coming days", async () => {
+    const { weekdayUsage, forecastUse, suggestFromUse } = await import("./stock");
+    // 2026-10-21 is a Wednesday. Fridays used 2000 g, Saturdays 3000 g, other days 500 g.
+    const days: Record<string, number> = {};
+    for (let i = 1; i <= 28; i++) {
+      const d = new Date("2026-10-21T12:00:00Z");
+      d.setUTCDate(d.getUTCDate() - i);
+      const wd = (d.getUTCDay() + 6) % 7;
+      days[d.toISOString().slice(0, 10)] = wd === 4 ? 2000 : wd === 5 ? 3000 : 500;
+    }
+    const per = weekdayUsage(days, "2026-10-21");
+    expect(per).toEqual([500, 500, 500, 500, 2000, 3000, 500]);
+    expect(forecastUse(per, "2026-10-21", 3)).toBe(500 + 2000 + 3000); // Thu, Fri, Sat
+    expect(suggestFromUse({ forecastBase: 5500, reservePct: 10, parBase: 2000, onHandBase: 1000, onOrderBase: 0, packBase: 2500 })).toEqual({ packs: 3, reason: "use" });
+    expect(suggestFromUse({ forecastBase: 100, reservePct: 10, parBase: 5000, onHandBase: 1000, onOrderBase: 0, packBase: 2500 })).toEqual({ packs: 2, reason: "par" });
+    expect(suggestFromUse({ forecastBase: 100, reservePct: 10, parBase: null, onHandBase: 1000, onOrderBase: 0, packBase: 2500 })).toEqual({ packs: 0, reason: null });
+  });
+});

@@ -94,3 +94,46 @@ export function variance(rows: ReportRow[]): VarianceRow[] {
     };
   }).filter((v) => Math.abs(v.theoreticalBase) > 1e-9 || Math.abs(v.diffBase) > 1e-9).sort((a, b) => a.diffCents - b.diffCents);
 }
+
+/**
+ * Average use per weekday (0 = Monday … 6 = Sunday) from outgoing movements (sales, production, waste) of the last
+ * `weeks` weeks. `days` holds the use per local day ("YYYY-MM-DD" → base quantity); days without use count as 0.
+ */
+export function weekdayUsage(days: Record<string, number>, today: string, weeks = 4): number[] {
+  const sums = Array(7).fill(0) as number[];
+  for (let i = 1; i <= weeks * 7; i++) {
+    const d = new Date(`${today}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    sums[(d.getUTCDay() + 6) % 7] += days[key] ?? 0;
+  }
+  return sums.map((s) => s / weeks);
+}
+
+/** Expected use from tomorrow over the next `days` days. */
+export function forecastUse(perWeekday: number[], today: string, days: number): number {
+  let total = 0;
+  for (let i = 1; i <= days; i++) {
+    const d = new Date(`${today}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + i);
+    total += perWeekday[(d.getUTCDay() + 6) % 7] ?? 0;
+  }
+  return total;
+}
+
+/**
+ * Order suggestion from sales: enough for the expected use until the delivery after next (lead time + one order
+ * cycle) plus a reserve, or up to the par level, whichever is more; minus stock and what is on order; whole packs.
+ */
+export function suggestFromUse(input: { forecastBase: number; reservePct: number; parBase: number | null; onHandBase: number; onOrderBase: number; packBase: number }): { packs: number; reason: "use" | "par" | null } {
+  const byUse = input.forecastBase * (1 + input.reservePct / 100);
+  const target = Math.max(byUse, input.parBase ?? 0);
+  const need = target - Math.max(input.onHandBase, 0) - input.onOrderBase;
+  if (need <= 1e-9 || input.packBase <= 0) return { packs: 0, reason: null };
+  return { packs: Math.ceil(need / input.packBase - 1e-9), reason: byUse >= (input.parBase ?? 0) ? "use" : "par" };
+}
+
+/** Reserve on top of the expected use. */
+export const ORDER_RESERVE_PCT = 10;
+/** An order covers the supplier's lead time plus one week, so it lasts until the delivery after next. */
+export const orderCoverDays = (leadTimeDays: number | null) => Math.max(1, leadTimeDays ?? 1) + 7;

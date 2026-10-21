@@ -34,7 +34,7 @@ test.describe("F06 Bestellen nach Gewicht", () => {
     const expected = Math.ceil((4000 - Number(l.q)) / 100) * 100; // target 4 kg, rounded up to 100 g
     await page.goto("/orders/new");
     await page.getByRole("combobox", { name: "Lieferant", exact: true }).selectOption({ label: "Frischehof Lindner" });
-    await page.getByRole("button", { name: /Nach Mindestbestand auffüllen/ }).click();
+    await page.getByRole("button", { name: /Vorschlag übernehmen/ }).click();
     await expect(page.getByLabel("Menge in kg Knollensellerie")).toHaveValue(String(expected / 1000).replace(".", ","));
   });
 });

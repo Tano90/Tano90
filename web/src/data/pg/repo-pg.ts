@@ -18,6 +18,7 @@ import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import { type ControllingRow, controlling } from "@/domain/controlling";
 import { STATUS_LABEL, canSetStatus, needsServiceToday } from "@/domain/housekeeping";
 import { DEFAULT_SETTINGS, type HkSettings, type LinenItem, type PlanRow } from "@/domain/linen";
+import { ORDER_RESERVE_PCT, forecastUse, orderCoverDays, suggestFromUse, weekdayUsage } from "@/domain/stock";
 import type { DatevSettings } from "@/domain/datev";
 import type { DatevSetup, EInvoiceSave, InvoiceListRow } from "../finance-types";
 import type { CleaningTime, HkSetup, LinenCountLine, TicketInput, TicketRow, LinenItemInput, LinenMovementRow, LinenOrderInput, LinenOrderMailData, LinenOrderRow, ShiftInput, ShiftRow } from "../linen-types";
@@ -1657,15 +1658,35 @@ export async function orderableItems(s: Session, outletId: string, supplierId: s
       join outlet_ingredients oi on oi.ingredient_id = i.id and oi.outlet_id = ${outletId}
       left join stock_levels sl on sl.ingredient_id = i.id and sl.outlet_id = ${outletId}
       where si.supplier_id = ${supplierId} and si.archived_at is null`;
+    // Use per ingredient and local day over the last four weeks: what sales, production and waste booked out.
+    const [ctx] = await tx<{ timezone: string; leadTimeDays: number | null }[]>`
+      select o.timezone, (select lead_time_days from suppliers where id = ${supplierId}) as lead_time_days from outlets o where o.id = ${outletId}`;
+    const tz = ctx?.timezone ?? "Europe/Berlin";
+    const used = await tx<{ ingredientId: string; day: string; used: number }[]>`
+      select m.ingredient_id, to_char(e.occurred_at at time zone ${tz}, 'YYYY-MM-DD') as day, sum(-m.delta_base)::float as used
+      from stock_movements m join stock_events e on e.id = m.stock_event_id
+      where m.outlet_id = ${outletId} and e.status = 'closed' and e.type in ('sale', 'production', 'waste') and m.delta_base < 0
+        and e.occurred_at >= now() - interval '29 days'
+      group by 1, 2`;
+    const ingredientOf = await tx<{ id: string; ingredientId: string }[]>`select id, ingredient_id from stock_items where supplier_id = ${supplierId}`;
+    const today = dayIn(tz);
+    const coverDays = orderCoverDays(ctx?.leadTimeDays ?? null);
+    const forecastOf = (stockItemId: string) => {
+      const ing = ingredientOf.find((x) => x.id === stockItemId)?.ingredientId;
+      const days = Object.fromEntries(used.filter((u) => u.ingredientId === ing).map((u) => [u.day, u.used]));
+      return forecastUse(weekdayUsage(days, today), today, coverDays);
+    };
     return rows
       .map((r) => {
         const packPrice = r.priceType === "per_pack" ? r.priceCents : Math.round((r.priceCents / (r.priceUnitQuantity || 1)) * r.packBase);
+        const forecastBase = forecastOf(r.stockItemId);
+        const s2 = suggestFromUse({ forecastBase, reservePct: ORDER_RESERVE_PCT, parBase: r.parLevelBase, onHandBase: r.onHandBase ?? 0, onOrderBase: r.onOrderBase, packBase: r.packBase });
+        const target = Math.max(forecastBase * (1 + ORDER_RESERVE_PCT / 100), r.parLevelBase ?? 0);
         return {
           stockItemId: r.stockItemId, name: r.name, baseUnit: r.baseUnit, packageLabel: r.packageLabel, packBase: r.packBase, weighted: r.weighted,
           packPriceCents: packPrice, onHandBase: r.onHandBase ?? 0, parLevelBase: r.parLevelBase,
-          suggestedPacks: r.weighted
-            ? suggestWeight(r.parLevelBase, r.onHandBase ?? 0, r.onOrderBase, r.baseUnit) / r.packBase
-            : suggestPacks(r.parLevelBase, r.onHandBase ?? 0, r.onOrderBase, r.packBase),
+          forecastBase: Math.round(forecastBase), coverDays, suggestedReason: s2.reason,
+          suggestedPacks: r.weighted ? suggestWeight(target || null, r.onHandBase ?? 0, r.onOrderBase, r.baseUnit) / r.packBase : s2.packs,
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name, "de"));

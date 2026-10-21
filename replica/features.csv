@@ -66,3 +66,4 @@ Schäden und Fundsachen mit Foto,hotel,should,no,yes,"Foto im Browser verkleiner
 Reinigungszeit pro Zimmer und Person,hotel,could,no,yes,"Start bis gereinigt; Ø Minuten 30 Tage in der Übersicht"
 Rezepte aus Excel/CSV importieren,library,should,no,yes,"eigene Ergänzung gegen die häufigste Beschwerde (Einrichtung); Grundrezepte in derselben Datei, Vorschau; E2E F39"
 Soll-Ist-Vergleich je Zutat in Euro,inventory,should,no,yes,"Soll aus Verkäufen/Schwund/Produktion, Ist aus Inventur, größte Verluste zuerst; E2E F40"
+Bestellvorschlag aus Verkäufen je Wochentag,procurement,should,no,yes,"4 Wochen Verbrauch je Wochentag bis zur übernächsten Lieferung + 10 % Reserve, mindestens Zielbestand; E2E F06-H2"

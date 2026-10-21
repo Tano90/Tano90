@@ -19,6 +19,7 @@ type SupplierOpt = { value: string; label: string; orderEmail: string | null; mi
 type Item = {
   stockItemId: string; name: string; baseUnit: BaseUnit; packageLabel: string; packBase: number; weighted: boolean;
   packPriceCents: number; onHandBase: number; parLevelBase: number | null; suggestedPacks: number;
+  forecastBase?: number; coverDays?: number; suggestedReason?: "use" | "par" | null;
 };
 // Weighed items are ordered by weight in kg / l (pieces stay pieces); everything else by package.
 const FACTOR: Record<BaseUnit, number> = { g: 1000, ml: 1000, piece: 1 };
@@ -76,7 +77,7 @@ export function OrderForm({ order, suppliers, initialSupplierId, today }: { orde
     let n = 0;
     for (const i of items) if (i.suggestedPacks > 0) { next[i.stockItemId] = shown(i, i.suggestedPacks); n++; }
     setQty(next);
-    toast(n ? `${n} Artikel nach Mindestbestand vorgeschlagen` : "Alles über Mindestbestand – kein Vorschlag nötig");
+    toast(n ? `${n} Artikel vorgeschlagen (aus Verkäufen und Zielbestand)` : "Bestand reicht – kein Vorschlag nötig");
   };
 
   const save = (andSend: boolean) =>
@@ -115,7 +116,7 @@ export function OrderForm({ order, suppliers, initialSupplierId, today }: { orde
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="art" className="text-lg">Artikel</h2>
           <Button variant="secondary" size="sm" onClick={applySuggestion} disabled={!items?.length}>
-            <Sparkles aria-hidden className="size-4" /> Nach Mindestbestand auffüllen
+            <Sparkles aria-hidden className="size-4" /> Vorschlag übernehmen
           </Button>
         </div>
         {loadError && <Notice tone="warning">{loadError}</Notice>}
@@ -141,7 +142,7 @@ export function OrderForm({ order, suppliers, initialSupplierId, today }: { orde
                     <th scope="row" className="px-3 text-left font-normal">
                       {i.name}
                       {i.weighted && <span className="ml-2 text-xs text-text-muted">nach Gewicht</span>}
-                      {i.suggestedPacks > 0 && <span className="ml-2 text-xs text-warning">Vorschlag: {shown(i, i.suggestedPacks)}{i.weighted ? ` ${UNIT[i.baseUnit]}` : ""}</span>}
+                      {i.suggestedPacks > 0 && <span className="ml-2 text-xs text-warning">Vorschlag: {shown(i, i.suggestedPacks)}{i.weighted ? ` ${UNIT[i.baseUnit]}` : ""}{i.suggestedReason === "use" ? ` · Bedarf ${i.coverDays} Tage laut Verkauf: ${formatBase(i.forecastBase ?? 0, i.baseUnit)}` : i.suggestedReason === "par" ? " · bis Zielbestand" : ""}</span>}
                     </th>
                     <td className="num px-3 text-right">{formatBase(i.onHandBase, i.baseUnit)}</td>
                     <td className="num px-3 text-right">{i.parLevelBase ? formatBase(i.parLevelBase, i.baseUnit) : "–"}</td>

@@ -1,4 +1,4 @@
-import { db, expect, outbox, reseed, test } from "./fixtures";
+import { db, expect, outbox, reseed, sid, test } from "./fixtures";
 import type { Page } from "@playwright/test";
 
 const newOrder = async (page: Page, supplier: string) => {
@@ -17,7 +17,7 @@ test.describe("F06 Bestellen", () => {
   test("F06-H1 Vorschlag nach Mindestbestand, senden, eine Mail", async ({ page, axe }) => {
     const before = mailsTo("order@talblick.example").length;
     await newOrder(page, "Molkerei Talblick");
-    await page.getByRole("button", { name: /Nach Mindestbestand auffüllen/ }).click();
+    await page.getByRole("button", { name: /Vorschlag übernehmen/ }).click();
     await expect(page.getByLabel(/Anzahl .*Speisequark/)).toHaveValue("1");
     await axe();
     await page.getByRole("button", { name: "Bestellung senden" }).click();
@@ -30,6 +30,19 @@ test.describe("F06 Bestellen", () => {
     expect(mails.length).toBe(before + 1);
     expect(mails.at(-1)!.subject).toContain(number);
     expect(mails.at(-1)!.text).toContain("Speisequark");
+  });
+
+  test("F06-H2 Vorschlag aus den Verkäufen der letzten Wochen", async ({ page }) => {
+    // 1 l cream sold every day for four weeks; Molkerei delivers next day → covers 1 + 7 days: 8 l + 10 % reserve.
+    const [{ id: ing }] = await db()`select id from ingredients where name = 'Schlagsahne 30 %'`;
+    for (let i = 1; i <= 28; i++) {
+      const [{ id }] = await db()`insert into stock_events (library_id, outlet_id, type, status, occurred_at) values (${sid("lib-demo")}, ${sid("out-mitte")}, 'sale', 'closed', now() - ${`${i} days`}::interval) returning id`;
+      await db()`insert into stock_movements (stock_event_id, outlet_id, ingredient_id, delta_base, unit_cost_cents) values (${id}, ${sid("out-mitte")}, ${ing}, -1000, 0.35)`;
+    }
+    await newOrder(page, "Molkerei Talblick");
+    await expect(page.getByRole("row", { name: /Schlagsahne/ })).toContainText("Bedarf 8 Tage laut Verkauf");
+    await page.getByRole("button", { name: /Vorschlag übernehmen/ }).click();
+    await expect(page.getByLabel(/Anzahl .*Schlagsahne/)).toHaveValue("9");
   });
 
   test("F06-E1 Doppelklick auf Senden verschickt eine Mail", async ({ page }) => {
