@@ -53,3 +53,8 @@ F&B-Controlling je Kostenstelle mit CSV für die Buchhaltung,analytics,should,no
 "Housekeeping (Zimmerstatus, Belegung, Zuteilung, Checkliste)",hotel,should,no,yes,"eigene Ergänzung; ohne PMS-Anbindung, Belegung von Hand; Migration 0017, E2E F34"
 Branchenseiten Hotel/Restaurant/Catering/Kantine,marketing,could,no,yes,"/branchen/[slug], eigene Illustrationen, E2E L02"
 Add-ons buchen und abbestellen (Housekeeping, F&B-Controlling),billing,should,no,yes,"eigene Ergänzung; Testphase frei, danach gesperrt bis gebucht; Migration 0018, E2E F35"
+"Housekeeping-Übersicht (Belegung, Personal, Wäsche, Kosten)",hotel,should,no,yes,"eigene Ergänzung; /housekeeping/dashboard, Hinweise, 2 Diagramme mit Tabellenansicht; E2E F36"
+Wäschelager und Zählung mit Verbrauch und Schwund,hotel,should,no,yes,"Verbrauch = erwarteter − gezählter Bestand; Abweichung gegen Belegung; Migration 0019"
+Wäschebestellung mit Prognose aus Belegung,hotel,should,no,yes,"Anreisen/Abreisen/Bleiber je Zimmertyp, Wechselrhythmus, Set je Zimmertyp, Reserve, Packungen; Mail an Wäscherei"
+Belegungsplan mit CSV-Import aus dem Hotelprogramm,hotel,should,no,yes,"keine PMS-Schnittstelle; CSV Datum;Zimmertyp;Anreisen;Abreisen;Bleiber"
+Dienstplan Housekeeping mit Personalbedarf,hotel,should,no,yes,"Schichten je Tag, auch Personen ohne Konto, Vorwoche übernehmen, Bedarf aus Minuten je Zimmer"

@@ -1,5 +1,3 @@
-import { AddonLocked, AddonTrialHint, addonState } from "@/components/app/addon-gate";
-import { PageHeader } from "@/components/app/page-header";
 import { listOutlets, listRooms } from "@/data/repo";
 import { canEditLibrary, currentOutletId, requireSession } from "@/data/session";
 import { HousekeepingBoard } from "./board";
@@ -9,15 +7,12 @@ export const dynamic = "force-dynamic";
 
 export default async function HousekeepingPage() {
   const s = await requireSession();
-  const addon = await addonState(s, "housekeeping");
-  if (!addon.open) return (<><PageHeader title="Housekeeping" /><AddonLocked addon="housekeeping" s={s} /></>);
   const outletId = await currentOutletId(s);
   const outlet = (await listOutlets(s)).find((o) => o.id === outletId);
   const data = await listRooms(s, outletId);
   return (
     <>
-      <PageHeader title="Housekeeping" description={`${outlet?.name ?? ""}: Zimmerstatus, Zuteilung und Reinigung. Die Leitung kontrolliert und gibt frei.`} />
-      {addon.trial && <AddonTrialHint addon="housekeeping" />}
+      <p className="-mt-2 mb-4 text-text-muted">{outlet?.name}: Zimmerstatus, Zuteilung und Reinigung. Die Leitung kontrolliert und gibt frei.</p>
       <HousekeepingBoard
         rooms={data.rooms.map((r) => ({ ...r, updatedAt: new Date(r.updatedAt).toISOString() }))}
         checklist={data.checklist}

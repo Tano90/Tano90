@@ -6,7 +6,7 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import { parseSalesCsv } from "@/domain/pos";
 import { applyImport, planImport } from "@/lib/price-import";
-import { zoneOffsetMinutes } from "@/lib/dates";
+import { addDays, zoneOffsetMinutes } from "@/lib/dates";
 import { headers } from "next/headers";
 import * as repo from "@/data/repo";
 import { Forbidden, OUTLET_COOKIE, SESSION_COOKIE, authMode, canEditLibrary, canManageBilling, currentOutletId, currentUser, demoAllowed, requireSession } from "@/data/session";
@@ -17,7 +17,8 @@ import { type AddonKey, addonLockedMessage, addonOpen, isAddonKey } from "@/doma
 import { parseRoomNumbers } from "@/domain/housekeeping";
 import { billingConfigured, changeAddon, createCheckout, createPortal, syncOutletQuantity } from "@/lib/billing";
 import { sendMail } from "@/lib/mail";
-import { invitationMail, leadNotifyMail, leadThanksMail, orderMail } from "@/lib/mail-templates";
+import { invitationMail, leadNotifyMail, leadThanksMail, linenOrderMail, orderMail } from "@/lib/mail-templates";
+import { parsePlanCsv } from "@/domain/linen";
 import { APP_NAME } from "@/lib/brand";
 import { OPERATOR } from "@/lib/legal";
 import { isOperator } from "@/lib/operator";
@@ -575,6 +576,114 @@ export async function archiveRoom(roomId: string) {
 }
 export async function saveHkChecklist(labels: string[]) {
   return run((s) => repo.saveHkChecklist(s, z.array(z.string().trim().min(1).max(120)).max(40, "Höchstens 40 Punkte.").parse(labels.filter((l) => l.trim()))), ["/housekeeping"], HK);
+}
+
+const HK_PATHS = ["/housekeeping", "/housekeeping/dashboard", "/housekeeping/belegung", "/housekeeping/waesche", "/housekeeping/dienstplan"];
+const count = (max: number) => z.number().int("Bitte ganze Zahlen eingeben.").min(0, "Keine negativen Zahlen.").max(max, `Höchstens ${max}.`);
+const roomType = z.string().trim().max(60);
+const HkSettingsSchema = z.object({
+  bedEveryDays: z.number().int().min(1).max(14), bathEveryDays: z.number().int().min(1).max(14),
+  minutesDeparture: z.number().int().min(1, "Minuten pro Abreise: mindestens 1.").max(240), minutesStayover: z.number().int().min(0).max(240), minutesArrival: z.number().int().min(0).max(240),
+  safetyPct: z.number().int().min(0).max(100), coverDays: z.number().int().min(1).max(28),
+});
+const PlanRowSchema = z.object({ day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Ungültiges Datum."), roomType, arrivals: count(5000), departures: count(5000), stayovers: count(5000) });
+const LinenItemSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().trim().min(1, "Bitte einen Namen angeben.").max(80, "Der Name ist zu lang (max. 80 Zeichen)."),
+  kind: z.enum(["bed", "bath", "other"]),
+  priceCents: z.number().int().min(0, "Preise dürfen nicht negativ sein.").max(100000),
+  packSize: z.number().int().min(1, "Packungsgröße mindestens 1.").max(1000),
+  sets: z.array(z.object({ roomType, qty: z.number().int().min(1).max(50) })).max(50),
+});
+const ShiftSchema = z.object({
+  id: z.string().optional(), day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Bitte einen Tag wählen."),
+  membershipId: z.string().nullable(), person: z.string().trim().min(1, "Bitte eine Person wählen oder einen Namen eingeben.").max(80),
+  starts: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Beginn als Uhrzeit, z. B. 07:00."), ends: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Ende als Uhrzeit, z. B. 15:30."),
+  breakMinutes: z.number().int().min(0).max(240),
+}).refine((v) => v.ends > v.starts, { message: "Das Ende muss nach dem Beginn liegen." });
+
+export async function saveHkSettings(input: z.input<typeof HkSettingsSchema>) {
+  return run(async (s) => repo.saveHkSettings(s, await currentOutletId(s), HkSettingsSchema.parse(input)), HK_PATHS, HK);
+}
+export async function saveLinenItem(input: z.input<typeof LinenItemSchema>) {
+  return run(async (s) => {
+    const v = LinenItemSchema.parse(input);
+    return repo.saveLinenItem(s, await currentOutletId(s), { ...v, sets: [...new Map(v.sets.map((l) => [l.roomType, l])).values()] });
+  }, HK_PATHS, HK);
+}
+export async function archiveLinenItem(itemId: string) {
+  return run((s) => repo.archiveLinenItem(s, id.parse(itemId)), HK_PATHS, HK);
+}
+export async function saveOccupancyPlan(rows: z.input<typeof PlanRowSchema>[]) {
+  return run(async (s) => repo.saveOccupancyPlan(s, await currentOutletId(s), z.array(PlanRowSchema).max(2000).parse(rows)), HK_PATHS, HK);
+}
+/** A PMS report as CSV. Nothing is saved when a row cannot be read. */
+export async function importOccupancyCsv(text: string) {
+  return run(async (s) => {
+    const { rows, errors } = parsePlanCsv(z.string().max(500_000, "Die Datei ist zu groß.").parse(text));
+    if (errors.length) throw new Error(errors.slice(0, 5).join(" "));
+    if (!rows.length) throw new Error("Die Datei enthält keine Zeilen.");
+    return repo.saveOccupancyPlan(s, await currentOutletId(s), z.array(PlanRowSchema).max(2000, "Höchstens 2000 Zeilen pro Datei.").parse(rows));
+  }, HK_PATHS, HK);
+}
+export async function countLinen(lines: { itemId: string; counted: number; discarded: number }[]) {
+  return run(async (s) => repo.countLinen(s, await currentOutletId(s), z.array(z.object({ itemId: id, counted: count(1_000_000), discarded: count(1_000_000) })).min(1, "Bitte mindestens einen Artikel zählen.").max(500).parse(lines)), HK_PATHS, HK);
+}
+export async function saveLinenOrder(input: { supplierId: string | null; deliveryDay: string; note: string; lines: { itemId: string; qty: number }[] }) {
+  return run(async (s) => repo.saveLinenOrder(s, await currentOutletId(s), {
+    supplierId: input.supplierId ? id.parse(input.supplierId) : null,
+    deliveryDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Bitte einen Liefertag wählen.").parse(input.deliveryDay),
+    note: shortText(500).parse(input.note),
+    lines: z.array(z.object({ itemId: id, qty: count(100_000) })).max(500).parse(input.lines),
+  }), HK_PATHS, HK);
+}
+export async function sendLinenOrder(orderId: string) {
+  return run(async (s) => {
+    const order = (await repo.listLinenOrders(s, await currentOutletId(s))).find((o) => o.id === id.parse(orderId));
+    if (!order) throw new Error("Bestellung nicht gefunden.");
+    if (order.status !== "draft") return { mailed: false };
+    const supplier = order.supplierId ? (await repo.getSupplier(s, order.supplierId))?.supplier : null;
+    const to = supplier?.orderEmail ?? null;
+    if (to) {
+      if (!(await allow(`order-mail:${s.libraryId}`, 100, 3600))) throw new RateLimited();
+      const outletId = await currentOutletId(s);
+      const outlet = (await repo.listOutlets(s)).find((o) => o.id === outletId);
+      // Mail first, then mark as sent; the order id is the idempotency key, so a retry mails exactly once.
+      await sendMail({
+        to, replyTo: s.email, idempotencyKey: `linen-order-${order.id}`,
+        ...linenOrderMail({ libraryName: (await repo.getLibrary(s)).name, outletName: outlet?.name ?? "", deliveryDay: order.deliveryDay, note: order.note, lines: order.lines }),
+      });
+    }
+    await repo.sendLinenOrder(s, order.id);
+    return { mailed: !!to };
+  }, HK_PATHS, HK);
+}
+export async function receiveLinenOrder(orderId: string) {
+  return run((s) => repo.receiveLinenOrder(s, id.parse(orderId)), HK_PATHS, HK);
+}
+export async function deleteLinenOrder(orderId: string) {
+  return run((s) => repo.deleteLinenOrder(s, id.parse(orderId)), HK_PATHS, HK);
+}
+export async function saveShift(input: z.input<typeof ShiftSchema>) {
+  return run(async (s) => {
+    const v = ShiftSchema.parse(input);
+    return repo.saveShift(s, await currentOutletId(s), { ...v, membershipId: v.membershipId || null });
+  }, HK_PATHS, HK);
+}
+/** Copies last week's shifts into the week starting `weekStart` (a Monday); days that already have shifts are skipped. */
+export async function copyShiftWeek(weekStart: string) {
+  return run(async (s) => {
+    const start = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).parse(weekStart);
+    const outletId = await currentOutletId(s);
+    const [prev, current] = await Promise.all([repo.listShifts(s, outletId, addDays(start, -7), addDays(start, -1)), repo.listShifts(s, outletId, start, addDays(start, 6))]);
+    const busy = new Set(current.map((x) => x.day));
+    const copy = prev.filter((x) => !busy.has(addDays(x.day, 7)));
+    for (const x of copy) await repo.saveShift(s, outletId, { day: addDays(x.day, 7), membershipId: x.membershipId, person: x.person, starts: x.starts, ends: x.ends, breakMinutes: x.breakMinutes });
+    return copy.length;
+  }, HK_PATHS, HK);
+}
+export async function deleteShift(shiftId: string) {
+  return run((s) => repo.deleteShift(s, id.parse(shiftId)), HK_PATHS, HK);
 }
 
 // ---------------------------------------------------------------- HACCP

@@ -16,6 +16,8 @@ import { accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import { controlling } from "@/domain/controlling";
 import { STATUS_LABEL, canSetStatus, needsServiceToday } from "@/domain/housekeeping";
+import { DEFAULT_SETTINGS, type HkSettings, type PlanRow } from "@/domain/linen";
+import type { HkSetup, LinenCountLine, LinenItemInput, LinenMovementRow, LinenOrderInput, LinenOrderMailData, LinenOrderRow, ShiftInput, ShiftRow } from "./linen-types";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
 import type { SaleInput } from "@/domain/pos";
@@ -1496,4 +1498,202 @@ export async function dashboard(s: Session, outletId: string) {
     draftOrders: counts.draft,
     wasteCents,
   };
+}
+
+// ---------------------------------------------------------------- housekeeping: linen, occupancy plan, roster
+
+const editor = (s: Session) => {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+};
+const linenItem = (outletId: string, id: string) => {
+  const item = db().linenItems.find((i) => i.id === id && i.outletId === outletId && !i.archivedAt);
+  if (!item) throw new Error("Wäscheartikel nicht gefunden.");
+  return item;
+};
+
+export async function getHkSetup(s: Session, outletId: string): Promise<HkSetup> {
+  assertOutlet(s, outletId);
+  const d = db();
+  const items = d.linenItems.filter((i) => i.outletId === outletId && !i.archivedAt).sort((a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name, "de"));
+  const types = [...d.rooms.filter((r) => r.outletId === outletId && !r.archivedAt).map((r) => r.roomType ?? ""), ...items.flatMap((i) => i.sets.map((l) => l.roomType))];
+  return {
+    settings: d.hkSettings[outletId] ?? DEFAULT_SETTINGS,
+    items: items.map(({ outletId: _o, archivedAt: _a, ...i }) => ({ ...i, sets: [...i.sets] })),
+    roomTypes: [...new Set(["", ...types])].sort((a, b) => a.localeCompare(b, "de")),
+    people: hkStaff(s, outletId).map(({ id, name }) => ({ id, name })),
+  };
+}
+
+export async function saveHkSettings(s: Session, outletId: string, v: HkSettings) {
+  editor(s);
+  assertOutlet(s, outletId);
+  db().hkSettings[outletId] = { ...v };
+}
+
+export async function saveLinenItem(s: Session, outletId: string, input: LinenItemInput): Promise<string> {
+  editor(s);
+  assertOutlet(s, outletId);
+  const d = db();
+  const taken = d.linenItems.find((i) => i.outletId === outletId && !i.archivedAt && i.id !== input.id && i.name.toLowerCase() === input.name.toLowerCase());
+  if (taken) throw new Error("Einen Wäscheartikel mit diesem Namen gibt es schon.");
+  if (input.id) {
+    const item = linenItem(outletId, input.id);
+    Object.assign(item, { name: input.name, kind: input.kind, priceCents: input.priceCents, packSize: input.packSize, sets: input.sets });
+    return item.id;
+  }
+  const id = newId("lin");
+  d.linenItems.push({ id, outletId, name: input.name, kind: input.kind, priceCents: input.priceCents, packSize: input.packSize, stockClean: 0, sets: input.sets, archivedAt: null });
+  return id;
+}
+
+export async function archiveLinenItem(s: Session, itemId: string) {
+  editor(s);
+  const item = db().linenItems.find((i) => i.id === itemId && !i.archivedAt);
+  if (!item) throw new Error("Wäscheartikel nicht gefunden.");
+  assertOutlet(s, item.outletId);
+  item.archivedAt = now();
+}
+
+export async function getOccupancyPlan(s: Session, outletId: string, from: string, to: string): Promise<PlanRow[]> {
+  assertOutlet(s, outletId);
+  return db().occupancy.filter((r) => r.outletId === outletId && r.day >= from && r.day <= to)
+    .sort((a, b) => a.day.localeCompare(b.day) || a.roomType.localeCompare(b.roomType))
+    .map(({ outletId: _o, ...r }) => ({ ...r }));
+}
+
+export async function saveOccupancyPlan(s: Session, outletId: string, rows: PlanRow[]): Promise<number> {
+  editor(s);
+  assertOutlet(s, outletId);
+  const d = db();
+  for (const r of rows) {
+    d.occupancy = d.occupancy.filter((x) => !(x.outletId === outletId && x.day === r.day && x.roomType === r.roomType));
+    if (r.arrivals || r.departures || r.stayovers) d.occupancy.push({ ...r, outletId });
+  }
+  return rows.length;
+}
+
+export async function countLinen(s: Session, outletId: string, lines: LinenCountLine[]): Promise<number> {
+  assertOutlet(s, outletId);
+  const d = db();
+  let n = 0;
+  for (const l of lines) {
+    const item = d.linenItems.find((i) => i.id === l.itemId && i.outletId === outletId && !i.archivedAt);
+    if (!item) continue;
+    let before = item.stockClean;
+    if (l.discarded > 0) {
+      if (!canEditLibrary(s.role)) throw new Error("Aussondern trägt die Leitung ein.");
+      d.linenMovements.push({ outletId, itemId: item.id, kind: "discard", qty: l.discarded, before, priceCents: item.priceCents, at: now() });
+      before = Math.max(0, before - l.discarded);
+    }
+    d.linenMovements.push({ outletId, itemId: item.id, kind: "count", qty: l.counted, before, priceCents: item.priceCents, at: now() });
+    item.stockClean = l.counted;
+    n++;
+  }
+  return n;
+}
+
+export async function listLinenMovements(s: Session, outletId: string, since: string): Promise<LinenMovementRow[]> {
+  assertOutlet(s, outletId);
+  return db().linenMovements.filter((m) => m.outletId === outletId && m.at >= since).map(({ outletId: _o, ...m }) => ({ ...m }));
+}
+
+export async function listLinenOrders(s: Session, outletId: string): Promise<LinenOrderRow[]> {
+  assertOutlet(s, outletId);
+  return db().linenOrders.filter((o) => o.outletId === outletId)
+    .sort((a, b) => Number(a.status === "received") - Number(b.status === "received") || b.deliveryDay.localeCompare(a.deliveryDay) || b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 40).map(({ outletId: _o, ...o }) => ({ ...o, lines: o.lines.map((l) => ({ ...l })) }));
+}
+
+export async function saveLinenOrder(s: Session, outletId: string, input: LinenOrderInput): Promise<string> {
+  editor(s);
+  assertOutlet(s, outletId);
+  const d = db();
+  const supplier = input.supplierId ? d.suppliers.find((x) => x.id === input.supplierId) : null;
+  if (input.supplierId && !supplier) throw new Error("Lieferant nicht gefunden.");
+  const lines = input.lines.filter((l) => l.qty > 0).flatMap((l) => {
+    const item = d.linenItems.find((i) => i.id === l.itemId && i.outletId === outletId && !i.archivedAt);
+    return item ? [{ itemId: item.id, name: item.name, qty: l.qty, priceCents: item.priceCents }] : [];
+  });
+  if (!lines.length) throw new Error("Die Bestellung hat keine Positionen.");
+  const id = newId("lio");
+  d.linenOrders.push({ id, outletId, supplierId: supplier?.id ?? null, supplierName: supplier?.companyName ?? null, deliveryDay: input.deliveryDay, status: "draft", note: input.note, createdAt: now(), lines });
+  return id;
+}
+
+const linenOrder = (s: Session, orderId: string) => {
+  const o = db().linenOrders.find((x) => x.id === orderId);
+  if (!o) throw new Error("Bestellung nicht gefunden.");
+  assertOutlet(s, o.outletId);
+  return o;
+};
+
+export async function sendLinenOrder(s: Session, orderId: string): Promise<LinenOrderMailData & { alreadySent: boolean }> {
+  editor(s);
+  const d = db();
+  const o = linenOrder(s, orderId);
+  const supplier = d.suppliers.find((x) => x.id === o.supplierId);
+  const data = {
+    to: supplier?.orderEmail ?? null, supplierName: o.supplierName, outletName: d.outlets.find((x) => x.id === o.outletId)?.name ?? "", libraryName: d.library.name,
+    deliveryDay: o.deliveryDay, note: o.note, lines: o.lines.map(({ name, qty, priceCents }) => ({ name, qty, priceCents })), status: o.status,
+  };
+  if (o.status !== "draft") return { ...data, alreadySent: true };
+  o.status = "sent";
+  return { ...data, alreadySent: false };
+}
+
+export async function receiveLinenOrder(s: Session, orderId: string): Promise<number> {
+  editor(s);
+  const d = db();
+  const o = linenOrder(s, orderId);
+  if (o.status === "received") throw new Error("Diese Lieferung ist schon gebucht.");
+  for (const l of o.lines) {
+    const item = d.linenItems.find((i) => i.id === l.itemId);
+    if (!item) continue;
+    d.linenMovements.push({ outletId: o.outletId, itemId: item.id, kind: "received", qty: l.qty, before: item.stockClean, priceCents: l.priceCents, at: now() });
+    item.stockClean += l.qty;
+  }
+  o.status = "received";
+  return o.lines.reduce((n, l) => n + l.qty, 0);
+}
+
+export async function deleteLinenOrder(s: Session, orderId: string) {
+  editor(s);
+  const d = db();
+  const o = d.linenOrders.find((x) => x.id === orderId);
+  if (!o) return;
+  assertOutlet(s, o.outletId);
+  if (o.status !== "draft") throw new Error("Nur Entwürfe können gelöscht werden.");
+  d.linenOrders = d.linenOrders.filter((x) => x.id !== orderId);
+}
+
+export async function listShifts(s: Session, outletId: string, from: string, to: string): Promise<ShiftRow[]> {
+  assertOutlet(s, outletId);
+  return db().hkShifts.filter((x) => x.outletId === outletId && x.day >= from && x.day <= to)
+    .sort((a, b) => a.day.localeCompare(b.day) || a.starts.localeCompare(b.starts) || a.person.localeCompare(b.person, "de"))
+    .map(({ outletId: _o, ...x }) => ({ ...x }));
+}
+
+export async function saveShift(s: Session, outletId: string, input: ShiftInput): Promise<string> {
+  editor(s);
+  assertOutlet(s, outletId);
+  const d = db();
+  const values = { day: input.day, membershipId: input.membershipId, person: input.person, starts: input.starts, ends: input.ends, breakMinutes: input.breakMinutes };
+  if (input.id) {
+    const shift = d.hkShifts.find((x) => x.id === input.id && x.outletId === outletId);
+    if (!shift) throw new Error("Schicht nicht gefunden.");
+    Object.assign(shift, values);
+    return shift.id;
+  }
+  const id = newId("shf");
+  d.hkShifts.push({ id, outletId, ...values });
+  return id;
+}
+
+export async function deleteShift(s: Session, shiftId: string) {
+  editor(s);
+  const d = db();
+  const shift = d.hkShifts.find((x) => x.id === shiftId);
+  if (!shift) return;
+  assertOutlet(s, shift.outletId);
+  d.hkShifts = d.hkShifts.filter((x) => x.id !== shiftId);
 }

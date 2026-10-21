@@ -52,6 +52,9 @@
   --color-onion: #fff8ec;
   --color-wood: #d9a36a;
   --color-wood-dark: #b9824a;
+  --color-chart-1: #7a2e6e;
+  --color-chart-2: #ec7a2c;
+  --color-chart-3: #2f6fc0;
   --font-sans: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --text-xs: 0.75rem;

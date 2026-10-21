@@ -25,5 +25,8 @@ export const {
   getInvoice, saveInvoice, approveInvoice, listChecklists, getHaccpDay, saveHaccpRecords, haccpDeviations, saveChecklist, archiveChecklist, getMenuEngineering, importSales, importSalesWithKey, listPosItems, linkPosItem, listApiKeys, createApiKey, revokeApiKey,
   dashboard, exportLibrary,
   listRooms, createRooms, updateRoom, assignRooms, startHousekeepingDay, archiveRoom, saveHkChecklist,
+  getHkSetup, saveHkSettings, saveLinenItem, archiveLinenItem, getOccupancyPlan, saveOccupancyPlan, countLinen, listLinenMovements,
+  listLinenOrders, saveLinenOrder, sendLinenOrder, receiveLinenOrder, deleteLinenOrder, listShifts, saveShift, deleteShift,
 } = impl;
+export type * from "./linen-types";
 export type { Billing, ChecklistDraft, RoomPatch, HaccpEntry, IngredientFilter, ProductionInput, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "./repo-memory";
