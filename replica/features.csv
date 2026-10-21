@@ -29,13 +29,13 @@ Zubereitungsschritte und Produktionszeit / Personalkosten,recipes,should,yes,yes
 Sichtbarkeit von Zutaten pro Outlet,inventory,should,yes,yes,"S04; Tab „Outlets“: pro Outlet führen oder ausblenden, abgelehnt solange Bestand liegt; E2E f22"
 Transfer zwischen Outlets,inventory,should,yes,yes,"S18 F10; Wert zum Durchschnittspreis des Senders, Empfänger sieht eingehende Umbuchungen (Migration 0007); E2E f10"
 Par-Level und Bestellvorschlag,procurement,should,yes,yes,"S13 S16; Mindest- und Zielbestand pro Outlet im Lager bearbeitbar, Vorschlag füllt bis Ziel auf; E2E f19"
-Gewogene Artikel (Bestellung nach Gewicht),procurement,should,yes,partial,Quelle 10; Kennzeichen und Gewicht beim Wareneingang; Bestellen nach Gewicht fehlt
+Gewogene Artikel (Bestellung nach Gewicht),procurement,should,yes,yes,"Quelle 10; S13: gewogene Artikel in kg/l bestellen, Vorschlag nach Gewicht, Gewicht in Mail und Wareneingang; E2E f27"
 Lagerbericht mit Bewegungen und Zähldifferenzen,inventory,should,yes,yes,"S20; Zeitraum mit Schnellwahl, je Zutat Anfang/Eingang/Umbuchung/Verkauf/Schwund/Inventur/Ende/Wert, Summen, CSV-Export; Tagesgrenzen in der Zeitzone des Outlets; E2E f10"
-Excel-Import für Gebinde und Preise,library,should,yes,no,S26
+Excel-Import für Gebinde und Preise,library,should,yes,yes,"S26; Excel (.xlsx) oder CSV, Vorlage, Vorschau je Zeile (neu/geändert/unverändert/Fehler), Übernahme in Teilen über dieselben Funktionen wie der Editor (Preis-Historie); E2E f12"
 Generischer POS-Import (CSV/API) und PLU-Mapping,pos,should,yes,yes,"S21 F11; CSV-Import (deutsch/englisch, Fehler je Zeile, wiederholbar) und POST /api/pos/sales mit Outlet-Schlüssel; PLU → Rezept oder ignorieren; E2E f11, Integrationstests"
 Lagerabzug durch Verkäufe bis auf Rohware,pos,should,yes,yes,"F11; verknüpfte Verkäufe buchen die Zutaten über alle Unterrezepte ab, ein Verkaufs-Ereignis pro Tag; wartende Verkäufe werden beim Verknüpfen nachgebucht; Stornos noch nicht"
 Dashboard mit KPIs,analytics,should,yes,yes,S02
-Menu Engineering Matrix (Beliebtheit × Marge),analytics,could,yes,no,S22
+Menu Engineering Matrix (Beliebtheit × Marge),analytics,could,yes,yes,"S22; aus Kassenverkäufen verknüpfter Gerichte, Matrix (Streudiagramm) plus Tabelle und Empfehlungen je Gruppe; E2E f26"
 Rechnungsabgleich 3-Way-Match,procurement,could,yes,no,S15 F12
 Mobile Inventur mit Barcode-Scan,inventory,could,yes,no,S17 mobil
 Zählen per Sprache,inventory,could,yes,no,Quelle 35

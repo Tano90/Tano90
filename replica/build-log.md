@@ -22,7 +22,7 @@ Originals vorhanden, daher kein Layoutvergleich.
 | S10 | Lieferanten | 2026-10-20 | done | – | Archivieren muss offene Bestellungen ablehnen und die Preise mit archivieren |
 | S11 | Lieferant | 2026-10-20 | done | Sortiment direkt hier pflegen (geht über die Zutat) | – |
 | S12 | Bestellungen | 2026-10-20 | done | – | – |
-| S13 | Neue Bestellung | 2026-10-20 | partial | E-Mail an den Lieferanten (nur Status), Bestell-PDF | – |
+| S13 | Neue Bestellung | 2026-10-20 | partial | E-Mail an den Lieferanten (nur Status), Bestell-PDF | seit 5. Durchgang: gewogene Artikel nach Gewicht (kg/l), gespeichert als Bruchteil des Gebindes |
 | S14 | Wareneingang | 2026-10-20 | done | Ersatzartikel, Mehrlieferung | **Fehler gefunden und behoben:** nach einer Teillieferung behielt das Formular alte Werte, ein zweites Erfassen hätte doppelt gebucht. Formular setzt sich jetzt zurück, der Server lehnt Überlieferungen ab. |
 | S15 | Rechnungsabgleich | – | stub | alles | – |
 | S16 | Lager | 2026-10-20 | done | – | Mindest- und Zielbestand pro Zeile im Dialog, in kg/l/Stk. statt Basiseinheit |
@@ -30,15 +30,19 @@ Originals vorhanden, daher kein Layoutvergleich.
 | S18 | Umbuchung | 2026-10-20 | done | – | Empfangendes Outlet durfte das Ereignis nicht lesen (RLS) und den Namen des Senders nicht: Migration 0007 und Namen über den Dienstzugang nur für sichtbare Ereignisse |
 | S19 | Schwund | 2026-10-20 | done | – | – |
 | S20 | Lagerbericht | 2026-10-20 | done | – | Tagesgrenzen in der Zeitzone des Outlets inkl. Zeitumstellung; „−0,00 €“ kam aus negativer Null |
-| S21 | Kassen-Anbindung | 2026-10-20 | done | Stornos (negative Mengen), Excel-Import | Größer als gedacht: Parser, API mit Schlüsseln, Abbuchung über Stückliste, Nachbuchen beim Verknüpfen, parallele Importe. Eine vor der Hydrierung gewählte Datei ging verloren (FileUpload holt sie jetzt nach) |
-| S22 | Menu Engineering | – | stub | alles | – |
+| S21 | Kassen-Anbindung | 2026-10-20 | done | Excel-Import für Verkäufe | Größer als gedacht: Parser, API mit Schlüsseln, Abbuchung über Stückliste, Nachbuchen beim Verknüpfen, parallele Importe. Eine vor der Hydrierung gewählte Datei ging verloren (FileUpload holt sie jetzt nach) Seit 5. Durchgang: Stornos buchen zum Durchschnittspreis zurück. |
+| S22 | Menu Engineering | 2026-10-21 | done | – | Konstanten aus einem Client-Modul (wie beim Etikett) und Diagrammtext, der auf dem Handy auf 7 px schrumpfte: zeichnet jetzt in echter Breite |
 | S23 | Produktion | – | stub | alles | – |
 | S24 | Einstellungen | 2026-10-20 | done | – | – |
 | S25 | Outlets & Team | 2026-10-20 | partial | Outlet archivieren | Rollenregeln: Admin darf den Inhaber nicht ändern, es bleibt immer mind. ein Inhaber, Inhaberschaft wird übertragen statt vergeben |
-| S26 | Import | – | stub | alles | – |
+| S26 | Import | 2026-10-21 | done | Import von Zutaten-Stammdaten ohne Preis, Allergene per Import | Datei wird im Browser gelesen (Excel-Bibliothek nur bei Bedarf geladen) und in Teilen geplant und übernommen; 420 neue Zutaten in etwa 6 s |
 | S27 | HACCP | – | stub | alles | – |
 
 ## Außerhalb einzelner Screens
+
+- 2026-10-21 (5. Durchgang): Stornos an der Kasse, Menu Engineering, Bestellen nach Gewicht, Preislisten-Import. E2E 158/158,
+  Unit- und Integrationstests 52/52, Demo-Modus geprüft. Seed: gestrige Verkäufe der verknüpften Gerichte mit echter Abbuchung,
+  Anfangsbestand für Kreuzkümmel, Petersilie und Salz (sonst negativer Bestand). Neue Abhängigkeit: read-excel-file 9.3.10 (MIT, exakt gepinnt).
 
 - 2026-10-20 (4. Durchgang): Preis pro Outlet, Sichtbarkeit pro Outlet, Nährwerte pro Rezept, Etikett (S09). E2E 137/137,
   Unit- und Integrationstests 48/48, Demo-Modus geprüft. Demo-Nährwerte im Seed sind gerundete Richtwerte, nicht für echte Etiketten.
