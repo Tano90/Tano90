@@ -12,6 +12,7 @@ import { recipeNutrition } from "@/domain/nutrition";
 import { type CountBreakdown, countTotal, stockReport, suggestPacks, suggestWeight } from "@/domain/stock";
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
+import { gtinKey } from "@/lib/gtin";
 import type { SaleInput } from "@/domain/pos";
 import { type BaseUnit } from "@/domain/units";
 import { Forbidden, assertCanChangeMember, canAccessOutlet, canEditLibrary, canManageTeam } from "./session-rules";
@@ -315,6 +316,8 @@ export async function saveStockItem(s: Session, input: StockItemInput): Promise<
   const ing = d.ingredients.find((i) => i.id === input.ingredientId)!;
   const pack = d.packages.find((p) => p.id === input.packageId)!;
   const name = `${ing.name}, ${pack.label}`;
+  const clash = input.gtin && visible(d.stockItems).find((x) => x.gtin && x.packageId !== input.packageId && gtinKey(x.gtin) === gtinKey(input.gtin!));
+  if (clash) throw new Error(`GTIN ${input.gtin} gehört schon zu ${clash.name}. Ein Barcode zählt genau ein Gebinde.`);
   if (input.isPreferred) d.stockItems.filter((x) => x.ingredientId === input.ingredientId).forEach((x) => (x.isPreferred = false));
   if (input.id) {
     Object.assign(d.stockItems.find((x) => x.id === input.id)!, input, { name });
@@ -773,6 +776,7 @@ export async function requestProduction(s: Session, fromOutletId: string, input:
   const d = db();
   const kitchen = kitchenOf();
   if (!kitchen) throw new Error("Kein Outlet ist als Zentralküche markiert.");
+  if (input.neededOn < dayIn(d.outlets.find((o) => o.id === fromOutletId)?.timezone)) throw new Error("Der Liefertag liegt in der Vergangenheit.");
   if (!d.recipes.some((r) => r.id === input.recipeId && !r.archivedAt)) throw new Error("Dieses Rezept gibt es nicht mehr.");
   const id = newId("pr");
   d.production.push({ id, fromOutletId, kitchenOutletId: kitchen.id, ...input, status: "requested", productionEventId: null, costCents: null, createdBy: s.userId, createdAt: now(), producedAt: null, deliveredAt: null });
@@ -1110,7 +1114,7 @@ export async function getOpenCount(s: Session, outletId: string) {
   for (const p of d.packages) if (ids.has(p.ingredientId)) (packages[p.ingredientId] ??= []).push({ id: p.id, label: p.label, quantityBase: p.quantityBase });
   // Scanned barcodes count one package of the item they are printed on.
   const barcodes: Record<string, { ingredientId: string; packageId: string }> = {};
-  for (const si of visible(d.stockItems)) if (si.gtin && ids.has(si.ingredientId)) barcodes[si.gtin] = { ingredientId: si.ingredientId, packageId: si.packageId };
+  for (const si of visible(d.stockItems)) if (si.gtin && ids.has(si.ingredientId)) barcodes[gtinKey(si.gtin)] = { ingredientId: si.ingredientId, packageId: si.packageId };
   return { event: ev, draft: d.countDrafts[ev.id] ?? {}, breakdown: d.countBreakdowns?.[ev.id] ?? {}, packages, barcodes };
 }
 

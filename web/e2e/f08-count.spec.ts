@@ -122,4 +122,13 @@ test.describe("S17 Barcode", () => {
     await page.reload();
     await expect(page.getByLabel("Butter: Karton 10 × 250 g")).toHaveValue("2");
   });
+
+  test("B-E1 derselbe Code in GTIN-14- oder UPC-Schreibweise mit führenden Nullen", async ({ page }) => {
+    await page.goto("/stock/count");
+    await page.getByRole("button", { name: "Inventur starten" }).click();
+    const field = page.getByLabel("Barcode scannen oder eintippen");
+    await field.fill("02000000000015"); // GTIN-14 of 2000000000015, as many scanners and GS1-128 labels send it
+    await field.press("Enter");
+    await expect(page.getByText("Butter: Karton 10 × 250 g +1, jetzt 1")).toBeVisible();
+  });
 });

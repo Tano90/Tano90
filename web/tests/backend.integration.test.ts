@@ -195,6 +195,24 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
   });
 
+  describe("barcodes", () => {
+    it("one GTIN cannot point at two different packages; the same package from two suppliers may share it", async () => {
+      const quark = (await repo.getIngredient(owner, sid("ing-quark")))!.stockItems[0];
+      const { supplier: _s, packageLabel: _p, id, name: _n, archivedAt: _a, libraryId: _l, ...rest } = quark as typeof quark & { libraryId?: string };
+      await expect(repo.saveStockItem(owner, { ...rest, id, gtin: "02000000000015" })).rejects.toThrow(/GTIN .* gehört schon zu Butter/);
+      await expect(repo.saveStockItem(owner, { ...rest, gtin: "2000000000022" })).resolves.toBeTruthy();
+    });
+  });
+
+  it("two kitchen tabs producing the same request book the raw goods once", async () => {
+    const id = await repo.requestProduction(owner, sid("out-mitte"), { recipeId: sid("rec-quark"), portions: 2, neededOn: "2099-01-02", note: null });
+    const res = await Promise.allSettled([repo.produce(owner, sid("out-zentral"), [id]), repo.produce(owner, sid("out-zentral"), [id])]);
+    expect(res.map((r) => r.status).sort()).toEqual(["fulfilled", "rejected"]);
+    const { asService } = await import("../src/data/pg/client");
+    const events = await asService((tx) => tx`select count(*)::int as n from production_requests where id = ${id} and production_event_id is not null`);
+    expect(events[0].n).toBe(1);
+  });
+
   describe("invoices", () => {
     it("editors match and approve; staff and other libraries cannot", async () => {
       const order = (await repo.getOrder(owner, sid("po-1")))!;

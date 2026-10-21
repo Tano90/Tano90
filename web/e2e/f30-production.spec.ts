@@ -1,4 +1,4 @@
-import { expect, expectNoHorizontalScroll, reseed, stockQuantity, test } from "./fixtures";
+import { db, expect, expectNoHorizontalScroll, reseed, stockQuantity, test } from "./fixtures";
 
 test.describe("S23 Zentralküche", () => {
   test.beforeEach(async ({ login }) => {
@@ -32,6 +32,42 @@ test.describe("S23 Zentralküche", () => {
     await page.getByRole("button", { name: "Anfordern" }).click();
     await expect(page.getByText("Die Menge muss größer als 0 sein.")).toBeVisible();
     await expect(page.getByRole("region", { name: "Eigene Anforderungen" }).getByRole("listitem")).toHaveCount(2);
+  });
+
+  test("Z-N2 Liefertag in der Vergangenheit wird abgelehnt", async ({ page }) => {
+    await page.goto("/production");
+    await page.getByLabel("Rezept").selectOption({ label: "Kräuterquark" });
+    await page.getByLabel("Portionen").fill("3");
+    await page.getByLabel("Liefertag").fill("2020-01-01");
+    await page.getByRole("button", { name: "Anfordern" }).click();
+    await expect(page.getByText("Der Liefertag liegt in der Vergangenheit.")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Eigene Anforderungen" }).getByRole("listitem")).toHaveCount(2);
+  });
+
+  test("Z-N3 Team-Konto: anfordern ja, Produktionsplan nein; fremder Betrieb sieht nichts", async ({ page, login }) => {
+    await login("staff");
+    await page.goto("/production");
+    await expect(page.getByRole("region", { name: "Eigene Anforderungen" })).toContainText("2 × Kräuterquark");
+    await expect(page.getByRole("region", { name: "Produktionsplan" })).toHaveCount(0);
+    await page.getByLabel("Rezept").selectOption({ label: "Kräuterquark" });
+    await page.getByLabel("Portionen").fill("4");
+    await page.getByRole("button", { name: "Anfordern" }).click();
+    await expect(page.getByRole("region", { name: "Eigene Anforderungen" })).toContainText("4 × Kräuterquark");
+    await login("stranger");
+    await page.goto("/production");
+    await expect(page.getByText(/Kein Outlet ist als Zentralküche markiert/)).toBeVisible();
+    await expect(page.getByText("Kräuterquark")).toHaveCount(0);
+  });
+
+  test("Z-E2 Doppelklick auf Anfordern legt genau eine Anforderung an", async ({ page }) => {
+    await page.goto("/production");
+    await page.getByLabel("Rezept").selectOption({ label: "Kräuterquark" });
+    await page.getByLabel("Portionen").fill("7");
+    await page.getByRole("button", { name: "Anfordern" }).dblclick();
+    await expect(page.getByRole("region", { name: "Eigene Anforderungen" })).toContainText("7 × Kräuterquark");
+    await page.waitForLoadState("networkidle");
+    const rows = await db()`select 1 from production_requests where portions = 7`;
+    expect(rows).toHaveLength(1);
   });
 
   test("Z-H2 Zentralküche sieht den Bedarf, produziert und liefert", async ({ page, axe }) => {

@@ -64,6 +64,16 @@ test.describe("F12 Rechnung abgleichen", () => {
     await expect(page.getByRole("button", { name: "Rechnung speichern" })).toHaveCount(0);
   });
 
+  test("R-E4 Doppelklick auf Speichern: eine Rechnung, vier Zeilen", async ({ page }) => {
+    await page.goto(`/orders/${sid("po-1")}/invoice`);
+    await page.getByLabel("Rechnungsnummer").fill("RE-DOPPEL");
+    await page.getByRole("button", { name: "Rechnung speichern" }).dblclick();
+    await expect(page.getByText("Rechnung stimmt mit der Lieferung überein")).toBeVisible();
+    await page.waitForLoadState("networkidle");
+    expect(await db()`select 1 from invoices where invoice_number = 'RE-DOPPEL'`).toHaveLength(1);
+    expect(await db()`select 1 from invoice_lines il join invoices i on i.id = il.invoice_id where i.invoice_number = 'RE-DOPPEL'`).toHaveLength(4);
+  });
+
   test("R-E3 390 px: die Tabelle scrollt in sich, die Seite nicht", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/orders/${sid("po-1")}/invoice`);

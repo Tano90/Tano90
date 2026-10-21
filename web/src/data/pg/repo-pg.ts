@@ -14,6 +14,7 @@ import { type CountBreakdown, countTotal, stockReport, suggestPacks, suggestWeig
 import type { SaleInput } from "@/domain/pos";
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
+import { gtinKey } from "@/lib/gtin";
 import type { BaseUnit } from "@/domain/units";
 import type { Billing, ChecklistDraft, HaccpEntry, ImportResult, ProductionInput, IngredientFilter, IngredientInput, InvoiceInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
 import { Forbidden, assertCanChangeMember, canEditLibrary, canManageTeam } from "../session-rules";
@@ -359,6 +360,13 @@ export async function saveStockItem(s: Session, input: StockItemInput): Promise<
     const [names] = await tx<{ ing: string; pack: string }[]>`
       select i.name as ing, p.label as pack from ingredients i join packages p on p.ingredient_id = i.id where i.id = ${input.ingredientId} and p.id = ${input.packageId}`;
     if (!names) throw new Error("Gebinde gehört nicht zu dieser Zutat.");
+    if (input.gtin) {
+      const taken = await tx<{ gtin: string; packageId: string; ing: string; pack: string }[]>`
+        select si.gtin, si.package_id, i.name as ing, p.label as pack from stock_items si join ingredients i on i.id = si.ingredient_id join packages p on p.id = si.package_id
+        where si.library_id = ${s.libraryId} and si.gtin is not null and si.archived_at is null and si.package_id <> ${input.packageId}`;
+      const clash = taken.find((t) => gtinKey(t.gtin) === gtinKey(input.gtin!));
+      if (clash) throw new Error(`GTIN ${input.gtin} gehört schon zu ${clash.ing}, ${clash.pack}. Ein Barcode zählt genau ein Gebinde.`);
+    }
     const [{ n }] = await tx<{ n: number }[]>`select count(*)::int as n from stock_items where ingredient_id = ${input.ingredientId} and archived_at is null and id <> coalesce(${input.id ?? null}::uuid, '00000000-0000-0000-0000-000000000000')`;
     const preferred = input.isPreferred || n === 0;
     if (preferred) await tx`update stock_items set is_preferred = false where ingredient_id = ${input.ingredientId}`;
@@ -861,6 +869,9 @@ export async function requestProduction(s: Session, fromOutletId: string, input:
   return run(s, async (tx) => {
     const [kitchen] = await asService((sv) => sv<{ id: string }[]>`select id from outlets where library_id = ${s.libraryId} and is_central_kitchen and archived_at is null limit 1`);
     if (!kitchen) throw new Error("Kein Outlet ist als Zentralküche markiert.");
+    const [from] = await tx<{ timezone: string }[]>`select timezone from outlets where id = ${fromOutletId}`;
+    if (!from) throw new Forbidden();
+    if (input.neededOn < dayIn(from.timezone)) throw new Error("Der Liefertag liegt in der Vergangenheit.");
     const [rec] = await tx`select 1 from recipes where id = ${input.recipeId} and archived_at is null`;
     if (!rec) throw new Error("Dieses Rezept gibt es nicht mehr.");
     const [row] = await tx<{ id: string }[]>`
@@ -1263,7 +1274,7 @@ export async function getOpenCount(s: Session, outletId: string) {
       where si.gtin is not null and si.archived_at is null`;
     return {
       event,
-      barcodes: Object.fromEntries(codes.map((c) => [c.gtin, { ingredientId: c.ingredientId, packageId: c.packageId }])),
+      barcodes: Object.fromEntries(codes.map((c) => [gtinKey(c.gtin), { ingredientId: c.ingredientId, packageId: c.packageId }])),
       draft: Object.fromEntries(lines.map((l) => [l.ingredientId, l.countedBase])) as Record<string, number>,
       breakdown: Object.fromEntries(lines.filter((l) => l.breakdown).map((l) => [l.ingredientId, l.breakdown!])) as Record<string, CountBreakdown>,
       packages,

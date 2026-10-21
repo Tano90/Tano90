@@ -15,6 +15,7 @@ import type { CountBreakdown } from "@/domain/stock";
 import type { BaseUnit } from "@/domain/units";
 import { formatDate } from "@/lib/dates";
 import { formatCents, formatQty } from "@/lib/format";
+import { gtinKey } from "@/lib/gtin";
 import { formatBase } from "@/lib/units-display";
 
 type Item = { id: string; name: string; category: string; baseUnit: BaseUnit; expectedBase: number };
@@ -160,7 +161,7 @@ export function CountSheet({ eventId, draft, breakdown, packages, items, barcode
   const scan = (raw: string) => {
     const code = raw.replace(/\D/g, "");
     if (!code) return;
-    const hit = barcodes[code];
+    const hit = barcodes[gtinKey(code)];
     const it = hit && items.find((i) => i.id === hit.ingredientId);
     const pack = hit && (packages[hit.ingredientId] ?? []).find((p) => p.id === hit.packageId);
     if (!it || !pack) {
