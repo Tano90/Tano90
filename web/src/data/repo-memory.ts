@@ -2,7 +2,8 @@
 // async, takes the session, enforces the same rules as the RLS policies in supabase/migrations/0001_schema.sql.
 import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
-import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
+import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp, netPrice } from "@/domain/costing";
+import { classifyDishes } from "@/domain/menu-engineering";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { recipeNutrition } from "@/domain/nutrition";
 import { type CountBreakdown, countTotal, stockReport, suggestPacks } from "@/domain/stock";
@@ -734,6 +735,35 @@ export async function importSalesWithKey(key: string, rows: SaleInput[]): Promis
   if (!k || !k.outletId) return null;
   k.lastUsedAt = now();
   return importInto(k.outletId, rows, null);
+}
+
+/** Sales per linked dish in the period (outlet's local days), against what each portion earns. */
+export async function getMenuEngineering(s: Session, outletId: string, fromDay: string, toDay: string) {
+  assertOutlet(s, outletId);
+  const d = db();
+  const tz = d.outlets.find((o) => o.id === outletId)?.timezone;
+  const [from, to] = [startOfDay(fromDay, tz), startOfDay(addDays(toDay, 1), tz)];
+  const items = new Map(d.posItems.filter((p) => p.outletId === outletId).map((p) => [p.id, p]));
+  const inPeriod = d.sales.filter((x) => x.outletId === outletId && x.soldAt >= from && x.soldAt < to);
+  const byRecipe = new Map<string, { sold: number; revenue: number }>();
+  let unlinked = 0;
+  for (const x of inPeriod) {
+    const p = items.get(x.posItemId);
+    if (!p || p.ignored) continue;
+    if (!p.recipeId) { unlinked += x.quantity; continue; }
+    const t = byRecipe.get(p.recipeId) ?? { sold: 0, revenue: 0 };
+    byRecipe.set(p.recipeId, { sold: t.sold + x.quantity, revenue: t.revenue + x.revenueNetCents });
+  }
+  const ctx = costContext();
+  const memo = new Map<string, RecipeCost>();
+  const dishes = [...byRecipe].flatMap(([recipeId, t]) => {
+    const r = d.recipes.find((x) => x.id === recipeId);
+    if (!r) return [];
+    const own = d.outletPrices.find((p) => p.recipeId === recipeId && p.outletId === outletId)?.sellPriceCents ?? r.sellPriceCents;
+    const listNet = own ? netPrice(own, r.sellPriceIncludesVat, r.vatBp ?? d.library.defaultVatBp) : 0;
+    return [{ id: r.id, name: r.name, sold: t.sold, netPerPortionCents: t.revenue ? t.revenue / t.sold : listNet, costPerPortionCents: costRecipe(toCostRecipe(r), ctx, memo).perPortionCents }];
+  });
+  return { ...classifyDishes(dishes), unlinked };
 }
 
 export async function listPosItems(s: Session, outletId: string) {

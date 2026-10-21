@@ -3,7 +3,8 @@
 // the explicit role checks only give friendlier messages than a policy violation.
 import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
-import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp } from "@/domain/costing";
+import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp, netPrice } from "@/domain/costing";
+import { classifyDishes } from "@/domain/menu-engineering";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { recipeNutrition } from "@/domain/nutrition";
 import { type CountBreakdown, countTotal, stockReport, suggestPacks } from "@/domain/stock";
@@ -819,6 +820,33 @@ export async function importSalesWithKey(key: string, rows: SaleInput[]): Promis
       update api_keys set last_used_at = now() where key_hash = ${hashKey(key)} and revoked_at is null returning id, library_id, outlet_id`;
     if (!k?.outletId) return null;
     return importInto(tx, k.libraryId, k.outletId, rows, null);
+  });
+}
+
+/** Sales per linked dish in the period (outlet's local days), against what each portion earns. */
+export async function getMenuEngineering(s: Session, outletId: string, fromDay: string, toDay: string) {
+  return run(s, async (tx) => {
+    const [outlet] = await tx<{ timezone: string }[]>`select timezone from outlets where id = ${outletId}`;
+    if (!outlet) return { ...classifyDishes([]), unlinked: 0 };
+    const [from, to] = [startOfDay(fromDay, outlet.timezone), startOfDay(addDays(toDay, 1), outlet.timezone)];
+    const rows = await tx<{ recipeId: string | null; sold: number; revenue: number }[]>`
+      select p.recipe_id, sum(x.quantity)::float8 as sold, sum(x.revenue_net_cents)::float8 as revenue
+      from sales x join pos_items p on p.id = x.pos_item_id
+      where x.outlet_id = ${outletId} and x.sold_at >= ${from} and x.sold_at < ${to} and not p.ignored
+      group by p.recipe_id`;
+    const data = await loadCosting(tx, s.libraryId);
+    const [lib] = await tx<{ defaultVatBp: number }[]>`select default_vat_bp from libraries where id = ${s.libraryId}`;
+    const own = new Map((await tx<{ recipeId: string; sellPriceCents: number }[]>`select recipe_id, sell_price_cents from recipe_outlet_prices where outlet_id = ${outletId}`).map((p) => [p.recipeId, p.sellPriceCents]));
+    const ctx = contextOf(data);
+    const memo = new Map<string, RecipeCost>();
+    const dishes = rows.flatMap((t) => {
+      const r = t.recipeId ? data.recipeBy.get(t.recipeId) : undefined;
+      if (!r) return [];
+      const price = own.get(r.id) ?? r.sellPriceCents;
+      const listNet = price ? netPrice(price, r.sellPriceIncludesVat, r.vatBp ?? lib.defaultVatBp) : 0;
+      return [{ id: r.id, name: r.name, sold: t.sold, netPerPortionCents: t.revenue ? t.revenue / t.sold : listNet, costPerPortionCents: costRecipe(toCostRecipe(r), ctx, memo).perPortionCents }];
+    });
+    return { ...classifyDishes(dishes), unlinked: rows.find((t) => t.recipeId === null)?.sold ?? 0 };
   });
 }
 

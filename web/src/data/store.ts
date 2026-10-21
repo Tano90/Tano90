@@ -1,6 +1,8 @@
 // In-memory store with seed data. Stands in for Supabase until /replica-backend runs.
 // Lives on globalThis so dev hot reloads keep the data; a server restart resets it.
 import "server-only";
+import type { CostContext } from "@/domain/costing";
+import { billOfMaterials } from "@/domain/menus";
 import { type CountBreakdown, applyMovement } from "@/domain/stock";
 import type {
   AllergenRow, ApiKey, Category, CountDraft, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
@@ -245,12 +247,40 @@ export function seed(): Db {
   // Opening stock for the rest, booked as one correction so the ledger stays complete.
   const evOpen: StockEvent = { id: "ev-0", outletId: "out-mitte", type: "correction", status: "closed", occurredAt: daysAgo(10), counterpartOutletId: null, purchaseOrderId: null, note: "Anfangsbestand", createdBy: "usr-owner", closedAt: daysAgo(10) };
   d.events.unshift(evOpen);
-  for (const [ing, qty] of [["ing-linsen", 3500], ["ing-mehl", 12000], ["ing-zucker", 6000], ["ing-olivenoel", 4000], ["ing-quark", 2000], ["ing-sahne", 1500], ["ing-butter", 2500], ["ing-eier", 90], ["ing-sellerie", 1600], ["ing-lauch", 900]] as const) {
-    addMovement(d, { eventId: evOpen.id, outletId: "out-mitte", ingredientId: ing, deltaBase: qty, unitCostCents: unitCost(priceOf(ing)), countedBase: null, reason: null });
+  for (const [ing, qty] of [["ing-linsen", 3500], ["ing-mehl", 12000], ["ing-zucker", 6000], ["ing-olivenoel", 4000], ["ing-quark", 2000], ["ing-sahne", 1500], ["ing-butter", 2500], ["ing-eier", 90], ["ing-sellerie", 1600], ["ing-lauch", 900], ["ing-kreuzkuemmel", 500], ["ing-petersilie", 500], ["ing-salz", 1000]] as const) {
+    const si = d.stockItems.find((x) => x.ingredientId === ing); // sea salt has no price on purpose
+    addMovement(d, { eventId: evOpen.id, outletId: "out-mitte", ingredientId: ing, deltaBase: qty, unitCostCents: si ? unitCost(si) : 0, countedBase: null, reason: null });
   }
   const evWaste: StockEvent = { id: "ev-2", outletId: "out-mitte", type: "waste", status: "closed", occurredAt: daysAgo(1), counterpartOutletId: null, purchaseOrderId: null, note: null, createdBy: "usr-staff", closedAt: daysAgo(1) };
   d.events.push(evWaste);
   addMovement(d, { eventId: evWaste.id, outletId: "out-mitte", ingredientId: "ing-sahne", deltaBase: -500, countedBase: null, reason: "Abgelaufen" });
+
+  // Yesterday's sales of the two linked dishes, booked out through their recipes like the till import does.
+  // They come after every other seed booking, so Postgres (which replays by time) ends with the same averages.
+  const sold: [string, string, number, number][] = [["pos-1001", "rec-linsensuppe", 14, 738], ["pos-1002", "rec-ofengemuese", 5, 1355]];
+  const sales: Sale[] = sold.flatMap(([posItemId, , n, net], k) => Array.from({ length: n }, (_, i) => ({
+    id: `sale-s${k}-${i}`, outletId: "out-mitte", posItemId, externalId: `S-${k}${String(i).padStart(2, "0")}`, quantity: 1,
+    revenueNetCents: net, soldAt: daysAgo(0.875 - (0.6 * i) / n), depletedEventId: "ev-sale",
+  })));
+  d.sales.push(...sales);
+  const ctx: CostContext = {
+    ingredient: (id) => {
+      const i = d.ingredients.find((x) => x.id === id);
+      return i && { id: i.id, name: i.name, baseUnit: i.baseUnit, gramsPerPiece: i.gramsPerPiece, mlPerGram: i.mlPerGram, price: null };
+    },
+    recipe: (id) => {
+      const r = d.recipes.find((x) => x.id === id);
+      return r && { id: r.id, name: r.name, portions: r.portions, netQuantityBase: r.netQuantityBase, netUnit: r.netUnit, lines: r.lines.map((l) => ({ ingredientId: l.ingredientId, subRecipeId: l.subRecipeId, quantity: l.quantity, unit: l.unit })) };
+    },
+  };
+  const evSale: StockEvent = {
+    id: "ev-sale", outletId: "out-mitte", type: "sale", status: "closed", occurredAt: sales.map((x) => x.soldAt).sort().at(-1)!,
+    counterpartOutletId: null, purchaseOrderId: null, note: `${sales.length} Verkäufe`, createdBy: null, closedAt: daysAgo(0.25),
+  };
+  d.events.push(evSale);
+  for (const l of billOfMaterials({ courses: [{ name: "", items: sold.map(([, recipeId, n]) => ({ recipeId, portions: n })) }] }, ctx).lines) {
+    addMovement(d, { eventId: evSale.id, outletId: "out-mitte", ingredientId: l.ingredientId, deltaBase: -l.quantityBase, countedBase: null, reason: null });
+  }
 
   d.orders.push(
     {

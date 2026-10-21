@@ -52,7 +52,6 @@ try {
       await tx`insert into menu_items ${tx(m.courses.flatMap((c) => c.items.map((it) => ({ courseId: sid(`${m.id}:${c.id}`), recipeId: sid(it.recipeId), portions: it.portions, position: it.position }))))}`;
     }
     await tx`insert into pos_items ${tx(d.posItems.map((p) => ({ id: sid(p.id), libraryId: lib, outletId: sid(p.outletId), plu: p.plu, name: p.name, recipeId: u(p.recipeId), ignored: p.ignored })))}`;
-    await tx`insert into sales ${tx(d.sales.map((x) => ({ id: sid(x.id), libraryId: lib, outletId: sid(x.outletId), posItemId: sid(x.posItemId), externalId: x.externalId, quantity: x.quantity, revenueNetCents: x.revenueNetCents, soldAt: x.soldAt })))}`;
     for (const o of d.orders) {
       await tx`insert into purchase_orders ${tx({ id: sid(o.id), libraryId: lib, outletId: sid(o.outletId), supplierId: sid(o.supplierId), orderNumber: o.orderNumber, status: o.status, orderedAt: o.orderedAt, expectedDeliveryDate: o.expectedDeliveryDate, note: o.note, createdAt: o.createdAt })}`;
       await tx`insert into purchase_order_lines ${tx(o.lines.map((l) => ({ id: sid(l.id), purchaseOrderId: sid(o.id), stockItemId: sid(l.stockItemId), quantityPacks: l.quantityPacks, unitPriceCents: l.unitPriceCents, receivedPacks: o.received[l.id] ?? 0 })))}`;
@@ -65,6 +64,8 @@ try {
         await tx`insert into stock_movements ${tx({ stockEventId: sid(e.id), outletId: sid(m.outletId), ingredientId: sid(m.ingredientId), deltaBase: m.deltaBase, unitCostCents: m.unitCostCents, reason: m.reason })}`;
       }
     }
+    // Sales point at the sale events, so they go in after them.
+    await tx`insert into sales ${tx(d.sales.map((x) => ({ id: sid(x.id), libraryId: lib, outletId: sid(x.outletId), posItemId: sid(x.posItemId), externalId: x.externalId, quantity: x.quantity, revenueNetCents: x.revenueNetCents, soldAt: x.soldAt, depletedEventId: u(x.depletedEventId) })))}`;
   });
   const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from ingredients`;
   console.log(`seeded demo library: ${n} ingredients, ${d.recipes.length} recipes, ${d.orders.length} orders, ${d.members.length} demo users`);

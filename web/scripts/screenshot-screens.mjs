@@ -37,6 +37,7 @@ const SCREENS = [
   ["S18", "/stock/transfer", "usr-owner"],
   ["S20", "/stock/report", "usr-owner"],
   ["S21", "/analytics/pos", "usr-owner"],
+  ["S22", "/analytics/menu-engineering", "usr-owner"],
   ["S19", "/stock/waste", "usr-owner"],
   ["S24", "/settings", "usr-owner"],
   ["S25", "/settings/team", "usr-owner"],
@@ -52,7 +53,8 @@ const sid = (x) => {
   const h = createHash("md5").update(`kitchen-ledger:${x}`).digest("hex");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
 };
-const mapPath = (p) => p.replace(/\b(ing|rec|sup|po|menu)-[a-z0-9-]+?(?=[/?]|$)/g, (m) => sid(m));
+// Only ids right after a list path: "menu-engineering" is a route, not a seed id.
+const mapPath = (p) => p.replace(/(?<=\/(?:ingredients|recipes|suppliers|orders|menus)\/)(ing|rec|sup|po|menu)-[a-z0-9-]+?(?=[/?]|$)/g, (m) => sid(m));
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? "/opt/pw-browsers/chromium", args: ["--no-proxy-server"] });
 let failures = 0;

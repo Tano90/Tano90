@@ -5,7 +5,7 @@ import { currentOutletId, requireSession } from "@/data/session";
 import { addDays, dayIn, formatDay } from "@/lib/dates";
 import { formatCents } from "@/lib/format";
 import { ReportTable } from "./report-table";
-import { PeriodPicker } from "./period-picker";
+import { PeriodPicker } from "@/components/app/period-picker";
 
 export const metadata = { title: "Lagerbericht" };
 

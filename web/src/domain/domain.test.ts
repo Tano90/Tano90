@@ -4,6 +4,7 @@ import { type CostContext, type CostIngredient, type CostRecipe, costRecipe, foo
 import { applyMovement, stockReport, suggestPacks } from "./stock";
 import { startOfDay, zoneOffsetMinutes } from "../lib/dates";
 import { billOfMaterials, summarizeMenu } from "./menus";
+import { classifyDishes } from "./menu-engineering";
 import { recipeNutrition } from "./nutrition";
 import { parseSalesCsv } from "./pos";
 import { toBase } from "./units";
@@ -198,5 +199,16 @@ describe("nutrition", () => {
     expect(n.missing).toEqual([]);
     expect(n.byWeight.map((x) => x.name)).toEqual(["Spinat", "Zwiebel"]);
     expect(recipeNutrition("soup", ctx(), (id) => (id === "spinach" ? values(id) : undefined))!.missing).toEqual(["Zwiebel"]);
+  });
+});
+
+describe("menu engineering", () => {
+  it("splits by 70 % of an even share and the sales-weighted margin", () => {
+    const d = (id: string, sold: number, net: number, cost: number) => ({ id, name: id, sold, netPerPortionCents: net, costPerPortionCents: cost });
+    const r = classifyDishes([d("a", 50, 1000, 300), d("b", 30, 600, 300), d("c", 15, 1200, 200), d("d", 5, 500, 400), d("x", 0, 900, 100)]);
+    expect(r.shareLinePct).toBeCloseTo(17.5); // 4 dishes sold: 25 % x 0.7
+    expect(r.marginLineCents).toBeCloseTo((700 * 50 + 300 * 30 + 1000 * 15 + 100 * 5) / 100);
+    expect(Object.fromEntries(r.dishes.map((x) => [x.id, x.group]))).toEqual({ a: "star", b: "workhorse", c: "puzzle", d: "dog" });
+    expect(classifyDishes([]).dishes).toEqual([]);
   });
 });
