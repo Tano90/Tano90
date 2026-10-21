@@ -46,6 +46,11 @@ try {
     await tx`insert into recipes ${tx(d.recipes.map((r) => ({ id: sid(r.id), libraryId: lib, name: r.name, categoryId: u(r.categoryId), productType: r.productType, portions: r.portions, netQuantityBase: r.netQuantityBase, netUnit: r.netUnit, sellPriceCents: r.sellPriceCents, sellPriceIncludesVat: r.sellPriceIncludesVat, vatBp: r.vatBp, targetFoodCostBp: r.targetFoodCostBp, prepMinutes: r.prepMinutes, instructions: r.instructions })))}`;
     await tx`insert into recipe_lines ${tx(d.recipes.flatMap((r) => r.lines.map((l) => ({ recipeId: sid(r.id), ingredientId: u(l.ingredientId), subRecipeId: u(l.subRecipeId), quantity: l.quantity, unit: l.unit, position: l.position }))))}`;
     await tx`insert into ingredient_nutrition ${tx(Object.entries(d.nutrition).map(([id, n]) => ({ ingredientId: sid(id), ...n })))}`;
+    for (const c of d.haccpChecklists) {
+      await tx`insert into haccp_checklists ${tx({ id: sid(c.id), libraryId: lib, name: c.name })}`;
+      await tx`insert into haccp_items ${tx(c.items.map((i) => ({ id: sid(i.id), checklistId: sid(c.id), position: i.position, label: i.label, kind: i.kind, minValue: i.minValue, maxValue: i.maxValue })))}`;
+    }
+    await tx`insert into haccp_records ${tx(d.haccpRecords.map((r) => ({ itemId: sid(r.itemId), outletId: sid(r.outletId), day: r.day, valueText: r.valueText, valueNumber: r.valueNumber, ok: r.ok, action: r.action, recordedBy: u(r.recordedBy), recordedAt: r.recordedAt })))}`;
     for (const m of d.menus) {
       await tx`insert into menus ${tx({ id: sid(m.id), libraryId: lib, name: m.name, categoryId: u(m.categoryId), priceCents: m.priceCents, priceIncludesVat: m.priceIncludesVat, vatBp: m.vatBp, targetMarginBp: m.targetMarginBp })}`;
       await tx`insert into menu_courses ${tx(m.courses.map((c) => ({ id: sid(`${m.id}:${c.id}`), menuId: sid(m.id), name: c.name, position: c.position })))}`;

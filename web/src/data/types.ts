@@ -85,6 +85,13 @@ export type PosItem = { id: string; outletId: string; plu: string; name: string;
 export type Sale = { id: string; outletId: string; posItemId: string; externalId: string; quantity: number; revenueNetCents: number; soldAt: string; depletedEventId: string | null };
 export type ApiKey = { id: string; libraryId: string; outletId: string | null; name: string; keyHash: string; lastUsedAt: string | null; revokedAt: string | null; createdAt: string };
 
+export type HaccpItem = { id: string; position: number; label: string; kind: "check" | "temperature" | "text"; minValue: number | null; maxValue: number | null };
+export type HaccpChecklist = { id: string; name: string; archivedAt: string | null; items: HaccpItem[] };
+export type HaccpRecord = {
+  itemId: string; outletId: string; day: string; valueText: string | null; valueNumber: number | null; ok: boolean; action: string | null;
+  recordedBy: string | null; recordedAt: string;
+};
+
 export type MenuItem = { id: string; recipeId: string; portions: number; position: number };
 export type MenuCourse = { id: string; name: string; position: number; items: MenuItem[] };
 export type Menu = {

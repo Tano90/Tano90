@@ -28,7 +28,7 @@ export const SCREENS: Screen[] = [
   { id: "S24", title: "Einstellungen", route: "/settings", purpose: "Mehrwertsteuer, Lohnkosten, Name des Betriebs", built: true },
   { id: "S25", title: "Outlets & Team", route: "/settings/team", purpose: "Standorte, Einladungen, Rollen", built: true },
   { id: "S26", title: "Import", route: "/imports", purpose: "Preise und Gebinde per Excel", built: true },
-  { id: "S27", title: "HACCP", route: "/haccp", purpose: "Checklisten und Kontrollpunkte", built: false },
+  { id: "S27", title: "HACCP", route: "/haccp", purpose: "Checklisten und Kontrollpunkte", built: true },
 ];
 
 export const screen = (id: string) => SCREENS.find((s) => s.id === id)!;

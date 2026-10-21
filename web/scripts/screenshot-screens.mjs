@@ -40,6 +40,7 @@ const SCREENS = [
   ["S21", "/analytics/pos", "usr-owner"],
   ["S22", "/analytics/menu-engineering", "usr-owner"],
   ["S26", "/imports", "usr-owner"],
+  ["S27", "/haccp", "usr-owner"],
   ["S19", "/stock/waste", "usr-owner"],
   ["S24", "/settings", "usr-owner"],
   ["S25", "/settings/team", "usr-owner"],

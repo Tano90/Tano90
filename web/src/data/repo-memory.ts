@@ -3,6 +3,7 @@
 import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp, netPrice } from "@/domain/costing";
+import { evaluate } from "@/domain/haccp";
 import { matchInvoice } from "@/domain/invoice";
 import { classifyDishes } from "@/domain/menu-engineering";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
@@ -15,7 +16,7 @@ import { type BaseUnit } from "@/domain/units";
 import { Forbidden, assertCanChangeMember, canAccessOutlet, canEditLibrary, canManageTeam } from "./session-rules";
 import { addMovement, db, newId, now } from "./store";
 import type {
-  AllergenRow, Category, CountEntry, Ingredient, Menu, Nutrition, Package, PurchaseOrder, Recipe, RecipeLine, Session, StockEvent, StockItem, Supplier,
+  AllergenRow, Category, CountEntry, HaccpItem, Ingredient, Menu, Nutrition, Package, PurchaseOrder, Recipe, RecipeLine, Session, StockEvent, StockItem, Supplier,
 } from "./types";
 
 const visible = <T extends { archivedAt: string | null }>(rows: T[]) => rows.filter((r) => !r.archivedAt);
@@ -736,6 +737,84 @@ export async function importSalesWithKey(key: string, rows: SaleInput[]): Promis
   if (!k || !k.outletId) return null;
   k.lastUsedAt = now();
   return importInto(k.outletId, rows, null);
+}
+
+export type ChecklistDraft = { id?: string; name: string; items: { id?: string; label: string; kind: HaccpItem["kind"]; minValue: number | null; maxValue: number | null }[] };
+export type HaccpEntry = { itemId: string; value: string; action: string | null };
+
+/** Checks every entry against its control point; a value out of limits needs a corrective action. */
+function readEntries(items: HaccpItem[], entries: HaccpEntry[]) {
+  return entries.map((e) => {
+    const item = items.find((i) => i.id === e.itemId);
+    if (!item) throw new Error("Diesen Kontrollpunkt gibt es nicht mehr. Bitte neu laden.");
+    const r = evaluate(item, e.value);
+    if (!r) return null;
+    if (!r.ok && !e.action?.trim()) throw new Error(`„${item.label}“: ${r.reason} Bitte die Korrekturmaßnahme eintragen.`);
+    return {
+      itemId: item.id, ok: r.ok, action: r.ok ? null : e.action!.trim(),
+      valueNumber: item.kind === "temperature" ? Number(e.value.replace(",", ".")) : null,
+      valueText: item.kind === "temperature" ? null : e.value.trim(),
+    };
+  }).filter((x) => x !== null);
+}
+
+export async function listChecklists(_s: Session) {
+  return visible(db().haccpChecklists).map((c) => ({ ...c, items: [...c.items].sort((a, b) => a.position - b.position) }));
+}
+
+/** One outlet's day: every active checklist with what was recorded. */
+export async function getHaccpDay(s: Session, outletId: string, day: string) {
+  assertOutlet(s, outletId);
+  const d = db();
+  const records = d.haccpRecords.filter((r) => r.outletId === outletId && r.day === day)
+    .map((r) => ({ ...r, recordedByName: d.members.find((m) => m.userId === r.recordedBy)?.name ?? "–" }));
+  return { checklists: await listChecklists(s), records: Object.fromEntries(records.map((r) => [r.itemId, r])) };
+}
+
+export async function saveHaccpRecords(s: Session, outletId: string, day: string, entries: HaccpEntry[]) {
+  assertOutlet(s, outletId);
+  const d = db();
+  const tz = d.outlets.find((o) => o.id === outletId)?.timezone;
+  if (day > dayIn(tz)) throw new Error("Für künftige Tage lässt sich nichts eintragen.");
+  const rows = readEntries(visible(d.haccpChecklists).flatMap((c) => c.items), entries);
+  for (const r of rows) {
+    d.haccpRecords = d.haccpRecords.filter((x) => !(x.itemId === r.itemId && x.outletId === outletId && x.day === day));
+    d.haccpRecords.push({ ...r, outletId, day, recordedBy: s.userId, recordedAt: now() });
+  }
+  return rows.length;
+}
+
+/** Out-of-limit records in the period, newest first: the audit view. */
+export async function haccpDeviations(s: Session, outletId: string, fromDay: string, toDay: string) {
+  assertOutlet(s, outletId);
+  const d = db();
+  const items = new Map(d.haccpChecklists.flatMap((c) => c.items.map((i) => [i.id, { ...i, checklist: c.name }] as const)));
+  return d.haccpRecords
+    .filter((r) => r.outletId === outletId && !r.ok && r.day >= fromDay && r.day <= toDay && items.has(r.itemId))
+    .map((r) => ({ ...r, label: items.get(r.itemId)!.label, checklist: items.get(r.itemId)!.checklist, kind: items.get(r.itemId)!.kind, recordedByName: d.members.find((m) => m.userId === r.recordedBy)?.name ?? "–" }))
+    .sort((a, b) => b.day.localeCompare(a.day) || b.recordedAt.localeCompare(a.recordedAt));
+}
+
+export async function saveChecklist(s: Session, draft: ChecklistDraft) {
+  assertEditor(s);
+  const d = db();
+  const row = draft.id ? d.haccpChecklists.find((c) => c.id === draft.id && !c.archivedAt) : undefined;
+  if (draft.id && !row) throw new Error("Checkliste nicht gefunden.");
+  const kept = new Set(draft.items.map((i) => i.id).filter(Boolean));
+  const removed = (row?.items ?? []).filter((i) => !kept.has(i.id));
+  if (removed.some((i) => d.haccpRecords.some((r) => r.itemId === i.id))) {
+    throw new Error("Ein entfernter Kontrollpunkt hat schon Einträge. Damit das Protokoll vollständig bleibt, die Checkliste stattdessen archivieren und neu anlegen.");
+  }
+  const items = draft.items.map((i, p) => ({ ...i, id: i.id ?? newId("hi"), position: p }));
+  if (row) Object.assign(row, { name: draft.name, items });
+  else d.haccpChecklists.push({ id: newId("hc"), name: draft.name, archivedAt: null, items });
+  return row?.id ?? d.haccpChecklists.at(-1)!.id;
+}
+
+export async function archiveChecklist(s: Session, id: string) {
+  assertEditor(s);
+  const row = db().haccpChecklists.find((c) => c.id === id);
+  if (row) row.archivedAt = now();
 }
 
 export type InvoiceInput = { invoiceNumber: string; invoiceDate: string; lines: { lineId: string; quantityPacks: number; unitPriceCents: number }[] };

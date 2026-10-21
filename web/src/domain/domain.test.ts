@@ -4,6 +4,7 @@ import { type CostContext, type CostIngredient, type CostRecipe, costRecipe, foo
 import { applyMovement, stockReport, suggestPacks, suggestWeight } from "./stock";
 import { startOfDay, zoneOffsetMinutes } from "../lib/dates";
 import { billOfMaterials, summarizeMenu } from "./menus";
+import { evaluate } from "./haccp";
 import { matchInvoice } from "./invoice";
 import { classifyDishes } from "./menu-engineering";
 import { recipeNutrition } from "./nutrition";
@@ -271,5 +272,17 @@ describe("invoice match", () => {
     expect(r.lines.map((l) => [l.qtyOff, l.priceOff, l.diffCents])).toEqual([[false, false, 0], [true, false, 500], [false, true, 50]]);
     expect([r.expectedCents, r.invoicedCents, r.diffCents, r.status]).toEqual([3800, 4350, 550, "mismatch"]);
     expect(matchInvoice([{ lineId: "a", orderedPacks: 1, receivedPacks: 1, orderPriceCents: 100, invoicedPacks: 1, invoicePriceCents: 100 }]).status).toBe("matched");
+  });
+});
+
+describe("haccp", () => {
+  it("checks limits; empty means not recorded", () => {
+    const fridge = { kind: "temperature" as const, minValue: 0, maxValue: 4 };
+    expect(evaluate(fridge, "3,5")).toEqual({ ok: true });
+    expect(evaluate(fridge, "6")).toEqual({ ok: false, reason: "Über 4 °C." });
+    expect(evaluate({ kind: "temperature", minValue: -25, maxValue: -18 }, "-12")).toEqual({ ok: false, reason: "Über -18 °C." });
+    expect(evaluate(fridge, "warm")).toEqual({ ok: false, reason: "Keine gültige Temperatur." });
+    expect(evaluate(fridge, " ")).toBeNull();
+    expect(evaluate({ kind: "check", minValue: null, maxValue: null }, "not_ok")).toEqual({ ok: false, reason: "Nicht in Ordnung." });
   });
 });

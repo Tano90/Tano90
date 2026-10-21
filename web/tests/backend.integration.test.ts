@@ -165,6 +165,20 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
   });
 
+  describe("haccp", () => {
+    it("staff record for their outlet only; nobody records against another library's points", async () => {
+      const day = new Date().toISOString().slice(0, 10);
+      expect(await repo.saveHaccpRecords(staff, sid("out-mitte"), "2026-01-05", [{ itemId: sid("hi-1"), value: "-20", action: null }])).toBe(1);
+      await expect(repo.saveHaccpRecords(staff, sid("out-mitte"), "2026-01-05", [{ itemId: sid("hi-0"), value: "9", action: null }])).rejects.toThrow(/Korrekturmaßnahme/);
+      await expect(repo.saveHaccpRecords(staff, sid("out-zentral"), day, [{ itemId: sid("hi-1"), value: "-20", action: null }])).rejects.toThrow();
+      await expect(repo.saveHaccpRecords(staff, sid("out-mitte"), "2099-01-01", [{ itemId: sid("hi-1"), value: "-20", action: null }])).rejects.toThrow(/künftige/);
+      await expect(repo.saveChecklist(staff, { name: "x", items: [{ label: "y", kind: "check", minValue: null, maxValue: null }] })).rejects.toThrow(/Berechtigung/);
+      const { asUser } = await import("../src/data/pg/client");
+      const strangerOutlet = (await repo.listOutlets(stranger))[0].id;
+      await expect(asUser(stranger.userId, (tx) => tx`insert into haccp_records (item_id, outlet_id, day, ok) values (${sid("hi-1")}, ${strangerOutlet}, ${day}, true)`)).rejects.toThrow(/row-level security/);
+    });
+  });
+
   describe("invoices", () => {
     it("editors match and approve; staff and other libraries cannot", async () => {
       const order = (await repo.getOrder(owner, sid("po-1")))!;

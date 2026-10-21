@@ -4,6 +4,7 @@
 import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp, netPrice } from "@/domain/costing";
+import { evaluate } from "@/domain/haccp";
 import { matchInvoice } from "@/domain/invoice";
 import { classifyDishes } from "@/domain/menu-engineering";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
@@ -13,10 +14,10 @@ import type { SaleInput } from "@/domain/pos";
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import type { BaseUnit } from "@/domain/units";
-import type { Billing, ImportResult, IngredientFilter, IngredientInput, InvoiceInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
+import type { Billing, ChecklistDraft, HaccpEntry, ImportResult, IngredientFilter, IngredientInput, InvoiceInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
 import { Forbidden, assertCanChangeMember, canEditLibrary, canManageTeam } from "../session-rules";
 import type {
-  AllergenRow, Category, CountEntry, Ingredient, Library, Member, Menu, MenuCourse, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
+  AllergenRow, Category, CountEntry, HaccpChecklist, HaccpItem, Ingredient, Library, Member, Menu, MenuCourse, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
   StockEvent, StockItem, StockMovement, Supplier,
 } from "../types";
 import { type Tx, asService, asUser, friendly } from "./client";
@@ -822,6 +823,103 @@ export async function importSalesWithKey(key: string, rows: SaleInput[]): Promis
     if (!k?.outletId) return null;
     return importInto(tx, k.libraryId, k.outletId, rows, null);
   });
+}
+
+/** Checks every entry against its control point; a value out of limits needs a corrective action. */
+function readEntries(items: HaccpItem[], entries: HaccpEntry[]) {
+  return entries.map((e) => {
+    const item = items.find((i) => i.id === e.itemId);
+    if (!item) throw new Error("Diesen Kontrollpunkt gibt es nicht mehr. Bitte neu laden.");
+    const r = evaluate(item, e.value);
+    if (!r) return null;
+    if (!r.ok && !e.action?.trim()) throw new Error(`„${item.label}“: ${r.reason} Bitte die Korrekturmaßnahme eintragen.`);
+    return {
+      itemId: item.id, ok: r.ok, action: r.ok ? null : e.action!.trim(),
+      valueNumber: item.kind === "temperature" ? Number(e.value.replace(",", ".")) : null,
+      valueText: item.kind === "temperature" ? null : e.value.trim(),
+    };
+  }).filter((x) => x !== null);
+}
+
+async function loadChecklists(tx: Tx, lib: string): Promise<HaccpChecklist[]> {
+  const lists = await tx<Omit<HaccpChecklist, "items">[]>`select id, name, archived_at from haccp_checklists where library_id = ${lib} and archived_at is null order by created_at`;
+  if (!lists.length) return [];
+  const items = await tx<(HaccpItem & { checklistId: string })[]>`
+    select id, checklist_id, position, label, kind, min_value, max_value from haccp_items where checklist_id = any(${lists.map((l) => l.id)}::uuid[]) order by position`;
+  return lists.map((l) => ({ ...l, items: items.filter((i) => i.checklistId === l.id).map(({ checklistId: _, ...i }) => i) }));
+}
+
+export async function listChecklists(s: Session) {
+  return run(s, (tx) => loadChecklists(tx, s.libraryId));
+}
+
+/** One outlet's day: every active checklist with what was recorded. */
+export async function getHaccpDay(s: Session, outletId: string, day: string) {
+  return run(s, async (tx) => {
+    const checklists = await loadChecklists(tx, s.libraryId);
+    const records = await tx<{ itemId: string; outletId: string; day: string; valueText: string | null; valueNumber: number | null; ok: boolean; action: string | null; recordedBy: string | null; recordedAt: string; recordedByName: string | null }[]>`
+      select r.item_id, r.outlet_id, r.day, r.value_text, r.value_number, r.ok, r.action, r.recorded_by, r.recorded_at,
+        (select m.display_name from memberships m where m.user_id = r.recorded_by and m.library_id = ${s.libraryId}) as recorded_by_name
+      from haccp_records r where r.outlet_id = ${outletId} and r.day = ${day}`;
+    return { checklists, records: Object.fromEntries(records.map((r) => [r.itemId, { ...r, recordedByName: r.recordedByName ?? "–" }])) };
+  });
+}
+
+export async function saveHaccpRecords(s: Session, outletId: string, day: string, entries: HaccpEntry[]) {
+  return run(s, async (tx) => {
+    const [outlet] = await tx<{ timezone: string }[]>`select timezone from outlets where id = ${outletId}`;
+    if (!outlet) throw new Forbidden();
+    if (day > dayIn(outlet.timezone)) throw new Error("Für künftige Tage lässt sich nichts eintragen.");
+    const rows = readEntries((await loadChecklists(tx, s.libraryId)).flatMap((c) => c.items), entries);
+    for (const r of rows) {
+      await tx`
+        insert into haccp_records ${tx({ ...r, outletId, day, recordedBy: s.userId })}
+        on conflict (item_id, outlet_id, day) do update set value_text = excluded.value_text, value_number = excluded.value_number,
+          ok = excluded.ok, action = excluded.action, recorded_by = excluded.recorded_by, recorded_at = now()`;
+    }
+    return rows.length;
+  });
+}
+
+/** Out-of-limit records in the period, newest first: the audit view. */
+export async function haccpDeviations(s: Session, outletId: string, fromDay: string, toDay: string) {
+  return run(s, (tx) => tx<{ itemId: string; outletId: string; day: string; valueText: string | null; valueNumber: number | null; ok: boolean; action: string | null; recordedBy: string | null; recordedAt: string; label: string; checklist: string; kind: HaccpItem["kind"]; recordedByName: string }[]>`
+    select r.item_id, r.outlet_id, r.day, r.value_text, r.value_number, r.ok, r.action, r.recorded_by, r.recorded_at, i.label, c.name as checklist, i.kind,
+      coalesce((select m.display_name from memberships m where m.user_id = r.recorded_by and m.library_id = c.library_id), '–') as recorded_by_name
+    from haccp_records r join haccp_items i on i.id = r.item_id join haccp_checklists c on c.id = i.checklist_id
+    where r.outlet_id = ${outletId} and not r.ok and r.day between ${fromDay} and ${toDay}
+    order by r.day desc, r.recorded_at desc`);
+}
+
+export async function saveChecklist(s: Session, draft: ChecklistDraft) {
+  assertEditor(s);
+  return run(s, async (tx) => {
+    let id = draft.id;
+    if (id) {
+      const updated = await tx`update haccp_checklists set name = ${draft.name} where id = ${id} and archived_at is null returning id`;
+      if (!updated.length) throw new Error("Checkliste nicht gefunden.");
+      const kept = draft.items.map((i) => i.id).filter((x): x is string => !!x);
+      const [used] = await tx`
+        select 1 from haccp_records r join haccp_items i on i.id = r.item_id
+        where i.checklist_id = ${id} and not (i.id = any(${kept}::uuid[])) limit 1`;
+      if (used) throw new Error("Ein entfernter Kontrollpunkt hat schon Einträge. Damit das Protokoll vollständig bleibt, die Checkliste stattdessen archivieren und neu anlegen.");
+      await tx`delete from haccp_items where checklist_id = ${id} and not (id = any(${kept}::uuid[]))`;
+    } else {
+      id = (await tx<{ id: string }[]>`insert into haccp_checklists ${tx({ libraryId: s.libraryId, name: draft.name })} returning id`)[0].id;
+    }
+    for (const [position, i] of draft.items.entries()) {
+      const values = { label: i.label, kind: i.kind, minValue: i.minValue, maxValue: i.maxValue, position };
+      if (i.id) await tx`update haccp_items set ${tx(values)} where id = ${i.id} and checklist_id = ${id}`;
+      else await tx`insert into haccp_items ${tx({ ...values, checklistId: id })}`;
+    }
+    return id!;
+  });
+}
+
+export async function archiveChecklist(s: Session, id: string) {
+  assertEditor(s);
+  if (!isUuid(id)) return;
+  await run(s, (tx) => tx`update haccp_checklists set archived_at = now() where id = ${id}`);
 }
 
 async function orderForInvoice(tx: Tx, orderId: string) {

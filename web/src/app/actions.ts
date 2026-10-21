@@ -457,6 +457,32 @@ export async function recordTransfer(input: z.input<typeof TransferSchema>) {
   }, ["/stock", "/"]);
 }
 
+// ---------------------------------------------------------------- HACCP
+
+const daySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const HaccpEntriesSchema = z.array(z.object({ itemId: id, value: z.string().max(500), action: z.string().max(1000).nullable() })).max(200);
+export async function saveHaccpRecords(day: string, entries: z.input<typeof HaccpEntriesSchema>) {
+  return run(async (s) => repo.saveHaccpRecords(s, await currentOutletId(s), daySchema.parse(day), HaccpEntriesSchema.parse(entries)), ["/haccp"]);
+}
+const ChecklistSchema = z.object({
+  id: id.optional(),
+  name,
+  items: z.array(z.object({
+    id: id.optional(),
+    label: z.string().trim().min(1, "Bitte jedem Kontrollpunkt einen Namen geben.").max(160),
+    kind: z.enum(["check", "temperature", "text"]),
+    minValue: z.number().min(-100).max(300).nullable(),
+    maxValue: z.number().min(-100).max(300).nullable(),
+  }).refine((i) => i.minValue === null || i.maxValue === null || i.minValue <= i.maxValue, "Untergrenze liegt über der Obergrenze."))
+    .min(1, "Mindestens einen Kontrollpunkt anlegen.").max(50),
+});
+export async function saveChecklist(input: z.input<typeof ChecklistSchema>) {
+  return run((s) => repo.saveChecklist(s, ChecklistSchema.parse(input)), ["/haccp"]);
+}
+export async function archiveChecklist(checklistId: string) {
+  return run((s) => repo.archiveChecklist(s, checklistId), ["/haccp"]);
+}
+
 // ---------------------------------------------------------------- invoices
 
 const InvoiceSchema = z.object({

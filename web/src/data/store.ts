@@ -5,7 +5,7 @@ import type { CostContext } from "@/domain/costing";
 import { billOfMaterials } from "@/domain/menus";
 import { type CountBreakdown, applyMovement } from "@/domain/stock";
 import type {
-  AllergenRow, ApiKey, Category, CountDraft, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
+  AllergenRow, ApiKey, Category, CountDraft, HaccpChecklist, HaccpRecord, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
   PosItem, PurchaseOrder, Recipe, RecipeLine, Sale, StockEvent, StockItem, StockLevel, StockMovement, Supplier,
 } from "./types";
 
@@ -24,6 +24,8 @@ export type Db = {
   recipes: Recipe[];
   menus: Menu[];
   outletPrices: { recipeId: string; outletId: string; sellPriceCents: number }[];
+  haccpChecklists: HaccpChecklist[];
+  haccpRecords: HaccpRecord[];
   invoices: {
     id: string; orderId: string; supplierId: string; invoiceNumber: string; invoiceDate: string; status: "matched" | "mismatch" | "approved";
     totalNetCents: number; note: string | null; approvedAt: string | null; approvedBy: string | null;
@@ -92,7 +94,7 @@ export function seed(): Db {
       ...["Mittagstisch", "Abendkarte"].map((name, i) => ({ id: `cat-m${i}`, kind: "menu" as const, name })),
     ],
     ingredients: [], packages: [], suppliers: [], stockItems: [], allergens: {}, verified: {}, nutrition: {},
-    recipes: [], menus: [], outletPrices: [], invoices: [], posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
+    recipes: [], menus: [], outletPrices: [], invoices: [], haccpChecklists: [], haccpRecords: [], posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
   };
 
   const sup = (id: string, companyName: string, orderEmail: string, leadTimeDays: number) =>
@@ -260,6 +262,24 @@ export function seed(): Db {
   const evWaste: StockEvent = { id: "ev-2", outletId: "out-mitte", type: "waste", status: "closed", occurredAt: daysAgo(1), counterpartOutletId: null, purchaseOrderId: null, note: null, createdBy: "usr-staff", closedAt: daysAgo(1) };
   d.events.push(evWaste);
   addMovement(d, { eventId: evWaste.id, outletId: "out-mitte", ingredientId: "ing-sahne", deltaBase: -500, countedBase: null, reason: "Abgelaufen" });
+
+  // Daily HACCP checks for Küche Mitte, filled in for the last three days; one fridge reading was too warm.
+  const point = (i: number, label: string, kind: "check" | "temperature" | "text", min: number | null = null, max: number | null = null) =>
+    ({ id: `hi-${i}`, position: i, label, kind, minValue: min, maxValue: max });
+  d.haccpChecklists.push({
+    id: "hc-daily", name: "Tägliche Kontrollen", archivedAt: null,
+    items: [point(0, "Kühlraum", "temperature", 0, 4), point(1, "Tiefkühler", "temperature", -25, -18), point(2, "Arbeitsflächen gereinigt und desinfiziert", "check"), point(3, "Bemerkungen", "text")],
+  });
+  for (const n of [3, 2, 1]) {
+    const day = daysAgo(n).slice(0, 10);
+    const at = daysAgo(n - 0.3);
+    const warm = n === 2;
+    d.haccpRecords.push(
+      { itemId: "hi-0", outletId: "out-mitte", day, valueText: null, valueNumber: warm ? 6.5 : 3, ok: !warm, action: warm ? "Tür stand offen. Ware geprüft, nach 30 Minuten wieder 3 °C." : null, recordedBy: "usr-staff", recordedAt: at },
+      { itemId: "hi-1", outletId: "out-mitte", day, valueText: null, valueNumber: -20, ok: true, action: null, recordedBy: "usr-staff", recordedAt: at },
+      { itemId: "hi-2", outletId: "out-mitte", day, valueText: "ok", valueNumber: null, ok: true, action: null, recordedBy: "usr-staff", recordedAt: at },
+    );
+  }
 
   // Yesterday's sales of the two linked dishes, booked out through their recipes like the till import does.
   // They come after every other seed booking, so Postgres (which replays by time) ends with the same averages.
