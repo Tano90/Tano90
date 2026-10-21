@@ -1,42 +1,40 @@
 # Deploy-Checkliste: Pantra
 
-Datum: 2026-10-20 · Commit: siehe `git log -1` (Vorabprüfung auf `dd49659` + Health-Endpoint) · **Go von dir: noch nicht**
+Datum: 2026-10-21 · Vorabprüfung auf `9e92c72` · **Go von dir: noch nicht**
 
 ## Urteil: **Deploy gestoppt**
 
-Drei Prüfungen schlagen fehl, und jede allein stoppt den Deploy:
+Vier Punkte stoppen den Deploy, jeder für sich:
 
-1. **Parität:** 16 von 21 Must-haves, Score 62,3 (Schwelle 80). Fünf Must-haves sind nur teilweise da.
-2. **Rechtsseiten sind Entwürfe:** Impressum, Datenschutz, Nutzungsbedingungen ohne Betreiberangaben und ohne rechtliche Prüfung.
-   In Deutschland ist ein vollständiges Impressum Pflicht.
-3. **Produktionsdienste fehlen:** Kein Supabase-, Stripe-, Resend- oder Vercel-Konto verbunden. Die lege ich nicht an; das bist du.
+1. **Ein Must-have offen:** Login, gebaut und mit Demo-Konten getestet, aber nie mit einem echten Supabase-Projekt
+   durchgeklickt (Testplan A02). Score 94,1, Must-haves 20 von 21.
+2. **Rechtsseiten sind Entwürfe:** Impressum, Datenschutz, Nutzungsbedingungen ohne Betreiberangaben und ohne rechtliche
+   Prüfung. In Deutschland ist ein vollständiges Impressum Pflicht.
+3. **Name ungeklärt:** „Pantra“ hat seit Kurzem einen Namensvetter im App Store (`brand.md`). Erst entscheiden, dann
+   Domain kaufen, sonst kaufst du sie zweimal.
+4. **Produktionsdienste fehlen:** kein Supabase-, Stripe-, Resend- oder Vercel-Konto verbunden. Die lege ich nicht an.
 
-Alles, was sich ohne deine Konten prüfen lässt, ist grün (unten). Live ging nichts, es gibt keine URL.
+Alles, was sich ohne deine Konten prüfen lässt, ist grün. Live ging nichts, es gibt keine URL.
 
 ## Vorabprüfung (ausgeführt, nicht angenommen)
 
 | Prüfung | Ergebnis | Befehl / Beleg |
 | --- | --- | --- |
-| E2E-Suite | ✅ **66 / 66** | `E2E_DATABASE_URL=… npx playwright test` (Produktions-Build auf Postgres 16) |
-| Unit- und Integrationstests | ✅ **32 / 32** | `TEST_DATABASE_URL=… npx vitest run` (inkl. RLS mit zweitem Nutzer) |
-| Offene S1/S2-Bugs | ✅ keine | `replica/bugs.md`: 6 gefunden, 6 behoben |
-| Parität: alle Must-haves | ❌ **16 / 21**, Score **62,3** | `parity.py replica/features.csv --fail-under 80` → exit 1 |
+| E2E-Suite | ✅ **189 / 189** | `E2E_DATABASE_URL=… npx playwright test` (Produktions-Build auf Postgres 16, Migrationen 0001–0013) |
+| Unit- und Integrationstests | ✅ **61 / 61** | `TEST_DATABASE_URL=… npx vitest run` (inkl. RLS mit zweitem Betrieb) |
+| Typprüfung | ✅ | `npx tsc --noEmit` |
+| Linter | ⚠️ **nicht eingerichtet** | es gibt kein `lint`-Skript und keine ESLint-Konfiguration; frühere Meldungen „Lint grün“ in diesem Verlauf waren falsch (das Skript fehlte, `-s` verschluckte den Fehler) |
+| Offene S1/S2-Bugs | ✅ keine | `replica/bugs.md`: 21 gefunden, 21 behoben |
+| Parität: alle Must-haves | ❌ **20 / 21**, Score **94,1** | `parity.py replica/features.csv --fail-under 80` → Score über 80, aber ein Must-have teilweise (A02) |
 | Rebrand-Sweep | ✅ sauber (exit 0) | `sweep.py . --config replica/brand.json`; **Lücke:** Farben des Originals unbekannt, daher nicht geprüft |
-| Store-Listing | ✅ 0 Fehler, 0 Warnungen | `listing.py replica/launch/listing.json` (nur relevant, wenn eine native App kommt) |
+| Store-Listing | ✅ 0 Fehler, 1 Warnung (HACCP in Großbuchstaben, gewollt) | `listing.py replica/launch/listing.json` (erst mit nativer App relevant) |
 | Produktions-Build | ✅ | `npm run build` |
 | Abhängigkeiten | ✅ 0 Schwachstellen | `npm audit --omit=dev` |
 | Datenschutz und Nutzungsbedingungen live, alle Auftragsverarbeiter | ❌ Entwurf | `/legal/privacy` nennt Supabase, Vercel, Stripe, Resend; Betreiber, Rechtsgrundlagen, Fristen fehlen; `/legal/terms` und `/legal/imprint` Entwurf |
-| Cookie-Banner | ✅ nicht nötig, solange es so bleibt | nur technisch notwendige Cookies (Sitzung, gewähltes Outlet); Statistik nur ohne Cookies wählen (siehe unten) |
-| Konto löschen funktioniert | ⚠️ teilweise | Daten: E2E A04-H1/N1 grün; Login-Löschung über die Supabase Admin API nicht getestet (kein Projekt) |
+| Cookie-Banner | ✅ nicht nötig, solange es so bleibt | nur technisch notwendige Cookies (Sitzung, gewähltes Outlet) |
+| Konto löschen funktioniert | ⚠️ teilweise | Daten: E2E A04-H1/N1 grün, inkl. Zentralküchen-Anforderungen (Migration 0012); Login-Löschung über die Supabase Admin API nicht getestet (kein Projekt) |
 | Favicon, Titel, OG-Bild, E-Mails, App-Icon eigen | ⚠️ teilweise | Titel „… · Pantra“ ✅, E-Mail-Absender ✅, Favicon nur Platzhalter, **kein OG-Bild**, kein Logo (Briefing in `brand.md`) |
-
-### Die fünf offenen Must-haves (Reihenfolge aus `parity.md`)
-
-1. Menüs (schließt „Preisänderung aktualisiert … Menüs“)
-2. Team: Rolle ändern, Mitglied entfernen, Inhaberschaft übertragen
-3. Inventur in Gebinden
-4. Lieferanten archivieren
-5. Login: mit deinem Supabase-Projekt durchklicken (Testplan A02)
+| Kamera-Scan (Barcode) | 🖐 von Hand offen | F08-B5: Chrome auf Android über HTTPS; erst auf der Live-Domain prüfbar |
 
 ## Produktion (vorbereitet, von dir auszuführen)
 
@@ -90,8 +88,10 @@ Keine native App. Pantra läuft im Browser (Handy-Layout geprüft). `launch/list
 
 ## Bis zum Go
 
-1. Die fünf Must-haves bauen (`/replica-build`), dann `/replica-test` und `/replica-diff` erneut.
-2. Rechtsseiten mit Betreiberangaben füllen und prüfen lassen.
-3. Name markenrechtlich prüfen lassen, Domain kaufen, Logo und OG-Bild anfertigen.
-4. Konten anlegen (oben), Schlüssel eintragen.
-5. Diese Checkliste erneut ausführen – erst bei allen ✅ frage ich nach deinem Go.
+1. **Name entscheiden** (Kuvo, Fenno, Tellerwert oder Pantra, `brand.md`); dann Markenrecherche durch eine Anwältin
+   oder einen Anwalt, Domain kaufen, Logo und OG-Bild anfertigen.
+2. **Rechtsseiten** mit Betreiberangaben füllen und prüfen lassen.
+3. **Konten anlegen** (oben), Schlüssel in Vercel eintragen. `ALLOW_DEMO` nie setzen.
+4. **A02 durchklicken** mit dem Produktions- oder einem Staging-Supabase-Projekt: registrieren, Bestätigungsmail, Magic
+   Link, Passwort zurücksetzen, falsches Passwort.
+5. Diese Checkliste erneut ausführen (`/replica-deploy`). Erst wenn alles ✅ ist, frage ich nach deinem Go.
