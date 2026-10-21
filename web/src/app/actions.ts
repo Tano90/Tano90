@@ -457,6 +457,20 @@ export async function recordTransfer(input: z.input<typeof TransferSchema>) {
   }, ["/stock", "/"]);
 }
 
+// ---------------------------------------------------------------- invoices
+
+const InvoiceSchema = z.object({
+  invoiceNumber: z.string().trim().min(1, "Bitte die Rechnungsnummer angeben.").max(60),
+  invoiceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Bitte das Rechnungsdatum angeben."),
+  lines: z.array(z.object({ lineId: id, quantityPacks: z.number().min(0), unitPriceCents: cents })),
+});
+export async function saveInvoice(orderId: string, input: z.input<typeof InvoiceSchema>) {
+  return run((s) => repo.saveInvoice(s, orderId, InvoiceSchema.parse(input)), ["/orders"]);
+}
+export async function approveInvoice(orderId: string, note: string | null) {
+  return run((s) => repo.approveInvoice(s, orderId, z.string().max(500).nullable().parse(note)), ["/orders"]);
+}
+
 // ---------------------------------------------------------------- price list import
 
 const PriceRowsSchema = z.array(z.object({

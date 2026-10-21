@@ -4,6 +4,7 @@
 import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp, netPrice } from "@/domain/costing";
+import { matchInvoice } from "@/domain/invoice";
 import { classifyDishes } from "@/domain/menu-engineering";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { recipeNutrition } from "@/domain/nutrition";
@@ -12,7 +13,7 @@ import type { SaleInput } from "@/domain/pos";
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import type { BaseUnit } from "@/domain/units";
-import type { Billing, ImportResult, IngredientFilter, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
+import type { Billing, ImportResult, IngredientFilter, IngredientInput, InvoiceInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
 import { Forbidden, assertCanChangeMember, canEditLibrary, canManageTeam } from "../session-rules";
 import type {
   AllergenRow, Category, CountEntry, Ingredient, Library, Member, Menu, MenuCourse, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
@@ -820,6 +821,68 @@ export async function importSalesWithKey(key: string, rows: SaleInput[]): Promis
       update api_keys set last_used_at = now() where key_hash = ${hashKey(key)} and revoked_at is null returning id, library_id, outlet_id`;
     if (!k?.outletId) return null;
     return importInto(tx, k.libraryId, k.outletId, rows, null);
+  });
+}
+
+async function orderForInvoice(tx: Tx, orderId: string) {
+  const [o] = await tx<{ id: string; supplierId: string; status: string }[]>`select id, supplier_id, status from purchase_orders where id = ${orderId} for update`;
+  if (!o) throw new Error("Bestellung nicht gefunden.");
+  if (o.status !== "delivered" && o.status !== "partially_delivered") throw new Error("Eine Rechnung lässt sich erst nach dem Wareneingang abgleichen.");
+  return o;
+}
+
+export async function getInvoice(s: Session, orderId: string) {
+  if (!isUuid(orderId)) return null;
+  return run(s, async (tx) => {
+    const [inv] = await tx<{ id: string; supplierId: string; invoiceNumber: string; invoiceDate: string; status: "matched" | "mismatch" | "approved"; totalNetCents: number; note: string | null; approvedAt: string | null; approvedBy: string | null; approvedByName: string | null }[]>`
+      select i.id, i.supplier_id, i.invoice_number, i.invoice_date, i.match_status as status, i.total_net_cents, i.note, i.approved_at, i.approved_by,
+        (select m.display_name from memberships m where m.user_id = i.approved_by and m.library_id = i.library_id) as approved_by_name
+      from invoices i where i.purchase_order_id = ${orderId}`;
+    if (!inv) return null;
+    const lines = await tx<{ lineId: string; quantityPacks: number; unitPriceCents: number }[]>`
+      select purchase_order_line_id as line_id, quantity_packs, unit_price_cents from invoice_lines where invoice_id = ${inv.id}`;
+    return { ...inv, orderId, lines: Object.fromEntries(lines.map(({ lineId, ...l }) => [lineId, l])) };
+  });
+}
+
+/** Saves the invoice for an order and matches it; changing an approved invoice needs a new approval. */
+export async function saveInvoice(s: Session, orderId: string, input: InvoiceInput) {
+  assertEditor(s);
+  if (!isUuid(orderId)) throw new Error("Bestellung nicht gefunden.");
+  return run(s, async (tx) => {
+    const o = await orderForInvoice(tx, orderId);
+    const orderLines = await tx<{ id: string; quantityPacks: number; receivedPacks: number; unitPriceCents: number }[]>`
+      select id, quantity_packs, received_packs, unit_price_cents from purchase_order_lines where purchase_order_id = ${orderId}`;
+    const by = new Map(input.lines.map((l) => [l.lineId, l]));
+    const m = matchInvoice(orderLines.map((l) => ({
+      lineId: l.id, orderedPacks: l.quantityPacks, receivedPacks: l.receivedPacks, orderPriceCents: l.unitPriceCents,
+      invoicedPacks: by.get(l.id)?.quantityPacks ?? 0, invoicePriceCents: by.get(l.id)?.unitPriceCents ?? l.unitPriceCents,
+    })));
+    const values = { invoiceNumber: input.invoiceNumber, invoiceDate: input.invoiceDate, totalNetCents: m.invoicedCents, matchStatus: m.status, note: null, approvedAt: null, approvedBy: null };
+    const [dup] = await tx`select 1 from invoices where supplier_id = ${o.supplierId} and invoice_number = ${input.invoiceNumber} and purchase_order_id is distinct from ${orderId}`;
+    if (dup) throw new Error(`Rechnung ${input.invoiceNumber} dieses Lieferanten ist schon bei einer anderen Bestellung erfasst.`);
+    const [inv] = await tx<{ id: string }[]>`
+      insert into invoices ${tx({ libraryId: s.libraryId, supplierId: o.supplierId, purchaseOrderId: orderId, ...values })}
+      on conflict (purchase_order_id) where purchase_order_id is not null do update set
+        invoice_number = excluded.invoice_number, invoice_date = excluded.invoice_date, total_net_cents = excluded.total_net_cents,
+        match_status = excluded.match_status, note = null, approved_at = null, approved_by = null
+      returning id`;
+    await tx`delete from invoice_lines where invoice_id = ${inv.id}`;
+    if (m.lines.length) await tx`insert into invoice_lines ${tx(m.lines.map((l) => ({ invoiceId: inv.id, purchaseOrderLineId: l.lineId, quantityPacks: l.invoicedPacks, unitPriceCents: l.invoicePriceCents })))}`;
+    return m.status;
+  });
+}
+
+/** Approves the invoice; a mismatch needs a reason (credit note asked for, accepted price increase ...). */
+export async function approveInvoice(s: Session, orderId: string, note: string | null) {
+  assertEditor(s);
+  if (!isUuid(orderId)) throw new Error("Bestellung nicht gefunden.");
+  await run(s, async (tx) => {
+    await orderForInvoice(tx, orderId);
+    const [inv] = await tx<{ id: string; status: string }[]>`select id, match_status as status from invoices where purchase_order_id = ${orderId} for update`;
+    if (!inv) throw new Error("Erst die Rechnung erfassen.");
+    if (inv.status === "mismatch" && !note?.trim()) throw new Error("Die Rechnung weicht ab. Bitte kurz begründen, warum sie trotzdem passt.");
+    await tx`update invoices set match_status = 'approved', note = ${note?.trim() || null}, approved_at = now(), approved_by = ${s.userId} where id = ${inv.id}`;
   });
 }
 

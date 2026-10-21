@@ -4,6 +4,7 @@ import { type CostContext, type CostIngredient, type CostRecipe, costRecipe, foo
 import { applyMovement, stockReport, suggestPacks, suggestWeight } from "./stock";
 import { startOfDay, zoneOffsetMinutes } from "../lib/dates";
 import { billOfMaterials, summarizeMenu } from "./menus";
+import { matchInvoice } from "./invoice";
 import { classifyDishes } from "./menu-engineering";
 import { recipeNutrition } from "./nutrition";
 import { parseSalesCsv } from "./pos";
@@ -257,5 +258,18 @@ describe("price list", () => {
     expect(planPriceList(rows, "other-supplier", snap)[0].kind).toBe("new_price");
     expect(planPriceList([...rows, { ...rows[0], row: 9 }], "sup", snap).at(-1)!.message).toMatch(/Doppelt.*Zeile 2/);
     expect(planPriceList([{ ...rows[0], baseUnit: "ml" }], "sup", snap)[0].message).toMatch(/in g\/kg geführt/);
+  });
+});
+
+describe("invoice match", () => {
+  it("flags quantity and price differences against what arrived", () => {
+    const r = matchInvoice([
+      { lineId: "a", orderedPacks: 2, receivedPacks: 2, orderPriceCents: 1000, invoicedPacks: 2, invoicePriceCents: 1000 },
+      { lineId: "b", orderedPacks: 3, receivedPacks: 2, orderPriceCents: 500, invoicedPacks: 3, invoicePriceCents: 500 },
+      { lineId: "c", orderedPacks: 1, receivedPacks: 1, orderPriceCents: 800, invoicedPacks: 1, invoicePriceCents: 850 },
+    ]);
+    expect(r.lines.map((l) => [l.qtyOff, l.priceOff, l.diffCents])).toEqual([[false, false, 0], [true, false, 500], [false, true, 50]]);
+    expect([r.expectedCents, r.invoicedCents, r.diffCents, r.status]).toEqual([3800, 4350, 550, "mismatch"]);
+    expect(matchInvoice([{ lineId: "a", orderedPacks: 1, receivedPacks: 1, orderPriceCents: 100, invoicedPacks: 1, invoicePriceCents: 100 }]).status).toBe("matched");
   });
 });

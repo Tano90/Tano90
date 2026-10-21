@@ -165,6 +165,20 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
   });
 
+  describe("invoices", () => {
+    it("editors match and approve; staff and other libraries cannot", async () => {
+      const order = (await repo.getOrder(owner, sid("po-1")))!;
+      const lines = order.lines.map((l) => ({ lineId: l.id, quantityPacks: l.receivedPacks, unitPriceCents: l.unitPriceCents + 10 }));
+      await expect(repo.saveInvoice(staff, sid("po-1"), { invoiceNumber: "IT-1", invoiceDate: "2026-10-20", lines })).rejects.toThrow(/Berechtigung/);
+      expect(await repo.saveInvoice(owner, sid("po-1"), { invoiceNumber: "IT-1", invoiceDate: "2026-10-20", lines })).toBe("mismatch");
+      await expect(repo.approveInvoice(owner, sid("po-1"), null)).rejects.toThrow(/begründen/);
+      await repo.approveInvoice(owner, sid("po-1"), "Preiserhöhung akzeptiert");
+      expect((await repo.getInvoice(owner, sid("po-1")))!.status).toBe("approved");
+      expect(await repo.getInvoice({ ...stranger, libraryId: owner.libraryId }, sid("po-1"))).toBeNull();
+      await expect(repo.saveInvoice(owner, sid("po-2"), { invoiceNumber: "IT-2", invoiceDate: "2026-10-20", lines: [] })).rejects.toThrow(/Wareneingang/);
+    });
+  });
+
   describe("point of sale", () => {
     it("two imports at the same time book each sale once", async () => {
       const rows = (tag: string) => Array.from({ length: 5 }, (_, i) => ({ externalId: `${tag}-${i}`, plu: "1001", name: "Linsensuppe", quantity: 1, revenueNetCents: 739, soldAt: "2026-10-20T10:00:00.000Z" }));

@@ -1,3 +1,5 @@
+import { ReceiptText } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/app/page-header";
 import { OrderStatusBadge } from "@/components/ui/badge";
@@ -48,6 +50,13 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
       </dl>
       {/* keyed by what was received, so the form resets to the new outstanding amounts after each delivery */}
       <ReceiveForm key={JSON.stringify(order.received)} orderId={order.id} lines={lines} receivable={receivable} />
+      {(order.status === "delivered" || order.status === "partially_delivered") && (
+        <p className="mt-6">
+          <Link href={`/orders/${order.id}/invoice`} className="inline-flex h-(--size-control-md) items-center gap-2 rounded-sm border border-border-input bg-bg px-4 font-semibold hover:bg-row-hover">
+            <ReceiptText aria-hidden className="size-4" /> Rechnung abgleichen
+          </Link>
+        </p>
+      )}
     </>
   );
 }

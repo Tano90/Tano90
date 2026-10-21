@@ -16,7 +16,7 @@ export const SCREENS: Screen[] = [
   { id: "S12", title: "Bestellungen", route: "/orders", purpose: "Entwürfe, offene und gelieferte Bestellungen pro Outlet", built: true },
   { id: "S13", title: "Neue Bestellung", route: "/orders/new", purpose: "Bestellung pro Lieferant mit Vorschlag aus Mindestbestand", built: true },
   { id: "S14", title: "Wareneingang", route: "/orders/po-2", purpose: "Lieferung erfassen, auch teilweise", built: true },
-  { id: "S15", title: "Rechnungsabgleich", route: "/orders/po-1/invoice", purpose: "Bestellung, Lieferschein und Rechnung abgleichen", built: false },
+  { id: "S15", title: "Rechnungsabgleich", route: "/orders/po-1/invoice", purpose: "Bestellung, Lieferschein und Rechnung abgleichen", built: true },
   { id: "S16", title: "Lager", route: "/stock", purpose: "Bestand und Lagerwert pro Outlet", built: true },
   { id: "S17", title: "Inventur", route: "/stock/count", purpose: "Bestand zählen", built: true },
   { id: "S18", title: "Umbuchung", route: "/stock/transfer", purpose: "Ware zwischen Outlets verschieben", built: true },

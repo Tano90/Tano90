@@ -3,6 +3,7 @@
 import "server-only";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp, netPrice } from "@/domain/costing";
+import { matchInvoice } from "@/domain/invoice";
 import { classifyDishes } from "@/domain/menu-engineering";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { recipeNutrition } from "@/domain/nutrition";
@@ -735,6 +736,61 @@ export async function importSalesWithKey(key: string, rows: SaleInput[]): Promis
   if (!k || !k.outletId) return null;
   k.lastUsedAt = now();
   return importInto(k.outletId, rows, null);
+}
+
+export type InvoiceInput = { invoiceNumber: string; invoiceDate: string; lines: { lineId: string; quantityPacks: number; unitPriceCents: number }[] };
+
+function orderForInvoice(s: Session, orderId: string) {
+  const o = db().orders.find((x) => x.id === orderId);
+  if (!o) throw new Error("Bestellung nicht gefunden.");
+  assertOutlet(s, o.outletId);
+  if (o.status !== "delivered" && o.status !== "partially_delivered") throw new Error("Eine Rechnung lässt sich erst nach dem Wareneingang abgleichen.");
+  return o;
+}
+
+export async function getInvoice(s: Session, orderId: string) {
+  const o = db().orders.find((x) => x.id === orderId);
+  if (!o) return null;
+  assertOutlet(s, o.outletId);
+  const inv = db().invoices.find((i) => i.orderId === orderId);
+  if (!inv) return null;
+  const { lines, ...rest } = inv;
+  return { ...rest, approvedByName: memberName(inv.approvedBy), lines };
+}
+const memberName = (userId: string | null) => (userId ? db().members.find((m) => m.userId === userId)?.name ?? "–" : null);
+
+/** Saves the invoice for an order and matches it; changing an approved invoice needs a new approval. */
+export async function saveInvoice(s: Session, orderId: string, input: InvoiceInput) {
+  assertEditor(s);
+  const o = orderForInvoice(s, orderId);
+  const d = db();
+  if (d.invoices.some((i) => i.orderId !== orderId && i.supplierId === o.supplierId && i.invoiceNumber === input.invoiceNumber)) {
+    throw new Error(`Rechnung ${input.invoiceNumber} dieses Lieferanten ist schon bei einer anderen Bestellung erfasst.`);
+  }
+  const by = new Map(input.lines.map((l) => [l.lineId, l]));
+  const m = matchInvoice(o.lines.map((l) => ({
+    lineId: l.id, orderedPacks: l.quantityPacks, receivedPacks: o.received[l.id] ?? 0, orderPriceCents: l.unitPriceCents,
+    invoicedPacks: by.get(l.id)?.quantityPacks ?? 0, invoicePriceCents: by.get(l.id)?.unitPriceCents ?? l.unitPriceCents,
+  })));
+  const row = d.invoices.find((i) => i.orderId === orderId);
+  const values = {
+    invoiceNumber: input.invoiceNumber, invoiceDate: input.invoiceDate, status: m.status, totalNetCents: m.invoicedCents,
+    note: null, approvedAt: null, approvedBy: null,
+    lines: Object.fromEntries(m.lines.map((l) => [l.lineId, { quantityPacks: l.invoicedPacks, unitPriceCents: l.invoicePriceCents }])),
+  };
+  if (row) Object.assign(row, values);
+  else d.invoices.push({ id: newId("inv"), orderId, supplierId: o.supplierId, ...values });
+  return m.status;
+}
+
+/** Approves the invoice; a mismatch needs a reason (credit note asked for, accepted price increase ...). */
+export async function approveInvoice(s: Session, orderId: string, note: string | null) {
+  assertEditor(s);
+  orderForInvoice(s, orderId);
+  const inv = db().invoices.find((i) => i.orderId === orderId);
+  if (!inv) throw new Error("Erst die Rechnung erfassen.");
+  if (inv.status === "mismatch" && !note?.trim()) throw new Error("Die Rechnung weicht ab. Bitte kurz begründen, warum sie trotzdem passt.");
+  Object.assign(inv, { status: "approved", note: note?.trim() || null, approvedAt: now(), approvedBy: s.userId });
 }
 
 /** Sales per linked dish in the period (outlet's local days), against what each portion earns. */

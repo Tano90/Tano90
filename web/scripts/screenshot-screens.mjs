@@ -32,6 +32,7 @@ const SCREENS = [
   ["S12", "/orders", "usr-owner"],
   ["S13", "/orders/new", "usr-owner"],
   ["S14", "/orders/po-2", "usr-owner"],
+  ["S15", "/orders/po-1/invoice", "usr-owner"],
   ["S16", "/stock", "usr-owner"],
   ["S17", "/stock/count", "usr-owner"],
   ["S18", "/stock/transfer", "usr-owner"],
