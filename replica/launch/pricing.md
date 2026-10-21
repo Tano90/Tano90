@@ -13,7 +13,7 @@ und widersprechen sich teils. Vor jeder Entscheidung die Preisseiten selbst öff
 | Rezeptrechner PRO (DACH) | Jahresabo | ca. 120–140 €/Jahr, nur Kalkulation/Nährwerte/Etiketten | digistore24.com (Produktseiten), capterra | Händlerseiten, Tarifzuordnung unklar |
 
 Stand der Tabelle: 2026-10-20, am 2026-10-21 nicht erneut gelesen (Quellen weiter gesperrt). Laut Recon ist HACCP beim
-Original ein Zusatzmodul; bei Mirepa ist es wie die Zentralküche in jedem Tarif enthalten. Die Preise bleiben unverändert:
+Original ein Zusatzmodul; bei GLB AI Suite ist es wie die Zentralküche in jedem Tarif enthalten. Die Preise bleiben unverändert:
 49 € + 39 € je weiterem Standort.
 
 ## Was Nutzer zu Preis und Abrechnung sagen
@@ -53,7 +53,7 @@ Mit den ersten Betrieben über die Zahlungsbereitschaft sprechen (siehe `launch-
 
 ## Stripe anlegen (du, im Testmodus)
 
-1. Produkt „Mirepa“.
+1. Produkt „GLB AI Suite“.
 2. Preis monatlich, **gestaffelt (graduated)**, pro Einheit: Stufe 1 (1 Einheit) 49,00 €, Stufe 2 (ab 2) 39,00 €; Abrechnung pro Monat → ID in `STRIPE_PRICE_ID`.
 3. Preis jährlich, gestaffelt: 490,00 € / 390,00 €; pro Jahr → `STRIPE_PRICE_ID_YEARLY`.
 4. Steuer: keine. Als Kleinunternehmer Stripe Tax nicht aktivieren (die App schaltet es bei `SMALL_BUSINESS` ohnehin ab). In Stripe → Einstellungen → Rechnungen als Standard-Fußzeile eintragen: „Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.“ Unter Einstellungen → Unternehmen Name und Anschrift (Mattias Segato Consulting, Hohenzollernstraße 12, 52351 Düren) hinterlegen; beides gehört auf jede Rechnung.

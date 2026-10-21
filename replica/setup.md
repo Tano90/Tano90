@@ -1,4 +1,4 @@
-# Einrichtung: Mirepa online bringen (ohne eigene Domain)
+# Einrichtung: GLB AI Suite online bringen (ohne eigene Domain)
 
 Stand: 2026-10-21. Du hast Konten bei Supabase, Vercel, Resend und Stripe, jeweils im kostenlosen Tarif. Diese
 Anleitung bringt die Seite im **Vorstart-Modus** online: Interessenten fragen an, du siehst Aufrufe und Anfragen,
@@ -12,10 +12,10 @@ Schlüssel und Passwörter trägst nur du ein, direkt bei Vercel. Bitte nichts d
 2. **Connect** (oben) → **Session pooler** → Verbindungs-URL kopieren (Port 5432, Passwort einsetzen) → wird `DATABASE_URL`.
 3. **Project Settings → API**: `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`, `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
    `service_role` → `SUPABASE_SERVICE_ROLE_KEY` (geheim, nur in Vercel).
-4. **Authentication → URL Configuration** (vor der ersten Registrierung, sonst zeigen die Bestätigungslinks auf `localhost`): Site URL = deine Vercel-Adresse (Schritt 3, z. B. `https://mirepa.vercel.app`),
-   Redirect URL hinzufügen: `https://mirepa.vercel.app/auth/callback`.
+4. **Authentication → URL Configuration** (vor der ersten Registrierung, sonst zeigen die Bestätigungslinks auf `localhost`): Site URL = deine Vercel-Adresse (Schritt 3, z. B. `https://DEIN-PROJEKT.vercel.app`),
+   Redirect URL hinzufügen: `https://DEIN-PROJEKT.vercel.app/auth/callback`.
 5. **Authentication → Providers → Email**: „Confirm email“ an lassen.
-6. **Project Settings → Data API**: die Data API ausschalten (oder `public` aus „Exposed schemas“ entfernen). Mirepa
+6. **Project Settings → Data API**: die Data API ausschalten (oder `public` aus „Exposed schemas“ entfernen). GLB AI Suite
    spricht direkt mit der Datenbank und braucht die REST-Schnittstelle nicht; ausgeschaltet ist eine Angriffsfläche weniger.
 
 Die Tabellen legt Vercel beim ersten Deploy selbst an (`vercel-build` führt die Migrationen aus).
@@ -23,7 +23,7 @@ Die Tabellen legt Vercel beim ersten Deploy selbst an (`vercel-build` führt die
 ## 2. Resend (E-Mails)
 
 1. **API Keys → Create** (Berechtigung „Sending access“) → `RESEND_API_KEY`.
-2. Ohne eigene Domain: `MAIL_FROM="Mirepa <onboarding@resend.dev>"`. Damit stellt Resend nur an die E-Mail-Adresse zu,
+2. Ohne eigene Domain: `MAIL_FROM="GLB AI Suite <onboarding@resend.dev>"`. Damit stellt Resend nur an die E-Mail-Adresse zu,
    mit der du dich bei Resend angemeldet hast. Deshalb `LEADS_NOTIFY_EMAIL` = genau diese Adresse.
    Die Bestätigung an Interessenten kommt erst mit verifizierter Domain an; bis dahin antwortest du persönlich.
 
@@ -42,12 +42,12 @@ Die Tabellen legt Vercel beim ersten Deploy selbst an (`vercel-build` führt die
 | `NEXT_PUBLIC_SUPABASE_URL` | Schritt 1.3 |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Schritt 1.3 |
 | `SUPABASE_SERVICE_ROLE_KEY` | Schritt 1.3 |
-| `APP_URL` | deine Vercel-Adresse, z. B. `https://mirepa.vercel.app` |
+| `APP_URL` | deine Vercel-Adresse, z. B. `https://DEIN-PROJEKT.vercel.app` |
 | `NEXT_PUBLIC_LAUNCH_MODE` | `waitlist` |
-| `OPERATOR_EMAILS` | die E-Mail, mit der du dich gleich in Mirepa registrierst |
+| `OPERATOR_EMAILS` | die E-Mail, mit der du dich gleich in GLB AI Suite registrierst |
 | `LEADS_NOTIFY_EMAIL` | deine Resend-Anmeldeadresse |
 | `RESEND_API_KEY` | Schritt 2.1 |
-| `MAIL_FROM` | `Mirepa <onboarding@resend.dev>` |
+| `MAIL_FROM` | `GLB AI Suite <onboarding@resend.dev>` |
 | `CRON_SECRET` | eine lange Zufallsfolge, z. B. 64 Zeichen aus einem Passwortgenerator |
 
 `ALLOW_DEMO` **nie** setzen. Stripe-Variablen bleiben in dieser Phase leer.
@@ -57,7 +57,7 @@ Die Tabellen legt Vercel beim ersten Deploy selbst an (`vercel-build` führt die
 ```bash
 git clone https://github.com/tano90/Tano90.git && cd Tano90/web
 npx vercel@latest login     # einmal im Browser bestätigen
-npx vercel@latest link      # dein Mirepa-Projekt auswählen
+npx vercel@latest link      # dein GLB AI Suite-Projekt auswählen
 bash scripts/setup-vercel-env.sh
 ```
 

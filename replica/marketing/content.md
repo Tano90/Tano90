@@ -1,4 +1,4 @@
-# Marketing-Inhalte: Mirepa
+# Marketing-Inhalte: GLB AI Suite
 
 Stand: 2026-10-21. Jede Aussage hier kann die App heute; Zahlen in Beispielen sind als Beispiel gekennzeichnet und
 stammen aus den Demodaten. Keine Kundenstimmen, keine Nutzerzahlen, kein Name des Originals. Wo ein Link steht, den
@@ -6,7 +6,7 @@ passenden Kampagnen-Link aus **Einstellungen → Anfragen** nehmen.
 
 ## Botschaft
 
-**Ein Satz:** Mirepa zeigt, was jeder Teller kostet, noch während du das Rezept schreibst, und hält Lager, Einkauf und
+**Ein Satz:** GLB AI Suite zeigt, was jeder Teller kostet, noch während du das Rezept schreibst, und hält Lager, Einkauf und
 Zentralküche dazu.
 
 **Für wen:** Küchen mit einem oder mehreren Standorten, die heute mit Excel, Zetteln oder drei getrennten Programmen
@@ -35,7 +35,7 @@ bei der Zentralküche, die Zentralküche sieht pro Tag, was zu kochen ist und we
 > In den meisten Küchen, die ich kenne, steht die Antwort in einer Tabelle, die einmal gestimmt hat. Dann wird die
 > Butter teurer, der Lieferant ändert die Gebindegröße, ins Grundrezept kommt eine Zutat dazu, und niemand trägt es nach.
 >
-> Genau dafür baue ich Mirepa: Der Wareneinsatz steht neben dem Rezept, während man es schreibt, und rechnet mit, wenn
+> Genau dafür baue ich GLB AI Suite: Der Wareneinsatz steht neben dem Rezept, während man es schreibt, und rechnet mit, wenn
 > sich ein Einkaufspreis ändert.
 >
 > Wer es an seinem teuersten Gericht ausprobieren will: 30 Minuten, gemeinsam, unverbindlich. Link im Kommentar.
@@ -46,7 +46,7 @@ bei der Zentralküche, die Zentralküche sieht pro Tag, was zu kochen ist und we
 > 800 g rote Linsen, Zwiebeln, Karotten, Gemüsefond, Kreuzkümmel, Olivenöl, Sahne.
 > Wareneinsatz pro Portion: 0,63 €. Verkaufspreis netto 7,38 €. Wareneinsatz 8,5 %.
 >
-> Das Spannende ist nicht die Zahl, sondern dass sie stimmt, wenn morgen der Fond teurer wird. In Mirepa ändert man den
+> Das Spannende ist nicht die Zahl, sondern dass sie stimmt, wenn morgen der Fond teurer wird. In GLB AI Suite ändert man den
 > Einkaufspreis einmal, und jedes Rezept und jedes Menü, das ihn nutzt, rechnet neu.
 >
 > (Demodaten. Eure eigenen Zahlen sehen wir uns gern zusammen an.)
@@ -55,7 +55,7 @@ bei der Zentralküche, die Zentralküche sieht pro Tag, was zu kochen ist und we
 
 > Wer eine Zentralküche hat, kennt den Zettel am Kühlschrank: Wer will morgen was, wie viel, und reicht die Ware?
 >
-> In Mirepa fordern die Standorte Rezepte an. Die Zentralküche sieht pro Liefertag alles gebündelt, dazu die Rohware, die
+> In GLB AI Suite fordern die Standorte Rezepte an. Die Zentralküche sieht pro Liefertag alles gebündelt, dazu die Rohware, die
 > dafür gebraucht wird, und was davon im Lager fehlt. „Produzieren“ bucht die Rohware aus, jeder Standort bekommt seine
 > Kosten zugeschrieben.
 >
@@ -65,7 +65,7 @@ bei der Zentralküche, die Zentralküche sieht pro Tag, was zu kochen ist und we
 
 > Inventur im Kühlhaus, das WLAN ist weg, die Hälfte ist gezählt.
 >
-> Wir haben die Inventur in Mirepa so gebaut, dass jede Zahl sofort gespeichert wird und nachgereicht wird, sobald das
+> Wir haben die Inventur in GLB AI Suite so gebaut, dass jede Zahl sofort gespeichert wird und nachgereicht wird, sobald das
 > Netz zurück ist. Gezählt wird so, wie die Ware dasteht: 3 Kartons und 2 lose Packungen, oder per Barcode-Scanner.
 >
 > Was nervt euch an der Inventur am meisten?
@@ -74,13 +74,13 @@ bei der Zentralküche, die Zentralküche sieht pro Tag, was zu kochen ist und we
 
 > Temperaturkontrolle, Reinigung, Wareneingang: In vielen Küchen liegt das auf Papier neben dem Kühlraum.
 >
-> In Mirepa gibt es eigene Checklisten mit Grenzwerten. Liegt ein Wert daneben, geht das Speichern nur mit
+> In GLB AI Suite gibt es eigene Checklisten mit Grenzwerten. Liegt ein Wert daneben, geht das Speichern nur mit
 > Korrekturmaßnahme, und das Protokoll der letzten 30 Tage lässt sich als Datei für die Kontrolle exportieren. Im
 > Grundpreis, nicht als Extra.
 
 **Beitrag 6: Einladung zur Vorführung** (Woche 5)
 
-> Kurzes Update zu Mirepa: In den letzten Wochen habe ich mit Küchen ihre teuersten Gerichte durchgerechnet. Das
+> Kurzes Update zu GLB AI Suite: In den letzten Wochen habe ich mit Küchen ihre teuersten Gerichte durchgerechnet. Das
 > Häufigste, was ich dabei höre: [aus euren Notizen in der Übersicht, wörtlich nur mit Erlaubnis].
 >
 > Ein paar Termine für eine 30-Minuten-Vorführung sind noch frei. Link im Kommentar.
@@ -124,7 +124,7 @@ Nur an Leute, die dich kennen. Persönlich anpassen, nicht als Rundmail.
 
 > Hallo [Name],
 >
-> danke für deine Anfrage zu Mirepa. Wann passt dir eine halbe Stunde? Zum Beispiel [Tag 1, Uhrzeit] oder [Tag 2,
+> danke für deine Anfrage zu GLB AI Suite. Wann passt dir eine halbe Stunde? Zum Beispiel [Tag 1, Uhrzeit] oder [Tag 2,
 > Uhrzeit], per Video oder bei euch vor Ort.
 >
 > Wenn du magst, schick mir vorher das Rezept eures teuersten Gerichts und die Einkaufspreise der wichtigsten Zutaten
@@ -156,7 +156,7 @@ Nur an Leute, die dich kennen. Persönlich anpassen, nicht als Rundmail.
 QR-Code auf den Flyer-Kampagnen-Link.
 
 > **Was kostet dieser Teller?**
-> Mirepa zeigt den Wareneinsatz pro Portion, während du das Rezept schreibst, und rechnet mit, wenn sich Preise ändern.
+> GLB AI Suite zeigt den Wareneinsatz pro Portion, während du das Rezept schreibst, und rechnet mit, wenn sich Preise ändern.
 > Dazu Einkauf, Inventur auf dem Handy, Zentralküche und HACCP.
 >
 > **Gratis-Vorführung, 30 Minuten, mit deinen eigenen Rezepten.**

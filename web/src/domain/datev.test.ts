@@ -11,7 +11,7 @@ describe("datevExtf", () => {
       invoices: [{ number: "RE-2026-1042", date: "2026-10-20", supplierName: 'Frischehof "Lindner"; GmbH', creditor: 70001, netCents: 7480, taxLines: [{ rateBp: 700, netCents: 6280, taxCents: 440 }, { rateBp: 1900, netCents: 1200, taxCents: 228 }] }],
     });
     const lines = csv.split("\r\n");
-    expect(lines[0]).toBe('"EXTF";700;21;"Buchungsstapel";13;20261021083000123;;"RE";"Mirepa";"";29098;55003;20260101;4;20261001;20261031;"Eingangsrechnungen 2026-10-01";"";1;0;0;"EUR";;"";;;"03";;;"";""');
+    expect(lines[0]).toBe('"EXTF";700;21;"Buchungsstapel";13;20261021083000123;;"RE";"GLB AI Suite";"";29098;55003;20260101;4;20261001;20261031;"Eingangsrechnungen 2026-10-01";"";1;0;0;"EUR";;"";;;"03";;;"";""');
     expect(lines[1]).toMatch(/^"Umsatz \(ohne Soll\/Haben-Kz\)";"Soll\/Haben-Kennzeichen";/);
     expect(lines[2]).toBe('67,20;"S";"EUR";;;"";3300;70001;"";2010;"RE-2026-1042";"";;"Frischehof ""Lindner"" GmbH"');
     expect(lines[3]).toBe('14,28;"S";"EUR";;;"";3400;70001;"";2010;"RE-2026-1042";"";;"Frischehof ""Lindner"" GmbH"');

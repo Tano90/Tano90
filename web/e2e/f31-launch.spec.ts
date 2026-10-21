@@ -55,7 +55,7 @@ test.describe("Start: Testphase, Outlets archivieren, Export", () => {
     const download = page.waitForEvent("download");
     await page.getByRole("link", { name: "Alle Daten herunterladen" }).click();
     const file = await download;
-    expect(file.suggestedFilename()).toMatch(/^mirepa-export-\d{4}-\d{2}-\d{2}\.json$/);
+    expect(file.suggestedFilename()).toMatch(/^glb-export-\d{4}-\d{2}-\d{2}\.json$/);
     const json = JSON.parse((await (await file.createReadStream()).toArray()).join(""));
     expect(json.data.recipes.map((r: { name: string }) => r.name)).toContain("Linsensuppe mit Kreuzkümmel");
     expect(JSON.stringify(json)).not.toMatch(/keyHash|tokenHash|stripeCustomerId/);

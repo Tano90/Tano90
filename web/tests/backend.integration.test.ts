@@ -318,7 +318,7 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
     it("staff cannot import into an outlet they are not assigned to", async () => {
       await expect(repo.importSales(staff, sid("out-zentral"), [{ externalId: "Z-1", plu: "1", name: "x", quantity: 1, revenueNetCents: 0, soldAt: "2026-10-20T10:00:00.000Z" }])).rejects.toThrow(/Berechtigung/);
-      expect(await repo.importSalesWithKey("mirepa_unbekannt", [])).toBeNull();
+      expect(await repo.importSalesWithKey("glb_unbekannt", [])).toBeNull();
     });
   });
 

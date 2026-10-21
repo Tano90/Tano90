@@ -733,3 +733,23 @@ export async function previewRecipeImport(recipes: z.input<typeof ImportRecipesS
 export async function importRecipes(recipes: z.input<typeof ImportRecipesSchema>, createIngredients: boolean) {
   return run((s) => applyRecipes(s, ImportRecipesSchema.parse(recipes), createIngredients), ["/recipes", "/ingredients", "/menus"]);
 }
+
+// ---------------------------------------------------------------- contribution margin
+
+export async function saveCostSettings(input: { variableRevenuePct: number; perItemCents: number }) {
+  return run((s) => repo.saveCostSettings(s, z.object({
+    variableRevenuePct: z.number().min(0, "Mindestens 0 %.").max(60, "Höchstens 60 %."), perItemCents: cents.max(100000),
+  }).parse(input)), ["/analytics/contribution"]);
+}
+const FixedCostSchema = z.object({
+  id: z.string().optional(), outletId: z.string().nullable(),
+  name: z.string().trim().min(1, "Bitte benennen, z. B. Miete.").max(80),
+  category: z.enum(["rent", "staff", "energy", "insurance", "leasing", "marketing", "other"]),
+  monthlyCents: cents.max(100_000_000, "Betrag zu groß."),
+});
+export async function saveFixedCost(input: z.input<typeof FixedCostSchema>) {
+  return run((s) => repo.saveFixedCost(s, FixedCostSchema.parse(input)), ["/analytics/contribution"]);
+}
+export async function archiveFixedCost(fixedCostId: string) {
+  return run((s) => repo.archiveFixedCost(s, id.parse(fixedCostId)), ["/analytics/contribution"]);
+}

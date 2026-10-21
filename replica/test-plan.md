@@ -1,4 +1,4 @@
-# Testplan: Mirepa
+# Testplan: GLB AI Suite
 
 Build: siehe `git log -1` · Datum: 2026-10-20 · Umgebung: lokal, Produktions-Build (`next start`), Postgres 16 mit
 Migrationen und Demo-Seed, Demo-Login (Supabase/Stripe/Resend nicht angebunden), Chromium 1440 px, `de-DE`,

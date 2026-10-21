@@ -1,4 +1,4 @@
--- Schema for Mirepa, back-of-house software for restaurants.
+-- Schema of the GLB AI Suite, back-of-house software for gastronomy.
 -- Target: Postgres 15+ on Supabase (uses auth.users and auth.uid()).
 -- Conventions:
 --   * every tenant-owned row carries library_id; RLS checks membership.

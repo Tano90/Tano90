@@ -9,7 +9,7 @@ Lager und Zentralküche. FAQ korrigiert: Import und Kassen-Anbindung standen dor
 3. und 5. Durchgang gebaut. Vier neue Funktionen auf der Seite (Zentralküche, Barcode-Inventur, Rechnungsabgleich, HACCP).
 
 **Einschränkung:** `fixes.md` hat noch keine belegte Positionierung (0 Bewertungen). Die Seite führt deshalb mit dem, was
-Mirepa nachweislich kann (durch E2E-Tests belegt), und nicht mit Klagen über das Original. Sobald `feedback.md` existiert:
+GLB AI Suite nachweislich kann (durch E2E-Tests belegt), und nicht mit Klagen über das Original. Sobald `feedback.md` existiert:
 Problem-Abschnitt und Feature-Reihenfolge neu ordnen.
 
 Regel für jede Aussage auf der Seite: Sie muss im Produkt stimmen und getestet sein. Beim Gegenlesen umgeschrieben:
@@ -55,7 +55,7 @@ Kundenstimmen, Logos, Nutzerzahlen, Sterne – es gibt noch keine Kunden. Kommen
 schriftlicher Erlaubnis. Bewertungen des Originals sind Recherche, keine Testimonials. Der Name des Originals erscheint nirgends.
 
 ## Vor dem Start prüfen
-- **Name:** Mirepa (statt Pantra, 2026-10-21). Nur per Websuche geprüft; Register und Domain stehen in `brand.md` noch aus.
+- **Name:** GLB AI Suite (statt Pantra, 2026-10-21). Nur per Websuche geprüft; Register und Domain stehen in `brand.md` noch aus.
 
 ## Neugestaltung (2026-10-21)
 Dunkle Bühne mit Logo, Überschrift und einem **Live-Rechner** (Linsensuppe aus den Demodaten, Regler für Linsenpreis und

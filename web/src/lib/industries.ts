@@ -39,7 +39,7 @@ export const INDUSTRIES: Industry[] = [
       { icon: Calculator, title: "Kasse und Menu Engineering", body: "Verkäufe per CSV oder Schnittstelle, Abbuchung über die Rezepte, und welches Gericht Renner oder Ladenhüter ist." },
     ],
     cards: [{ title: "Linsensuppe: 0,63 €", detail: "Wareneinsatz 8,5 %" }, { title: "Preisliste übernommen", detail: "12 Preise geändert" }],
-    shot: { src: shotRecipe, alt: "Rezept Linsensuppe mit Kosten pro Zeile und Wareneinsatz pro Portion.", caption: "Ein Rezept in Mirepa: Kosten pro Zeile, rechts der Wareneinsatz, während du tippst." },
+    shot: { src: shotRecipe, alt: "Rezept Linsensuppe mit Kosten pro Zeile und Wareneinsatz pro Portion.", caption: "Ein Rezept in der GLB AI Suite: Kosten pro Zeile, rechts der Wareneinsatz, während du tippst." },
   },
   {
     slug: "catering",

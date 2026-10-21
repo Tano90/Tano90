@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import { cn } from "@/lib/cn";
 
 // An example from the demo data (lentil soup, 10 portions), not a customer's numbers. Everything except the lentils
-// keeps its demo cost, so moving the slider shows exactly what Mirepa does: one price changes, the plate cost follows.
+// keeps its demo cost, so moving the slider shows exactly what the suite does: one price changes, the plate cost follows.
 const PORTIONS = 10;
 const LENTIL_KG = 0.8;
 const FIXED = [

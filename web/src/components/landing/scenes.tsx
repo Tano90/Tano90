@@ -1,6 +1,6 @@
 import type { Industry } from "@/lib/industries";
 
-// One illustration per industry, drawn for Mirepa, coloured only with design tokens.
+// One illustration per industry, drawn for the GLB AI Suite, coloured only with design tokens.
 const C = {
   cream: "var(--color-cream-deep)", accent: "var(--color-accent)", glow: "var(--color-accent-glow)", saffron: "var(--color-saffron)",
   carrot: "var(--color-carrot)", celery: "var(--color-celery)", onion: "var(--color-onion)", wood: "var(--color-wood)", woodDark: "var(--color-wood-dark)",

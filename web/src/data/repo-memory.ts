@@ -14,6 +14,7 @@ import { hashKey, newApiKey } from "@/lib/api-key";
 import { accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import type { DatevSettings } from "@/domain/datev";
+import type { CostSetup, FixedCost, FixedCostInput } from "./cost-types";
 import type { DatevSetup, EInvoiceSave, InvoiceListRow } from "./finance-types";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
@@ -1483,3 +1484,37 @@ export async function saveDatevSettings(s: Session, v: DatevSettings, creditors:
 
 
 
+
+// ---------------------------------------------------------------- contribution margin: costs
+
+export async function getCostSetup(s: Session): Promise<CostSetup> {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  const d = db();
+  return { variableRevenuePct: d.costSettings.variableRevenuePct, perItemCents: d.costSettings.perItemCents, fixed: d.fixedCosts.filter((f) => !f.archivedAt).map(({ archivedAt: _a, ...f }) => ({ ...f })) };
+}
+
+export async function saveCostSettings(s: Session, v: { variableRevenuePct: number; perItemCents: number }) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  db().costSettings = { ...v };
+}
+
+export async function saveFixedCost(s: Session, input: FixedCostInput): Promise<string> {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  const d = db();
+  const values = { outletId: input.outletId, name: input.name, category: input.category, monthlyCents: input.monthlyCents };
+  if (input.id) {
+    const f = d.fixedCosts.find((x) => x.id === input.id && !x.archivedAt);
+    if (!f) throw new Error("Fixkosten nicht gefunden.");
+    Object.assign(f, values);
+    return f.id;
+  }
+  const id = newId("fix");
+  d.fixedCosts.push({ id, ...values, archivedAt: null });
+  return id;
+}
+
+export async function archiveFixedCost(s: Session, id: string) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  const f = db().fixedCosts.find((x) => x.id === id);
+  if (f) f.archivedAt = now();
+}

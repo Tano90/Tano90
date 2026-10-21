@@ -35,7 +35,7 @@ Nur Funktionen und Preise wurden erfasst, in eigenen Worten; kein Text, Code ode
 - E-Rechnungen (XRechnung/ZUGFeRD) empfangen können: Pflicht seit 01.01.2025 ([tageskarte](https://www.tageskarte.io/zahlen/detail/e-rechnungspflicht-ab-2025-was-gastronomen-und-hoteliers-wissen-sollten.html)).
 - DATEV-Export für den Steuerberater (orderbird, ready2order, gastronovi, Vectron haben ihn).
 - LMIV-Allergene schriftlich dokumentiert, HACCP digital, Server in DE/EU, AVV.
-- Kasse bleibt Kasse: Mirepa liest Verkäufe nur, ändert keine Kassendaten (TSE/KassenSichV).
+- Kasse bleibt Kasse: GLB AI Suite liest Verkäufe nur, ändert keine Kassendaten (TSE/KassenSichV).
 
 ## Lücken, die niemand gut löst (unsere Chance)
 
@@ -45,7 +45,7 @@ Nur Funktionen und Preise wurden erfasst, in eigenen Worten; kein Text, Code ode
 4. E-Rechnung → Preise → Rezeptkosten → DATEV in einem Fluss.
 5. Schnelle Einrichtung (häufigste Klage) und offene, feste Preise ohne Einrichtungsgebühr.
 
-## Was Mirepa fehlte und in welcher Reihenfolge es kommt
+## Was GLB AI Suite fehlte und in welcher Reihenfolge es kommt
 
 1. ✅ E-Rechnung (XRechnung, ZUGFeRD) einlesen → Preise aktualisieren, Preissprünge melden (2026-10-21)
 2. ✅ DATEV-Export der Lieferantenrechnungen (2026-10-21)

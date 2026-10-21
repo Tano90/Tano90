@@ -10,8 +10,8 @@ test.describe("L02 Branchenseiten", () => {
   test("L02-H1 Startseite verlinkt alle vier Branchen", async ({ page }) => {
     await page.goto("/");
     const section = page.getByRole("region", { name: "Vom Bistro bis zur Kantine" });
-    for (const name of ["Restaurant", "Catering", "Kantine"]) await expect(section.getByRole("link", { name: new RegExp(`Mirepa für ${name}`) })).toBeVisible();
-    await section.getByRole("link", { name: /Mirepa für Restaurant/ }).click();
+    for (const name of ["Restaurant", "Catering", "Kantine"]) await expect(section.getByRole("link", { name: new RegExp(`GLB AI Suite für ${name}`) })).toBeVisible();
+    await section.getByRole("link", { name: /GLB AI Suite für Restaurant/ }).click();
     await expect(page).toHaveURL(/\/branchen\/restaurant$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(PAGES[0][1]);
   });

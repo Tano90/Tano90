@@ -16,7 +16,7 @@ test.describe("Nachfrage vor dem Start", () => {
     await form.getByLabel("Betrieb").fill("Café Morgenrot & Söhne");
     await form.getByLabel("E-Mail").fill("jana@anfrage.example");
     await form.getByLabel("Wie viele Standorte?").fill("3");
-    await form.getByLabel(/Was soll Mirepa/).fill("=Kalkulation für drei Filialen 🍰");
+    await form.getByLabel(/Was soll die Suite/).fill("=Kalkulation für drei Filialen 🍰");
     await axe();
     await form.getByRole("button", { name: "Vorführung anfragen" }).click();
     await expect(page.getByText("Danke, Jana Köhler!")).toBeVisible();

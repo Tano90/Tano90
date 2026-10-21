@@ -1,11 +1,11 @@
 # Marketing-Plan vor dem Start: Nachfrage messen
 
-Stand: 2026-10-21 · Produkt: Mirepa · Ziel dieses Plans: **in sechs Wochen herausfinden, ob Küchen das wollen**, bevor
+Stand: 2026-10-21 · Produkt: GLB AI Suite · Ziel dieses Plans: **in sechs Wochen herausfinden, ob Küchen das wollen**, bevor
 Geld in Domain, Werbung oder Abrechnung fließt.
 
 ## Die Frage, die der Plan beantwortet
 
-> Melden sich genug Küchen von selbst, wenn sie Mirepa sehen, und wollen sie es nach einer Vorführung nutzen?
+> Melden sich genug Küchen von selbst, wenn sie GLB AI Suite sehen, und wollen sie es nach einer Vorführung nutzen?
 
 Gemessen wird das in deiner Übersicht unter **Einstellungen → Anfragen** (`/admin/leads`): Aufrufe der Startseite,
 Anfragen, Anfragen je Aufruf, nach Quelle und Woche, dazu der Status jeder Anfrage (neu, kontaktiert, Vorführung,
@@ -36,13 +36,13 @@ die Leute in der Vorführung? Das steht in den Notizen jeder Anfrage.
 
 ## Warum nicht Shopify
 
-Shopify verkauft Waren und Downloads. Mirepa ist ein Abo-Dienst, die Abrechnung pro Standort läuft schon über Stripe in
+Shopify verkauft Waren und Downloads. GLB AI Suite ist ein Abo-Dienst, die Abrechnung pro Standort läuft schon über Stripe in
 der App. Ein Shop wäre eine zweite Website mit eigenen Kosten (ab ca. 30 € im Monat), die Anfragen lägen getrennt von der
-App, und ein Abo dort bräuchte eine Zusatz-App. Die Startseite von Mirepa kann alles, was der Test braucht.
+App, und ein Abo dort bräuchte eine Zusatz-App. Die Startseite von GLB AI Suite kann alles, was der Test braucht.
 
 ## Was du einmal einrichten musst (ohne Domain)
 
-Für die Vorstart-Phase reicht eine kostenlose Adresse von Vercel (`mirepa-xyz.vercel.app`), die Domain kommt später.
+Für die Vorstart-Phase reicht eine kostenlose Adresse von Vercel (`glb-xyz.vercel.app`), die Domain kommt später.
 
 1. **Vercel-Konto** (kostenlos) und das Repository verbinden, Root Directory `web`.
 2. **Supabase-Projekt** (kostenlos, Region Frankfurt): Datenbank für Anfragen und Zähler, und die Anmeldung für deinen
@@ -112,4 +112,4 @@ Preise der Anbieter vor dem Abschluss selbst prüfen; sie ändern sich.
 Für Anzeigen und Mails je Zielgruppe direkt auf die passende Seite verlinken, mit `utm_source`, damit die Anfrage
 die Quelle trägt: `/branchen/hotel`, `/branchen/restaurant`, `/branchen/catering`, `/branchen/kantine`.
 Hotels zuerst mit F&B-Controlling und Housekeeping ansprechen; die Seite sagt offen, dass es noch keine
-PMS-Anbindung gibt und Mirepa keine Finanzbuchhaltung ersetzt.
+PMS-Anbindung gibt und GLB AI Suite keine Finanzbuchhaltung ersetzt.

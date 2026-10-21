@@ -1,4 +1,4 @@
-# Deploy-Checkliste: Mirepa
+# Deploy-Checkliste: GLB AI Suite
 
 Datum: 2026-10-21 · Vorabprüfung auf `9e92c72` · **Go von dir: noch nicht**
 
@@ -10,7 +10,7 @@ Vier Punkte stoppen den Deploy, jeder für sich:
    durchgeklickt (Testplan A02). Score 94,1, Must-haves 20 von 21.
 2. **Rechtsseiten ausgefüllt, nicht geprüft:** Alle Betreiberangaben stehen (2026-10-21, `npm run legal:check` grün).
    Die anwaltliche Prüfung der vier Seiten steht aus.
-3. **Name gewählt, aber nicht geprüft:** Mirepa (2026-10-21, statt Pantra, das einen Namensvetter im App Store hat).
+3. **Name gewählt, aber nicht geprüft:** GLB AI Suite (2026-10-21, statt Pantra, das einen Namensvetter im App Store hat).
    Bisher nur Websuche; Markenregister, Domain und Stores sind hier gesperrt. Vor dem Domainkauf prüfen (`brand.md`).
 4. **Produktionsdienste fehlen:** kein Supabase-, Stripe-, Resend- oder Vercel-Konto verbunden. Die lege ich nicht an.
 
@@ -33,7 +33,7 @@ Alles, was sich ohne deine Konten prüfen lässt, ist grün. Live ging nichts, e
 | Datenschutz und Nutzungsbedingungen live, alle Auftragsverarbeiter | ⚠️ vollständig, anwaltliche Prüfung offen | `/legal/imprint`, `/legal/privacy` (Zwecke, Rechtsgrundlagen, Fristen aus dem Code, Cookies, Drittland), `/legal/terms` (B2B-AGB), `/legal/dpa` (AVV nach Art. 28 mit TOMs); Dienstleister aus einer Liste (`src/lib/legal.ts`), E2E `legal.spec.ts`; `npm run legal:check` → **exit 0**; anwaltliche Prüfung offen |
 | Cookie-Banner | ✅ nicht nötig, solange es so bleibt | nur technisch notwendige Cookies (Sitzung, gewähltes Outlet) |
 | Konto löschen funktioniert | ⚠️ teilweise | Daten: E2E A04-H1/N1 grün, inkl. Zentralküchen-Anforderungen (Migration 0012); Login-Löschung über die Supabase Admin API nicht getestet (kein Projekt) |
-| Favicon, Titel, OG-Bild, E-Mails, App-Icon eigen | ⚠️ teilweise | Titel „… · Mirepa“ ✅, E-Mail-Absender ✅, Favicon nur Platzhalter, **kein OG-Bild**, kein Logo (Briefing in `brand.md`) |
+| Favicon, Titel, OG-Bild, E-Mails, App-Icon eigen | ⚠️ teilweise | Titel „… · GLB AI Suite“ ✅, E-Mail-Absender ✅, Favicon nur Platzhalter, **kein OG-Bild**, kein Logo (Briefing in `brand.md`) |
 | Kamera-Scan (Barcode) | 🖐 von Hand offen | F08-B5: Chrome auf Android über HTTPS; erst auf der Live-Domain prüfbar |
 
 ## Produktion (vorbereitet, von dir auszuführen)
@@ -76,7 +76,7 @@ Die Domain kaufst du (Name erst nach der Markenprüfung in `brand.md`). Dann:
 
 ## Mobile
 
-Keine native App. Mirepa läuft im Browser (Handy-Layout geprüft). `launch/listing.json` ist für später vorbereitet.
+Keine native App. GLB AI Suite läuft im Browser (Handy-Layout geprüft). `launch/listing.json` ist für später vorbereitet.
 
 ## Erste Woche nach dem Start
 
@@ -88,7 +88,7 @@ Keine native App. Mirepa läuft im Browser (Handy-Layout geprüft). `launch/list
 
 ## Bis zum Go
 
-1. **Namen prüfen:** Mirepa in DPMA, EUIPO/TMview, USPTO (Klassen 9 und 42), Domains und Stores (Liste in `brand.md`);
+1. **Namen prüfen:** GLB AI Suite in DPMA, EUIPO/TMview, USPTO (Klassen 9 und 42), Domains und Stores (Liste in `brand.md`);
    dann Markenrecherche durch eine Anwältin oder einen Anwalt, Domain kaufen, Logo und OG-Bild anfertigen.
 2. **Rechtsseiten:** deine Angaben in `web/src/lib/legal.ts` → `OPERATOR` eintragen, bis `npm run legal:check` grün ist;
    dann alle vier Seiten anwaltlich prüfen lassen. Die Seiten versprechen auch Dinge, die du organisatorisch einlösen
@@ -102,7 +102,7 @@ Keine native App. Mirepa läuft im Browser (Handy-Layout geprüft). `launch/list
 
 ## Live im Vorstart-Modus (2026-10-21)
 
-`https://mirepavercelapp.vercel.app`: Vercel (Hobby, Region fra1), Supabase (Free, Frankfurt, Data API aus),
+`https://glbvercelapp.vercel.app`: Vercel (Hobby, Region fra1), Supabase (Free, Frankfurt, Data API aus),
 Resend (ohne Domain). Von dir geprüft: `/api/health` meldet die Datenbank, Startseite im Vorstart-Modus, Registrierung
 mit Bestätigungsmail (nach Korrektur der Supabase-URL-Konfiguration), Testanfrage mit Mail und Eintrag in der Übersicht.
 Von dieser Arbeitsumgebung aus ist die Seite nicht erreichbar (Netzwerk-Richtlinie), alle Prüfungen liefen in deinem

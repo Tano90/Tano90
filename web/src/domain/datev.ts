@@ -45,7 +45,7 @@ export function datevExtf(input: { settings: DatevSettings; from: string; to: st
   if (fiscalYearStart(to, st.fiscalYearStartMonth) !== fyStart) throw new Error("Der Zeitraum muss in einem Wirtschaftsjahr liegen (DATEV-Vorgabe).");
   const created = input.createdAt.toISOString().replace(/[-:TZ.]/g, "").slice(0, 17);
   const header = [
-    q("EXTF"), 700, 21, q("Buchungsstapel"), 13, created, "", q("RE"), q("Mirepa"), q(""), st.consultantNumber, st.clientNumber, fyStart,
+    q("EXTF"), 700, 21, q("Buchungsstapel"), 13, created, "", q("RE"), q("GLB AI Suite"), q(""), st.consultantNumber, st.clientNumber, fyStart,
     st.accountLength, ymd(from), ymd(to), q(`Eingangsrechnungen ${from} bis ${to}`.slice(0, 30).trim()), q(""), 1, 0, 0, q("EUR"), "", q(""), "", "", q(st.chart), "", "", q(""), q(""),
   ].join(";");
   const rows: string[] = [];

@@ -1,4 +1,9 @@
-# Marke: Mirepa
+> **Stand 2026-10-21: Das Produkt heißt jetzt GLB AI Suite (Gastro Leadership Board).** Die Abschnitte unten
+> beschreiben die Markenentscheidungen des früheren Arbeitsnamens; Farben, Stimme und Regeln gelten weiter.
+> Neues Logo: drei steigende Balken auf der Aubergine-Kachel mit Safran-Punkt (`web/src/components/brand/logo.tsx`).
+> Vor dem Start: Markenrecherche für „GLB AI Suite“ (DPMA, EUIPO) und Domain prüfen.
+
+# Marke: GLB AI Suite
 
 Stand: 2026-10-21 (zweiter Durchgang, „ohne Reviews“). Die Positionierung aus `/replica-entrepreneur` fehlt weiter (0 Bewertungen, Quellen gesperrt). Der Name
 stützt sich deshalb auf das, was das Produkt nachweislich besser macht: Es zeigt live, was ein Teller kostet, und hält das
@@ -7,8 +12,8 @@ Lager dazu. Wenn die Bewertungen eine andere Positionierung ergeben, kann der Na
 
 ## Name
 
-**Entschieden am 2026-10-21: Mirepa.** Du hast die Wahl mir überlassen, mit der Vorgabe „ein Name, den es noch nicht gibt“.
-Mirepa ist ein Kunstwort aus *Mirepoix*, dem gewürfelten Röstgemüse, auf dem die klassische Küche ihre Fonds und Saucen
+**Entschieden am 2026-10-21: GLB AI Suite.** Du hast die Wahl mir überlassen, mit der Vorgabe „ein Name, den es noch nicht gibt“.
+GLB AI Suite ist ein Kunstwort aus *Mirepoix*, dem gewürfelten Röstgemüse, auf dem die klassische Küche ihre Fonds und Saucen
 aufbaut: die Grundlage, auf der alles andere rechnet. Drei Silben, im Deutschen und Englischen gleich gesprochen
 (Mi-re-pa), keine schiefe Bedeutung bekannt. Nichts teilt Klang, Schriftbild oder Bedeutung mit dem Original.
 
@@ -25,12 +30,12 @@ dieser Umgebung gesperrt. Das ist eine Vorprüfung, keine Freigabe; vor dem Doma
 | Platevo | **platevo.io: Restaurant-Software** (digitale Speisekarte, Bestellungen, Küchenmonitor) | raus |
 | Gramzo | gramzo.in, Essensbestell-App | raus |
 | Kalkulo | Rechner-App „Kalkulilo“ im App Store | raus, zu nah |
-| Portora | nur Pflanzensorte, Burg und Schule in Nordirland; kein Unternehmen gefunden | Ersatz, falls Mirepa in einem Register scheitert |
+| Portora | nur Pflanzensorte, Burg und Schule in Nordirland; kein Unternehmen gefunden | Ersatz, falls GLB AI Suite in einem Register scheitert |
 | Tellerwert | kein Produkt; beschreibend, schwer einzutragen | Ersatz nur für DACH |
-| **Mirepa** | **kein Treffer**, auch nicht mit Branche; „Mirepoix“ als Software ebenfalls nicht gefunden | **gewählt** |
+| **GLB AI Suite** | **kein Treffer**, auch nicht mit Branche; „Mirepoix“ als Software ebenfalls nicht gefunden | **gewählt** |
 
 Der Name steht an einer Stelle (`web/src/lib/brand.ts`); die Landingpage liest ihn von dort. Der alte Name „Pantra“
-steht in `brand.json` → `avoid`, damit der Sweep jeden Rest findet. API-Schlüssel beginnen jetzt mit `mirepa_`.
+steht in `brand.json` → `avoid`, damit der Sweep jeden Rest findet. API-Schlüssel beginnen jetzt mit `glb_`.
 
 > **Vorher am 2026-10-21: Pantra hat einen Namensvetter.** Im App Store gibt es „Pantra: Pantry Inventory“ (iOS, Entwickler
 > Artur Popov), eine Vorratsverwaltung für den Haushalt mit Mindestbestand, Einkaufsliste und Schwund-Historie
@@ -74,8 +79,8 @@ In dieser Umgebung sind Markenregister, Domain-Abfragen, App Stores und soziale 
 Prüfungen ist gelaufen.** Nur die Websuche nach „Name + Branche“ lief. Kein Treffer heißt nur, dass die Suche nichts
 gefunden hat. Es heißt nicht „frei“.
 
-Stand 2026-10-21 für **Mirepa**: Websuche ohne Treffer (auch „Mirepa app/software/restaurant/food“); alle anderen Zeilen
-**noch zu prüfen**: DPMA, EUIPO/TMview, USPTO (Klassen 9 und 42), ISED, WIPO, `mirepa.com`/`.de`/`.app`, App Store und
+Stand 2026-10-21 für **GLB AI Suite**: Websuche ohne Treffer (auch „GLB AI Suite app/software/restaurant/food“); alle anderen Zeilen
+**noch zu prüfen**: DPMA, EUIPO/TMview, USPTO (Klassen 9 und 42), ISED, WIPO, `glb.com`/`.de`/`.app`, App Store und
 Google Play, Handles auf X, Instagram, TikTok, GitHub, LinkedIn.
 
 Ältere Tabelle der ersten Runde:
@@ -134,7 +139,7 @@ zum stärksten Unterschied, der Live-Kalkulation. Sobald echte Bewertungen da si
 
 ## Palette
 
-Die Markenfarbe des Originals ist unbekannt: Seine Seite ist hier gesperrt, und es gibt keine Screenshots. Mirepa nutzt
+Die Markenfarbe des Originals ist unbekannt: Seine Seite ist hier gesperrt, und es gibt keine Screenshots. GLB AI Suite nutzt
 **Aubergine**, eine Farbfamilie, die keine Statusrolle belegt (Rot = Fehler, Grün = Erfolg, Bernstein = Warnung, Blau = Hinweis).
 Damit wird ein Button nie mit einer Meldung verwechselt. Vor dem Start mit dem Original vergleichen und dessen Farben in
 `brand.json` → `colors` eintragen, damit der Sweep sie findet.
@@ -168,14 +173,14 @@ den Tokens: `ink`, `ink-raised`, `on-ink`, `on-ink-muted`, `saffron`, `on-saffro
 - **Darf dem Original nicht ähneln:** kein gemeinsames Grundelement, kein gleiches Farbpaar, kein gleicher Buchstabentrick.
   Die Entwürfe neben das Logo des Originals legen und prüfen. Dessen Logo konnte hier nicht angesehen werden.
 - **Umgesetzt (2026-10-21):** Bildmarke aus fünf Würfeln, die ein „M“ bilden, auf Aubergine; der mittlere Würfel in
-  Safran (die Karotte im Mirepoix), leicht gedreht. Wortmarke „mirepa“ klein, extrafett, eng. Komponente
+  Safran (die Karotte im Mirepoix), leicht gedreht. Wortmarke „glb“ klein, extrafett, eng. Komponente
   `web/src/components/brand/logo.tsx`, Favicon `web/src/app/icon.svg`, Vorschaubild für geteilte Links
   `web/src/app/opengraph-image.tsx` (Abbild: `replica/launch/og-image.png`). Eine Designerin kann daraus noch eine
   Reinzeichnung machen; das App-Icon 1024 px für die Stores folgt mit der nativen App.
 
 ## Stimme
 
-Mirepa spricht wie eine erfahrene Kollegin am Pass: weiß, was zu tun ist, und sagt es so, dass es in der Hektik ankommt.
+GLB AI Suite spricht wie eine erfahrene Kollegin am Pass: weiß, was zu tun ist, und sagt es so, dass es in der Hektik ankommt.
 Wir duzen.
 
 **Drei Wörter**
@@ -212,12 +217,12 @@ Ein Fehler zog sich durch die ganze App: Zahlen mit Mehrzahl auch bei 1 („1 Ei
 „1 Eintrag gespeichert“, „1 Zeile übernehmen“, „1 neuer Preis (davon 1 neue Zutat)“. Große Zahlen mit Tausenderpunkt
 („24.000 Verkäufe“).
 
-Alle Texte sind für Mirepa neu geschrieben. Die des Originals hat der Klon nie gesehen, weil die Recon nur Zusammenfassungen kannte.
+Alle Texte sind für GLB AI Suite neu geschrieben. Die des Originals hat der Klon nie gesehen, weil die Recon nur Zusammenfassungen kannte.
 
 ## Sweep
 
 `python3 ~/.claude/skills/replica-brand/sweep.py . --config replica/brand.json` → 2026-10-21: **sauber** („Nothing of the
 original's name, domain or colours found“). `contrast.py`: 31 Paare, 0 AA-Fehler. Die Farben des Originals sind weiter
 unbekannt und deshalb nicht im Sweep.
-Per Augenschein geprüft: Seitentitel (Vorlage „Seite · Mirepa“), Favicon (Platzhalter), Absendername der E-Mails, Kopf der App
+Per Augenschein geprüft: Seitentitel (Vorlage „Seite · GLB AI Suite“), Favicon (Platzhalter), Absendername der E-Mails, Kopf der App
 und der Anmeldeseiten. Noch offen: OG-Bild und App-Icon, die kommen mit dem Logo.

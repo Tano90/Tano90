@@ -17,6 +17,7 @@ import { type BillingState, accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import { ORDER_RESERVE_PCT, forecastUse, orderCoverDays, suggestFromUse, weekdayUsage } from "@/domain/stock";
 import type { DatevSettings } from "@/domain/datev";
+import type { CostSetup, FixedCost, FixedCostInput } from "../cost-types";
 import type { DatevSetup, EInvoiceSave, InvoiceListRow } from "../finance-types";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
@@ -136,7 +137,7 @@ const EXPORT: [table: string, where: string, omit?: string[]][] = [
   ["haccp_checklists", BY_LIBRARY], ["haccp_items", "checklist_id in (select id from haccp_checklists where library_id = $1)"],
   ["haccp_records", "item_id in (select i.id from haccp_items i join haccp_checklists c on c.id = i.checklist_id where c.library_id = $1)"],
   ["production_requests", BY_LIBRARY],
-  ["datev_settings", BY_LIBRARY],
+  ["datev_settings", BY_LIBRARY], ["cost_settings", BY_LIBRARY], ["fixed_costs", BY_LIBRARY],
 ];
 
 export async function exportLibrary(s: Session): Promise<Record<string, Record<string, unknown>[]>> {
@@ -1810,3 +1811,43 @@ export async function saveDatevSettings(s: Session, v: DatevSettings, creditors:
 
 
 
+
+// ---------------------------------------------------------------- contribution margin: costs
+
+export async function getCostSetup(s: Session): Promise<CostSetup> {
+  assertEditor(s);
+  return run(s, async (tx) => {
+    const [st] = await tx<{ variableRevenuePct: number; perItemCents: number }[]>`select variable_revenue_pct::float as variable_revenue_pct, per_item_cents from cost_settings where library_id = ${s.libraryId}`;
+    const fixed = await tx<FixedCost[]>`select id, outlet_id, name, category, monthly_cents from fixed_costs where library_id = ${s.libraryId} and archived_at is null order by category, name`;
+    return { variableRevenuePct: st?.variableRevenuePct ?? 0, perItemCents: st?.perItemCents ?? 0, fixed };
+  });
+}
+
+export async function saveCostSettings(s: Session, v: { variableRevenuePct: number; perItemCents: number }) {
+  assertEditor(s);
+  await run(s, (tx) => tx`
+    insert into cost_settings ${tx({ libraryId: s.libraryId, ...v })}
+    on conflict (library_id) do update set variable_revenue_pct = excluded.variable_revenue_pct, per_item_cents = excluded.per_item_cents`);
+}
+
+export async function saveFixedCost(s: Session, input: FixedCostInput): Promise<string> {
+  assertEditor(s);
+  if (input.outletId && !isUuid(input.outletId)) throw new Error("Outlet nicht gefunden.");
+  return run(s, async (tx) => {
+    const values = { outletId: input.outletId, name: input.name, category: input.category, monthlyCents: input.monthlyCents };
+    if (input.id) {
+      if (!isUuid(input.id)) throw new Error("Fixkosten nicht gefunden.");
+      const done = await tx`update fixed_costs set ${tx(values)} where id = ${input.id} and library_id = ${s.libraryId} and archived_at is null returning id`;
+      if (!done.length) throw new Error("Fixkosten nicht gefunden.");
+      return input.id;
+    }
+    const [{ id }] = await tx<{ id: string }[]>`insert into fixed_costs ${tx({ ...values, libraryId: s.libraryId })} returning id`;
+    return id;
+  });
+}
+
+export async function archiveFixedCost(s: Session, id: string) {
+  assertEditor(s);
+  if (!isUuid(id)) throw new Error("Fixkosten nicht gefunden.");
+  await run(s, (tx) => tx`update fixed_costs set archived_at = now() where id = ${id} and library_id = ${s.libraryId}`);
+}

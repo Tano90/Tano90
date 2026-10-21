@@ -6,6 +6,7 @@ import { billOfMaterials } from "@/domain/menus";
 import { type CountBreakdown, applyMovement } from "@/domain/stock";
 import type { DatevSettings } from "@/domain/datev";
 import type { TaxLine } from "./finance-types";
+import type { FixedCost } from "./cost-types";
 import type {
   AllergenRow, ApiKey, Category, CountDraft, HaccpChecklist, HaccpRecord, ProductionRequest, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
   PosItem, PurchaseOrder, Recipe, RecipeLine, Sale, StockEvent, StockItem, StockLevel, StockMovement, Supplier,
@@ -29,6 +30,8 @@ export type Db = {
   haccpChecklists: HaccpChecklist[];
   production: ProductionRequest[];
   datev: DatevSettings | null;
+  costSettings: { variableRevenuePct: number; perItemCents: number };
+  fixedCosts: (FixedCost & { archivedAt: string | null })[];
   creditors: Record<string, number>;
   haccpRecords: HaccpRecord[];
   invoices: {
@@ -100,7 +103,7 @@ export function seed(): Db {
       ...["Mittagstisch", "Abendkarte"].map((name, i) => ({ id: `cat-m${i}`, kind: "menu" as const, name })),
     ],
     ingredients: [], packages: [], suppliers: [], stockItems: [], allergens: {}, verified: {}, nutrition: {},
-    recipes: [], menus: [], outletPrices: [], invoices: [], haccpChecklists: [], haccpRecords: [], production: [], datev: null, creditors: {}, posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
+    recipes: [], menus: [], outletPrices: [], invoices: [], haccpChecklists: [], haccpRecords: [], production: [], datev: null, creditors: {}, costSettings: { variableRevenuePct: 0, perItemCents: 0 }, fixedCosts: [], posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
   };
 
   const sup = (id: string, companyName: string, orderEmail: string, leadTimeDays: number) =>

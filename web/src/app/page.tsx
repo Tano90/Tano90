@@ -63,14 +63,14 @@ const FEATURES = [
   { icon: ShieldCheck, title: "Fehler, bevor sie Geld kosten", body: "„2.5“ und „2,5“ ergeben dieselbe Menge, eine Bestellung kommt auch bei Doppelklick nur einmal an, und eine ungeprüfte Zutat macht ein Gericht „unbekannt“, nie „allergenfrei“." },
 ];
 
-// "Neu in Mirepa": only features that exist, shown with screenshots of the app (demo data).
+// "Neu": only features that exist, shown with screenshots of the app (demo data).
 const NEWS = [
   {
     icon: FileCheck2, kicker: "Einkauf & Buchhaltung", title: "E-Rechnung rein, DATEV raus",
-    body: "Seit 2025 müssen Betriebe E-Rechnungen empfangen können. Lade XRechnung oder ZUGFeRD hoch, und Mirepa stellt jede Position neben deinen bisherigen Preis.",
+    body: "Seit 2025 müssen Betriebe E-Rechnungen empfangen können. Lade XRechnung oder ZUGFeRD hoch, und die Suite stellt jede Position neben deinen bisherigen Preis.",
     points: ["XRechnung (UBL, CII) und ZUGFeRD/Factur-X-PDF", "Zuordnung über die Artikelnummer des Lieferanten", "Preissprünge ab 5 % markiert, neue Preise gehen auf Wunsch in alle Rezepte", "Buchungsstapel im DATEV-Format für den Steuerberater"],
     note: "Die erste DATEV-Datei bitte gemeinsam mit dem Steuerberater prüfen.",
-    shot: shotInvoice, alt: "E-Rechnung in Mirepa: Positionen mit bisherigem Preis, Preis laut Rechnung und markiertem Preissprung von 18,2 Prozent bei Knollensellerie.",
+    shot: shotInvoice, alt: `E-Rechnung in ${APP_NAME}: Positionen mit bisherigem Preis, Preis laut Rechnung und markiertem Preissprung von 18,2 Prozent bei Knollensellerie.`,
   },
 ];
 
@@ -78,7 +78,7 @@ const FAQ = [
   { q: "Kann ich meine Zutaten und Preise importieren?", a: `Ja. Die Preisliste deines Lieferanten als Excel- oder CSV-Datei hochladen: ${APP_NAME} zeigt vor dem Übernehmen jede Zeile als neu, geändert oder fehlerhaft. Übernommen wird erst, wenn du zustimmst.` },
   { q: `Funktioniert ${APP_NAME} mit meiner Kasse?`, a: "Über eine Datei oder eine Schnittstelle: Verkäufe als CSV hochladen oder von der Kasse per API senden lassen. Verknüpfte Gerichte werden über ihre Rezepte vom Lager abgebucht, Stornos zurückgebucht. Fertige Anbindungen an einzelne Kassenhersteller gibt es nicht." },
   { q: "Brauche ich für HACCP oder die Zentralküche ein Zusatzmodul?", a: "Nein. Alle Funktionen sind in jedem Tarif enthalten. Bezahlt wird nur pro Standort." },
-  { q: "Kann Mirepa E-Rechnungen lesen und an DATEV übergeben?", a: `Ja. ${APP_NAME} liest XRechnung (UBL und CII) und ZUGFeRD/Factur-X-PDFs, gleicht die Preise mit deinen ab und legt die Rechnung mit Steueraufteilung ab. Für die Buchhaltung gibt es einen DATEV-Buchungsstapel mit Wareneingang je Steuersatz und Kreditor je Lieferant. Die erste Datei bitte gemeinsam mit dem Steuerberater prüfen. Eine Finanzbuchhaltung ersetzt ${APP_NAME} nicht.` },
+  { q: `Kann die ${APP_NAME} E-Rechnungen lesen und an DATEV übergeben?`, a: `Ja. ${APP_NAME} liest XRechnung (UBL und CII) und ZUGFeRD/Factur-X-PDFs, gleicht die Preise mit deinen ab und legt die Rechnung mit Steueraufteilung ab. Für die Buchhaltung gibt es einen DATEV-Buchungsstapel mit Wareneingang je Steuersatz und Kreditor je Lieferant. Die erste Datei bitte gemeinsam mit dem Steuerberater prüfen. Eine Finanzbuchhaltung ersetzt ${APP_NAME} nicht.` },
   { q: "Wer haftet für die Allergenangaben?", a: `${APP_NAME} rechnet aus deinen Angaben, die Kennzeichnung gegenüber Gästen verantwortet dein Betrieb. Deshalb zeigt ${APP_NAME} ungeprüfte Zutaten offen an, statt sie als allergenfrei durchzuwinken.` },
   { q: "Wo liegen meine Daten?", a: "In der EU (Frankfurt). Zahlungen laufen über Stripe; deine Kartendaten sehen wir nie." },
   { q: "Was passiert nach der Testphase?", a: "Drei Tage vorher bekommst du eine E-Mail. Schließt du kein Abo ab, bleiben alle Daten erhalten: Du kannst sie ansehen und als Datei herunterladen, nur ändern geht erst wieder mit einem Abo. Es verlängert sich nichts automatisch." },
@@ -120,10 +120,10 @@ export default function LandingPage() {
               <ArrowRight aria-hidden className="size-4 shrink-0" />
             </a>
             <h1 id="hero" className="text-display lg:text-hero">
-              Was jeder Teller kostet. <span className="relative isolate inline-block whitespace-nowrap text-accent">Live.<span aria-hidden className="absolute inset-x-0 bottom-1 -z-10 h-4 -rotate-1 rounded-sm bg-saffron/70" /></span>
+              Gastro führen mit <span className="relative isolate inline-block whitespace-nowrap text-accent">echten Zahlen.<span aria-hidden className="absolute inset-x-0 bottom-1 -z-10 h-4 -rotate-1 rounded-sm bg-saffron/70" /></span>
             </h1>
             <p className="mt-6 max-w-xl text-base text-text-muted lg:text-lg lg:font-normal">
-              Rezepte, Einkauf, Lager und Zentralküche in einem Werkzeug, für Restaurants, Bars, Catering und Kantinen. Ändert sich ein Einkaufspreis, rechnet jedes Rezept mit,
+              Controlling, Kalkulation, Warenwirtschaft und Einkauf in einer Suite, für Restaurants, Bars, Catering und Kantinen. Ändert sich ein Einkaufspreis, rechnet jedes Rezept mit,
               und du siehst den echten Wareneinsatz, bevor die Karte gedruckt ist.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">

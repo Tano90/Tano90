@@ -1,7 +1,7 @@
 # Launch-Plan
 
 Voraussetzung: `/replica-deploy` grün, alle Must-haves fertig (`parity.md`: noch 1 offen, dein Login-Durchklick A02),
-Entwürfe der Rechtsseiten geprüft, **Name Mirepa in Registern und Stores geprüft** (`brand.md`; bisher nur Websuche).
+Entwürfe der Rechtsseiten geprüft, **Name GLB AI Suite in Registern und Stores geprüft** (`brand.md`; bisher nur Websuche).
 
 ## Vor dem Start (4–6 Wochen)
 
@@ -19,13 +19,13 @@ Die Recherche ist blockiert, deshalb sind das Kandidaten, keine Belege:
 - Reddit: r/KitchenConfidential, r/Chefit, r/restaurateur (Suchen: „recipe costing“, „inventory software“, „food cost spreadsheet“)
 - Deutschsprachig: Gastro-Gruppen auf Facebook und LinkedIn, Foren von Branchenmedien (z. B. HOGAPAGE), Verbände (DEHOGA-Landesverbände, Veranstaltungen)
 - Berufsschulen und Meisterkurse für Köche (Kalkulation ist Prüfungsstoff)
-Erst lesen, dann schreiben: in jeder Community zuerst Fragen beantworten, Mirepa nur nennen, wenn es passt und die Regeln es erlauben.
+Erst lesen, dann schreiben: in jeder Community zuerst Fragen beantworten, GLB AI Suite nur nennen, wenn es passt und die Regeln es erlauben.
 
 ## Launch-Post (Product Hunt / Hacker News „Show HN“)
 
 Führt mit dem, was belegt besser ist, nicht mit dem Vergleich zum Original (den Namen des Originals nicht nennen):
 
-> Mirepa: Was jeder Teller kostet, live – und Lager und Zentralküche rechnen mit.
+> GLB AI Suite: Was jeder Teller kostet, live – und Lager und Zentralküche rechnen mit.
 > Zutaten so anlegen, wie der Lieferant sie verkauft; Rezepte zeigen beim Tippen den Wareneinsatz pro Portion; die
 > Zentralküche sieht pro Tag, was die Standorte brauchen und welche Rohware fehlt; die Inventur auf dem Handy speichert
 > jede Zahl sofort, auch ohne Netz. HACCP und Rechnungsabgleich ohne Zusatzmodul. Pro Standort bezahlt, beliebig viele
@@ -43,11 +43,11 @@ Profile, keine Namen (nicht erfunden):
 - 2 Küchenchefs in Ausbildung/Meisterkurs (gute Testerinnen und Tester für die Kalkulation)
 
 Für jeden: 30 Minuten gemeinsame Einrichtung (ihre 20 meistgekauften Artikel, ihr teuerstes Gericht), nach einer Woche
-nachfragen, was sie in Mirepa nicht tun konnten. Das ist die echte Feature-Liste und die Grundlage für Preisgespräche.
+nachfragen, was sie in GLB AI Suite nicht tun konnten. Das ist die echte Feature-Liste und die Grundlage für Preisgespräche.
 
 ## Store (später)
 
-`listing.json` ist für die native App vorbereitet und besteht `listing.py`. Mirepa läuft heute nur im Browser; eingereicht
+`listing.json` ist für die native App vorbereitet und besteht `listing.py`. GLB AI Suite läuft heute nur im Browser; eingereicht
 wird erst mit einer echten App. Dann: Screenshots in den aktuell geforderten Größen, Datenschutz-Angaben (App Privacy /
 Data safety: E-Mail, Name, Betriebsdaten; keine Werbung, kein Tracking), Altersfreigabe 4+, Datenschutz- und Support-URL,
 Review-Notizen mit einem Demo-Konto. Nach Apple-Richtlinie 4.1 (Nachahmer) helfen die eigenen Funktionen und die eigene

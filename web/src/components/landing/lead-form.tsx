@@ -59,7 +59,7 @@ export function LeadForm({ appName }: { appName: string }) {
         <Field label="Telefon (optional)"><Input type="tel" value={f.phone} onChange={set("phone")} maxLength={40} autoComplete="tel" /></Field>
         <Field label="Wie viele Standorte?" hint="Optional"><Input inputMode="numeric" value={f.outlets} onChange={(e) => setF((p) => ({ ...p, outlets: e.target.value.replace(/\D/g, "").slice(0, 4) }))} /></Field>
       </div>
-      <Field label="Was soll Mirepa für euch lösen? (optional)"><Textarea value={f.message} onChange={set("message")} maxLength={2000} rows={3} /></Field>
+      <Field label="Was soll die Suite für euch lösen? (optional)"><Textarea value={f.message} onChange={set("message")} maxLength={2000} rows={3} /></Field>
       {/* Honeypot: hidden from people and screen readers, filled in by naive bots. */}
       <div aria-hidden className="sr-only">
         <label>Website <input tabIndex={-1} autoComplete="off" value={f.website} onChange={set("website")} /></label>

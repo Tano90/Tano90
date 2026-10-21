@@ -25,6 +25,8 @@ export const {
   getInvoice, saveInvoice, approveInvoice, listChecklists, getHaccpDay, saveHaccpRecords, haccpDeviations, saveChecklist, archiveChecklist, getMenuEngineering, importSales, importSalesWithKey, listPosItems, linkPosItem, listApiKeys, createApiKey, revokeApiKey,
   dashboard, exportLibrary,
   saveEInvoice, listInvoices, getDatevSetup, saveDatevSettings,
+  getCostSetup, saveCostSettings, saveFixedCost, archiveFixedCost,
 } = impl;
 export type * from "./finance-types";
+export type * from "./cost-types";
 export type { Billing, ChecklistDraft, HaccpEntry, IngredientFilter, ProductionInput, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "./repo-memory";

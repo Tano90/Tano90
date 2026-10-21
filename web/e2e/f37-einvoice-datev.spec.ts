@@ -25,7 +25,7 @@ test.describe("Rechnungen: E-Rechnung und DATEV", () => {
     await db()`update stock_items set supplier_sku = 'SP-77' where ingredient_id = (select id from ingredients where name = 'Lauch')`;
     await page.goto("/invoices");
     await page.getByLabel("E-Rechnung hochladen").setInputFiles({ name: "RE-2026-1042.xml", mimeType: "application/xml", buffer: Buffer.from(CII) });
-    await expect(page.getByLabel("Lieferant in Mirepa")).toHaveValue(sid("sup-frische"));
+    await expect(page.getByLabel("Lieferant in der Suite")).toHaveValue(sid("sup-frische"));
     const table = page.getByRole("table", { name: "Positionen der Rechnung" });
     await expect(table.getByRole("row", { name: /Knollensellerie/ })).toContainText("+18,2 %");
     await expect(table.getByRole("row", { name: /Lauch/ })).toContainText("SP-77");
@@ -55,7 +55,7 @@ test.describe("Rechnungen: E-Rechnung und DATEV", () => {
     await expect(page.getByText("RE-2026-1042")).toBeVisible();
     await page.getByRole("button", { name: "Verwerfen" }).click();
     await page.getByLabel("E-Rechnung hochladen").setInputFiles({ name: "4711.xml", mimeType: "application/xml", buffer: Buffer.from(UBL) });
-    await expect(page.getByLabel("Lieferant in Mirepa")).toHaveValue(sid("sup-molkerei"));
+    await expect(page.getByLabel("Lieferant in der Suite")).toHaveValue(sid("sup-molkerei"));
     await expect(page.getByRole("table", { name: "Positionen der Rechnung" })).toContainText("Sahne 30 %");
     await page.getByRole("button", { name: "Verwerfen" }).click();
     await page.getByLabel("E-Rechnung hochladen").setInputFiles({ name: "scan.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n1 0 obj\n<< >>\nendobj\n%%EOF") });
@@ -85,7 +85,7 @@ test.describe("Rechnungen: E-Rechnung und DATEV", () => {
     expect(res.status()).toBe(200);
     expect(res.headers()["content-disposition"]).toMatch(/EXTF_Buchungsstapel_/);
     const lines = (await res.body()).toString("latin1").split("\r\n");
-    expect(lines[0]).toMatch(/^"EXTF";700;21;"Buchungsstapel";13;\d{17};;"RE";"Mirepa";"";29098;55003;\d{8};4;/);
+    expect(lines[0]).toMatch(/^"EXTF";700;21;"Buchungsstapel";13;\d{17};;"RE";"GLB AI Suite";"";29098;55003;\d{8};4;/);
     expect(lines[2]).toMatch(/^67,20;"S";"EUR";;;"";3300;70001;"";\d{4};"RE-2026-1042";"";;"Frischehof Lindner"$/);
     expect(lines[3]).toMatch(/^14,28;"S";"EUR";;;"";3400;70001;/);
   });

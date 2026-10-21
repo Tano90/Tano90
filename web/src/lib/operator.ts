@@ -1,4 +1,4 @@
-// The people who run Mirepa itself (not a kitchen): they see the inquiries and the demand numbers.
+// The people who run the GLB AI Suite itself (not a kitchen): they see the inquiries and the demand numbers.
 // Set OPERATOR_EMAILS to a comma-separated list of the accounts' e-mail addresses.
 import type { Session } from "@/data/types";
 

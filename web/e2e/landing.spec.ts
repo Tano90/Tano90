@@ -3,8 +3,8 @@ import { expect, expectNoHorizontalScroll, test } from "./fixtures";
 test.describe("L01 Landingpage", () => {
   test("L01-H1 erreichbar ohne Anmeldung, barrierefrei, führt zur Registrierung", async ({ page, axe }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Was jeder Teller kostet. Live.");
-    await expect(page.getByRole("img", { name: /Rezept „Linsensuppe“ in Mirepa/ })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Gastro führen mit echten Zahlen.");
+    await expect(page.getByRole("img", { name: /Rezept „Linsensuppe“ in GLB AI Suite/ })).toBeVisible();
     await axe();
     await page.getByRole("link", { name: /14 Tage kostenlos testen/ }).first().click();
     await expect(page).toHaveURL(/\/signup$/);

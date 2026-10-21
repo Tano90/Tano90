@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import { exportLibrary } from "@/data/repo";
 import { canManageTeam, getSession } from "@/data/session";
-import { APP_NAME } from "@/lib/brand";
+import { APP_SLUG } from "@/lib/brand";
 import { dayIn } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
@@ -13,11 +13,11 @@ export async function GET() {
   if (!s) return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   if (!canManageTeam(s.role)) return NextResponse.json({ error: "Den Export dürfen Inhaber und Admins." }, { status: 403 });
   const data = await exportLibrary(s);
-  const body = JSON.stringify({ format: `${APP_NAME.toLowerCase()}-export`, version: 1, exportedAt: new Date().toISOString(), data }, null, 2);
+  const body = JSON.stringify({ format: `${APP_SLUG}-export`, version: 1, exportedAt: new Date().toISOString(), data }, null, 2);
   return new NextResponse(body, {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${APP_NAME.toLowerCase()}-export-${dayIn()}.json"`,
+      "Content-Disposition": `attachment; filename="${APP_SLUG}-export-${dayIn()}.json"`,
       "Cache-Control": "no-store",
     },
   });

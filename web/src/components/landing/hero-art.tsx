@@ -1,8 +1,8 @@
 import { Check, ClipboardList, Send, Thermometer, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-// Our own illustration: a mirepoix on a cutting board (carrot, celery, onion, diced), the dish the name comes from.
-// The floating cards show what Mirepa does with it. Their values are examples in the style of the demo data.
+// Our own illustration: a mirepoix on a cutting board (carrot, celery, onion, diced): where every plate cost starts.
+// The floating cards show what the suite does with it. Their values are examples in the style of the demo data.
 
 type Cube = [x: number, y: number, rot: number, kind: "carrot" | "celery" | "onion"];
 const CUBES: Cube[] = [

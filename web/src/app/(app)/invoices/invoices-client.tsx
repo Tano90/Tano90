@@ -79,7 +79,7 @@ export function EInvoiceInbox({ suppliers }: { suppliers: Supplier[] }) {
   return (
     <section aria-labelledby="inbox" className="rounded-lg border border-border bg-bg p-4">
       <h2 id="inbox" className="flex items-center gap-2 text-lg"><FileCheck2 aria-hidden className="size-5 text-accent" /> E-Rechnung einlesen</h2>
-      <p className="mt-1 max-w-3xl text-sm text-text-muted">XRechnung (XML) oder ZUGFeRD/Factur-X (PDF mit eingebetteter XML). Mirepa liest Lieferant, Beträge, Steuersätze und jede Position, vergleicht die Preise mit deinen und übernimmt sie auf Wunsch. Die Datei wird erst beim Speichern hochgeladen.</p>
+      <p className="mt-1 max-w-3xl text-sm text-text-muted">XRechnung (XML) oder ZUGFeRD/Factur-X (PDF mit eingebetteter XML). Die Suite liest Lieferant, Beträge, Steuersätze und jede Position, vergleicht die Preise mit deinen und übernimmt sie auf Wunsch. Die Datei wird erst beim Speichern hochgeladen.</p>
       <div className="mt-3 max-w-xl"><FileUpload label="E-Rechnung hochladen" accept=".xml,.pdf" formats="XML oder PDF (ZUGFeRD)" state={state} doneText="Gelesen. Bitte unten prüfen." onFile={onFile} /></div>
 
       {inv && (
@@ -91,7 +91,7 @@ export function EInvoiceInbox({ suppliers }: { suppliers: Supplier[] }) {
             <div><dt className="text-xs text-text-muted">Netto / Brutto</dt><dd className="num">{formatCents(inv.netCents)} / {formatCents(inv.grossCents)}</dd></div>
             {inv.taxes.map((t) => <div key={t.rateBp}><dt className="text-xs text-text-muted">{t.rateBp / 100} % USt.</dt><dd className="num">{formatCents(t.taxCents)} auf {formatCents(t.netCents)}</dd></div>)}
           </dl>
-          <Field label="Lieferant in Mirepa" hint={supplierId ? undefined : "Kein Lieferant mit passendem Namen gefunden, bitte wählen."}>
+          <Field label="Lieferant in der Suite" hint={supplierId ? undefined : "Kein Lieferant mit passendem Namen gefunden, bitte wählen."}>
             <select className={cn(controlClass, "max-w-md")} value={supplierId} onChange={(e) => preview(e.target.value, inv)}>
               <option value="">Bitte wählen</option>
               {suppliers.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
