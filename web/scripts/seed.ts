@@ -46,6 +46,7 @@ try {
     await tx`insert into recipes ${tx(d.recipes.map((r) => ({ id: sid(r.id), libraryId: lib, name: r.name, categoryId: u(r.categoryId), productType: r.productType, portions: r.portions, netQuantityBase: r.netQuantityBase, netUnit: r.netUnit, sellPriceCents: r.sellPriceCents, sellPriceIncludesVat: r.sellPriceIncludesVat, vatBp: r.vatBp, targetFoodCostBp: r.targetFoodCostBp, prepMinutes: r.prepMinutes, instructions: r.instructions })))}`;
     await tx`insert into recipe_lines ${tx(d.recipes.flatMap((r) => r.lines.map((l) => ({ recipeId: sid(r.id), ingredientId: u(l.ingredientId), subRecipeId: u(l.subRecipeId), quantity: l.quantity, unit: l.unit, position: l.position }))))}`;
     await tx`insert into ingredient_nutrition ${tx(Object.entries(d.nutrition).map(([id, n]) => ({ ingredientId: sid(id), ...n })))}`;
+    await tx`insert into production_requests ${tx(d.production.map((p) => ({ id: sid(p.id), libraryId: lib, fromOutletId: sid(p.fromOutletId), kitchenOutletId: sid(p.kitchenOutletId), recipeId: sid(p.recipeId), portions: p.portions, neededOn: p.neededOn, note: p.note, status: p.status, createdBy: u(p.createdBy), createdAt: p.createdAt })))}`;
     for (const c of d.haccpChecklists) {
       await tx`insert into haccp_checklists ${tx({ id: sid(c.id), libraryId: lib, name: c.name })}`;
       await tx`insert into haccp_items ${tx(c.items.map((i) => ({ id: sid(i.id), checklistId: sid(c.id), position: i.position, label: i.label, kind: i.kind, minValue: i.minValue, maxValue: i.maxValue })))}`;

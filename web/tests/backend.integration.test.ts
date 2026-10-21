@@ -179,6 +179,22 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
   });
 
+  describe("production", () => {
+    it("outlets request, the central kitchen produces from its own stock; staff without access and other libraries cannot", async () => {
+      const id = await repo.requestProduction(staff, sid("out-mitte"), { recipeId: sid("rec-quark"), portions: 1, neededOn: "2099-01-01", note: null });
+      await expect(repo.produce(staff, sid("out-zentral"), [id])).rejects.toThrow();
+      await expect(repo.produce(owner, sid("out-mitte"), [id])).rejects.toThrow(/Nichts mehr/);
+      const quark = async () => (await repo.getStock(owner, sid("out-zentral"))).find((r) => r.name.startsWith("Speisequark"))!.quantityBase;
+      const before = await quark();
+      expect(await repo.produce(owner, sid("out-zentral"), [id])).toBe(1);
+      expect(await quark()).toBeLessThan(before);
+      await expect(repo.cancelProductionRequest(owner, id)).rejects.toThrow(/Schon produziert/);
+      expect(await repo.deliverProduction(owner, sid("out-zentral"), [id])).toBe(1);
+      const strangerOutlet = (await repo.listOutlets(stranger))[0].id;
+      await expect(repo.requestProduction(stranger, strangerOutlet, { recipeId: sid("rec-quark"), portions: 1, neededOn: "2099-01-01", note: null })).rejects.toThrow();
+    });
+  });
+
   describe("invoices", () => {
     it("editors match and approve; staff and other libraries cannot", async () => {
       const order = (await repo.getOrder(owner, sid("po-1")))!;

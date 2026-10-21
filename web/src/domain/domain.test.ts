@@ -9,6 +9,7 @@ import { matchInvoice } from "./invoice";
 import { classifyDishes } from "./menu-engineering";
 import { recipeNutrition } from "./nutrition";
 import { parseSalesCsv } from "./pos";
+import { productionNeeds, shareCost } from "./production";
 import { type Snapshot, parsePriceList, planPriceList } from "./price-list";
 import { toBase } from "./units";
 
@@ -284,5 +285,17 @@ describe("haccp", () => {
     expect(evaluate(fridge, "warm")).toEqual({ ok: false, reason: "Keine gültige Temperatur." });
     expect(evaluate(fridge, " ")).toBeNull();
     expect(evaluate({ kind: "check", minValue: null, maxValue: null }, "not_ok")).toEqual({ ok: false, reason: "Nicht in Ordnung." });
+  });
+});
+
+describe("production", () => {
+  it("adds raw needs across requests and shows what is short", () => {
+    const n = productionNeeds([{ recipeId: "soup", portions: 4 }, { recipeId: "soup", portions: 4 }], ctx(), (id) => (id === "spinach" ? 500 : 0));
+    const spinach = n.lines.find((l) => l.ingredientId === "spinach")!;
+    expect([spinach.needBase, spinach.shortBase]).toEqual([900, 400]);
+  });
+  it("shares the real cost by planned cost, else by portions", () => {
+    expect(shareCost(300, [{ id: "a", plannedCents: 100, portions: 1 }, { id: "b", plannedCents: 200, portions: 1 }])).toEqual({ a: 100, b: 200 });
+    expect(shareCost(90, [{ id: "a", plannedCents: 0, portions: 1 }, { id: "b", plannedCents: 0, portions: 2 }])).toEqual({ a: 30, b: 60 });
   });
 });

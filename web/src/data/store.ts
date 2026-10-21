@@ -5,7 +5,7 @@ import type { CostContext } from "@/domain/costing";
 import { billOfMaterials } from "@/domain/menus";
 import { type CountBreakdown, applyMovement } from "@/domain/stock";
 import type {
-  AllergenRow, ApiKey, Category, CountDraft, HaccpChecklist, HaccpRecord, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
+  AllergenRow, ApiKey, Category, CountDraft, HaccpChecklist, HaccpRecord, ProductionRequest, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
   PosItem, PurchaseOrder, Recipe, RecipeLine, Sale, StockEvent, StockItem, StockLevel, StockMovement, Supplier,
 } from "./types";
 
@@ -25,6 +25,7 @@ export type Db = {
   menus: Menu[];
   outletPrices: { recipeId: string; outletId: string; sellPriceCents: number }[];
   haccpChecklists: HaccpChecklist[];
+  production: ProductionRequest[];
   haccpRecords: HaccpRecord[];
   invoices: {
     id: string; orderId: string; supplierId: string; invoiceNumber: string; invoiceDate: string; status: "matched" | "mismatch" | "approved";
@@ -94,7 +95,7 @@ export function seed(): Db {
       ...["Mittagstisch", "Abendkarte"].map((name, i) => ({ id: `cat-m${i}`, kind: "menu" as const, name })),
     ],
     ingredients: [], packages: [], suppliers: [], stockItems: [], allergens: {}, verified: {}, nutrition: {},
-    recipes: [], menus: [], outletPrices: [], invoices: [], haccpChecklists: [], haccpRecords: [], posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
+    recipes: [], menus: [], outletPrices: [], invoices: [], haccpChecklists: [], haccpRecords: [], production: [], posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
   };
 
   const sup = (id: string, companyName: string, orderEmail: string, leadTimeDays: number) =>
@@ -262,6 +263,13 @@ export function seed(): Db {
   const evWaste: StockEvent = { id: "ev-2", outletId: "out-mitte", type: "waste", status: "closed", occurredAt: daysAgo(1), counterpartOutletId: null, purchaseOrderId: null, note: null, createdBy: "usr-staff", closedAt: daysAgo(1) };
   d.events.push(evWaste);
   addMovement(d, { eventId: evWaste.id, outletId: "out-mitte", ingredientId: "ing-sahne", deltaBase: -500, countedBase: null, reason: "Abgelaufen" });
+
+  // Küche Mitte asks the central kitchen for herb quark tomorrow and lentil soup the day after.
+  const ask = (id: string, recipeId: string, portions: number, inDays: number, note: string | null = null): ProductionRequest => ({
+    id, fromOutletId: "out-mitte", kitchenOutletId: "out-zentral", recipeId, portions, neededOn: daysAgo(-inDays).slice(0, 10), note,
+    status: "requested", productionEventId: null, costCents: null, createdBy: "usr-staff", createdAt: daysAgo(0.5), producedAt: null, deliveredAt: null,
+  });
+  d.production.push(ask("pr-1", "rec-quark", 2, 1), ask("pr-2", "rec-linsensuppe", 20, 2, "Für das Mittagsmenü"));
 
   // Daily HACCP checks for Küche Mitte, filled in for the last three days; one fridge reading was too warm.
   const point = (i: number, label: string, kind: "check" | "temperature" | "text", min: number | null = null, max: number | null = null) =>

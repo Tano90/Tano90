@@ -6,6 +6,7 @@ import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp, netPrice } from "@/domain/costing";
 import { evaluate } from "@/domain/haccp";
 import { matchInvoice } from "@/domain/invoice";
+import { productionNeeds, shareCost } from "@/domain/production";
 import { classifyDishes } from "@/domain/menu-engineering";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { recipeNutrition } from "@/domain/nutrition";
@@ -14,10 +15,10 @@ import type { SaleInput } from "@/domain/pos";
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import type { BaseUnit } from "@/domain/units";
-import type { Billing, ChecklistDraft, HaccpEntry, ImportResult, IngredientFilter, IngredientInput, InvoiceInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
+import type { Billing, ChecklistDraft, HaccpEntry, ImportResult, ProductionInput, IngredientFilter, IngredientInput, InvoiceInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
 import { Forbidden, assertCanChangeMember, canEditLibrary, canManageTeam } from "../session-rules";
 import type {
-  AllergenRow, Category, CountEntry, HaccpChecklist, HaccpItem, Ingredient, Library, Member, Menu, MenuCourse, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
+  AllergenRow, Category, CountEntry, HaccpChecklist, HaccpItem, ProductionRequest, Ingredient, Library, Member, Menu, MenuCourse, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
   StockEvent, StockItem, StockMovement, Supplier,
 } from "../types";
 import { type Tx, asService, asUser, friendly } from "./client";
@@ -822,6 +823,105 @@ export async function importSalesWithKey(key: string, rows: SaleInput[]): Promis
       update api_keys set last_used_at = now() where key_hash = ${hashKey(key)} and revoked_at is null returning id, library_id, outlet_id`;
     if (!k?.outletId) return null;
     return importInto(tx, k.libraryId, k.outletId, rows, null);
+  });
+}
+
+type ProductionRow = ProductionRequest & { fromOutlet: string; recipe: string };
+
+/** Requests the outlet made, and, for the central kitchen, everything it is asked to produce, with raw needs per day. */
+export async function listProduction(s: Session, outletId: string) {
+  return run(s, async (tx) => {
+    // Outlet names through the service role: staff of one outlet may not read the other outlet's row.
+    const outlets = await asService((sv) => sv<{ id: string; name: string; isCentralKitchen: boolean }[]>`
+      select id, name, is_central_kitchen from outlets where library_id = ${s.libraryId} and archived_at is null order by created_at`);
+    const kitchen = outlets.find((o) => o.isCentralKitchen) ?? null;
+    const isKitchen = kitchen?.id === outletId;
+    const rows = await tx<ProductionRow[]>`
+      select p.id, p.from_outlet_id, p.kitchen_outlet_id, p.recipe_id, p.portions, p.needed_on, p.note, p.status, p.production_event_id,
+        p.cost_cents, p.created_by, p.created_at, p.produced_at, p.delivered_at, r.name as recipe, '' as from_outlet
+      from production_requests p join recipes r on r.id = p.recipe_id
+      where p.from_outlet_id = ${outletId} or (${isKitchen} and p.kitchen_outlet_id = ${outletId})
+      order by p.needed_on, r.name`;
+    for (const r of rows) r.fromOutlet = outlets.find((o) => o.id === r.fromOutletId)?.name ?? "–";
+    const needs: Record<string, ReturnType<typeof productionNeeds>> = {};
+    if (isKitchen) {
+      const open = rows.filter((r) => r.status === "requested" && r.kitchenOutletId === outletId);
+      if (open.length) {
+        const ctx = contextOf(await loadCosting(tx, s.libraryId));
+        const levels = new Map((await tx<{ ingredientId: string; q: number }[]>`select ingredient_id, quantity_base as q from stock_levels where outlet_id = ${outletId}`).map((l) => [l.ingredientId, l.q]));
+        for (const day of new Set(open.map((r) => r.neededOn))) needs[day] = productionNeeds(open.filter((r) => r.neededOn === day), ctx, (id) => levels.get(id) ?? 0);
+      }
+    }
+    return { kitchen: kitchen && { id: kitchen.id, name: kitchen.name }, isKitchen, requests: rows, needs };
+  });
+}
+
+export async function requestProduction(s: Session, fromOutletId: string, input: ProductionInput) {
+  if (!isUuid(input.recipeId)) throw new Error("Dieses Rezept gibt es nicht mehr.");
+  return run(s, async (tx) => {
+    const [kitchen] = await asService((sv) => sv<{ id: string }[]>`select id from outlets where library_id = ${s.libraryId} and is_central_kitchen and archived_at is null limit 1`);
+    if (!kitchen) throw new Error("Kein Outlet ist als Zentralküche markiert.");
+    const [rec] = await tx`select 1 from recipes where id = ${input.recipeId} and archived_at is null`;
+    if (!rec) throw new Error("Dieses Rezept gibt es nicht mehr.");
+    const [row] = await tx<{ id: string }[]>`
+      insert into production_requests ${tx({ libraryId: s.libraryId, fromOutletId, kitchenOutletId: kitchen.id, ...input, createdBy: s.userId })} returning id`;
+    return row.id;
+  });
+}
+
+export async function cancelProductionRequest(s: Session, id: string) {
+  if (!isUuid(id)) throw new Error("Anforderung nicht gefunden.");
+  await run(s, async (tx) => {
+    const [p] = await tx<{ fromOutletId: string; status: string }[]>`select from_outlet_id, status from production_requests where id = ${id} for update`;
+    if (!p) throw new Error("Anforderung nicht gefunden.");
+    const [mine] = await tx<{ ok: boolean }[]>`select can_access_outlet(${p.fromOutletId}) as ok`;
+    if (!mine.ok) throw new Forbidden();
+    if (p.status !== "requested") throw new Error("Schon produziert, lässt sich nicht mehr stornieren.");
+    await tx`update production_requests set status = 'cancelled' where id = ${id}`;
+  });
+}
+
+/** Produces the given requests in one run: raw goods leave the kitchen's stock, the cost is shared out. */
+export async function produce(s: Session, kitchenOutletId: string, ids: string[]) {
+  if (ids.some((x) => !isUuid(x))) throw new Error("Anforderung nicht gefunden.");
+  return run(s, async (tx) => {
+    const [access] = await tx<{ ok: boolean }[]>`select can_access_outlet(${kitchenOutletId}) as ok`;
+    if (!access.ok) throw new Forbidden();
+    // Row locks: a second click or a colleague producing at the same time skips what this run takes.
+    const reqs = await tx<{ id: string; recipeId: string; portions: number }[]>`
+      select id, recipe_id, portions from production_requests
+      where id = any(${ids}::uuid[]) and kitchen_outlet_id = ${kitchenOutletId} and status = 'requested' for update`;
+    if (!reqs.length) throw new Error("Nichts mehr zu produzieren: schon erledigt oder storniert.");
+    const data = await loadCosting(tx, s.libraryId);
+    const ctx = contextOf(data);
+    const bom = billOfMaterials({ courses: [{ name: "", items: reqs.map((r) => ({ recipeId: r.recipeId, portions: r.portions })) }] }, ctx);
+    const [ev] = await tx<{ id: string }[]>`
+      insert into stock_events (library_id, outlet_id, type, note, created_by, closed_at)
+      values (${s.libraryId}, ${kitchenOutletId}, 'production', ${`${reqs.length} Anforderungen`}, ${s.userId}, now()) returning id`;
+    let total = 0;
+    for (const l of bom.lines) {
+      const [m] = await tx<{ unitCostCents: number }[]>`
+        insert into stock_movements ${tx({ stockEventId: ev.id, outletId: kitchenOutletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase })} returning unit_cost_cents`;
+      total += l.quantityBase * m.unitCostCents;
+    }
+    const memo = new Map<string, RecipeCost>();
+    const share = shareCost(total, reqs.map((r) => ({ id: r.id, plannedCents: costRecipe(toCostRecipe(data.recipeBy.get(r.recipeId)!), ctx, memo).perPortionCents * r.portions, portions: r.portions })));
+    for (const r of reqs) {
+      await tx`update production_requests set status = 'produced', production_event_id = ${ev.id}, cost_cents = ${share[r.id]}, produced_at = now() where id = ${r.id}`;
+    }
+    return reqs.length;
+  });
+}
+
+export async function deliverProduction(s: Session, kitchenOutletId: string, ids: string[]) {
+  if (ids.some((x) => !isUuid(x))) throw new Error("Anforderung nicht gefunden.");
+  return run(s, async (tx) => {
+    const [access] = await tx<{ ok: boolean }[]>`select can_access_outlet(${kitchenOutletId}) as ok`;
+    if (!access.ok) throw new Forbidden();
+    const done = await tx`
+      update production_requests set status = 'delivered', delivered_at = now()
+      where id = any(${ids}::uuid[]) and kitchen_outlet_id = ${kitchenOutletId} and status = 'produced' returning id`;
+    return done.length;
   });
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  BarChart3, BookOpen, ChefHat, LayoutDashboard, Menu as MenuIcon, Package, Settings, ShieldCheck, ShoppingCart, Truck, UtensilsCrossed, X,
+  BarChart3, BookOpen, ChefHat, CookingPot, LayoutDashboard, Menu as MenuIcon, Package, Settings, ShieldCheck, ShoppingCart, Truck, UtensilsCrossed, X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -18,6 +18,7 @@ const NAV = [
   { href: "/suppliers", label: "Lieferanten", icon: Truck },
   { href: "/orders", label: "Bestellungen", icon: ShoppingCart },
   { href: "/stock", label: "Lager", icon: BookOpen },
+  { href: "/production", label: "Zentralküche", icon: CookingPot },
   { href: "/analytics/pos", label: "Auswertungen", icon: BarChart3 },
   { href: "/haccp", label: "HACCP", icon: ShieldCheck },
   { href: "/settings", label: "Einstellungen", icon: Settings },

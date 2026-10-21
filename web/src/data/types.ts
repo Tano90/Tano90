@@ -92,6 +92,12 @@ export type HaccpRecord = {
   recordedBy: string | null; recordedAt: string;
 };
 
+export type ProductionRequest = {
+  id: string; fromOutletId: string; kitchenOutletId: string; recipeId: string; portions: number; neededOn: string; note: string | null;
+  status: "requested" | "produced" | "delivered" | "cancelled"; productionEventId: string | null; costCents: number | null;
+  createdBy: string | null; createdAt: string; producedAt: string | null; deliveredAt: string | null;
+};
+
 export type MenuItem = { id: string; recipeId: string; portions: number; position: number };
 export type MenuCourse = { id: string; name: string; position: number; items: MenuItem[] };
 export type Menu = {

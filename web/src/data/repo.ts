@@ -21,7 +21,8 @@ export const {
   listRecipes, getRecipe, lineOptions, previewRecipe, saveRecipe, archiveRecipe, setRecipeOutletPrice, getRecipeLabel, listMenus, getMenu, saveMenu, archiveMenu,
   getStock, getStockReport, listStockEvents, recordWaste, recordTransfer, listTransfers, setStockLevels, getOpenCount, startCount, saveCountLines, closeCount,
   listOrders, orderCounts, getOrder, orderableItems, saveOrderDraft, sendOrder, deleteOrderDraft, receiveDelivery,
+  listProduction, requestProduction, cancelProductionRequest, produce, deliverProduction,
   getInvoice, saveInvoice, approveInvoice, listChecklists, getHaccpDay, saveHaccpRecords, haccpDeviations, saveChecklist, archiveChecklist, getMenuEngineering, importSales, importSalesWithKey, listPosItems, linkPosItem, listApiKeys, createApiKey, revokeApiKey,
   dashboard,
 } = impl;
-export type { Billing, ChecklistDraft, HaccpEntry, IngredientFilter, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "./repo-memory";
+export type { Billing, ChecklistDraft, HaccpEntry, IngredientFilter, ProductionInput, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "./repo-memory";

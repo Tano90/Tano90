@@ -5,6 +5,7 @@ import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp, netPrice } from "@/domain/costing";
 import { evaluate } from "@/domain/haccp";
 import { matchInvoice } from "@/domain/invoice";
+import { productionNeeds, shareCost } from "@/domain/production";
 import { classifyDishes } from "@/domain/menu-engineering";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { recipeNutrition } from "@/domain/nutrition";
@@ -737,6 +738,84 @@ export async function importSalesWithKey(key: string, rows: SaleInput[]): Promis
   if (!k || !k.outletId) return null;
   k.lastUsedAt = now();
   return importInto(k.outletId, rows, null);
+}
+
+export type ProductionInput = { recipeId: string; portions: number; neededOn: string; note: string | null };
+
+const kitchenOf = () => visible(db().outlets).find((o) => o.isCentralKitchen) ?? null;
+
+/** Requests the outlet made, and, for the central kitchen, everything it is asked to produce, with raw needs per day. */
+export async function listProduction(s: Session, outletId: string) {
+  assertOutlet(s, outletId);
+  const d = db();
+  const kitchen = kitchenOf();
+  const isKitchen = kitchen?.id === outletId;
+  const rows = d.production
+    .filter((p) => p.fromOutletId === outletId || (isKitchen && p.kitchenOutletId === outletId))
+    .map((p) => ({
+      ...p,
+      fromOutlet: d.outlets.find((o) => o.id === p.fromOutletId)?.name ?? "–",
+      recipe: d.recipes.find((r) => r.id === p.recipeId)?.name ?? "–",
+    }))
+    .sort((a, b) => a.neededOn.localeCompare(b.neededOn) || a.recipe.localeCompare(b.recipe, "de"));
+  const needs: Record<string, ReturnType<typeof productionNeeds>> = {};
+  if (isKitchen) {
+    const level = (id: string) => d.levels.find((l) => l.outletId === outletId && l.ingredientId === id)?.quantityBase ?? 0;
+    for (const day of new Set(rows.filter((r) => r.status === "requested" && r.kitchenOutletId === outletId).map((r) => r.neededOn))) {
+      needs[day] = productionNeeds(rows.filter((r) => r.status === "requested" && r.neededOn === day), costContext(), level);
+    }
+  }
+  return { kitchen: kitchen && { id: kitchen.id, name: kitchen.name }, isKitchen, requests: rows, needs };
+}
+
+export async function requestProduction(s: Session, fromOutletId: string, input: ProductionInput) {
+  assertOutlet(s, fromOutletId);
+  const d = db();
+  const kitchen = kitchenOf();
+  if (!kitchen) throw new Error("Kein Outlet ist als Zentralküche markiert.");
+  if (!d.recipes.some((r) => r.id === input.recipeId && !r.archivedAt)) throw new Error("Dieses Rezept gibt es nicht mehr.");
+  const id = newId("pr");
+  d.production.push({ id, fromOutletId, kitchenOutletId: kitchen.id, ...input, status: "requested", productionEventId: null, costCents: null, createdBy: s.userId, createdAt: now(), producedAt: null, deliveredAt: null });
+  return id;
+}
+
+export async function cancelProductionRequest(s: Session, id: string) {
+  const p = db().production.find((x) => x.id === id);
+  if (!p) throw new Error("Anforderung nicht gefunden.");
+  assertOutlet(s, p.fromOutletId);
+  if (p.status !== "requested") throw new Error("Schon produziert, lässt sich nicht mehr stornieren.");
+  p.status = "cancelled";
+}
+
+/** Produces the given requests in one run: raw goods leave the kitchen's stock, the cost is shared out. */
+export async function produce(s: Session, kitchenOutletId: string, ids: string[]) {
+  assertOutlet(s, kitchenOutletId);
+  const d = db();
+  const reqs = d.production.filter((p) => ids.includes(p.id) && p.kitchenOutletId === kitchenOutletId && p.status === "requested");
+  if (!reqs.length) throw new Error("Nichts mehr zu produzieren: schon erledigt oder storniert.");
+  const ctx = costContext();
+  const bom = billOfMaterials({ courses: [{ name: "", items: reqs.map((r) => ({ recipeId: r.recipeId, portions: r.portions })) }] }, ctx);
+  const ev: StockEvent = { id: newId("ev"), outletId: kitchenOutletId, type: "production", status: "closed", occurredAt: now(), counterpartOutletId: null, purchaseOrderId: null, note: `${reqs.length} Anforderungen`, createdBy: s.userId, closedAt: now() };
+  d.events.push(ev);
+  let total = 0;
+  for (const l of bom.lines) {
+    const m = addMovement(d, { eventId: ev.id, outletId: kitchenOutletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase, countedBase: null, reason: null });
+    total += l.quantityBase * m.unitCostCents;
+  }
+  const memo = new Map<string, RecipeCost>();
+  const share = shareCost(total, reqs.map((r) => {
+    const rec = d.recipes.find((x) => x.id === r.recipeId)!;
+    return { id: r.id, plannedCents: costRecipe(toCostRecipe(rec), ctx, memo).perPortionCents * r.portions, portions: r.portions };
+  }));
+  for (const r of reqs) Object.assign(r, { status: "produced", productionEventId: ev.id, costCents: share[r.id], producedAt: now() });
+  return reqs.length;
+}
+
+export async function deliverProduction(s: Session, kitchenOutletId: string, ids: string[]) {
+  assertOutlet(s, kitchenOutletId);
+  const reqs = db().production.filter((p) => ids.includes(p.id) && p.kitchenOutletId === kitchenOutletId && p.status === "produced");
+  for (const r of reqs) Object.assign(r, { status: "delivered", deliveredAt: now() });
+  return reqs.length;
 }
 
 export type ChecklistDraft = { id?: string; name: string; items: { id?: string; label: string; kind: HaccpItem["kind"]; minValue: number | null; maxValue: number | null }[] };

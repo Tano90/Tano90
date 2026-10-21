@@ -457,6 +457,27 @@ export async function recordTransfer(input: z.input<typeof TransferSchema>) {
   }, ["/stock", "/"]);
 }
 
+// ---------------------------------------------------------------- central kitchen
+
+const ProductionSchema = z.object({
+  recipeId: z.string().min(1, "Bitte ein Rezept wählen."),
+  portions: positive,
+  neededOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Bitte einen Liefertag wählen."),
+  note: z.string().trim().max(300).nullable(),
+});
+export async function requestProduction(input: z.input<typeof ProductionSchema>) {
+  return run(async (s) => repo.requestProduction(s, await currentOutletId(s), ProductionSchema.parse(input)), ["/production"]);
+}
+export async function cancelProductionRequest(requestId: string) {
+  return run((s) => repo.cancelProductionRequest(s, requestId), ["/production"]);
+}
+export async function produce(requestIds: string[]) {
+  return run(async (s) => repo.produce(s, await currentOutletId(s), z.array(id).min(1).max(200).parse(requestIds)), ["/production", "/stock"]);
+}
+export async function deliverProduction(requestIds: string[]) {
+  return run(async (s) => repo.deliverProduction(s, await currentOutletId(s), z.array(id).min(1).max(200).parse(requestIds)), ["/production"]);
+}
+
 // ---------------------------------------------------------------- HACCP
 
 const daySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
