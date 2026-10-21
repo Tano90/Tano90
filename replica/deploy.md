@@ -101,6 +101,14 @@ Keine native App. Mirepa läuft im Browser (Handy-Layout geprüft). `launch/list
    Link, Passwort zurücksetzen, falsches Passwort.
 5. Diese Checkliste erneut ausführen (`/replica-deploy`). Erst wenn alles ✅ ist, frage ich nach deinem Go.
 
+## Live im Vorstart-Modus (2026-10-21)
+
+`https://mirepavercelapp.vercel.app`: Vercel (Hobby, Region fra1), Supabase (Free, Frankfurt, Data API aus),
+Resend (ohne Domain). Von dir geprüft: `/api/health` meldet die Datenbank, Startseite im Vorstart-Modus, Registrierung
+mit Bestätigungsmail (nach Korrektur der Supabase-URL-Konfiguration), Testanfrage mit Mail und Eintrag in der Übersicht.
+Von dieser Arbeitsumgebung aus ist die Seite nicht erreichbar (Netzwerk-Richtlinie), alle Prüfungen liefen in deinem
+Browser. Offen vor dem Bewerben: E-Mail und Telefon im Impressum. Danach: Geheimnisse in Vercel als „Sensitive“.
+
 ## Einrichtung mit deinen Konten (2026-10-21)
 
 Schritt für Schritt in `replica/setup.md`: Supabase (Frankfurt, Data API aus), Resend (ohne Domain nur an deine
