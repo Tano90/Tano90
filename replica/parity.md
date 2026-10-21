@@ -1,55 +1,45 @@
 # Parität: Pantra gegen das Original
 
-Stand: 2026-10-21 (nach dem 5. Bau- und Testdurchgang) · Grundlage: `replica/features.csv`, `replica/recon.md`,
-`replica/bugs.md`, E2E-Lauf 165/165, Unit- und Integrationstests 52/52.
+Stand: 2026-10-21 (nach dem 6. Bau- und Testdurchgang) · Grundlage: `replica/features.csv`, `replica/recon.md`,
+`replica/bugs.md`, E2E-Lauf 188/188, Unit- und Integrationstests 61/61.
 
 ## Urteil: **nicht auslieferbar – nur wegen des Login-Durchklicks, der bei dir liegt**
 
-- Feature-Score **90,7** (Schwelle 80).
+- Feature-Score **94,1** (Schwelle 80).
 - Must-haves **20 von 21**: Login ist gebaut und mit Demo-Konten getestet; es fehlt der Durchklick mit einem echten Supabase-Projekt (Testplan A02).
-- **Alle Should-haves fertig.** Offen sind nur noch Could-haves.
-- Offene S1/S2-Bugs: **keine** (15 gefunden, 15 behoben).
+- **Alle Should-haves fertig, alle 27 Screens gebaut.** Offen sind nur noch Could-haves.
+- Offene S1/S2-Bugs: **keine** (21 gefunden, 21 behoben).
 
-Mit grünem A02 ist der Klon nach den Regeln dieses Skills **auslieferbar** (alle Must-haves, Score 92,2, kein S1/S2).
+Mit grünem A02 ist der Klon nach den Regeln dieses Skills **auslieferbar** (alle Must-haves, Score 95,6, kein S1/S2).
 Live gehen verlangt laut `deploy.md` zusätzlich geprüfte Rechtsseiten, eigene Konten und dein Go.
 
 ## Zahlen
 
 | Messung | Wert | Anmerkung |
 | --- | --- | --- |
-| Feature-Parität | **90,7 / 100** (Verlauf: 62,3 → 72,1 → 80,9 → 86,8 → 90,7) | must ×3, should ×2, could ×1, teilweise = halb; 5 `skip`-Zeilen nicht gewertet |
+| Feature-Parität | **94,1 / 100** (Verlauf: 62,3 → 72,1 → 80,9 → 86,8 → 90,7 → 94,1) | must ×3, should ×2, could ×1, teilweise = halb; 5 `skip`-Zeilen nicht gewertet |
 | Must-haves fertig | **20 / 21** | Login teilweise (nur dein Durchklick fehlt) |
 | Should-haves fertig | **alle** | |
-| Layout-Parität | **nicht gemessen** | Weiterhin keine Screenshots des Originals in `replica/screens/`. Klon-Screenshots aller 24 gebauten Screens in `replica/clone-screens/` (1440 und 390 px). Mit Original-Screenshots: `python3 imgdiff.py replica/screens/S22.png replica/clone-screens/S22.png --out replica/diffs/S22.png` |
-| Gesamt | **90,7** | nur aus dem Feature-Score, weil das Layout fehlt |
+| Layout-Parität | **nicht gemessen** | Weiterhin keine Screenshots des Originals in `replica/screens/`. Klon-Screenshots aller 27 Screens in `replica/clone-screens/` (1440 und 390 px). Mit Original-Screenshots: `python3 imgdiff.py replica/screens/S22.png replica/clone-screens/S22.png --out replica/diffs/S22.png` |
+| Gesamt | **94,1** | nur aus dem Feature-Score, weil das Layout fehlt |
 
 ## Nach Bereich, schwächster zuerst
 
-- production                     0.0  (2 features)
-- haccp                          0.0  (1 features)
 - integrations                   0.0  (1 features)
+- production                    25.0  (2 features)
 - auth                          50.0  (1 features)
-- inventory                     88.2  (8 features)
 - allergens                     90.9  (5 features)
-- procurement                   92.9  (6 features)
-- setup                        100.0  (2 features)
-- library                      100.0  (6 features)
-- recipes                      100.0  (7 features)
-- menus                        100.0  (2 features)
-- pos                          100.0  (2 features)
-- analytics                    100.0  (2 features)
+- inventory                     94.1  (8 features)
+- setup, library, recipes, procurement, menus, pos, analytics, haccp: je 100.0
 
 ## Fehlt, in Bau-Reihenfolge
 
-- [must] auth: Login mit E-Mail und Passwort, partial  (S01; Supabase Auth gebaut (Registrierung mit Bestätigung, Passwort, Magic Link, Reset, überall abmelden, Konto löschen); ohne eigenes Supabase-Projekt nicht end-to-end getestet)
+- [must] auth: Login mit E-Mail und Passwort, partial  (S01; gebaut, ohne eigenes Supabase-Projekt nicht end-to-end getestet)
 - [could] allergens: Nutri-Score Berechnung, no  (öffentlicher Algorithmus)
-- [could] haccp: HACCP-Checklisten und Aufgaben, no  (S27; Add-on)
 - [could] integrations: Öffentliche REST-API für Kunden, no
-- [could] inventory: Mobile Inventur mit Barcode-Scan, no  (S17 mobil)
 - [could] inventory: Zählen per Sprache, no  (Quelle 35)
-- [could] procurement: Rechnungsabgleich 3-Way-Match, no  (S15 F12)
 - [could] production: Chargen-Rückverfolgung, no  (Quelle 34)
-- [could] production: Zentralküche: Bestellungen der Outlets und Produktionsplan, no  (S23 F13)
+- [could] production: Zentralküche, partial  (S23; Fertigware ist kein Lagerartikel im empfangenden Outlet)
 
 ## Bewusst ausgelassen (nicht gewertet)
 - Fertige Integrationen mit POS-Partnern (Lightspeed Deliverect HubRise …): Partnernetzwerk und Verträge; nur über offizielle APIs später einzeln
@@ -90,28 +80,34 @@ Recon, die des Klons sind gezählt (E2E-Specs). Bewertung: **behalten** = gleich
 | F11 Kasse | Partner-Integrationen und generische POS-API (29) | eigene API mit Outlet-Schlüssel und CSV-Import (wiederholbar); Abbuchung über alle Unterrezepte, wartende Verkäufe werden beim Verknüpfen nachgebucht; Stornos buchen zum Durchschnittspreis zurück; Partner bewusst `skip` | behalten |
 | Team | Rollen, Sichtbarkeit pro Outlet (21) | Einladung per Mail; Rolle und Outlets ändern, entfernen, Inhaberschaft übertragen; mindestens ein Inhaber erzwungen, auch in der Datenbank | behalten |
 | Lieferanten | archivieren (11) | archivieren, abgelehnt solange Bestellungen offen sind; Preise werden mit archiviert | behalten |
+| F08 Barcode | Barcode-Zählung in der Inventur-App (35) | Handscanner oder Eintippen, Kamera wo der Browser Barcodes erkennt; jeder Scan +1 Gebinde, GTIN-Formen mit führenden Nullen gelten als derselbe Code, eine GTIN zeigt auf genau ein Gebinde (BUG-016/017) | behalten |
+| F12 Rechnung | 3-Way-Match Bestellung/Lieferung/Rechnung (35) | Rechnung vorbelegt mit der Lieferung, Abweichung je Zeile (Menge, Preis, €), Freigabe bei Abweichung nur mit Begründung, doppelte Rechnungsnummer je Lieferant abgelehnt; **kein Einlesen von PDF/Scan** (Original laut Recon unbekannt) | behalten, Einlesen später |
+| F13 Zentralküche | Outlets bestellen bei der CPU, Produktionsplan, Fertigware geht ins Lager (Recon F13, 34) | Anfordern, Plan nach Liefertag mit Rohwarenbedarf und Fehlmengen, Produzieren bucht Rohware aus und verteilt die Kosten, Geliefert; **Fertigware wird nicht als Lagerartikel des Empfängers gebucht** | Fertigware bauen |
+| F14 HACCP | Add-on: Aufgaben, Kontrollpunkte, Audit (Recon S27; nur Marketing-Angaben) | Checklisten mit Grenzwerten, Tageskontrolle pro Outlet, Abweichung nur mit Maßnahme, Protokoll 30 Tage mit CSV; im Grundpreis statt Add-on; **keine Erinnerungen** | behalten |
 | E-Mails | Bestellung an Lieferanten (35) | Bestellung, Einladung, täglicher Mindestbestands-Hinweis | behalten |
 | Zeit | – | alle Daten in der Zeitzone des Outlets (BUG-002/003 behoben) | behalten |
 
 ## Die fünf nächsten Schritte
 
-1. **Login mit deinem Supabase-Projekt durchklicken** (Testplan A02). Kein Code, macht den Klon auslieferbar. → 92,2
+1. **Login mit deinem Supabase-Projekt durchklicken** (Testplan A02). Kein Code, macht den Klon auslieferbar. → 95,6
 
-Ab hier ist jeder weitere Schritt ein Could-have mit je +1,0 Punkten. Nachbauen lohnt sich kaum noch; die Reihenfolge, falls doch:
+Ab hier ist jeder Schritt ein Could-have (je +1,0, Schritt 2 +0,5). Nachbauen lohnt sich kaum noch; die Reihenfolge, falls doch:
 
-2. **Zentralküche: Bestellungen der Outlets und Produktionsplan (S23)** – passt zum Mehr-Outlet-Fokus; Umbuchung gibt es schon. → 93,1
-3. **Rechnungsabgleich (S15)** – Rechnung gegen Bestellung und Wareneingang; spürbarer Nutzen im Einkauf. → 94,1
-4. **HACCP-Checklisten (S27)** – beim Original ein Zusatzmodul. → 95,1
-5. **Barcode-Scan bei der Inventur** – mobil schneller zählen; braucht Kamera-Zugriff im Browser. → 96,1
+2. **Fertigware als Lagerartikel** (S23 fertig machen): produzierte Portionen landen im Bestand des empfangenden Outlets und gehen dort in Inventur und Lagerwert ein. → 96,1
+3. **Chargen-Rückverfolgung**: passt zu HACCP und Zentralküche (welche Lieferung steckt in welcher Produktion). → 97,1
+4. **Nutri-Score**: öffentlicher Algorithmus, Nährwerte pro Rezept gibt es schon. → 98,1
+5. **Öffentliche REST-API**: die Kassen-API mit Schlüsseln ist die Vorlage. → 99,1
+
+Zählen per Sprache bleibt zuletzt: Spracherkennung im Browser ist uneinheitlich, der Nutzen gegenüber Barcode-Scan klein.
 
 ## Empfehlung
 
-Die Parität ist erreicht: alle Must- und Should-haves bis auf deinen Login-Durchklick. Ein reiner Nachbau hat aber keinen Grund zu existieren.
+Die Parität ist erreicht: alle Must- und Should-haves bis auf deinen Login-Durchklick, dazu vier von sieben Could-haves. Ein reiner Nachbau hat aber keinen Grund zu existieren.
 Der nächste sinnvolle Schritt ist **nicht** mehr Nachbau, sondern herauszufinden, was Küchen am Original stört, und das besser zu machen.
 
 **„Besser als das Original“** bleibt bisher unbelegt: `/replica-entrepreneur` fand in dieser Umgebung keine öffentlichen Nutzerbewertungen.
 Was Pantra heute anders macht (Live-Kalkulation, offline-feste Inventur in Gebinden, „unbekannt“ schlägt „frei“ auch auf dem Etikett,
-Vorschau vor jedem Preis-Import, wiederholbare Kassen-Importe mit Stornos, abgefangene Eingabefehler), ist eigene Einschätzung.
+Vorschau vor jedem Preis-Import, wiederholbare Kassen-Importe mit Stornos, abgefangene Eingabefehler, HACCP im Grundpreis), ist eigene Einschätzung.
 
 ## Nächster Skill
 
