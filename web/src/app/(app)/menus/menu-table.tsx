@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { type Column, DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
-import { formatBp, formatCents } from "@/lib/format";
+import { countOf, formatBp, formatCents } from "@/lib/format";
 import { useUrlFilters } from "@/lib/use-url-filters";
 
 type Row = {
@@ -18,12 +18,12 @@ type Row = {
 const COLUMNS: Column<Row>[] = [
   { key: "name", header: "Name", sortValue: (r) => r.name, cell: (r) => <Link href={`/menus/${r.id}`} className="font-semibold hover:underline">{r.name}</Link> },
   { key: "category", header: "Kategorie", sortValue: (r) => r.category, cell: (r) => r.category },
-  { key: "courses", header: "Gänge", align: "right", sortValue: (r) => r.courses, cell: (r) => `${r.courses} · ${r.dishes} Gerichte` },
+  { key: "courses", header: "Gänge", align: "right", sortValue: (r) => r.courses, cell: (r) => `${r.courses} · ${countOf(r.dishes, "Gericht", "Gerichte")}` },
   {
     key: "cost", header: "Wareneinsatz", align: "right", sortValue: (r) => r.costCents,
     cell: (r) => (
       <span className="inline-flex items-center gap-1">
-        {r.missing > 0 && <AlertTriangle className="size-4 text-warning" aria-label={`${r.missing} Gerichte ohne vollständige Preise, Wareneinsatz unvollständig`} />}
+        {r.missing > 0 && <AlertTriangle className="size-4 text-warning" aria-label={`${countOf(r.missing, "Gericht", "Gerichte")} ohne vollständige Preise, Wareneinsatz unvollständig`} />}
         {formatCents(Math.round(r.costCents))}
       </span>
     ),

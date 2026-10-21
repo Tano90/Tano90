@@ -47,7 +47,7 @@ test.describe("Randfälle 3. Durchgang", () => {
     expect(csv.length).toBeGreaterThan(1_500_000);
     await page.goto("/analytics/pos");
     await page.getByLabel("Verkäufe als CSV hochladen").setInputFiles({ name: "gross.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
-    await expect(page.getByRole("status").filter({ hasText: "24000 Verkäufe übernommen" })).toBeVisible({ timeout: 90_000 });
+    await expect(page.getByRole("status").filter({ hasText: "24.000 Verkäufe übernommen" })).toBeVisible({ timeout: 90_000 });
   });
 
   test("F11-N2 API: kaputtes JSON, Ratenlimit, Schlüssel bucht nur ins eigene Outlet", async ({ page }) => {

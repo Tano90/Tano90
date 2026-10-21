@@ -13,7 +13,7 @@ import { toast } from "@/components/ui/toast";
 import type { ProductionRequest } from "@/data/types";
 import type { Need } from "@/domain/production";
 import { formatDay } from "@/lib/dates";
-import { formatCents, formatQty } from "@/lib/format";
+import { countOf, formatCents, formatQty } from "@/lib/format";
 import { formatBase } from "@/lib/units-display";
 
 type Row = ProductionRequest & { fromOutlet: string; recipe: string };
@@ -93,13 +93,13 @@ export function KitchenPlan({ requests, needs }: { requests: Row[]; needs: Recor
                 open={confirmDay === day}
                 onOpenChange={(o) => setConfirmDay(o ? day : null)}
                 trigger={<Button disabled={!toProduce.length || pending}>Produzieren ({toProduce.length})</Button>}
-                title={`${toProduce.length} Anforderungen produzieren?`}
-                description={`Die Rohware wird aus dem Lager der Zentralküche gebucht.${short.length ? ` Achtung: ${short.length} Zutaten reichen laut Bestand nicht, der Bestand wird dann negativ.` : ""}`}
+                title={`${countOf(toProduce.length, "Anforderung", "Anforderungen")} produzieren?`}
+                description={`Die Rohware wird aus dem Lager der Zentralküche gebucht.${short.length ? ` Achtung: ${countOf(short.length, "Zutat reicht", "Zutaten reichen")} laut Bestand nicht, der Bestand wird dann negativ.` : ""}`}
                 confirmLabel="Produzieren"
                 loading={pending}
-                onConfirm={() => act(produce, toProduce, (n) => `${n} Anforderungen produziert`)}
+                onConfirm={() => act(produce, toProduce, (n) => `${countOf(n, "Anforderung", "Anforderungen")} produziert`)}
               />
-              <Button variant="secondary" disabled={!toDeliver.length || pending} onClick={() => act(deliverProduction, toDeliver, (n) => `${n} als geliefert markiert`)}>
+              <Button variant="secondary" disabled={!toDeliver.length || pending} onClick={() => act(deliverProduction, toDeliver, (n) => `${countOf(n, "Anforderung", "Anforderungen")} als geliefert markiert`)}>
                 Geliefert ({toDeliver.length})
               </Button>
             </div>

@@ -8,7 +8,7 @@ import { type Column, DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Select } from "@/components/ui/field";
 import { FilterBar } from "@/components/ui/filter-bar";
-import { formatBp, formatCents } from "@/lib/format";
+import { countOf, formatBp, formatCents } from "@/lib/format";
 import { useUrlFilters } from "@/lib/use-url-filters";
 
 type Row = {
@@ -31,7 +31,7 @@ const COLUMNS: Column<Row>[] = [
     key: "cost", header: "Kosten/Portion", align: "right", sortValue: (r) => r.perPortionCents,
     cell: (r) => (
       <span className="inline-flex items-center gap-1">
-        {r.missing > 0 && <AlertTriangle className="size-4 text-warning" aria-label={`${r.missing} Zeilen ohne Preis, Kosten unvollständig`} />}
+        {r.missing > 0 && <AlertTriangle className="size-4 text-warning" aria-label={`${countOf(r.missing, "Zeile", "Zeilen")} ohne Preis, Kosten unvollständig`} />}
         {formatCents(Math.round(r.perPortionCents))}
       </span>
     ),

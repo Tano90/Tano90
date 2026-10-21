@@ -35,8 +35,8 @@ test.describe("Randfälle 5. Durchgang", () => {
 
   test("I-E4 Doppelklick auf Übernehmen legt keine Zutat doppelt an", async ({ page }) => {
     await importCsv(page, "Zutat;Inhalt;Einheit;Preis\nHafermilch Barista;1;l;2,10\n");
-    await page.getByRole("button", { name: "1 Zeilen übernehmen" }).dblclick();
-    await expect(page.getByRole("status").filter({ hasText: "neue Preise" })).toBeVisible();
+    await page.getByRole("button", { name: "1 Zeile übernehmen" }).dblclick();
+    await expect(page.getByRole("status").filter({ hasText: "neuer Preis" })).toBeVisible();
     await page.waitForTimeout(1000);
     const rows = await db()`select id from ingredients where name = 'Hafermilch Barista'`;
     expect(rows).toHaveLength(1);
@@ -53,8 +53,8 @@ test.describe("Randfälle 5. Durchgang", () => {
     await db()`update ingredients set archived_at = now() where id = ${sid("ing-zucker")}`;
     await importCsv(page, "Zutat;Inhalt;Einheit;Preis\nZucker;1;kg;1,20\n");
     await expect(page.getByRole("row").filter({ hasText: "Zucker" })).toContainText("neue Zutat");
-    await page.getByRole("button", { name: "1 Zeilen übernehmen" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "1 neue Preise (davon 1 neue Zutaten)" })).toBeVisible();
+    await page.getByRole("button", { name: "1 Zeile übernehmen" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "1 neuer Preis (davon 1 neue Zutat)" })).toBeVisible();
     const rows = await db()`select archived_at is not null as archived from ingredients where name = 'Zucker' order by archived`;
     expect(rows.map((r) => r.archived)).toEqual([false, true]);
   });
@@ -64,7 +64,7 @@ test.describe("Randfälle 5. Durchgang", () => {
     const now = new Date();
     const d = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()} 08:00`;
     await page.getByLabel("Verkäufe als CSV hochladen").setInputFiles({ name: "s.csv", mimeType: "text/csv", buffer: Buffer.from(`Beleg;PLU;Menge;Umsatz netto;Zeitpunkt\nX1;1001;-4;-29,52;${d}\n`) });
-    await expect(page.getByRole("status").filter({ hasText: "1 Verkäufe übernommen" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "1 Verkauf übernommen" })).toBeVisible();
     await page.goto("/analytics/menu-engineering");
     await expect(page.getByRole("table", { name: "Gerichte im Zeitraum" }).getByRole("row").filter({ hasText: "Linsensuppe" }).getByRole("cell").nth(2)).toHaveText("10");
   });
@@ -73,7 +73,7 @@ test.describe("Randfälle 5. Durchgang", () => {
     const linsen = await stockQuantity("Rote Linsen");
     await page.goto("/analytics/pos");
     await page.getByLabel("Verkäufe als CSV hochladen").setInputFiles({ name: "s.csv", mimeType: "text/csv", buffer: Buffer.from("Beleg;PLU;Menge;Zeitpunkt\nY1;1001;-1;20.10.2026 09:00\n") });
-    await expect(page.getByRole("status").filter({ hasText: "1 Verkäufe übernommen" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "1 Verkauf übernommen" })).toBeVisible();
     expect(await stockQuantity("Rote Linsen")).toBeCloseTo(linsen + 80, 6);
   });
 });

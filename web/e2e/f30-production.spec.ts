@@ -83,14 +83,14 @@ test.describe("S23 Zentralküche", () => {
     await plan.getByRole("checkbox", { name: /Kräuterquark/ }).check();
     await plan.getByRole("button", { name: "Produzieren (1)" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Produzieren" }).click();
-    await expect(page.getByText("1 Anforderungen produziert")).toBeVisible();
+    await expect(page.getByText("1 Anforderung produziert")).toBeVisible();
     const row = plan.getByRole("listitem").filter({ hasText: "Kräuterquark" });
     await expect(row).toContainText("produziert");
     await expect(row).toContainText("€");
     expect(await stockQuantity("Speisequark 20 %", "out-zentral")).toBeLessThan(before);
     await row.getByRole("checkbox").check();
     await plan.getByRole("button", { name: "Geliefert (1)" }).click();
-    await expect(page.getByText("1 als geliefert markiert")).toBeVisible();
+    await expect(page.getByText("1 Anforderung als geliefert markiert")).toBeVisible();
     await expect(plan).not.toContainText("Kräuterquark");
   });
 

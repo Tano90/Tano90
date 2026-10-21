@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Select } from "@/components/ui/field";
 import { FileUpload, type RowError } from "@/components/ui/file-upload";
 import { toast } from "@/components/ui/toast";
-import { formatQty } from "@/lib/format";
+import { countOf, formatQty } from "@/lib/format";
 import { useUrlFilters } from "@/lib/use-url-filters";
 
 /** Server actions take at most 1 MB per call (and hosts cap requests too): send big files in parts, each with the header. */
@@ -65,7 +65,7 @@ export function SalesImport() {
               setState("idle");
               setErrors(allErrors.slice(0, 50));
               toast.error("Import abgebrochen", {
-                description: `${res.error} ${i ? `${total.imported} Verkäufe aus den ersten ${i} von ${parts.length} Teilen sind übernommen. ` : ""}Lade die Datei einfach noch einmal hoch, schon Übernommenes wird übersprungen.`,
+                description: `${res.error} ${i ? `${countOf(total.imported, "Verkauf", "Verkäufe")} aus den ersten ${i} von ${parts.length} Teilen sind übernommen. ` : ""}Lade die Datei einfach noch einmal hoch, schon Übernommenes wird übersprungen.`,
               });
               return;
             }
@@ -81,7 +81,7 @@ export function SalesImport() {
           const r = { ...total, errors: allErrors.slice(0, 50) };
           setErrors(r.errors);
           setState("done");
-          setSummary(`${r.imported} Verkäufe übernommen, ${r.duplicates} schon vorhanden, ${r.depleted} vom Lager abgebucht${r.unmapped ? `, ${r.unmapped} warten auf ein Rezept` : ""}.${r.errorCount > r.errors.length ? ` Es werden nur die ersten ${r.errors.length} von ${r.errorCount} Fehlern gezeigt.` : ""}`);
+          setSummary(`${countOf(r.imported, "Verkauf", "Verkäufe")} übernommen, ${r.duplicates} schon vorhanden, ${r.depleted} vom Lager abgebucht${r.unmapped ? `, ${r.unmapped} ${r.unmapped === 1 ? "wartet" : "warten"} auf ein Rezept` : ""}.${r.errorCount > r.errors.length ? ` Es werden nur die ersten ${r.errors.length} von ${r.errorCount} Fehlern gezeigt.` : ""}`);
           // No router.refresh(): the action's revalidatePath already brings fresh data, and a second refresh
           // would pass through the loading boundary and reset this component (the summary would vanish).
         }}

@@ -20,7 +20,7 @@ import type { RecipeCost } from "@/domain/costing";
 import { type BaseUnit } from "@/domain/units";
 import type { Recipe } from "@/data/types";
 import { cn } from "@/lib/cn";
-import { formatBp, formatCents } from "@/lib/format";
+import { countOf, formatBp, formatCents } from "@/lib/format";
 import { formatBase } from "@/lib/units-display";
 
 type Option = { value: string; label: string; hint: string; baseUnit: BaseUnit };
@@ -209,7 +209,7 @@ export function RecipeEditor({ recipe, usedIn, options, categories, defaultVatBp
 
         <Tabs defaultValue="lines">
           <TabList aria-label="Rezeptteile">
-            <Tab value="lines" warning={c && c.missing > 0 ? `${c.missing} Zeilen ohne Preis` : undefined}>Zutaten</Tab>
+            <Tab value="lines" warning={c && c.missing > 0 ? `${countOf(c.missing, "Zeile", "Zeilen")} ohne Preis` : undefined}>Zutaten</Tab>
             <Tab value="financial">Kalkulation</Tab>
             <Tab value="prep">Zubereitung</Tab>
             <Tab value="allergens" warning={unknownAllergens ? `${unknownAllergens} unbekannt` : undefined}>Allergene</Tab>

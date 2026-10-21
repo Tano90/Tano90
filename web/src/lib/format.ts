@@ -7,3 +7,8 @@ export const formatCents = (cents: number) => eur.format(cents / 100 || 0); // |
 /** Basis points to "28,5 %". */
 export const formatBp = (bp: number) => pct.format(bp / 10000);
 export const formatQty = (n: number) => qty.format(n);
+
+/** "1 Zeile", "3 Zeilen": the number with the noun in singular or plural. */
+export function countOf(n: number, one: string, many: string) {
+  return `${formatQty(n)} ${n === 1 ? one : many}`;
+}

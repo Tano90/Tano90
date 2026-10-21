@@ -13,6 +13,7 @@ import { toast } from "@/components/ui/toast";
 import type { HaccpChecklist, HaccpItem } from "@/data/types";
 import { evaluate } from "@/domain/haccp";
 import { formatDateTime, formatDay } from "@/lib/dates";
+import { countOf } from "@/lib/format";
 
 type Rec = { itemId: string; valueText: string | null; valueNumber: number | null; ok: boolean; action: string | null; recordedAt: string; recordedByName: string };
 const shown = (r?: Rec) => (r ? (r.valueNumber !== null ? String(r.valueNumber).replace(".", ",") : r.valueText ?? "") : "");
@@ -34,7 +35,7 @@ export function ChecklistDay({ checklist, day, records }: { checklist: HaccpChec
       const res = await saveHaccpRecords(day, checklist.items.map((i) => ({ itemId: i.id, value: values[i.id] ?? "", action: actions[i.id] || null })));
       if (!res.ok) return setError(res.error);
       setError(null);
-      toast.success(`${res.data} Einträge gespeichert`);
+      toast.success(`${countOf(res.data, "Eintrag", "Einträge")} gespeichert`);
       router.refresh();
     });
 

@@ -47,7 +47,7 @@ test.describe("F11 Kassenverkäufe", () => {
     await expect(page.getByText("2 Zeilen konnten nicht übernommen werden")).toBeVisible();
     await expect(page.getByText("Zeile 2:")).toBeVisible();
     await expect(page.getByText(/Menge 0 ergibt keinen Verkauf/)).toBeVisible();
-    await expect(page.getByRole("status").filter({ hasText: "1 Verkäufe übernommen" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "1 Verkauf übernommen" })).toBeVisible();
   });
 
   test("F11-E7 Storno am selben Tag hebt die Abbuchung auf, späterer Storno bucht zurück", async ({ page }) => {

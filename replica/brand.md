@@ -1,13 +1,21 @@
 # Marke: Pantra
 
-Stand: 2026-10-20. Die Positionierung aus `/replica-entrepreneur` fehlt noch (0 Bewertungen, Quellen gesperrt). Der Name
+Stand: 2026-10-21 (zweiter Durchgang, „ohne Reviews“). Die Positionierung aus `/replica-entrepreneur` fehlt weiter (0 Bewertungen, Quellen gesperrt). Der Name
 stützt sich deshalb auf das, was das Produkt nachweislich besser macht: Es zeigt live, was ein Teller kostet, und hält das
 Lager dazu. Wenn die Bewertungen eine andere Positionierung ergeben, kann der Name noch wechseln. Er steht an einer Stelle:
 `web/src/lib/brand.ts`.
 
 ## Name
 
-**Empfehlung: Pantra.** Kunstwort, klingt nach *pantry* (Vorratskammer), sagt also Lager und Küche, ohne beschreibend
+> **Neu am 2026-10-21: Pantra hat einen Namensvetter.** Im App Store gibt es „Pantra: Pantry Inventory“ (iOS, Entwickler
+> Artur Popov), eine Vorratsverwaltung für den Haushalt mit Mindestbestand, Einkaufsliste und Schwund-Historie
+> ([App Store](https://apps.apple.com/us/app/pantra-pantry-inventory/id6757634576), gefunden per Websuche 2026-10-21; am
+> 2026-10-20 fand die Suche sie noch nicht). Gleicher Name, Software, Lebensmittel-Bestand: Das ist genau die Nähe, die
+> Markenämter prüfen (Klasse 9), auch wenn die Zielgruppe privat statt gewerblich ist. Und im App Store stünden beide
+> nebeneinander. **Empfehlung jetzt: vor dem Start umbenennen**, solange es nur eine Konstante ist
+> (`web/src/lib/brand.ts`). Die Wahl liegt bei dir, siehe „Entscheidung“ unten. Bis dahin bleibt Pantra im Code.
+
+**Bisherige Empfehlung: Pantra.** Kunstwort, klingt nach *pantry* (Vorratskammer), sagt also Lager und Küche, ohne beschreibend
 und damit schwach schützbar zu sein. Zwei Silben, nach einmal Hören schreibbar, im Deutschen und Englischen ohne
 schiefe Bedeutung. Nichts teilt Klang, Schriftbild oder Bedeutung mit „Apicbase“.
 
@@ -43,19 +51,55 @@ gefunden hat. Es heißt nicht „frei“.
 
 | Prüfung | Pantra | Tellerwert | Kuvo | Fenno | (5.) |
 | --- | --- | --- | --- | --- | --- |
-| Websuche Name + Branche | 2026-10-20: kein Produkt gefunden | 2026-10-20: kein Produkt gefunden (Nachbarn: GastroCalc, GastroCost) | 2026-10-20: kein Produkt gefunden | 2026-10-20: kein Produkt gefunden | – |
+| Websuche Name + Branche | 2026-10-21: **iOS-App „Pantra: Pantry Inventory“** (Haushalts-Vorrat); keine Gastro-Software | 2026-10-21: kein Produkt gefunden (Nachbarn: GastroCalc, Rezeptrechner PRO) | 2026-10-21: kein Produkt gefunden | 2026-10-21: kein Produkt gefunden | – |
 | US-Marke (USPTO, Klassen 9 und 42) | noch zu prüfen | noch zu prüfen | noch zu prüfen | noch zu prüfen | |
 | EU-Marke (EUIPO / TMview) | noch zu prüfen | noch zu prüfen | noch zu prüfen | noch zu prüfen | |
 | DE-Marke (DPMAregister) | noch zu prüfen | noch zu prüfen | noch zu prüfen | noch zu prüfen | |
 | Kanada (ISED) | noch zu prüfen | noch zu prüfen | noch zu prüfen | noch zu prüfen | |
 | Weltweit (WIPO Global Brand Database) | noch zu prüfen | noch zu prüfen | noch zu prüfen | noch zu prüfen | |
 | Domains (.com, .de, .app) | noch zu prüfen | noch zu prüfen | noch zu prüfen | noch zu prüfen | |
-| App Store und Google Play | noch zu prüfen | noch zu prüfen | noch zu prüfen | noch zu prüfen | |
+| App Store und Google Play | App Store **belegt** (per Websuche gefunden, Store selbst gesperrt); Play noch zu prüfen | noch zu prüfen | noch zu prüfen | noch zu prüfen | |
 | Handles (X, Instagram, TikTok, GitHub, LinkedIn) | noch zu prüfen | noch zu prüfen | noch zu prüfen | noch zu prüfen | |
 
-Nur vier Kandidaten haben die Websuche überstanden. Einen fünften sucht man am besten, sobald die Positionierung steht.
+Am 2026-10-21 erneut versucht: USPTO, EUIPO/TMview, WIPO, DPMA, RDAP/Whois, App Store und Google Play sind weiterhin gesperrt.
+Nur vier Kandidaten hatten die Websuche überstanden, nach dem Fund oben sind es drei ohne bekannten Konflikt. Einen fünften sucht man am besten, sobald die Positionierung steht.
 Das ist eine Vorprüfung, keine rechtliche Freigabe: Bevor Geld in den Namen fließt (Domain, Logo, Anmeldung), sollte eine
 Markenanwältin oder ein Markenanwalt recherchieren.
+
+### Entscheidung
+
+| Option | Für | Gegen |
+| --- | --- | --- |
+| **Kuvo** (Empfehlung) | Kunstwort, zwei Silben, stark schützbar, kein Treffer in der Branche | sagt nichts über Küche oder Preis; die Bedeutung muss die Marke erst aufbauen |
+| Fenno | Kunstwort, freundlich, kein Treffer | lat. „Finne“, im Nordischen als Vorsilbe bekannt; sagt nichts über das Produkt |
+| Tellerwert | sagt genau, was das Produkt kann; nur DACH | beschreibend und damit schwer als Marke einzutragen; schlecht international |
+| Pantra behalten | nichts zu ändern | Namensgleichheit mit einer Vorrats-App, Risiko im Store und beim Eintragen |
+
+Umbenennen kostet im Code eine Zeile (`APP_NAME`) plus Platzhalter-Icon und Mail-Absendername; der Sweep bleibt gleich.
+
+## Positionierung ohne Bewertungen
+
+Auf deinen Wunsch ohne `/replica-entrepreneur`. Diese drei Winkel stützen sich **nur auf das, was der Klon nachweislich
+anders macht** (Testplan, Parität), nicht auf Nutzerstimmen. Ob es Kunden genau das stört, ist unbelegt.
+
+```
+Für Küchenchefs mit mehreren Outlets, die ihre Kalkulation erst nach dem Speichern sehen,
+zeigt {Name} noch beim Tippen, was ein Teller kostet, und hält Lager und Zentralküche dazu.
+Beleg: eigene Funktionen (F02 live, F13 Zentralküche), keine Bewertungen.
+```
+```
+Für Betriebe, die HACCP, Inventur und Einkauf in drei Werkzeugen pflegen,
+bringt {Name} alles in eine App, HACCP im Grundpreis statt als Zusatzmodul.
+Beleg: Recon (HACCP ist beim Original ein Add-on), keine Bewertungen.
+```
+```
+Für Küchen, in denen ein Tippfehler die Bestellung verzehnfacht,
+fängt {Name} Eingabefehler ab, bevor sie Geld kosten: Punkt oder Komma, falsche Barcodes, doppelte Rechnungen.
+Beleg: BUG-014/015/016/017 und der Rechnungsabgleich, keine Bewertungen.
+```
+
+**Empfehlung: der erste Winkel.** Er passt zur Tagline („Was jeder Teller kostet. Und was im Lager liegt.“) und
+zum stärksten Unterschied, der Live-Kalkulation. Sobald echte Bewertungen da sind, gegenprüfen.
 
 ## Palette
 
@@ -121,10 +165,18 @@ Wir duzen.
 | Allgemeiner Fehler | Unbekannter Fehler. | Da ist etwas schiefgegangen. Bitte versuch es noch einmal. |
 | Fehlerseite | (Fehlermeldung des Systems, in Produktion englisch) | Die Seite ließ sich gerade nicht laden. Meist hilft ein zweiter Versuch. (+ Fehlercode) |
 
+**Durchgang 2026-10-21:** Die Texte der neuen Screens (Rechnung, HACCP, Zentralküche, Barcode) gegen die Stimme gelesen.
+Ein Fehler zog sich durch die ganze App: Zahlen mit Mehrzahl auch bei 1 („1 Einträge gespeichert“, „1 Zeilen übernehmen“,
+„1 neue Preise“, „1 Verkäufe übernommen“, „1 Gerichte“). Jetzt über `countOf()` in `web/src/lib/format.ts` an 18 Stellen:
+„1 Eintrag gespeichert“, „1 Zeile übernehmen“, „1 neuer Preis (davon 1 neue Zutat)“. Große Zahlen mit Tausenderpunkt
+(„24.000 Verkäufe“).
+
 Alle Texte sind für Pantra neu geschrieben. Die des Originals hat der Klon nie gesehen, weil die Recon nur Zusammenfassungen kannte.
 
 ## Sweep
 
-`python3 ~/.claude/skills/replica-brand/sweep.py . --config replica/brand.json` → Ergebnis im Commit-Log und unten.
+`python3 ~/.claude/skills/replica-brand/sweep.py . --config replica/brand.json` → 2026-10-21: **sauber** („Nothing of the
+original's name, domain or colours found“). `contrast.py`: 31 Paare, 0 AA-Fehler. Die Farben des Originals sind weiter
+unbekannt und deshalb nicht im Sweep.
 Per Augenschein geprüft: Seitentitel (Vorlage „Seite · Pantra“), Favicon (Platzhalter), Absendername der E-Mails, Kopf der App
 und der Anmeldeseiten. Noch offen: OG-Bild und App-Icon, die kommen mit dem Logo.

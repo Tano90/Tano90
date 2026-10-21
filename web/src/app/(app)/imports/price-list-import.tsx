@@ -10,7 +10,7 @@ import { FileUpload, type RowError } from "@/components/ui/file-upload";
 import { toast } from "@/components/ui/toast";
 import { csvTable } from "@/domain/csv";
 import { type Cell, type PlanRow, type PriceRow, parsePriceList } from "@/domain/price-list";
-import { formatCents } from "@/lib/format";
+import { countOf, formatCents } from "@/lib/format";
 import { formatBase } from "@/lib/units-display";
 
 type Opt = { value: string; label: string };
@@ -112,7 +112,7 @@ export function PriceListImport({ suppliers, initialSupplierId }: { suppliers: O
         total.same += res.data.same;
         total.errors.push(...res.data.errors);
       }
-      setResult(`${total.prices} neue Preise (davon ${total.ingredients} neue Zutaten), ${total.changed} Preise geändert, ${total.same} unverändert${total.errors.length ? `, ${total.errors.length} Zeilen mit Fehlern` : ""}.`);
+      setResult(`${countOf(total.prices, "neuer Preis", "neue Preise")} (davon ${countOf(total.ingredients, "neue Zutat", "neue Zutaten")}), ${countOf(total.changed, "Preis", "Preise")} geändert, ${total.same} unverändert${total.errors.length ? `, ${countOf(total.errors.length, "Zeile", "Zeilen")} mit Fehlern` : ""}.`);
       setPlan(await preview(rows, supplierId));
     });
 
@@ -140,7 +140,7 @@ export function PriceListImport({ suppliers, initialSupplierId }: { suppliers: O
         <section aria-labelledby="preview" className="flex flex-col gap-3">
           <h2 id="preview" className="text-lg">Vorschau</h2>
           <p role="status">
-            {count("new_ingredient") + count("new_price")} neu (davon {count("new_ingredient")} neue Zutaten), {count("changed")} Preise ändern sich, {count("same")} unverändert, {count("error")} mit Fehlern.
+            {count("new_ingredient") + count("new_price")} neu (davon {countOf(count("new_ingredient"), "neue Zutat", "neue Zutaten")}), {countOf(count("changed"), "Preis ändert", "Preise ändern")} sich, {count("same")} unverändert, {count("error")} mit Fehlern.
           </p>
           <div className="overflow-x-auto rounded-md border border-border bg-bg">
             <table className="w-full text-sm">
@@ -171,7 +171,7 @@ export function PriceListImport({ suppliers, initialSupplierId }: { suppliers: O
           </div>
           {plan.length > 200 && <p className="text-text-muted">Es werden die ersten 200 von {plan.length} Zeilen gezeigt; übernommen werden alle.</p>}
           <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={apply} loading={applying} disabled={!actionable}>{actionable} Zeilen übernehmen</Button>
+            <Button onClick={apply} loading={applying} disabled={!actionable}>{countOf(actionable, "Zeile", "Zeilen")} übernehmen</Button>
             {result && <p role="status" className="font-semibold">{result}</p>}
           </div>
         </section>

@@ -21,14 +21,14 @@ test.describe("S26 Preisliste importieren", () => {
       ["Speisequark 20 %", "Eimer 5 kg", 5, "kg", 10.9, null, null, null],
       ["Hafermilch Barista", "Packung 1 l", 1, "l", "2,10", null, "H-7", "Molkereiprodukte"],
     ]), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    await expect(page.getByRole("status").filter({ hasText: "1 neu (davon 1 neue Zutaten)" })).toContainText("1 Preise ändern sich, 1 unverändert, 0 mit Fehlern");
+    await expect(page.getByRole("status").filter({ hasText: "1 neu (davon 1 neue Zutat)" })).toContainText("1 Preis ändert sich, 1 unverändert, 0 mit Fehlern");
     const butter = page.getByRole("row").filter({ hasText: "Butter" });
     await expect(butter).toContainText("22,90");
     await expect(butter).toContainText("24,90");
     await expect(butter).toContainText("Preis geändert");
     await axe();
     await page.getByRole("button", { name: "2 Zeilen übernehmen" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "1 neue Preise (davon 1 neue Zutaten), 1 Preise geändert, 1 unverändert" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "1 neuer Preis (davon 1 neue Zutat), 1 Preis geändert, 1 unverändert" })).toBeVisible();
     await expect(page.getByRole("status").filter({ hasText: "0 neu" })).toContainText("3 unverändert");
 
     const [b] = await db()`select price_cents, supplier_sku from stock_items where id = ${sid("ing-butter-si")}`;

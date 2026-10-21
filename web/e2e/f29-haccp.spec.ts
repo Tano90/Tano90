@@ -31,7 +31,7 @@ test.describe("S27 HACCP", () => {
     await expect(list.getByText(/Bitte die Korrekturmaßnahme eintragen/)).toBeVisible();
     await list.getByLabel("Korrekturmaßnahme für „Kühlraum“").fill("=Tür geschlossen, Ware umgelagert");
     await list.getByRole("button", { name: "Speichern" }).click();
-    await expect(page.getByText("1 Einträge gespeichert")).toBeVisible();
+    await expect(page.getByText("1 Eintrag gespeichert")).toBeVisible();
     const audit = page.getByRole("region", { name: "Abweichungen der letzten 30 Tage" });
     await expect(audit).toContainText("Kühlraum (Tägliche Kontrollen): 7 °C");
     await expect(audit).toContainText("Tür stand offen"); // the seed's deviation from two days ago
