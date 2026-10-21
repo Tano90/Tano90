@@ -1,6 +1,6 @@
 # Bugs
 
-Gefunden mit `/replica-test` am 2026-10-20 (vier Durchgänge; BUG-008 bis 011 schon beim Bauen von S18/S20/S21 reproduziert und mit Test behoben) · Korrekturen: Commits in der Tabelle ·
+Gefunden mit `/replica-test` am 2026-10-20/21 (fünf Durchgänge; BUG-008 bis 011 schon beim Bauen von S18/S20/S21 reproduziert und mit Test behoben) · Korrekturen: Commits in der Tabelle ·
 Chromium 1440 px, de-DE, Europe/Berlin · Produktions-Build auf Postgres 16 mit Demo-Seed.
 
 Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jetzt besteht.
@@ -21,6 +21,7 @@ Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jet
 | BUG-012 | S3 | Kassen-CSV über 1 MB scheitert, obwohl 5 MB angeboten werden | behoben in 6d2a0f3 |
 | BUG-013 | S3 | CSV-Export führt Zutatennamen mit `=` in Excel als Formel aus (CSV-Injektion) | behoben in 6d2a0f3 |
 | BUG-014 | S2 | Tippfehler in einem Preisfeld löscht den Preis beim Speichern | behoben in 69f447e |
+| BUG-015 | S2 | Dezimalpunkt in Zahlenfeldern verzehnfacht die Zahl („2.5“ kg → 25 kg) | behoben in 3342447 |
 
 Offen: keine. S1 offen: keine.
 
@@ -221,12 +222,29 @@ Evidence: e2e `P-E2`, `P-E4` (Datenbank: `sell_price_cents` leer), `P-E5`.
 Suspected cause: `parseCents` gibt für Leeres und Unlesbares gleichermaßen `null` zurück, und `null` heißt „kein Preis“.
 Status: fixed in 69f447e (`readCents` trennt leer von unlesbar; Unlesbares zeigt „„7,9,0“ ist kein gültiger Betrag.“ und speichert nichts)
 
+### BUG-015: Dezimalpunkt verzehnfacht die Zahl
+
+- Severity: S2 (falsche Bestellmenge geht per Mail an den Lieferanten; falscher Verkaufspreis rechnet Wareneinsatz und Marge falsch. Der Wert steht sichtbar im Feld, ist aber leicht zu übersehen)
+- Flow / case: F06, F02, F08, S16, F05 / W-E2, X-DEC
+- Screen: S13 (Bestellung), S14 (Wareneingang), S06 (Preise), S17 (Inventur), S16 (Mindest-/Zielbestand), S08 (Portionen)
+- Build: vor 3342447
+
+Steps
+1. Neue Bestellung bei Frischehof Lindner, „Menge in kg Knollensellerie“: `2.5` tippen.
+
+Expected: 2,5 kg, Summe 5,50 €.
+Actual: Feld zeigt 25, Summe 55,00 €; gesendet würden 25 kg. Gleich im Verkaufspreis (`8.40` → 840 €), in der Inventur, beim Mindestbestand und den Portionen im Menü.
+Evidence: e2e `W-E2`, `X-DEC`.
+Suspected cause: Die Felder entfernten jedes Zeichen außer Ziffern und Komma, also auch den Punkt. Mengenfelder mit Einheit (`QuantityInput`) waren nicht betroffen.
+Status: fixed in 3342447 (`cleanDecimal` macht aus dem Punkt ein Komma; an allen neun Stellen)
+
 ---
 
 ## Zu prüfen (nicht reproduziert oder nicht automatisierbar)
 
 - Ungespeicherte Änderungen beim Wechsel über die Seitennavigation (nicht nur Neuladen) gehen ohne Nachfrage verloren. Gilt auch für Zutaten- und Bestellformulare.
 - Supabase-Mails (Bestätigung, Magic Link, Reset) und Stripe (Checkout, abgelehnte Karte 4000 0000 0000 0002, Kündigung im Portal): nur mit deinen Konten prüfbar, Checkliste im Testplan (A02, A05).
+- Preislisten-Import mit Tausenderpunkt („1.234,50“) im Preis: wird korrekt gelesen; in einem Eingabefeld getippt ergibt es „1,234,50“ und wird als ungültiger Betrag abgelehnt statt still falsch gespeichert. Akzeptiert.
 - Eingaben in den ersten Augenblicken nach dem Laden einer Seite (bevor deren Skripte da sind) setzt React zurück. In den Tests reproduziert (S08-E4, 1–5 von 15 Läufen), für Menschen nur bei sehr langsamer Verbindung denkbar. Die Tests warten jetzt nach jeder Navigation auf Netzwerkruhe.
 - Eine Zutat in einem Outlet ausblenden, während dort eine offene Bestellung sie enthält: der Wareneingang bucht dann Bestand auf eine ausgeblendete Zutat. Nicht reproduziert.
 - Kasse: Stornos (negative Mengen) werden als Fehlerzeile abgelehnt, nicht verarbeitet. Bewusst noch nicht gebaut; Kassen, die Stornos als eigene Zeilen exportieren, brauchen das.

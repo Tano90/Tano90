@@ -8,7 +8,7 @@ Automatisiert: `cd web && E2E_DATABASE_URL=… npm run e2e` (Specs in `web/e2e/`
 schlägt fehl bei Konsolenfehlern, Seitenfehlern und jeder 5xx-Antwort; Screens werden mit axe (WCAG 2.2 AA)
 geprüft. Datenbank-Integrationstests: `TEST_DATABASE_URL=… npm test`.
 
-Lauf vom 2026-10-20 (4. Durchgang, nach Preis pro Outlet, Sichtbarkeit, Etikett): **144/144 E2E bestanden**, **48/48 Unit- und Integrationstests**. Neu: 17 E2E-Fälle, 3 Unit-/Integrationstests; 1 Bug (BUG-014, behoben); ein Flake auf seine Ursache zurückgeführt (Eingabe vor dem Laden der Seitenskripte) und in den Fixtures behoben. 3. Durchgang: Neu seit dem 2. Durchgang 26 E2E-Fälle und 8 Unit-/Integrationstests; 6 Bugs (BUG-008 bis 013), alle behoben. 2. Durchgang: 34 Fälle, BUG-007. Erster Durchgang: 61 Fälle, 6 Bugs, alle behoben. Ergebnis-Spalte: ✅ bestanden · ❌ fehlgeschlagen (→ `bugs.md`) · ⏸ blockiert · 🖐 manuell offen
+Lauf vom 2026-10-21 (5. Durchgang, nach Stornos, Menu Engineering, Bestellen nach Gewicht, Preislisten-Import): **165/165 E2E bestanden**, **52/52 Unit- und Integrationstests**. Neu: 21 E2E-Fälle, 4 Unit-Tests; 1 Bug (BUG-015, behoben). 4. Durchgang: 144/144, Neu: 17 E2E-Fälle, 3 Unit-/Integrationstests; 1 Bug (BUG-014, behoben); ein Flake auf seine Ursache zurückgeführt (Eingabe vor dem Laden der Seitenskripte) und in den Fixtures behoben. 3. Durchgang: Neu seit dem 2. Durchgang 26 E2E-Fälle und 8 Unit-/Integrationstests; 6 Bugs (BUG-008 bis 013), alle behoben. 2. Durchgang: 34 Fälle, BUG-007. Erster Durchgang: 61 Fälle, 6 Bugs, alle behoben. Ergebnis-Spalte: ✅ bestanden · ❌ fehlgeschlagen (→ `bugs.md`) · ⏸ blockiert · 🖐 manuell offen
 
 | case | flow | type | steps | expected | auto | result |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -97,6 +97,27 @@ Lauf vom 2026-10-20 (4. Durchgang, nach Preis pro Outlet, Sichtbarkeit, Etikett)
 | L-E3 | | edge: leeres Rezept, 120 Zeichen, 390 px | neues Rezept ohne Zeilen | „Zutaten: –“, 0 kcal, kein Querscrollen | e2e | ✅ |
 | L-N1 | | negativ: fremder Betrieb | Etikett-URL | „Nicht gefunden“ | e2e + int | ✅ |
 | X-NUT | Nährwerte | unit | Summen über Unterrezepte, je 100 g, je Portion, fehlende benannt | richtig | unit | ✅ |
+| ST-H1 | Stornos | happy | Verkauf und Storno am selben Tag | Bestand unverändert | e2e | ✅ |
+| ST-H2 | | happy: Storno am Folgetag | 3 verkauft, 1 storniert | 2 Portionen abgebucht, Durchschnittspreis unverändert | e2e | ✅ |
+| ST-E1 | | edge: Storno ohne Verkauf | −1 Linsensuppe | +80 g Linsen zurück | e2e | ✅ |
+| ST-N1 | | negativ: Menge 0 | Zeile mit 0 | Fehlerzeile „Menge 0 ergibt keinen Verkauf“ | e2e + unit | ✅ |
+| ME-H1 | Menu Engineering | happy | Seed-Verkäufe | Linsensuppe „Arbeitspferde“ (73,7 %), Ofengemüse „Rätsel“, Hinweis auf 28 Portionen ohne Rezept | e2e + unit | ✅ |
+| ME-E1 | | edge: nur Tastatur | Punkt fokussieren | Tooltip mit Portionen und Gruppe | e2e | ✅ |
+| ME-E2 | | edge: ohne Verkäufe, 390 px | Januar 2020 | Leerzustand mit Link zur Kasse; kein Querscrollen | e2e | ✅ |
+| ME-E3 | | edge: verknüpfen/ignorieren | Apfelkuchen verknüpfen, Espresso ignorieren | Apfelkuchen erscheint, Hinweis verschwindet | e2e | ✅ |
+| ME-E4 | | edge: Storno | −4 Linsensuppe | Verkauft 10 statt 14 | e2e | ✅ |
+| W-H1 | Bestellen nach Gewicht | happy | 2,5 kg Sellerie | Summe 5,50 €, Entwurf 2,5 Gebinde, Mail „2,5 kg … (2,20 €/kg netto)“, Wareneingang zeigt 2,5 kg | e2e | ✅ |
+| W-E1 | | edge: Vorschlag | Ziel 4 kg | auf 100 g genau statt volle Gebinde | e2e + unit | ✅ |
+| W-E2 | | edge: Dezimalpunkt | „2.5“ | 2,5 kg | e2e | ✅ (zuerst ❌ → BUG-015) |
+| X-DEC | Zahlenfelder | edge: Dezimalpunkt | Preis „8.40“, Inventur „1.5“ | 8,40 / 1,5 | e2e | ✅ (zuerst ❌ → BUG-015) |
+| I-H1 | Preislisten-Import | happy | Excel: Butter teurer, Quark gleich, Hafermilch neu | Vorschau mit alt/neu, Übernahme, Preis-Historie, neue Zutat mit Kategorie und Gebinde | e2e + unit | ✅ |
+| I-E1 | | edge: Fehler | unbekannte Einheit, falsche Einheit zur Zutat, doppelt | je Zeile benannt, nichts übernehmbar | e2e + unit | ✅ |
+| I-E2 | | edge: Vorlage, kaputte Datei, Lieferant wechseln | – | Datei `preisliste-vorlage.csv`; „lässt sich nicht lesen“; Vorschau neu geplant | e2e | ✅ |
+| I-E3 | | edge: 420 Zeilen | CSV | in Teilen geplant und übernommen (≈ 6 s) | e2e | ✅ |
+| I-E4 | | edge: Doppelklick | Übernehmen doppelt | eine Zutat, ein Preis | e2e | ✅ |
+| I-E5 | | edge: Schreibweise | „  butter  “ | findet Butter | e2e | ✅ |
+| I-E6 | | edge: archivierte Zutat | Zucker archiviert | neue Zutat, alte bleibt archiviert | e2e | ✅ |
+| I-N1 | | negativ: Team-Konto | /imports | gesperrt | e2e | ✅ |
 | S16-H1 | Mindest-/Zielbestand | happy | Butter 3 / 7,5 kg | Spalte „3 kg / 7,5 kg“, „unter Minimum“ | e2e | ✅ |
 | S16-E1 | | edge: leeren | Mindestbestand leeren | Markierung weg | e2e | ✅ |
 | S16-N1 | | negativ: Minimum über Ziel | 9 / 5 | Meldung | e2e | ✅ |
