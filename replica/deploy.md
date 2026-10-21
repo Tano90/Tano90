@@ -8,9 +8,9 @@ Vier Punkte stoppen den Deploy, jeder für sich:
 
 1. **Ein Must-have offen:** Login, gebaut und mit Demo-Konten getestet, aber nie mit einem echten Supabase-Projekt
    durchgeklickt (Testplan A02). Score 94,1, Must-haves 20 von 21.
-2. **Rechtsseiten ohne Betreiberangaben:** Impressum, Datenschutz, Nutzungsbedingungen und Auftragsverarbeitung sind
-   ausgeschrieben (2026-10-21), aber 13 Angaben des Betreibers fehlen (`npm run legal:check` → exit 1), und eine rechtliche
-   Prüfung steht aus. In Deutschland ist ein vollständiges Impressum Pflicht.
+2. **Rechtsseiten fast vollständig:** Betreiber Mattias Segato Consulting, Hohenzollernstraße 12, 52351 Düren,
+   Kleinunternehmer nach § 19 UStG (2026-10-21 eingetragen). Es fehlen E-Mail, Telefon und die E-Mail für
+   Datenschutzanfragen (`npm run legal:check` → exit 1); die anwaltliche Prüfung steht aus.
 3. **Name gewählt, aber nicht geprüft:** Mirepa (2026-10-21, statt Pantra, das einen Namensvetter im App Store hat).
    Bisher nur Websuche; Markenregister, Domain und Stores sind hier gesperrt. Vor dem Domainkauf prüfen (`brand.md`).
 4. **Produktionsdienste fehlen:** kein Supabase-, Stripe-, Resend- oder Vercel-Konto verbunden. Die lege ich nicht an.
@@ -31,7 +31,7 @@ Alles, was sich ohne deine Konten prüfen lässt, ist grün. Live ging nichts, e
 | Store-Listing | ✅ 0 Fehler, 1 Warnung (HACCP in Großbuchstaben, gewollt) | `listing.py replica/launch/listing.json` (erst mit nativer App relevant) |
 | Produktions-Build | ✅ | `npm run build` |
 | Abhängigkeiten | ✅ 0 Schwachstellen | `npm audit --omit=dev` |
-| Datenschutz und Nutzungsbedingungen live, alle Auftragsverarbeiter | ⚠️ Text fertig, Betreiberangaben fehlen | `/legal/imprint`, `/legal/privacy` (Zwecke, Rechtsgrundlagen, Fristen aus dem Code, Cookies, Drittland), `/legal/terms` (B2B-AGB), `/legal/dpa` (AVV nach Art. 28 mit TOMs); Dienstleister aus einer Liste (`src/lib/legal.ts`), E2E `legal.spec.ts`; `npm run legal:check` → **exit 1**, 13 Felder offen; anwaltliche Prüfung offen |
+| Datenschutz und Nutzungsbedingungen live, alle Auftragsverarbeiter | ⚠️ Text fertig, 3 Kontaktangaben fehlen | `/legal/imprint`, `/legal/privacy` (Zwecke, Rechtsgrundlagen, Fristen aus dem Code, Cookies, Drittland), `/legal/terms` (B2B-AGB), `/legal/dpa` (AVV nach Art. 28 mit TOMs); Dienstleister aus einer Liste (`src/lib/legal.ts`), E2E `legal.spec.ts`; `npm run legal:check` → **exit 1**, 3 Felder offen (E-Mail, Telefon, Datenschutz-Kontakt); anwaltliche Prüfung offen |
 | Cookie-Banner | ✅ nicht nötig, solange es so bleibt | nur technisch notwendige Cookies (Sitzung, gewähltes Outlet) |
 | Konto löschen funktioniert | ⚠️ teilweise | Daten: E2E A04-H1/N1 grün, inkl. Zentralküchen-Anforderungen (Migration 0012); Login-Löschung über die Supabase Admin API nicht getestet (kein Projekt) |
 | Favicon, Titel, OG-Bild, E-Mails, App-Icon eigen | ⚠️ teilweise | Titel „… · Mirepa“ ✅, E-Mail-Absender ✅, Favicon nur Platzhalter, **kein OG-Bild**, kein Logo (Briefing in `brand.md`) |
@@ -42,7 +42,7 @@ Alles, was sich ohne deine Konten prüfen lässt, ist grün. Live ging nichts, e
 - [ ] **Datenbank:** eigenes Supabase-Projekt nur für Produktion (EU Frankfurt), nie das Entwicklungsprojekt. Pro-Plan für tägliche Backups; Backups im Dashboard prüfen. API → Exposed schemas: `public` entfernen.
 - [x] **Migrationen im Deploy:** `vercel-build` = `npm run db:migrate && npm run build`. Achtung: Preview-Deployments brauchen eine eigene `DATABASE_URL` (Staging-Projekt), sonst migrieren sie die Produktion.
 - [ ] **Umgebungsvariablen** in Vercel → Production, Namen exakt wie `web/.env.example`. `ALLOW_DEMO` **niemals** setzen: Damit könnte sich jeder ohne Passwort als Demo-Inhaber anmelden.
-- [ ] **Stripe live:** Produkt und beide gestaffelten Preise neu im Live-Modus anlegen (`launch/pricing.md`), Webhook `https://DEINE-DOMAIN/api/webhooks/stripe` mit `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`, Signatur-Secret in `STRIPE_WEBHOOK_SECRET`. Kundenportal: Kündigen aktivieren. Ein echter Kauf, dann erstatten.
+- [ ] **Stripe live:** Produkt und beide gestaffelten Preise neu im Live-Modus anlegen (`launch/pricing.md`), Webhook `https://DEINE-DOMAIN/api/webhooks/stripe` mit `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`, Signatur-Secret in `STRIPE_WEBHOOK_SECRET`. Kundenportal: Kündigen aktivieren. Rechnungs-Fußzeile „Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.“ und Firmenanschrift in Stripe hinterlegen, Stripe Tax aus. Ein echter Kauf, dann erstatten.
 - [ ] **Supabase Auth:** Site-URL = Produktionsdomain, Redirect-URL `https://DEINE-DOMAIN/auth/callback`, E-Mail-Bestätigung an, SMTP auf Resend umstellen.
 - [x] OAuth (Google/Apple): nicht im Einsatz, nichts zu verifizieren.
 - [ ] **E-Mail-Domain** in Resend verifiziert (DNS unten), `MAIL_FROM` darauf.

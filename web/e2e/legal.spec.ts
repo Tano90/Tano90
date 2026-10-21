@@ -21,7 +21,10 @@ test.describe("L02 Rechtsseiten", () => {
   test("L02-E1 fehlende Betreiberangaben sind sichtbar markiert, nicht erfunden", async ({ page }) => {
     await page.goto("/legal/imprint");
     await expect(page.getByRole("note")).toContainText("Angaben des Betreibers fehlen");
-    await expect(page.getByText("[fehlt: Name oder Firma]").first()).toBeVisible();
+    await expect(page.getByText("[fehlt: E-Mail-Adresse]").first()).toBeVisible();
+    await expect(page.locator("main")).toContainText("Mattias Segato Consulting (Einzelunternehmen)");
+    await expect(page.locator("main")).toContainText("Inhaber: Mattias Segato");
+    await expect(page.locator("main")).toContainText("Hohenzollernstraße 12");
   });
 
   test("L02-E2 Datenschutz nennt jeden Dienstleister und die Cookies, AVV dieselben", async ({ page }) => {
@@ -38,5 +41,9 @@ test.describe("L02 Rechtsseiten", () => {
   test("L02-E3 Preise in den Bedingungen kommen aus derselben Quelle wie die Preisseite", async ({ page }) => {
     await page.goto("/legal/terms");
     await expect(page.getByText(/derzeit 49\s€ im Monat für den ersten Standort und 39\s€ für jeden weiteren/)).toBeVisible();
+    await expect(page.locator("main")).toContainText("Als Kleinunternehmer nach § 19 UStG berechnen wir keine Umsatzsteuer");
+    await page.goto("/#preise");
+    await expect(page.getByRole("region", { name: "Preise" })).toContainText("Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.");
+    await expect(page.getByRole("region", { name: "Preise" })).not.toContainText("MwSt");
   });
 });

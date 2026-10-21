@@ -32,7 +32,7 @@ Keine Daten: 0 Bewertungen gesammelt (siehe `fixes.md`). Diese Spalte wird ergä
 | Eine Küche | Restaurant, Café, Imbiss | 49 € | 490 € |
 | Mehrere Küchen | Gruppen, Filialen, Zentralküchen | + 39 € je weiterem Standort | + 390 € je weiterem Standort |
 
-Netto zzgl. MwSt. Beispiel: drei Standorte = 127 €/Monat. Zur Einordnung: unter dem, was Drittquellen für das Original
+Als Kleinunternehmer nach § 19 UStG ohne Umsatzsteuer, die Preise sind Endpreise (Schalter `SMALL_BUSINESS` in `web/src/lib/legal.ts`). Beispiel: drei Standorte = 127 €/Monat. Zur Einordnung: unter dem, was Drittquellen für das Original
 und MarginEdge nennen, über reinen Kalkulationstools ohne Lager und Einkauf. Die Zahlen sind ein Vorschlag, kein Test:
 Mit den ersten Betrieben über die Zahlungsbereitschaft sprechen (siehe `launch-plan.md`).
 
@@ -52,5 +52,5 @@ Mit den ersten Betrieben über die Zahlungsbereitschaft sprechen (siehe `launch-
 1. Produkt „Mirepa“.
 2. Preis monatlich, **gestaffelt (graduated)**, pro Einheit: Stufe 1 (1 Einheit) 49,00 €, Stufe 2 (ab 2) 39,00 €; Abrechnung pro Monat → ID in `STRIPE_PRICE_ID`.
 3. Preis jährlich, gestaffelt: 490,00 € / 390,00 €; pro Jahr → `STRIPE_PRICE_ID_YEARLY`.
-4. Steuerverhalten der Preise: „exklusiv“ (netto).
+4. Steuer: keine. Als Kleinunternehmer Stripe Tax nicht aktivieren (die App schaltet es bei `SMALL_BUSINESS` ohnehin ab). In Stripe → Einstellungen → Rechnungen als Standard-Fußzeile eintragen: „Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.“ Unter Einstellungen → Unternehmen Name und Anschrift (Mattias Segato Consulting, Hohenzollernstraße 12, 52351 Düren) hinterlegen; beides gehört auf jede Rechnung.
 5. Kundenportal: Kündigen erlauben (zum Periodenende), Zahlungsart ändern, Rechnungen zeigen, Wechsel monatlich ↔ jährlich erlauben.

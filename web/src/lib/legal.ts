@@ -3,24 +3,31 @@
 // Before launch: fill in, then have a lawyer review the three pages (replica/deploy.md).
 
 export const OPERATOR = {
-  company: null as string | null, // e.g. "Muster Software GmbH" or your full name as a sole trader
-  legalForm: null as string | null, // e.g. "GmbH", "UG (haftungsbeschränkt)", "Einzelunternehmen"
-  representative: null as string | null, // managing director(s); for a sole trader your name again
-  street: null as string | null,
-  postalCodeCity: null as string | null,
+  company: "Mattias Segato Consulting" as string | null, // e.g. "Muster Software GmbH" or your full name as a sole trader
+  legalForm: "Einzelunternehmen" as string | null, // e.g. "GmbH", "UG (haftungsbeschränkt)", "Einzelunternehmen"
+  representative: "Mattias Segato" as string | null, // managing director(s); for a sole trader your name again
+  street: "Hohenzollernstraße 12" as string | null,
+  postalCodeCity: "52351 Düren" as string | null,
   country: "Deutschland",
   email: null as string | null, // a monitored address, e.g. kontakt@your-domain
   phone: null as string | null, // or another fast way to reach you (§ 5 DDG)
-  register: null as string | null, // e.g. "Amtsgericht München, HRB 123456"; "nicht eingetragen" for a sole trader
-  vatId: null as string | null, // USt-IdNr. per § 27a UStG, or "nicht vorhanden"
-  contentResponsible: null as string | null, // § 18 Abs. 2 MStV: name and address of the person responsible for content
+  register: "nicht eingetragen" as string | null, // e.g. "Amtsgericht München, HRB 123456"; "nicht eingetragen" for a sole trader
+  vatId: "nicht vorhanden (Kleinunternehmer nach § 19 UStG)" as string | null, // USt-IdNr. per § 27a UStG, or "nicht vorhanden"
+  contentResponsible: "Mattias Segato, Hohenzollernstraße 12, 52351 Düren" as string | null, // § 18 Abs. 2 MStV: name and address of the person responsible for content
   privacyContact: null as string | null, // e-mail for data protection requests (may be the same as email)
   dataProtectionOfficer: "nicht bestellt (nicht verpflichtend)" as string | null, // change if you appoint one
-  supervisoryAuthority: null as string | null, // the data protection authority of your federal state, with its address
-  jurisdictionCity: null as string | null, // court for disputes with merchants, usually your registered seat
+  supervisoryAuthority: "Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen, Kavalleriestraße 2–4, 40213 Düsseldorf" as string | null, // the data protection authority of your federal state, with its address
+  jurisdictionCity: "Düren" as string | null, // court for disputes with merchants, usually your registered seat
 };
 
 export const LEGAL_DATE = "21. Oktober 2026";
+
+/**
+ * Kleinunternehmer nach § 19 UStG: no VAT on prices or invoices, and every price states why. Set to false once the
+ * turnover limit is passed or you opt out; prices then read "zzgl. Umsatzsteuer" and Stripe Tax may be switched on.
+ */
+export const SMALL_BUSINESS = true;
+export const PRICE_TAX_NOTE = SMALL_BUSINESS ? "Gemäß § 19 UStG wird keine Umsatzsteuer berechnet." : "Preise netto zzgl. Umsatzsteuer.";
 
 export type OperatorField = keyof typeof OPERATOR;
 

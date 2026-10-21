@@ -1,6 +1,9 @@
 import { db, expect, outbox, test } from "./fixtures";
 
-const cleanup = () => db()`delete from leads where email like '%@anfrage.example'`;
+const cleanup = async () => {
+  await db()`delete from leads where email like '%@anfrage.example'`;
+  await db()`delete from rate_limit_events where key like 'lead:%'`; // all test runs share one address
+};
 
 test.describe("Nachfrage vor dem Start", () => {
   test.beforeEach(async () => { await cleanup(); });
@@ -40,7 +43,7 @@ test.describe("Nachfrage vor dem Start", () => {
     await form.getByLabel("E-Mail").fill("bot@anfrage.example");
     await page.locator('input[tabindex="-1"]').fill("http://spam.example", { force: true });
     await form.getByRole("button", { name: "Vorführung anfragen" }).click();
-    await expect(form.getByText(/Website/)).toBeVisible();
+    await expect(form.getByText("Bitte das Feld „Website“ leer lassen.")).toBeVisible();
     expect(await db()`select 1 from leads where email = 'bot@anfrage.example'`).toHaveLength(0);
   });
 

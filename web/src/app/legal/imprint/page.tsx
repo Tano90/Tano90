@@ -1,5 +1,6 @@
 import { LegalPage, Op, Section } from "@/components/legal/legal-page";
 import { APP_NAME } from "@/lib/brand";
+import { OPERATOR } from "@/lib/legal";
 
 export const metadata = { title: "Impressum" };
 
@@ -14,7 +15,7 @@ export default function ImprintPage() {
           <Op field="postalCodeCity" /><br />
           <Op field="country" />
         </p>
-        <p>Vertreten durch: <Op field="representative" /></p>
+        <p>{OPERATOR.legalForm === "Einzelunternehmen" ? "Inhaber" : "Vertreten durch"}: <Op field="representative" /></p>
       </Section>
       <Section title="Kontakt">
         <p>E-Mail: <Op field="email" /><br />Telefon: <Op field="phone" /></p>

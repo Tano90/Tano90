@@ -3,6 +3,7 @@
 import "server-only";
 import Stripe from "stripe";
 import { asService } from "@/data/pg/client";
+import { SMALL_BUSINESS } from "./legal";
 
 export const billingConfigured = () => !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_ID);
 export const yearlyConfigured = () => !!process.env.STRIPE_PRICE_ID_YEARLY;
@@ -30,7 +31,8 @@ export async function createCheckout(input: { libraryId: string; email: string; 
     line_items: [{ price, quantity: Math.max(1, input.outletCount) }],
     subscription_data: { metadata: { library_id: input.libraryId } },
     allow_promotion_codes: true,
-    automatic_tax: { enabled: process.env.STRIPE_AUTOMATIC_TAX === "1" },
+    // A Kleinunternehmer (§ 19 UStG) must not charge VAT, whatever the environment says.
+    automatic_tax: { enabled: !SMALL_BUSINESS && process.env.STRIPE_AUTOMATIC_TAX === "1" },
     success_url: `${appUrl()}/settings/billing?checkout=success`,
     cancel_url: `${appUrl()}/settings/billing?checkout=cancelled`,
   });

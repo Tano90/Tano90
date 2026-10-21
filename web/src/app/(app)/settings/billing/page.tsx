@@ -6,6 +6,7 @@ import { canManageBilling, requireSession } from "@/data/session";
 import { billingConfigured, yearlyConfigured } from "@/lib/billing";
 import { accessOf } from "@/domain/access";
 import { formatDate } from "@/lib/dates";
+import { PRICE_TAX_NOTE } from "@/lib/legal";
 import { BillingButtons } from "./billing-buttons";
 
 export const metadata = { title: "Abo & Rechnungen" };
@@ -37,7 +38,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         </dl>
         {billing.plan === "past_due" && <Notice tone="warning">Die letzte Zahlung ist fehlgeschlagen. Aktualisiere deine Zahlungsart, damit der Zugang erhalten bleibt.</Notice>}
         <BillingButtons hasCustomer={!!billing.stripeCustomerId} configured={billingConfigured()} yearly={yearlyConfigured()} />
-        <p className="text-xs font-normal text-text-muted">Kündigen geht jederzeit mit einem Klick über „Abo verwalten“. Bezahlung und Rechnungen laufen über Stripe; deine Kartendaten sehen wir nie.</p>
+        <p className="text-xs font-normal text-text-muted">Kündigen geht jederzeit mit einem Klick über „Abo verwalten“. Bezahlung und Rechnungen laufen über Stripe; deine Kartendaten sehen wir nie. {PRICE_TAX_NOTE}</p>
       </div>
     </>
   );

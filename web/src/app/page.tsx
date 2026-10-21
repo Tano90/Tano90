@@ -5,6 +5,7 @@ import { LeadForm, ViewBeacon } from "@/components/landing/lead-form";
 import { APP_NAME } from "@/lib/brand";
 import { formatCents } from "@/lib/format";
 import { LAUNCH_MODE } from "@/lib/launch";
+import { PRICE_TAX_NOTE } from "@/lib/legal";
 import { PRICING } from "@/lib/pricing";
 import shot from "../../public/landing/rezept-kalkulation.png";
 
@@ -119,7 +120,7 @@ export default function LandingPage() {
 
         <section id="preise" aria-labelledby="pricing" className="mx-auto max-w-(--size-content-max) px-4 py-16 lg:px-8">
           <h2 id="pricing" className="text-xl">Preise</h2>
-          <p className="mt-2 text-text-muted">Alle Funktionen in jedem Tarif. Beliebig viele Nutzer. Preise netto zzgl. MwSt.</p>
+          <p className="mt-2 text-text-muted">Alle Funktionen in jedem Tarif. Beliebig viele Nutzer. {PRICE_TAX_NOTE}</p>
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             <div className="rounded-lg border border-border p-6">
               <h3 className="text-lg">Eine Küche</h3>

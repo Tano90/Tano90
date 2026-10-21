@@ -223,8 +223,9 @@ const LeadSchema = z.object({
 /** Public: an inquiry from the landing page. The operator gets a mail, the person a short confirmation. */
 export async function submitLead(input: z.input<typeof LeadSchema>): Promise<Result<null>> {
   return open(async () => {
-    if (!(await allow(`lead:${await clientKey()}`, 5, 3600))) throw new RateLimited();
+    // Validate first: a typo should not use up the visitor's attempts.
     const { website: _, ...lead } = LeadSchema.parse(input);
+    if (!(await allow(`lead:${await clientKey()}`, 5, 3600))) throw new RateLimited();
     await createLead(lead);
     const notify = process.env.LEADS_NOTIFY_EMAIL || OPERATOR.email;
     const mails = [];
