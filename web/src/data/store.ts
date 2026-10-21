@@ -1,12 +1,14 @@
 // In-memory store with seed data. Stands in for Supabase until /replica-backend runs.
 // Lives on globalThis so dev hot reloads keep the data; a server restart resets it.
 import "server-only";
+import { addDays, dayIn } from "@/lib/dates";
 import type { CostContext } from "@/domain/costing";
 import { billOfMaterials } from "@/domain/menus";
 import { type CountBreakdown, applyMovement } from "@/domain/stock";
 import type { DatevSettings } from "@/domain/datev";
 import type { TaxLine } from "./finance-types";
 import type { FixedCost } from "./cost-types";
+import type { FunnelDay, StepSetting } from "@/domain/funnel";
 import type {
   AllergenRow, ApiKey, Category, CountDraft, HaccpChecklist, HaccpRecord, ProductionRequest, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
   PosItem, PurchaseOrder, Recipe, RecipeLine, Sale, StockEvent, StockItem, StockLevel, StockMovement, Supplier,
@@ -33,6 +35,9 @@ export type Db = {
   costSettings: { variableRevenuePct: number; perItemCents: number };
   fixedCosts: (FixedCost & { archivedAt: string | null })[];
   creditors: Record<string, number>;
+  funnelDays: (FunnelDay & { id: string; note: string | null })[];
+  funnelSteps: StepSetting[];
+  funnelProjectedDays: number;
   haccpRecords: HaccpRecord[];
   invoices: {
     id: string; orderId: string | null; supplierId: string; invoiceNumber: string; invoiceDate: string; status: "unmatched" | "matched" | "mismatch" | "approved";
@@ -103,7 +108,7 @@ export function seed(): Db {
       ...["Mittagstisch", "Abendkarte"].map((name, i) => ({ id: `cat-m${i}`, kind: "menu" as const, name })),
     ],
     ingredients: [], packages: [], suppliers: [], stockItems: [], allergens: {}, verified: {}, nutrition: {},
-    recipes: [], menus: [], outletPrices: [], invoices: [], haccpChecklists: [], haccpRecords: [], production: [], datev: null, creditors: {}, costSettings: { variableRevenuePct: 0, perItemCents: 0 }, fixedCosts: [], posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
+    recipes: [], menus: [], outletPrices: [], invoices: [], haccpChecklists: [], haccpRecords: [], production: [], datev: null, creditors: {}, costSettings: { variableRevenuePct: 0, perItemCents: 0 }, fixedCosts: [], funnelDays: [], funnelSteps: [], funnelProjectedDays: 26, posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
   };
 
   const sup = (id: string, companyName: string, orderEmail: string, leadTimeDays: number) =>
@@ -339,6 +344,23 @@ export function seed(): Db {
       lines: [{ id: "pol-3-0", stockItemId: "ing-quark-si", quantityPacks: 1, unitPriceCents: 1090 }],
     },
   );
+  // Service funnel of Küche Mitte, the last 28 days: guests and extras sold at the table (made-up but plausible).
+  const today = dayIn("Europe/Berlin");
+  for (let i = 28; i >= 1; i--) {
+    const day = addDays(today, -i);
+    const weekend = [0, 5, 6].includes(new Date(`${day}T12:00:00Z`).getUTCDay());
+    const covers = (weekend ? 130 : 85) + ((i * 7) % 13);
+    const share = (pct: number, k: number) => Math.round((covers * (pct + ((i * k) % 5) - 2)) / 100);
+    d.funnelDays.push({ id: `fun-${i}`, outletId: "out-mitte", day, covers, aperitif: share(18, 3), water: share(52, 2), upgrades: share(9, 4), sides: share(22, 1), desserts: share(24, 3), coffee: share(41, 2), note: null });
+  }
+  d.funnelSteps = [
+    { step: "aperitif", priceGrossCents: 850, vatBp: 1900, variableCents: 190, goalPct: 30 },
+    { step: "water", priceGrossCents: 690, vatBp: 1900, variableCents: 90, goalPct: 70 },
+    { step: "upgrades", priceGrossCents: 450, vatBp: 700, variableCents: 160, goalPct: 15 },
+    { step: "sides", priceGrossCents: 520, vatBp: 700, variableCents: 110, goalPct: 30 },
+    { step: "desserts", priceGrossCents: 890, vatBp: 700, variableCents: 210, goalPct: 35 },
+    { step: "coffee", priceGrossCents: 320, vatBp: 1900, variableCents: 35, goalPct: 55 },
+  ];
   return d;
 }
 

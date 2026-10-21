@@ -14,7 +14,8 @@ import { hashKey, newApiKey } from "@/lib/api-key";
 import { accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import type { DatevSettings } from "@/domain/datev";
-import type { CostSetup, FixedCost, FixedCostInput } from "./cost-types";
+import type { CostSetup, FixedCost, FixedCostInput, FunnelDayInput, FunnelSetup } from "./cost-types";
+import { type StepSetting, defaultSteps } from "@/domain/funnel";
 import type { DatevSetup, EInvoiceSave, InvoiceListRow } from "./finance-types";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
@@ -1517,4 +1518,46 @@ export async function archiveFixedCost(s: Session, id: string) {
   if (!canEditLibrary(s.role)) throw new Forbidden();
   const f = db().fixedCosts.find((x) => x.id === id);
   if (f) f.archivedAt = now();
+}
+
+// ---------------------------------------------------------------- service funnel
+
+const funnelOutlet = (s: Session, outletId: string) => {
+  if (!db().outlets.some((o) => o.id === outletId && !o.archivedAt)) throw new Error("Outlet nicht gefunden.");
+  if (!canAccessOutlet(s, outletId)) throw new Forbidden();
+};
+
+export async function getFunnel(s: Session, outletId: string, from: string, to: string): Promise<FunnelSetup> {
+  funnelOutlet(s, outletId);
+  const d = db();
+  const costsVisible = canEditLibrary(s.role);
+  const steps = defaultSteps().map((x) => ({ ...x, ...d.funnelSteps.find((y) => y.step === x.step) }));
+  return {
+    days: d.funnelDays.filter((x) => x.outletId === outletId && x.day >= from && x.day <= to).sort((a, b) => a.day.localeCompare(b.day)).map((x) => ({ ...x })),
+    steps: steps.map((x) => (costsVisible ? x : { ...x, variableCents: 0 })), projectedDays: d.funnelProjectedDays, costsVisible,
+  };
+}
+
+export async function saveFunnelDays(s: Session, outletId: string, days: FunnelDayInput[]): Promise<number> {
+  funnelOutlet(s, outletId);
+  const d = db();
+  for (const input of days) {
+    const old = d.funnelDays.find((x) => x.outletId === outletId && x.day === input.day);
+    if (old) Object.assign(old, input);
+    else d.funnelDays.push({ id: newId("fun"), outletId, ...input });
+  }
+  return days.length;
+}
+
+export async function deleteFunnelDay(s: Session, outletId: string, day: string) {
+  funnelOutlet(s, outletId);
+  const d = db();
+  d.funnelDays = d.funnelDays.filter((x) => !(x.outletId === outletId && x.day === day));
+}
+
+export async function saveFunnelSettings(s: Session, v: { steps: StepSetting[]; projectedDays: number }) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  const d = db();
+  d.funnelSteps = v.steps.map((x) => ({ ...x }));
+  d.funnelProjectedDays = v.projectedDays;
 }

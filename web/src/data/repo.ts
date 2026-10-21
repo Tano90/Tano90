@@ -26,6 +26,7 @@ export const {
   dashboard, exportLibrary,
   saveEInvoice, listInvoices, getDatevSetup, saveDatevSettings,
   getCostSetup, saveCostSettings, saveFixedCost, archiveFixedCost,
+  getFunnel, saveFunnelDays, deleteFunnelDay, saveFunnelSettings,
 } = impl;
 export type * from "./finance-types";
 export type * from "./cost-types";

@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, BookOpen, ChefHat, CookingPot, LayoutDashboard, Menu as MenuIcon, Package, ReceiptText, Settings, ShieldCheck, ShoppingCart, Truck, UtensilsCrossed, X } from "lucide-react";
+import { BarChart3, BookOpen, ChefHat, CookingPot, Funnel, LayoutDashboard, Menu as MenuIcon, Package, ReceiptText, Settings, ShieldCheck, ShoppingCart, Truck, UtensilsCrossed, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -19,6 +19,7 @@ const NAV = [
   { href: "/stock", label: "Lager", icon: BookOpen },
   { href: "/production", label: "Zentralküche", icon: CookingPot },
   { href: "/analytics/pos", label: "Auswertungen", icon: BarChart3 },
+  { href: "/analytics/funnel", label: "Service Funnel", icon: Funnel },
   { href: "/haccp", label: "HACCP", icon: ShieldCheck },
   { href: "/settings", label: "Einstellungen", icon: Settings },
 ];
@@ -57,7 +58,9 @@ export function AppShell({ outlets, outletId, onOutletChange, user, children }: 
         </div>
         <ul className="mt-2 flex flex-col gap-1">
           {NAV.map(({ href, label, icon: Icon }) => {
-            const active = pathname?.startsWith(href.split("/").slice(0, 2).join("/"));
+            // An item whose full path matches wins (Service Funnel); otherwise the section (/analytics/...) does.
+            const exact = NAV.find((n) => pathname?.startsWith(n.href));
+            const active = exact ? exact.href === href : pathname?.startsWith(href.split("/").slice(0, 2).join("/"));
             return (
               <li key={href}>
                 <Link

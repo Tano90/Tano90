@@ -72,6 +72,8 @@ try {
     }
     // Sales point at the sale events, so they go in after them.
     await tx`insert into sales ${tx(d.sales.map((x) => ({ id: sid(x.id), libraryId: lib, outletId: sid(x.outletId), posItemId: sid(x.posItemId), externalId: x.externalId, quantity: x.quantity, revenueNetCents: x.revenueNetCents, soldAt: x.soldAt, depletedEventId: u(x.depletedEventId) })))}`;
+    await tx`insert into funnel_days ${tx(d.funnelDays.map(({ id, outletId, ...x }) => ({ id: sid(id), libraryId: lib, outletId: sid(outletId), ...x })))}`;
+    await tx`insert into funnel_steps ${tx(d.funnelSteps.map((x) => ({ libraryId: lib, ...x })))}`;
   });
   const [{ n }] = await sql<{ n: number }[]>`select count(*)::int as n from ingredients`;
   console.log(`seeded demo library: ${n} ingredients, ${d.recipes.length} recipes, ${d.orders.length} orders, ${d.members.length} demo users`);

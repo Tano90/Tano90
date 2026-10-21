@@ -17,7 +17,8 @@ import { type BillingState, accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import { ORDER_RESERVE_PCT, forecastUse, orderCoverDays, suggestFromUse, weekdayUsage } from "@/domain/stock";
 import type { DatevSettings } from "@/domain/datev";
-import type { CostSetup, FixedCost, FixedCostInput } from "../cost-types";
+import type { CostSetup, FixedCost, FixedCostInput, FunnelDayInput, FunnelEntry, FunnelSetup } from "../cost-types";
+import { type StepSetting, defaultSteps } from "@/domain/funnel";
 import type { DatevSetup, EInvoiceSave, InvoiceListRow } from "../finance-types";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
@@ -137,7 +138,7 @@ const EXPORT: [table: string, where: string, omit?: string[]][] = [
   ["haccp_checklists", BY_LIBRARY], ["haccp_items", "checklist_id in (select id from haccp_checklists where library_id = $1)"],
   ["haccp_records", "item_id in (select i.id from haccp_items i join haccp_checklists c on c.id = i.checklist_id where c.library_id = $1)"],
   ["production_requests", BY_LIBRARY],
-  ["datev_settings", BY_LIBRARY], ["cost_settings", BY_LIBRARY], ["fixed_costs", BY_LIBRARY],
+  ["datev_settings", BY_LIBRARY], ["cost_settings", BY_LIBRARY], ["fixed_costs", BY_LIBRARY], ["funnel_days", BY_LIBRARY, ["updated_by"]], ["funnel_steps", BY_LIBRARY], ["funnel_settings", BY_LIBRARY],
 ];
 
 export async function exportLibrary(s: Session): Promise<Record<string, Record<string, unknown>[]>> {
@@ -1850,4 +1851,50 @@ export async function archiveFixedCost(s: Session, id: string) {
   assertEditor(s);
   if (!isUuid(id)) throw new Error("Fixkosten nicht gefunden.");
   await run(s, (tx) => tx`update fixed_costs set archived_at = now() where id = ${id} and library_id = ${s.libraryId}`);
+}
+
+// ---------------------------------------------------------------- service funnel
+
+export async function getFunnel(s: Session, outletId: string, from: string, to: string): Promise<FunnelSetup> {
+  const costsVisible = canEditLibrary(s.role);
+  return run(s, async (tx) => {
+    await assertOutletAccess(tx, outletId);
+    const days = await tx<FunnelEntry[]>`
+      select id, outlet_id, day, covers, aperitif, water, upgrades, sides, desserts, coffee, note from funnel_days
+      where outlet_id = ${outletId} and day between ${from} and ${to} order by day`;
+    const rows = await tx<StepSetting[]>`select step, price_gross_cents, vat_bp, variable_cents, goal_pct::float as goal_pct from funnel_steps where library_id = ${s.libraryId}`;
+    const [st] = await tx<{ projectedDays: number }[]>`select projected_days from funnel_settings where library_id = ${s.libraryId}`;
+    const steps = defaultSteps().map((x) => ({ ...x, ...rows.find((y) => y.step === x.step) }));
+    return { days, steps: steps.map((x) => (costsVisible ? x : { ...x, variableCents: 0 })), projectedDays: st?.projectedDays ?? 26, costsVisible };
+  });
+}
+
+export async function saveFunnelDays(s: Session, outletId: string, days: FunnelDayInput[]): Promise<number> {
+  if (!days.length) return 0;
+  return run(s, async (tx) => {
+    await assertOutletAccess(tx, outletId);
+    const rows = days.map((d) => ({ libraryId: s.libraryId, outletId, updatedBy: s.userId, ...d }));
+    await tx`
+      insert into funnel_days ${tx(rows, "libraryId", "outletId", "updatedBy", "day", "covers", "aperitif", "water", "upgrades", "sides", "desserts", "coffee", "note")}
+      on conflict (outlet_id, day) do update set covers = excluded.covers, aperitif = excluded.aperitif, water = excluded.water, upgrades = excluded.upgrades,
+        sides = excluded.sides, desserts = excluded.desserts, coffee = excluded.coffee, note = excluded.note, updated_by = excluded.updated_by, updated_at = now()`;
+    return days.length;
+  });
+}
+
+export async function deleteFunnelDay(s: Session, outletId: string, day: string) {
+  await run(s, async (tx) => {
+    await assertOutletAccess(tx, outletId);
+    await tx`delete from funnel_days where outlet_id = ${outletId} and day = ${day}`;
+  });
+}
+
+export async function saveFunnelSettings(s: Session, v: { steps: StepSetting[]; projectedDays: number }) {
+  assertEditor(s);
+  await run(s, async (tx) => {
+    await tx`insert into funnel_settings ${tx({ libraryId: s.libraryId, projectedDays: v.projectedDays })} on conflict (library_id) do update set projected_days = excluded.projected_days`;
+    await tx`
+      insert into funnel_steps ${tx(v.steps.map((x) => ({ libraryId: s.libraryId, ...x })), "libraryId", "step", "priceGrossCents", "vatBp", "variableCents", "goalPct")}
+      on conflict (library_id, step) do update set price_gross_cents = excluded.price_gross_cents, vat_bp = excluded.vat_bp, variable_cents = excluded.variable_cents, goal_pct = excluded.goal_pct`;
+  });
 }

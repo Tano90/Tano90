@@ -753,3 +753,29 @@ export async function saveFixedCost(input: z.input<typeof FixedCostSchema>) {
 export async function archiveFixedCost(fixedCostId: string) {
   return run((s) => repo.archiveFixedCost(s, id.parse(fixedCostId)), ["/analytics/contribution"]);
 }
+
+// ---------------------------------------------------------------- service funnel
+
+const count = z.number().int("Ganze Zahl.").min(0, "Mindestens 0.").max(100000);
+const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Datum fehlt.").refine((d) => !Number.isNaN(Date.parse(d)), "Kein gültiges Datum.");
+const FunnelDaySchema = z.object({
+  day: isoDay, covers: count, aperitif: count, water: count, upgrades: count, sides: count, desserts: count, coffee: count,
+  note: z.string().trim().max(500).nullable().transform((v) => v || null),
+}).refine((d) => Math.max(d.aperitif, d.water, d.upgrades, d.sides, d.desserts, d.coffee) <= d.covers * 3, "Mehr als drei Verkäufe pro Gast in einer Stufe, bitte die Zahlen prüfen.");
+export async function saveFunnelDays(days: z.input<typeof FunnelDaySchema>[]) {
+  return run(async (s) => repo.saveFunnelDays(s, await currentOutletId(s), z.array(FunnelDaySchema).min(1, "Keine Tage.").max(1000, "Höchstens 1000 Tage auf einmal.").parse(days)), ["/analytics/funnel"]);
+}
+export async function deleteFunnelDay(day: string) {
+  return run(async (s) => repo.deleteFunnelDay(s, await currentOutletId(s), isoDay.parse(day)), ["/analytics/funnel"]);
+}
+const FunnelSettingsSchema = z.object({
+  projectedDays: z.number().int().min(1, "1 bis 31 Tage.").max(31, "1 bis 31 Tage."),
+  steps: z.array(z.object({
+    step: z.enum(["aperitif", "water", "upgrades", "sides", "desserts", "coffee"]),
+    priceGrossCents: cents.max(100000), vatBp: z.union([z.literal(0), z.literal(700), z.literal(1900)]), variableCents: cents.max(100000),
+    goalPct: z.number().min(0, "Ziel 0 bis 200 %.").max(200, "Ziel 0 bis 200 %."),
+  })).length(6),
+});
+export async function saveFunnelSettings(input: z.input<typeof FunnelSettingsSchema>) {
+  return run((s) => repo.saveFunnelSettings(s, FunnelSettingsSchema.parse(input)), ["/analytics/funnel"]);
+}
