@@ -71,7 +71,7 @@ export function InvoiceForm({ orderId, lines, invoice, canEdit, today }: { order
     <div className="flex flex-col gap-6">
       {error && <Notice tone="warning">{error}</Notice>}
       {!canEdit && <Notice tone="locked">Rechnungen abgleichen dürfen Inhaber, Admins und die Küchenleitung.</Notice>}
-      <fieldset disabled={!canEdit || pending} className="flex flex-col gap-6">
+      <fieldset disabled={!canEdit || pending} className="flex min-w-0 flex-col gap-6">
         <legend className="sr-only">Rechnung</legend>
         <div className="flex flex-wrap items-end gap-3">
           <Field label="Rechnungsnummer" required className="w-56"><Input value={number} onChange={(e) => setNumber(e.target.value)} maxLength={60} /></Field>

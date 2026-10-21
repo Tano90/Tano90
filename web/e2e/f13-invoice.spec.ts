@@ -1,4 +1,4 @@
-import { db, expect, reseed, sid, test } from "./fixtures";
+import { db, expect, expectNoHorizontalScroll, reseed, sid, test } from "./fixtures";
 
 // Seed order B-0001 (po-1) was delivered in full: onions, carrots, potatoes, apples, one pack each.
 test.describe("F12 Rechnung abgleichen", () => {
@@ -62,5 +62,12 @@ test.describe("F12 Rechnung abgleichen", () => {
     await page.goto(`/orders/${sid("po-1")}/invoice`);
     await expect(page.getByText(/dürfen Inhaber, Admins und die Küchenleitung/)).toBeVisible();
     await expect(page.getByRole("button", { name: "Rechnung speichern" })).toHaveCount(0);
+  });
+
+  test("R-E3 390 px: die Tabelle scrollt in sich, die Seite nicht", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/orders/${sid("po-1")}/invoice`);
+    await expect(page.getByRole("table")).toBeVisible();
+    await expectNoHorizontalScroll(page);
   });
 });

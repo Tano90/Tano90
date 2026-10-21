@@ -24,21 +24,24 @@ Originals vorhanden, daher kein Layoutvergleich.
 | S12 | Bestellungen | 2026-10-20 | done | – | – |
 | S13 | Neue Bestellung | 2026-10-21 | partial | Bestell-PDF (die Bestellung geht als E-Mail an den Lieferanten) | seit 5. Durchgang: gewogene Artikel nach Gewicht (kg/l), gespeichert als Bruchteil des Gebindes |
 | S14 | Wareneingang | 2026-10-20 | done | Ersatzartikel, Mehrlieferung | **Fehler gefunden und behoben:** nach einer Teillieferung behielt das Formular alte Werte, ein zweites Erfassen hätte doppelt gebucht. Formular setzt sich jetzt zurück, der Server lehnt Überlieferungen ab. |
-| S15 | Rechnungsabgleich | – | stub | alles | – |
+| S15 | Rechnungsabgleich | 2026-10-21 | done | PDF-/OCR-Einlesen der Rechnung | Auf reinem Postgres fehlten Rechte für die neue Tabelle (Migration 0009 setzt Default-Privilegien) |
 | S16 | Lager | 2026-10-20 | done | – | Mindest- und Zielbestand pro Zeile im Dialog, in kg/l/Stk. statt Basiseinheit |
-| S17 | Inventur | 2026-10-20 | done | Barcode-Scan | Zählen in Gebinden: Aufteilung (jsonb, Migration 0006) separat von der Summe speichern, Server rechnet die Summe nach |
+| S17 | Inventur | 2026-10-21 | done | Kamera-Scan nur von Hand geprüft (BarcodeDetector fehlt in Firefox/Safari, dort Handscanner oder Eintippen) | Zählen in Gebinden: Aufteilung (jsonb, Migration 0006) separat von der Summe speichern, Server rechnet die Summe nach |
 | S18 | Umbuchung | 2026-10-20 | done | – | Empfangendes Outlet durfte das Ereignis nicht lesen (RLS) und den Namen des Senders nicht: Migration 0007 und Namen über den Dienstzugang nur für sichtbare Ereignisse |
 | S19 | Schwund | 2026-10-20 | done | – | – |
 | S20 | Lagerbericht | 2026-10-20 | done | – | Tagesgrenzen in der Zeitzone des Outlets inkl. Zeitumstellung; „−0,00 €“ kam aus negativer Null |
 | S21 | Kassen-Anbindung | 2026-10-20 | done | Excel-Import für Verkäufe | Größer als gedacht: Parser, API mit Schlüsseln, Abbuchung über Stückliste, Nachbuchen beim Verknüpfen, parallele Importe. Eine vor der Hydrierung gewählte Datei ging verloren (FileUpload holt sie jetzt nach) Seit 5. Durchgang: Stornos buchen zum Durchschnittspreis zurück. |
 | S22 | Menu Engineering | 2026-10-21 | done | – | Konstanten aus einem Client-Modul (wie beim Etikett) und Diagrammtext, der auf dem Handy auf 7 px schrumpfte: zeichnet jetzt in echter Breite |
-| S23 | Produktion | – | stub | alles | – |
+| S23 | Zentralküche | 2026-10-21 | partial | Fertigware als Lagerartikel im empfangenden Outlet | Größer als gedacht: Rohwarenbedarf je Tag, Kostenverteilung, Zeilensperren. Die Policy aus 0011 sah die Zentralküche unter der RLS des Mitarbeiters nicht, Mitarbeitende konnten nie anfordern (0013 behebt es) |
 | S24 | Einstellungen | 2026-10-20 | done | – | – |
 | S25 | Outlets & Team | 2026-10-20 | partial | Outlet archivieren | Rollenregeln: Admin darf den Inhaber nicht ändern, es bleibt immer mind. ein Inhaber, Inhaberschaft wird übertragen statt vergeben |
 | S26 | Import | 2026-10-21 | done | Import von Zutaten-Stammdaten ohne Preis, Allergene per Import | Datei wird im Browser gelesen (Excel-Bibliothek nur bei Bedarf geladen) und in Teilen geplant und übernommen; 420 neue Zutaten in etwa 6 s |
-| S27 | HACCP | – | stub | alles | – |
+| S27 | HACCP | 2026-10-21 | done | Erinnerungen/Push, Fotos als Nachweis | Kontrollpunkte mit Einträgen dürfen nicht gelöscht werden, sonst bricht das Protokoll |
 
 ## Außerhalb einzelner Screens
+
+- 2026-10-21 (6. Durchgang): die übrigen Could-haves: Barcode-Inventur, Rechnungsabgleich (S15), HACCP (S27), Zentralküche (S23).
+  Migrationen 0008–0013. Alle 27 Screens gebaut. Kamera-Scan ist nicht automatisierbar und steht auf der Handprüfliste.
 
 - 2026-10-21 (5. Durchgang): Stornos an der Kasse, Menu Engineering, Bestellen nach Gewicht, Preislisten-Import. E2E 158/158,
   Unit- und Integrationstests 52/52, Demo-Modus geprüft. Seed: gestrige Verkäufe der verknüpften Gerichte mit echter Abbuchung,

@@ -36,12 +36,12 @@ Generischer POS-Import (CSV/API) und PLU-Mapping,pos,should,yes,yes,"S21 F11; CS
 Lagerabzug durch Verkäufe bis auf Rohware,pos,should,yes,yes,"F11; verknüpfte Verkäufe buchen die Zutaten über alle Unterrezepte ab, ein Verkaufs-Ereignis pro Tag; wartende Verkäufe werden beim Verknüpfen nachgebucht; Stornos noch nicht"
 Dashboard mit KPIs,analytics,should,yes,yes,S02
 Menu Engineering Matrix (Beliebtheit × Marge),analytics,could,yes,yes,"S22; aus Kassenverkäufen verknüpfter Gerichte, Matrix (Streudiagramm) plus Tabelle und Empfehlungen je Gruppe; E2E f26"
-Rechnungsabgleich 3-Way-Match,procurement,could,yes,no,S15 F12
-Mobile Inventur mit Barcode-Scan,inventory,could,yes,no,S17 mobil
+Rechnungsabgleich 3-Way-Match,procurement,could,yes,yes,"S15 F12; Rechnung pro Zeile gegen Bestellung und Wareneingang, Abweichung nur mit Begründung freigeben; kein PDF-/OCR-Einlesen"
+Mobile Inventur mit Barcode-Scan,inventory,could,yes,yes,"S17 mobil; Handscanner/Eintippen getestet, Kamera über BarcodeDetector nur wo der Browser es kann, nur von Hand prüfbar"
 Zählen per Sprache,inventory,could,yes,no,Quelle 35
-Zentralküche: Bestellungen der Outlets und Produktionsplan,production,could,yes,no,S23 F13
+Zentralküche: Bestellungen der Outlets und Produktionsplan,production,could,yes,partial,"S23 F13; Anfordern, Plan nach Tag mit Rohwarenbedarf, Produzieren bucht Rohware aus, Geliefert; Fertigware ist kein Lagerartikel im empfangenden Outlet"
 Chargen-Rückverfolgung,production,could,yes,no,Quelle 34
-HACCP-Checklisten und Aufgaben,haccp,could,yes,no,S27; Add-on
+HACCP-Checklisten und Aufgaben,haccp,could,yes,yes,"S27; Add-on; Checklisten mit Grenzwerten, Tageskontrolle pro Outlet, Abweichung nur mit Maßnahme, Protokoll als CSV; keine Erinnerungen per Push"
 Nutri-Score Berechnung,allergens,could,yes,no,öffentlicher Algorithmus
 Öffentliche REST-API für Kunden,integrations,could,yes,no,
 Fertige Integrationen mit POS-Partnern (Lightspeed Deliverect HubRise …),integrations,could,yes,skip,Partnernetzwerk und Verträge; nur über offizielle APIs später einzeln
