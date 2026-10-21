@@ -101,6 +101,13 @@ Keine native App. Mirepa läuft im Browser (Handy-Layout geprüft). `launch/list
    Link, Passwort zurücksetzen, falsches Passwort.
 5. Diese Checkliste erneut ausführen (`/replica-deploy`). Erst wenn alles ✅ ist, frage ich nach deinem Go.
 
+## Einrichtung mit deinen Konten (2026-10-21)
+
+Schritt für Schritt in `replica/setup.md`: Supabase (Frankfurt, Data API aus), Resend (ohne Domain nur an deine
+eigene Adresse), Vercel (Root `web`, Variablen nur für Production), Prüfung in 10 Minuten. Für zahlende Kunden:
+Vercel Pro und Supabase Pro (Hobby ist nicht-kommerziell; Supabase Free pausiert und hat keine täglichen Sicherungen,
+die AVV und Datenschutzerklärung aber zusagen), Domain, Stripe Live.
+
 ## Vorstart: Nachfrage messen (2026-10-21)
 
 Die Seite kann vor Domain und Abrechnung online gehen: `NEXT_PUBLIC_LAUNCH_MODE=waitlist` lenkt alle Knöpfe auf das

@@ -280,6 +280,16 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
   });
 
+  describe("internal tables", () => {
+    it("signed-in users cannot read or change the migration log (Supabase exposes public tables over its REST API)", async () => {
+      const { asUser } = await import("../src/data/pg/client");
+      await expect(asUser(owner.userId, (tx) => tx`delete from schema_migrations`)).rejects.toThrow(/permission denied/);
+      await expect(asUser(owner.userId, (tx) => tx`select name from schema_migrations`)).rejects.toThrow(/permission denied/);
+      await expect(asUser(owner.userId, (tx) => tx`select id from leads`)).resolves.toHaveLength(0);
+      await expect(asUser(owner.userId, (tx) => tx`insert into page_views (day, path, views) values (current_date, '/', 999)`)).rejects.toThrow();
+    });
+  });
+
   describe("invoices", () => {
     it("editors match and approve; staff and other libraries cannot", async () => {
       const order = (await repo.getOrder(owner, sid("po-1")))!;

@@ -28,8 +28,9 @@ Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jet
 | BUG-019 | S2 | Team-Konten können bei der Zentralküche nicht anfordern („keine Berechtigung“) | behoben in 5be2517 |
 | BUG-020 | S3 | Dialog „Produzieren“ bleibt nach dem Buchen offen und zeigt „0 Anforderungen“ | behoben in 5be2517 |
 | BUG-021 | S3 | Rechnungsseite bei 390 px seitlich 778 px breit | behoben in b6ae12b |
+| BUG-022 | S2 | Angemeldete Nutzer können das Migrations-Protokoll lesen, ändern und leeren | behoben in (dieser Commit, siehe git log „0015“) |
 
-Offen: keine. S1 offen: keine.
+Offen: keine. S1 offen: keine. (22 gefunden, 22 behoben)
 
 ---
 
@@ -354,6 +355,24 @@ Actual: Seite 778 px breit.
 Evidence: `scripts/screenshot-screens.mjs` („horizontal overflow: 778px“), e2e `R-E3` auf dem alten Stand rot.
 Suspected cause: `<fieldset>` hat im Browser `min-width: min-content` und reichte die Mindestbreite der Tabelle nach außen durch.
 Status: fixed in b6ae12b (`min-w-0` am fieldset)
+
+---
+
+### BUG-022: Migrations-Protokoll für alle angemeldeten Nutzer offen
+
+- Severity: S2 (Sicherheit: kein Zugriff auf Kundendaten, aber ein Kunde könnte über die REST-Schnittstelle von Supabase das Protokoll leeren; der nächste Deploy führt dann Migration 0001 erneut aus und bricht ab)
+- Flow / case: Betrieb / Integrationstest „internal tables“
+- Screen: keiner (Datenbank)
+- Build: vor Migration 0015
+
+Steps
+1. Als beliebiger angemeldeter Nutzer `delete from schema_migrations` (über die Data API von Supabase oder direkt mit seiner Rolle).
+
+Expected: „permission denied“.
+Actual: alle Einträge gelöscht. (Beim Reproduzieren lokal tatsächlich geleert und von Hand wiederhergestellt.)
+Evidence: Integrationstest, vor dem Fix rot („promise resolved [] instead of rejecting“).
+Suspected cause: Die Tabelle legt `scripts/migrate.ts` an; sie hatte keine Zeilenrechte und bekam über die Standardrechte aus Migration 0009 alle Rechte für `authenticated`.
+Status: fixed (Migration 0015 schaltet Zeilenrechte an und entzieht `anon`/`authenticated` alle Rechte; `migrate.ts` legt sie für neue Projekte gleich geschlossen an). Gefunden beim Vorbereiten des ersten Supabase-Deploys.
 
 ---
 

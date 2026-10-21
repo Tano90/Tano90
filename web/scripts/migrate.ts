@@ -21,6 +21,8 @@ try {
     await sql.unsafe(readFileSync(join(root, "local/auth_stub.sql"), "utf8"));
   }
   await sql`create table if not exists schema_migrations (name text primary key, applied_at timestamptz not null default now())`;
+  // New projects: closed from the start (0015 does the same for existing ones).
+  await sql`alter table schema_migrations enable row level security`;
   const done = new Set((await sql<{ name: string }[]>`select name from schema_migrations`).map((r) => r.name));
   const files = readdirSync(join(root, "migrations")).filter((f) => f.endsWith(".sql")).sort();
   for (const f of files) {
