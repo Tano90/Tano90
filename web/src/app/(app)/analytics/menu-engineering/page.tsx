@@ -29,6 +29,7 @@ export default async function MenuEngineeringPage({ searchParams }: { searchPara
     <>
       <PageHeader
         title="Menu Engineering"
+        back={{ href: "/analytics/pos", label: "Kassen-Anbindung" }}
         description={`${outlet?.name} · ${formatDay(from)} bis ${formatDay(to)} · Welche Gerichte oft verkauft werden und wie viel jede Portion übrig lässt.`}
       />
       <div className="flex flex-col gap-6">

@@ -27,7 +27,7 @@ export const SCREENS: Screen[] = [
   { id: "S23", title: "Produktion", route: "/production", purpose: "Zentralküche: Aufträge und Produktionsplan", built: false },
   { id: "S24", title: "Einstellungen", route: "/settings", purpose: "Mehrwertsteuer, Lohnkosten, Name des Betriebs", built: true },
   { id: "S25", title: "Outlets & Team", route: "/settings/team", purpose: "Standorte, Einladungen, Rollen", built: true },
-  { id: "S26", title: "Import", route: "/imports", purpose: "Preise und Gebinde per Excel", built: false },
+  { id: "S26", title: "Import", route: "/imports", purpose: "Preise und Gebinde per Excel", built: true },
   { id: "S27", title: "HACCP", route: "/haccp", purpose: "Checklisten und Kontrollpunkte", built: false },
 ];
 

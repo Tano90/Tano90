@@ -5,10 +5,11 @@ import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import { parseSalesCsv } from "@/domain/pos";
+import { applyImport, planImport } from "@/lib/price-import";
 import { zoneOffsetMinutes } from "@/lib/dates";
 import { headers } from "next/headers";
 import * as repo from "@/data/repo";
-import { OUTLET_COOKIE, SESSION_COOKIE, authMode, canManageBilling, currentOutletId, currentUser, demoAllowed, requireSession } from "@/data/session";
+import { Forbidden, OUTLET_COOKIE, SESSION_COOKIE, authMode, canEditLibrary, canManageBilling, currentOutletId, currentUser, demoAllowed, requireSession } from "@/data/session";
 import type { Session } from "@/data/types";
 import { billingConfigured, createCheckout, createPortal, syncOutletQuantity } from "@/lib/billing";
 import { sendMail } from "@/lib/mail";
@@ -454,6 +455,29 @@ export async function recordTransfer(input: z.input<typeof TransferSchema>) {
     const t = TransferSchema.parse(input);
     return repo.recordTransfer(s, await currentOutletId(s), t.toOutletId, t.lines);
   }, ["/stock", "/"]);
+}
+
+// ---------------------------------------------------------------- price list import
+
+const PriceRowsSchema = z.array(z.object({
+  row: z.number().int().positive(),
+  ingredient: z.string().trim().min(1).max(120),
+  packLabel: z.string().trim().min(1).max(120),
+  packBase: z.number().positive().max(10_000_000),
+  baseUnit: baseUnit,
+  priceCents: cents.max(100_000_000),
+  perUnitBase: z.number().positive().nullable(),
+  sku: z.string().max(64).nullable(),
+  category: z.string().max(120).nullable(),
+})).max(500, "Höchstens 500 Zeilen pro Teil.");
+export async function previewPriceList(supplierId: string, rows: z.input<typeof PriceRowsSchema>) {
+  return run(async (s) => {
+    if (!canEditLibrary(s.role)) throw new Forbidden();
+    return planImport(s, id.parse(supplierId), PriceRowsSchema.parse(rows));
+  });
+}
+export async function applyPriceList(supplierId: string, rows: z.input<typeof PriceRowsSchema>) {
+  return run((s) => applyImport(s, id.parse(supplierId), PriceRowsSchema.parse(rows)), ["/ingredients", "/recipes", "/suppliers", "/menus"]);
 }
 
 // ---------------------------------------------------------------- point of sale

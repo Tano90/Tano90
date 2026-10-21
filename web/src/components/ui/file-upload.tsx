@@ -15,11 +15,13 @@ type Props = {
   errors?: RowError[];
   /** What kind of file, e.g. "CSV"; shown in the hint under the label. */
   formats?: string;
+  /** Shown when done without errors (e.g. a preview, where nothing is imported yet). */
+  doneText?: string;
   onFile: (file: File) => void;
 };
 
 /** Drop zone that is also a real file input, so keyboard and screen readers work. */
-export function FileUpload({ label, accept = ".xlsx,.csv", maxBytes = 10 * 1024 * 1024, state = "idle", errors = [], formats = "Excel oder CSV", onFile }: Props) {
+export function FileUpload({ label, accept = ".xlsx,.csv", maxBytes = 10 * 1024 * 1024, state = "idle", errors = [], formats = "Excel oder CSV", doneText = "Import abgeschlossen, keine Fehler.", onFile }: Props) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
@@ -71,7 +73,7 @@ export function FileUpload({ label, accept = ".xlsx,.csv", maxBytes = 10 * 1024 
       </label>
       {tooBig && <p role="alert" className="text-xs text-danger">Die Datei ist zu groß.</p>}
       {state === "done" && errors.length === 0 && (
-        <p role="status" className="flex items-center gap-2 text-success"><FileSpreadsheet aria-hidden className="size-4" /> Import abgeschlossen, keine Fehler.</p>
+        <p role="status" className="flex items-center gap-2 text-success"><FileSpreadsheet aria-hidden className="size-4" /> {doneText}</p>
       )}
       {errors.length > 0 && (
         <div role="alert" className="rounded-md border border-danger bg-danger-subtle p-3">

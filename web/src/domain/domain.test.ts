@@ -7,6 +7,7 @@ import { billOfMaterials, summarizeMenu } from "./menus";
 import { classifyDishes } from "./menu-engineering";
 import { recipeNutrition } from "./nutrition";
 import { parseSalesCsv } from "./pos";
+import { type Snapshot, parsePriceList, planPriceList } from "./price-list";
 import { toBase } from "./units";
 
 const gram = { baseUnit: "g" as const, gramsPerPiece: null, mlPerGram: null };
@@ -219,5 +220,42 @@ describe("suggestWeight", () => {
     expect(suggestWeight(4000, 1000, 3000, "g")).toBe(0);
     expect(suggestWeight(null, 0, 0, "g")).toBe(0);
     expect(suggestWeight(10, 2.5, 0, "piece")).toBe(8);
+  });
+});
+
+describe("price list", () => {
+  const table = [
+    ["Zutat", "Gebinde", "Inhalt", "Einheit", "Preis", "Preis je", "Artikelnummer"],
+    ["Butter", "Karton 10 × 250 g", 2.5, "kg", "23,90", "", "B-1"],
+    ["Knollensellerie", "", "1", "kg", 2.4, "kg", null],
+    ["Rote Beete", "Kiste 5 kg", 5, "kg", 6.5, "", null],
+    ["Sahne", "1 l", 1, "l", "abc", "", null],
+    ["Milch", "1 l", 1, "Fass", 1, "", null],
+    ["", "", "", "", "", "", ""],
+  ];
+  it("reads German headers, units and price bases, and names bad rows", () => {
+    const { rows, errors } = parsePriceList(table);
+    expect(rows.map((r) => [r.ingredient, r.packLabel, r.packBase, r.baseUnit, r.priceCents, r.perUnitBase])).toEqual([
+      ["Butter", "Karton 10 × 250 g", 2500, "g", 2390, null],
+      ["Knollensellerie", "1 kg", 1000, "g", 240, 1000],
+      ["Rote Beete", "Kiste 5 kg", 5000, "g", 650, null],
+    ]);
+    expect(errors.map((e) => e.row)).toEqual([5, 6]);
+    expect(parsePriceList([["Name", "Preis"]]).errors[0].message).toMatch(/Spalte fehlt: Inhalt, Einheit/);
+  });
+  it("plans new, changed and unchanged prices for one supplier", () => {
+    const { rows } = parsePriceList(table);
+    const snap: Snapshot = {
+      ingredients: [{ id: "i-b", name: "Butter", baseUnit: "g" }, { id: "i-s", name: "Knollensellerie", baseUnit: "g" }],
+      packages: new Map([["i-b", [{ id: "p-b", label: "10x250 g", quantityBase: 2500 }]], ["i-s", [{ id: "p-s", label: "1 kg", quantityBase: 1000 }]]]),
+      items: new Map([["i-b", [{ id: "s-b", supplierId: "sup", packageId: "p-b", priceType: "per_pack" as const, priceCents: 2290, priceUnitQuantity: null }]],
+        ["i-s", [{ id: "s-s", supplierId: "sup", packageId: "p-s", priceType: "per_unit" as const, priceCents: 240, priceUnitQuantity: 1000 }]]]),
+    };
+    const plan = planPriceList(rows, "sup", snap);
+    expect(plan.map((p) => p.kind)).toEqual(["changed", "same", "new_ingredient"]);
+    expect(plan[0]).toMatchObject({ itemId: "s-b", packageId: "p-b", oldPriceCents: 2290 }); // same size, other label: same package
+    expect(planPriceList(rows, "other-supplier", snap)[0].kind).toBe("new_price");
+    expect(planPriceList([...rows, { ...rows[0], row: 9 }], "sup", snap).at(-1)!.message).toMatch(/Doppelt.*Zeile 2/);
+    expect(planPriceList([{ ...rows[0], baseUnit: "ml" }], "sup", snap)[0].message).toMatch(/in g\/kg geführt/);
   });
 });
