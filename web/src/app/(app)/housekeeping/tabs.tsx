@@ -1,6 +1,6 @@
 "use client";
 
-import { BedDouble, CalendarDays, LayoutDashboard, Shirt, Users } from "lucide-react";
+import { BedDouble, CalendarDays, LayoutDashboard, Shirt, Users, Wrench } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
@@ -10,6 +10,7 @@ const TABS = [
   { href: "/housekeeping", label: "Zimmer", icon: BedDouble, manager: false },
   { href: "/housekeeping/belegung", label: "Belegung", icon: CalendarDays, manager: true },
   { href: "/housekeeping/waesche", label: "Wäsche", icon: Shirt, manager: false },
+  { href: "/housekeeping/meldungen", label: "Meldungen", icon: Wrench, manager: false },
   { href: "/housekeeping/dienstplan", label: "Dienstplan", icon: Users, manager: false },
 ];
 

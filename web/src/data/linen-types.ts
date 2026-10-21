@@ -16,3 +16,11 @@ export type LinenOrderMailData = { to: string | null; supplierName: string | nul
 export type ShiftRow = { id: string; day: string; membershipId: string | null; person: string; starts: string; ends: string; breakMinutes: number };
 export type ShiftInput = Omit<ShiftRow, "id"> & { id?: string };
 export type { PlanRow };
+
+export type TicketKind = "defect" | "lost_found";
+export type TicketRow = {
+  id: string; kind: TicketKind; title: string; note: string | null; status: "open" | "done"; resolution: string | null;
+  roomId: string | null; roomNumber: string | null; hasPhoto: boolean; createdAt: string; createdByName: string | null; closedAt: string | null;
+};
+export type TicketInput = { kind: TicketKind; title: string; note: string | null; roomId: string | null; photo: { base64: string; type: "image/jpeg" | "image/png" | "image/webp" } | null };
+export type CleaningTime = { person: string; rooms: number; avgMinutes: number };

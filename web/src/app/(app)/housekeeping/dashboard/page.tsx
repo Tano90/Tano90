@@ -45,6 +45,13 @@ export default async function HkDashboard() {
   const overdue = f.orders.filter((o) => o.status === "sent" && o.deliveryDay < f.today);
   if (overdue.length) alerts.push({ tone: "warning", text: `${overdue.length === 1 ? "Eine Wäschelieferung ist" : `${overdue.length} Wäschelieferungen sind`} überfällig`, href: "/housekeeping/waesche#bestellungen", action: "Ansehen" });
   if (f.planMissingDays > 7) alerts.push({ tone: "warning", text: `Für ${f.planMissingDays} der nächsten 14 Tage fehlt die Belegung; Bedarf und Personal sind dort 0`, href: "/housekeeping/belegung", action: "Eintragen" });
+  const defects = f.tickets.filter((t) => t.kind === "defect");
+  if (defects.length) {
+    const oldest = Math.max(...defects.map((t) => Math.floor((Date.now() - Date.parse(t.createdAt)) / 86_400_000)));
+    alerts.push({ tone: oldest >= 2 ? "danger" : "warning", text: `${defects.length === 1 ? "1 Schaden offen" : `${defects.length} Schäden offen`}${oldest >= 1 ? `, ältester seit ${oldest === 1 ? "1 Tag" : `${oldest} Tagen`}` : ""}`, href: "/housekeeping/meldungen", action: "Meldungen" });
+  }
+  const lost = f.tickets.filter((t) => t.kind === "lost_found").length;
+  if (lost) alerts.push({ tone: "warning", text: `${lost === 1 ? "1 Fundsache" : `${lost} Fundsachen`} in Aufbewahrung`, href: "/housekeeping/meldungen", action: "Ansehen" });
   const noSet = f.linen.filter((l) => !l.hasSet);
   if (noSet.length) alerts.push({ tone: "warning", text: `${noSet.map((l) => l.name).join(", ")}: kein Wäscheset hinterlegt, Bedarf unbekannt`, href: "/housekeeping/waesche#artikel", action: "Festlegen" });
   function x(c: number): Alert["tone"] { return c <= 1 ? "danger" : "warning"; }
@@ -170,8 +177,8 @@ export default async function HkDashboard() {
                 <div className="bg-success" style={{ width: `${(f.board.inspected / f.board.total) * 100}%` }} />
                 <div className="bg-info" style={{ width: `${(f.board.clean / f.board.total) * 100}%` }} />
               </div>
-              <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[["Kontrolliert", f.board.inspected], ["Gereinigt", f.board.clean], ["Schmutzig", f.board.dirty], ["Gesperrt", f.board.outOfOrder]].map(([k, v]) => (
+              <dl className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-5">
+                {[["Kontrolliert", f.board.inspected], ["Gereinigt", f.board.clean], ["Schmutzig", f.board.dirty], ["Gesperrt", f.board.outOfOrder], ["Nicht stören", f.dnd]].map(([k, v]) => (
                   <div key={k}><dt className="text-xs text-text-muted">{k}</dt><dd className="num text-lg">{v}</dd></div>
                 ))}
               </dl>
@@ -180,6 +187,16 @@ export default async function HkDashboard() {
           ) : <p className="mt-2 text-text-muted">Noch keine Zimmer angelegt.</p>}
         </section>
       </div>
+
+      <section aria-labelledby="times" className="rounded-lg border border-border bg-bg p-4">
+        <h2 id="times" className="flex items-center gap-2 text-lg"><Clock aria-hidden className="size-5 text-accent" /> Reinigungszeiten, letzte 30 Tage</h2>
+        {f.cleaning.length ? (
+          <table className="mt-3 w-full max-w-xl text-sm">
+            <thead className="text-left text-xs text-text-muted"><tr><th scope="col" className="py-2 font-normal">Person</th><th scope="col" className="text-right font-normal">Zimmer</th><th scope="col" className="text-right font-normal">Ø Minuten</th></tr></thead>
+            <tbody>{f.cleaning.map((c) => <tr key={c.person} className="border-t border-border"><th scope="row" className="py-1.5 text-left font-normal">{c.person}</th><td className="num text-right">{c.rooms}</td><td className="num text-right">{c.avgMinutes}</td></tr>)}</tbody>
+          </table>
+        ) : <p className="mt-2 text-sm text-text-muted">Noch keine Zeiten. Sie entstehen, wenn das Team im Zimmer „Reinigung starten“ tippt und danach „gereinigt“ meldet.</p>}
+      </section>
     </div>
   );
 }

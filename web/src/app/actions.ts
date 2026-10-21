@@ -14,7 +14,7 @@ import type { Session } from "@/data/types";
 import { createLead, updateLead } from "@/data/leads";
 import { READ_ONLY_MESSAGE, accessOf } from "@/domain/access";
 import { type AddonKey, addonLockedMessage, addonOpen, isAddonKey } from "@/domain/addons";
-import { parseRoomNumbers } from "@/domain/housekeeping";
+import { autoAssign, parseRoomNumbers } from "@/domain/housekeeping";
 import { billingConfigured, changeAddon, createCheckout, createPortal, syncOutletQuantity } from "@/lib/billing";
 import { sendMail } from "@/lib/mail";
 import { invitationMail, leadNotifyMail, leadThanksMail, linenOrderMail, orderMail } from "@/lib/mail-templates";
@@ -562,7 +562,11 @@ export async function createRooms(input: { numbers: string; floor: string; roomT
     return repo.createRooms(s, await currentOutletId(s), { numbers, floor: shortText(20).parse(input.floor), roomType: shortText(60).parse(input.roomType) });
   }, ["/housekeeping"], HK);
 }
-const RoomPatchSchema = z.object({ status: roomStatus.optional(), occupancy: occupancy.optional(), note: shortText(300).optional(), checked: z.array(id).max(100).optional() });
+const RoomPatchSchema = z.object({
+  status: roomStatus.optional(), occupancy: occupancy.optional(), note: shortText(300).optional(), checked: z.array(id).max(100).optional(),
+  dnd: z.boolean().optional(), vip: z.boolean().optional(), start: z.boolean().optional(),
+  arrivalTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Anreisezeit als Uhrzeit, z. B. 15:00.").nullable().optional(),
+});
 export async function updateRoom(roomId: string, patch: z.input<typeof RoomPatchSchema>) {
   return run((s) => repo.updateRoom(s, id.parse(roomId), RoomPatchSchema.parse(patch)), ["/housekeeping"], HK);
 }
@@ -671,6 +675,40 @@ export async function saveShift(input: z.input<typeof ShiftSchema>) {
     return repo.saveShift(s, await currentOutletId(s), { ...v, membershipId: v.membershipId || null });
   }, HK_PATHS, HK);
 }
+const TicketSchema = z.object({
+  kind: z.enum(["defect", "lost_found"]),
+  title: z.string().trim().min(1, "Bitte kurz beschreiben, was los ist.").max(120, "Höchstens 120 Zeichen."),
+  note: shortText(500),
+  roomId: z.string().nullable(),
+  photo: z.object({ base64: z.string().max(1_100_000, "Das Foto ist zu groß.").regex(/^[A-Za-z0-9+/=]+$/), type: z.enum(["image/jpeg", "image/png", "image/webp"]) }).nullable(),
+});
+/** A defect or a lost item, from any member of the hotel's team. */
+export async function createTicket(input: z.input<typeof TicketSchema>) {
+  return run(async (s) => {
+    const v = TicketSchema.parse(input);
+    return repo.createTicket(s, await currentOutletId(s), { ...v, roomId: v.roomId ? id.parse(v.roomId) : null });
+  }, [...HK_PATHS, "/housekeeping/meldungen"], HK);
+}
+export async function closeTicket(ticketId: string, resolution: string) {
+  return run((s) => repo.closeTicket(s, id.parse(ticketId), shortText(300).parse(resolution)), [...HK_PATHS, "/housekeeping/meldungen"], HK);
+}
+/** Splits today's dirty rooms among the chosen people by minutes, in floor blocks; replaces their current assignment. */
+export async function autoAssignRooms(membershipIds: string[]) {
+  return run(async (s) => {
+    if (!canEditLibrary(s.role)) throw new Forbidden();
+    const people = z.array(id).min(1, "Bitte mindestens eine Person wählen.").max(100).parse([...new Set(membershipIds)]);
+    const outletId = await currentOutletId(s);
+    const [{ rooms, staff }, setup] = await Promise.all([repo.listRooms(s, outletId), repo.getHkSetup(s, outletId)]);
+    if (people.some((p) => !staff.some((m) => m.id === p))) throw new Error("Diese Person gehört nicht zu diesem Hotel.");
+    const plan = autoAssign(rooms, people, { departure: setup.settings.minutesDeparture, stayover: setup.settings.minutesStayover || 1 });
+    for (const p of people) {
+      const ids = [...plan].filter(([, who]) => who === p).map(([room]) => room);
+      if (ids.length) await repo.assignRooms(s, ids, p);
+    }
+    return plan.size;
+  }, HK_PATHS, HK);
+}
+
 /** Copies last week's shifts into the week starting `weekStart` (a Monday); days that already have shifts are skipped. */
 export async function copyShiftWeek(weekStart: string) {
   return run(async (s) => {

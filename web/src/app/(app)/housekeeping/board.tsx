@@ -1,9 +1,9 @@
 "use client";
 
-import { BedDouble, Check, Sunrise, UserRound } from "lucide-react";
+import { BedDouble, BellOff, Check, PackageSearch, Play, Star, Sunrise, UserRound, Wand2, Wrench } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { archiveRoom, assignRooms, createRooms, saveHkChecklist, startHousekeepingDay, updateRoom } from "@/app/actions";
+import { archiveRoom, assignRooms, autoAssignRooms, createRooms, saveHkChecklist, startHousekeepingDay, updateRoom } from "@/app/actions";
 import { Notice } from "@/components/app/notice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,8 @@ import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 import type { HkChecklistItem, Room } from "@/data/types";
-import { OCCUPANCY_LABEL, type Occupancy, type RoomStatus, STATUS_LABEL, canSetStatus, summary } from "@/domain/housekeeping";
+import { OCCUPANCY_LABEL, type Occupancy, type RoomStatus, STATUS_LABEL, byUrgency, canSetStatus, summary } from "@/domain/housekeeping";
+import { TicketDialog } from "./ticket-dialog";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/dates";
 import { countOf } from "@/lib/format";
@@ -35,9 +36,11 @@ export function HousekeepingBoard({ rooms, checklist, staff, recent, me, manager
   const [mine, setMine] = useState(!manager && !!me);
   const [picked, setPicked] = useState<string[]>([]);
   const [assignee, setAssignee] = useState("");
+  const [sort, setSort] = useState<"urgency" | "number">(manager ? "number" : "urgency");
   const [pending, start] = useTransition();
   const sum = summary(rooms);
-  const shown = rooms.filter((r) => (filter === "all" || r.status === filter) && (!mine || r.assignedTo === me));
+  const filtered = rooms.filter((r) => (filter === "all" || r.status === filter) && (!mine || r.assignedTo === me));
+  const shown = sort === "urgency" ? [...filtered].sort(byUrgency) : filtered;
   const act = (fn: () => Promise<{ ok: boolean; error?: string; data?: unknown }>, ok: (data: unknown) => string) =>
     start(async () => {
       const res = await fn();
@@ -73,7 +76,14 @@ export function HousekeepingBoard({ rooms, checklist, staff, recent, me, manager
               </button>
             ))}
           </div>
-          {me && <label className="ml-auto flex items-center gap-2 text-sm"><input type="checkbox" checked={mine} onChange={(e) => setMine(e.target.checked)} /> Nur meine Zimmer</label>}
+          <label className="ml-auto flex items-center gap-2 text-sm">Reihenfolge
+            <Select value={sort} onChange={(e) => setSort(e.target.value as "urgency" | "number")} className="w-44">
+              <option value="urgency">Dringlichkeit</option>
+              <option value="number">Zimmernummer</option>
+            </Select>
+          </label>
+          {me && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={mine} onChange={(e) => setMine(e.target.checked)} /> Nur meine Zimmer</label>}
+          {manager && <AutoAssign staff={staff} rooms={sum.dirty} />}
           {manager && (
             <ConfirmDialog
               trigger={<Button variant="secondary" size="sm"><Sunrise aria-hidden className="size-4" /> Tagesbeginn</Button>}
@@ -120,11 +130,16 @@ export function HousekeepingBoard({ rooms, checklist, staff, recent, me, manager
               <RoomDialog room={r} checklist={checklist} manager={manager} timezone={timezone}
                 trigger={
                   <button type="button" className={cn("flex h-full w-full flex-col items-start gap-1 rounded-md border-2 p-3 text-left transition-transform duration-fast hover:-translate-y-0.5", TILE[r.status])}>
-                    <span className="num text-xl leading-none">{r.number}</span>
+                    <span className="flex w-full items-center gap-1.5 pr-7"><span className="num text-xl leading-none">{r.number}</span>
+                      {r.vip && <Star aria-label="VIP" className="size-4 fill-saffron text-saffron" />}
+                      {r.dnd && <BellOff aria-label="Bitte nicht stören" className="size-4 text-danger" />}
+                    </span>
                     <span className="text-xs text-text-muted">{[r.roomType, r.floor && `Etage ${r.floor}`].filter(Boolean).join(" · ") || " "}</span>
                     <span className="mt-1 flex flex-wrap gap-1">
                       <Badge tone="neutral">{STATUS_LABEL[r.status]}</Badge>
-                      {r.occupancy !== "vacant" && <Badge tone={r.occupancy === "arrival" ? "warning" : "info"}>{OCCUPANCY_LABEL[r.occupancy]}</Badge>}
+                      {r.occupancy !== "vacant" && <Badge tone={r.occupancy === "arrival" ? "warning" : "info"}>{OCCUPANCY_LABEL[r.occupancy]}{r.occupancy === "arrival" && r.arrivalTime ? ` ${r.arrivalTime}` : ""}</Badge>}
+                      {r.dnd && <Badge tone="danger">Nicht stören</Badge>}
+                      {r.cleaningStartedAt && <Badge tone="info">in Arbeit</Badge>}
                     </span>
                     <span className="mt-1 flex items-center gap-1 text-xs text-text-muted"><UserRound aria-hidden className="size-3.5" />{r.assigneeName ?? "nicht zugeteilt"}</span>
                     {r.note && <span className="line-clamp-2 text-xs">{r.note}</span>}
@@ -181,6 +196,15 @@ function RoomDialog({ room, checklist, manager, timezone, trigger }: { room: Roo
       description={`${STATUS_LABEL[room.status]} · ${OCCUPANCY_LABEL[room.occupancy]}${room.assigneeName ? ` · ${room.assigneeName}` : ""} · zuletzt ${formatDateTime(room.updatedAt, timezone)}`}>
       <div className="flex flex-col gap-4">
         {error && <Notice tone="warning">{error}</Notice>}
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant={room.dnd ? "primary" : "secondary"} loading={pending} onClick={() => save({ dnd: !room.dnd }, room.dnd ? `Zimmer ${room.number}: darf wieder gereinigt werden` : `Zimmer ${room.number}: bitte nicht stören`)}>
+            <BellOff aria-hidden className="size-4" /> {room.dnd ? "„Nicht stören“ aufheben" : "Bitte nicht stören"}
+          </Button>
+          {room.status === "dirty" && !room.cleaningStartedAt && !room.dnd && (
+            <Button size="sm" variant="secondary" loading={pending} onClick={() => save({ start: true }, `Zimmer ${room.number}: Reinigung läuft`)}><Play aria-hidden className="size-4" /> Reinigung starten</Button>
+          )}
+          {room.cleaningStartedAt && <span className="self-center text-sm text-text-muted">Reinigung läuft seit {new Intl.DateTimeFormat("de-DE", { hour: "2-digit", minute: "2-digit", timeZone: timezone }).format(new Date(room.cleaningStartedAt))}</span>}
+        </div>
         {room.status === "dirty" && (
           <fieldset className="flex min-w-0 flex-col gap-2">
             <legend className="mb-1 font-semibold">Reinigung</legend>
@@ -207,16 +231,26 @@ function RoomDialog({ room, checklist, manager, timezone, trigger }: { room: Roo
                 </Button>
               ))}
             </div>
-            <Field label="Belegung">
-              <Select value={room.occupancy} onChange={(e) => save({ occupancy: e.target.value as Occupancy }, `Zimmer ${room.number}: ${OCCUPANCY_LABEL[e.target.value as Occupancy]}`)}>
-                {(Object.keys(OCCUPANCY_LABEL) as Occupancy[]).map((o) => <option key={o} value={o}>{OCCUPANCY_LABEL[o]}</option>)}
-              </Select>
-            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Belegung">
+                <Select value={room.occupancy} onChange={(e) => save({ occupancy: e.target.value as Occupancy }, `Zimmer ${room.number}: ${OCCUPANCY_LABEL[e.target.value as Occupancy]}`)}>
+                  {(Object.keys(OCCUPANCY_LABEL) as Occupancy[]).map((o) => <option key={o} value={o}>{OCCUPANCY_LABEL[o]}</option>)}
+                </Select>
+              </Field>
+              <Field label="Anreisezeit">
+                <Input type="time" defaultValue={room.arrivalTime ?? ""} onBlur={(e) => e.target.value !== (room.arrivalTime ?? "") && save({ arrivalTime: e.target.value || null }, `Zimmer ${room.number}: Anreise ${e.target.value || "ohne Uhrzeit"}`)} />
+              </Field>
+            </div>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="size-6" checked={room.vip} onChange={(e) => save({ vip: e.target.checked }, `Zimmer ${room.number}: ${e.target.checked ? "VIP" : "kein VIP"}`)} /> VIP-Gast (wird zuerst gemacht und kontrolliert)</label>
           </div>
         )}
         <Field label="Notiz (z. B. Defekt, Gästewunsch)">
           <Textarea rows={2} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
+        <div className="flex flex-wrap gap-2">
+          <TicketDialog kind="defect" roomId={room.id} roomLabel={`Zimmer ${room.number}`} trigger={<Button size="sm" variant="secondary"><Wrench aria-hidden className="size-4" /> Schaden melden</Button>} />
+          <TicketDialog kind="lost_found" roomId={room.id} roomLabel={`Zimmer ${room.number}`} trigger={<Button size="sm" variant="secondary"><PackageSearch aria-hidden className="size-4" /> Fundsache</Button>} />
+        </div>
         <div className="flex flex-wrap justify-between gap-2">
           <Button variant="secondary" disabled={note === (room.note ?? "")} loading={pending} onClick={() => save({ note }, "Notiz gespeichert")}>Notiz speichern</Button>
           {manager && (
@@ -279,5 +313,32 @@ function Manage({ checklist }: { checklist: HkChecklistItem[] }) {
         </div>
       </div>
     </section>
+  );
+}
+
+function AutoAssign({ staff, rooms }: { staff: { id: string; name: string }[]; rooms: number }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [people, setPeople] = useState<string[]>([]);
+  const [pending, start] = useTransition();
+  return (
+    <Dialog open={open} onOpenChange={setOpen} title="Zimmer automatisch verteilen"
+      description={`${countOf(rooms, "schmutziges Zimmer", "schmutzige Zimmer")} gleichmäßig nach Minuten verteilen, in Blöcken je Etage. „Bitte nicht stören“ bleibt außen vor.`}
+      trigger={<Button variant="secondary" size="sm" disabled={!rooms}><Wand2 aria-hidden className="size-4" /> Automatisch verteilen</Button>}
+      footer={<><Button variant="secondary" onClick={() => setOpen(false)}>Abbrechen</Button><Button disabled={!people.length} loading={pending} onClick={() => start(async () => {
+        const res = await autoAssignRooms(people);
+        if (!res.ok) return void toast.error(res.error);
+        toast.success(`${countOf(res.data, "Zimmer", "Zimmer")} auf ${people.length} ${people.length === 1 ? "Person" : "Personen"} verteilt`);
+        setOpen(false);
+        setPeople([]);
+        router.refresh();
+      })}>Verteilen</Button></>}>
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 font-semibold">Wer arbeitet heute?</legend>
+        {staff.map((m) => (
+          <label key={m.id} className="flex items-center gap-2"><input type="checkbox" className="size-6" checked={people.includes(m.id)} onChange={(e) => setPeople(e.target.checked ? [...people, m.id] : people.filter((x) => x !== m.id))} /> {m.name}</label>
+        ))}
+      </fieldset>
+    </Dialog>
   );
 }

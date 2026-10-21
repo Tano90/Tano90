@@ -28,6 +28,7 @@ export const {
   getHkSetup, saveHkSettings, saveLinenItem, archiveLinenItem, getOccupancyPlan, saveOccupancyPlan, countLinen, listLinenMovements,
   listLinenOrders, saveLinenOrder, sendLinenOrder, receiveLinenOrder, deleteLinenOrder, listShifts, saveShift, deleteShift,
   saveEInvoice, listInvoices, getDatevSetup, saveDatevSettings,
+  listTickets, createTicket, closeTicket, getTicketPhoto, listCleaningTimes,
 } = impl;
 export type * from "./linen-types";
 export type * from "./finance-types";

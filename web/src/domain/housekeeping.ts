@@ -58,3 +58,46 @@ export function summary(rooms: { status: RoomStatus; occupancy: Occupancy }[]) {
     arrivalsNotReady: count((r) => r.occupancy === "arrival" && r.status !== "inspected"),
   };
 }
+
+export type PlannableRoom = { id: string; number: string; floor: string | null; status: RoomStatus; occupancy: Occupancy; dnd: boolean; vip: boolean; arrivalTime: string | null };
+
+/** Rooms that need cleaning now: dirty, not blocked, not "do not disturb". */
+export const toClean = (r: PlannableRoom) => r.status === "dirty" && !r.dnd;
+
+/**
+ * Order of work: arrivals by arrival time (VIP first at the same time), then other VIPs, departures, stayovers;
+ * "do not disturb" last. Lower is earlier.
+ */
+export function urgency(r: PlannableRoom): [number, string, string] {
+  const group = r.dnd ? 9 : r.occupancy === "arrival" ? (r.vip ? 0 : 1) : r.vip ? 2 : r.occupancy === "departure" ? 3 : r.occupancy === "occupied" ? 4 : 5;
+  return [group, r.occupancy === "arrival" ? r.arrivalTime ?? "99:99" : "", `${(r.floor ?? "").padStart(4, "0")}|${r.number.padStart(8, "0")}`];
+}
+export const byUrgency = (a: PlannableRoom, b: PlannableRoom) => {
+  const [x, y] = [urgency(a), urgency(b)];
+  return x[0] - y[0] || x[1].localeCompare(y[1]) || x[2].localeCompare(y[2]);
+};
+
+/** Minutes a room takes: a departure is a full clean, an occupied room a stayover service. */
+export const roomMinutes = (r: Pick<PlannableRoom, "occupancy">, m: { departure: number; stayover: number }) => (r.occupancy === "occupied" ? m.stayover : m.departure);
+
+/**
+ * Splits the rooms to clean among the people so everyone gets about the same minutes, in blocks along the floors
+ * (less walking). Returns room id → person id. Each person's rooms are later worked in urgency order.
+ */
+export function autoAssign(rooms: PlannableRoom[], people: string[], minutes: { departure: number; stayover: number }): Map<string, string> {
+  const out = new Map<string, string>();
+  const list = rooms.filter(toClean).sort((a, b) => urgency(a)[2].localeCompare(urgency(b)[2]));
+  if (!people.length || !list.length) return out;
+  const total = list.reduce((m, r) => m + roomMinutes(r, minutes), 0);
+  let person = 0;
+  let done = 0;
+  for (const r of list) {
+    const m = roomMinutes(r, minutes);
+    // Move on when this person's share is full, taking the room to whoever ends closer to the target.
+    const target = (total * (person + 1)) / people.length;
+    if (person < people.length - 1 && done + m / 2 > target) person++;
+    out.set(r.id, people[person]);
+    done += m;
+  }
+  return out;
+}

@@ -19,7 +19,7 @@ import { STATUS_LABEL, canSetStatus, needsServiceToday } from "@/domain/housekee
 import { DEFAULT_SETTINGS, type HkSettings, type PlanRow } from "@/domain/linen";
 import type { DatevSettings } from "@/domain/datev";
 import type { DatevSetup, EInvoiceSave, InvoiceListRow } from "./finance-types";
-import type { HkSetup, LinenCountLine, LinenItemInput, LinenMovementRow, LinenOrderInput, LinenOrderMailData, LinenOrderRow, ShiftInput, ShiftRow } from "./linen-types";
+import type { CleaningTime, HkSetup, LinenCountLine, TicketInput, TicketRow, LinenItemInput, LinenMovementRow, LinenOrderInput, LinenOrderMailData, LinenOrderRow, ShiftInput, ShiftRow } from "./linen-types";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
 import type { SaleInput } from "@/domain/pos";
@@ -172,7 +172,7 @@ export async function createRooms(s: Session, outletId: string, input: { numbers
   const d = db();
   const taken = new Set(d.rooms.filter((r) => r.outletId === outletId && !r.archivedAt).map((r) => r.number.toLowerCase()));
   const added = input.numbers.filter((n) => !taken.has(n.toLowerCase()));
-  for (const number of added) d.rooms.push({ id: newId("room"), libraryId: d.library.id, outletId, number, floor: input.floor, roomType: input.roomType, status: "dirty", occupancy: "vacant", assignedTo: null, note: null, updatedAt: now(), updatedBy: s.userId, archivedAt: null });
+  for (const number of added) d.rooms.push({ id: newId("room"), libraryId: d.library.id, outletId, number, floor: input.floor, roomType: input.roomType, status: "dirty", occupancy: "vacant", assignedTo: null, note: null, updatedAt: now(), updatedBy: s.userId, archivedAt: null, dnd: false, vip: false, arrivalTime: null, cleaningStartedAt: null });
   return { added: added.length, skipped: input.numbers.filter((n) => taken.has(n.toLowerCase())) };
 }
 
@@ -183,15 +183,25 @@ export async function updateRoom(s: Session, roomId: string, patch: RoomPatch) {
   assertOutlet(s, room.outletId);
   const manager = canEditLibrary(s.role);
   if (patch.occupancy !== undefined && patch.occupancy !== room.occupancy && !manager) throw new Error("Die Belegung ändert die Leitung.");
+  if ((patch.vip !== undefined && patch.vip !== room.vip) || (patch.arrivalTime !== undefined && patch.arrivalTime !== room.arrivalTime)) {
+    if (!manager) throw new Error("VIP und Anreisezeit trägt die Leitung ein.");
+  }
+  if (patch.start && room.status === "dirty") room.cleaningStartedAt = now();
   if (patch.status !== undefined && patch.status !== room.status) {
     if (!canSetStatus(s.role, room.status, patch.status)) throw new Error(`Von „${STATUS_LABEL[room.status]}“ auf „${STATUS_LABEL[patch.status]}“ stellt nur die Leitung um.`);
     if (patch.status === "clean") {
       const missing = d.hkChecklist.filter((i) => !patch.checked?.includes(i.id));
       if (missing.length) throw new Error(`Noch nicht abgehakt: ${missing.map((i) => i.label).join(", ")}.`);
     }
-    d.roomEvents.push({ id: newId("rev"), roomId, fromStatus: room.status, toStatus: patch.status, checked: patch.checked ?? [], byUser: s.userId, at: now() });
+    const minutes = patch.status === "clean" && room.cleaningStartedAt ? Math.min(600, Math.round((Date.now() - Date.parse(room.cleaningStartedAt)) / 60000)) : null;
+    d.roomEvents.push({ id: newId("rev"), roomId, fromStatus: room.status, toStatus: patch.status, checked: patch.checked ?? [], byUser: s.userId, at: now(), minutes });
     room.status = patch.status;
+    room.cleaningStartedAt = null;
+    if (patch.status === "clean") room.dnd = false;
   }
+  if (patch.dnd !== undefined) room.dnd = patch.dnd;
+  if (patch.vip !== undefined) room.vip = patch.vip;
+  if (patch.arrivalTime !== undefined) room.arrivalTime = patch.arrivalTime;
   if (patch.occupancy !== undefined) room.occupancy = patch.occupancy;
   if (patch.note !== undefined) room.note = patch.note;
   room.updatedAt = now();
@@ -217,7 +227,7 @@ export async function startHousekeepingDay(s: Session, outletId: string) {
     d.roomEvents.push({ id: newId("rev"), roomId: r.id, fromStatus: r.status, toStatus: "dirty", checked: [], byUser: s.userId, at: now() });
     r.status = "dirty";
   }
-  for (const r of rooms) r.assignedTo = null;
+  for (const r of rooms) Object.assign(r, { assignedTo: null, dnd: false, cleaningStartedAt: null });
   return due.length;
 }
 
@@ -888,7 +898,7 @@ export async function importSalesWithKey(key: string, rows: SaleInput[]): Promis
   return importInto(k.outletId, rows, null);
 }
 
-export type RoomPatch = { status?: Room["status"]; occupancy?: Room["occupancy"]; note?: string | null; checked?: string[] };
+export type RoomPatch = { status?: Room["status"]; occupancy?: Room["occupancy"]; note?: string | null; checked?: string[]; dnd?: boolean; vip?: boolean; arrivalTime?: string | null; start?: boolean };
 
 export type ProductionInput = { recipeId: string; portions: number; neededOn: string; note: string | null };
 
@@ -1743,4 +1753,50 @@ export async function saveDatevSettings(s: Session, v: DatevSettings, creditors:
     if (c.creditor === null) delete d.creditors[c.supplierId];
     else d.creditors[c.supplierId] = c.creditor;
   }
+}
+
+// ---------------------------------------------------------------- housekeeping: reports and cleaning times
+
+export async function listTickets(s: Session, outletId: string): Promise<TicketRow[]> {
+  assertOutlet(s, outletId);
+  const d = db();
+  const month = Date.now() - 30 * 86_400_000;
+  return d.hkTickets.filter((t) => t.outletId === outletId && (t.status === "open" || Date.parse(t.closedAt ?? "") > month))
+    .sort((a, b) => Number(a.status === "done") - Number(b.status === "done") || b.createdAt.localeCompare(a.createdAt))
+    .map(({ outletId: _o, photo, createdBy, ...t }) => ({ ...t, roomNumber: d.rooms.find((r) => r.id === t.roomId)?.number ?? null, hasPhoto: !!photo, createdByName: d.members.find((m) => m.userId === createdBy)?.name ?? null }));
+}
+
+export async function createTicket(s: Session, outletId: string, input: TicketInput): Promise<string> {
+  assertOutlet(s, outletId);
+  const d = db();
+  if (input.roomId && !d.rooms.some((r) => r.id === input.roomId && r.outletId === outletId)) throw new Error("Zimmer nicht gefunden.");
+  const id = newId("tkt");
+  d.hkTickets.push({ id, outletId, kind: input.kind, title: input.title, note: input.note, status: "open", resolution: null, roomId: input.roomId, photo: input.photo, createdBy: s.userId, createdAt: now(), closedAt: null });
+  return id;
+}
+
+export async function closeTicket(s: Session, ticketId: string, resolution: string | null) {
+  const t = db().hkTickets.find((x) => x.id === ticketId && x.status === "open");
+  if (!t) throw new Error("Meldung nicht gefunden oder schon erledigt.");
+  assertOutlet(s, t.outletId);
+  Object.assign(t, { status: "done", resolution, closedAt: now() });
+}
+
+export async function getTicketPhoto(s: Session, ticketId: string): Promise<{ data: Uint8Array; type: string } | null> {
+  const t = db().hkTickets.find((x) => x.id === ticketId);
+  if (!t?.photo || !canAccessOutlet(s, t.outletId)) return null;
+  return { data: Uint8Array.from(Buffer.from(t.photo.base64, "base64")), type: t.photo.type };
+}
+
+export async function listCleaningTimes(s: Session, outletId: string, since: string): Promise<CleaningTime[]> {
+  assertOutlet(s, outletId);
+  const d = db();
+  const groups = new Map<string, number[]>();
+  for (const e of d.roomEvents) {
+    const r = d.rooms.find((x) => x.id === e.roomId);
+    if (r?.outletId !== outletId || e.minutes == null || e.at < since) continue;
+    const name = d.members.find((m) => m.userId === e.byUser)?.name ?? "–";
+    groups.set(name, [...(groups.get(name) ?? []), e.minutes]);
+  }
+  return [...groups].map(([person, m]) => ({ person, rooms: m.length, avgMinutes: Math.round(m.reduce((a, b) => a + b, 0) / m.length) })).sort((a, b) => a.avgMinutes - b.avgMinutes);
 }

@@ -26,6 +26,8 @@ export function sql(): postgres.Sql {
         parse: (x: string) => new Date(x.replace(" ", "T").replace(/([+-]\d\d)$/, "$1:00")).toISOString(),
       },
       date: { to: 1082, from: [1082], serialize: (x: string) => x, parse: (x: string) => x },
+      // times of day as HH:MM
+      time: { to: 1083, from: [1083], serialize: (x: string) => x, parse: (x: string) => x.slice(0, 5) },
     },
   });
   return g.__pg;

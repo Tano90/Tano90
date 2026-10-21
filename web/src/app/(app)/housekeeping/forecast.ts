@@ -1,5 +1,5 @@
 import "server-only";
-import { getHkSetup, getOccupancyPlan, listLinenMovements, listLinenOrders, listOutlets, listRooms, listShifts } from "@/data/repo";
+import { getHkSetup, getOccupancyPlan, listCleaningTimes, listLinenMovements, listLinenOrders, listOutlets, listRooms, listShifts, listTickets } from "@/data/repo";
 import type { Session } from "@/data/types";
 import { summary } from "@/domain/housekeeping";
 import { type PlanRow, coverageDays, deviationPct, linenNeed, proposeQty, roomNights, shiftMinutes, usedFromCounts, workloadMinutes } from "@/domain/linen";
@@ -18,9 +18,10 @@ export async function hkForecast(s: Session, outletId: string, horizon = 14) {
   const days = Array.from({ length: horizon }, (_, i) => addDays(today, i));
   const end = days[days.length - 1];
   const back = addDays(today, -30);
-  const [setup, plan, pastPlan, shifts, movements, orders, board] = await Promise.all([
+  const [setup, plan, pastPlan, shifts, movements, orders, board, tickets, cleaning] = await Promise.all([
     getHkSetup(s, outletId), getOccupancyPlan(s, outletId, today, end), getOccupancyPlan(s, outletId, back, addDays(today, -1)),
     listShifts(s, outletId, today, end), listLinenMovements(s, outletId, `${back}T00:00:00Z`), listLinenOrders(s, outletId), listRooms(s, outletId),
+    listTickets(s, outletId), listCleaningTimes(s, outletId, `${back}T00:00:00Z`),
   ]);
   const st = setup.settings;
 
@@ -82,5 +83,6 @@ export async function hkForecast(s: Session, outletId: string, horizon = 14) {
     linen, orders,
     cost: { usedCents: usedCost, nights: nights30, perNightCents: nights30 ? Math.round(usedCost / nights30) : null, receivedCents: linen.reduce((n, l) => n + l.receivedCostCents, 0), weekPlannedCents: linen.reduce((n, l) => n + l.plannedWeekCostCents, 0) },
     planMissingDays: daily.filter((d) => !d.hasPlan).length,
+    tickets: tickets.filter((t) => t.status === "open"), cleaning, dnd: board.rooms.filter((r) => r.dnd).length,
   };
 }

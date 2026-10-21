@@ -184,6 +184,7 @@ export type Room = {
   id: string; libraryId: string; outletId: string; number: string; floor: string | null; roomType: string | null;
   status: "dirty" | "clean" | "inspected" | "out_of_order"; occupancy: "vacant" | "occupied" | "departure" | "arrival";
   assignedTo: string | null; note: string | null; updatedAt: string; updatedBy: string | null; archivedAt: string | null;
+  dnd: boolean; vip: boolean; arrivalTime: string | null; cleaningStartedAt: string | null;
 };
-export type RoomEvent = { id: string; roomId: string; fromStatus: string | null; toStatus: string; checked: string[]; byUser: string | null; at: string };
+export type RoomEvent = { id: string; roomId: string; fromStatus: string | null; toStatus: string; checked: string[]; byUser: string | null; at: string; minutes?: number | null };
 export type HkChecklistItem = { id: string; position: number; label: string };

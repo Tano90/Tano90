@@ -20,7 +20,7 @@ import { STATUS_LABEL, canSetStatus, needsServiceToday } from "@/domain/housekee
 import { DEFAULT_SETTINGS, type HkSettings, type LinenItem, type PlanRow } from "@/domain/linen";
 import type { DatevSettings } from "@/domain/datev";
 import type { DatevSetup, EInvoiceSave, InvoiceListRow } from "../finance-types";
-import type { HkSetup, LinenCountLine, LinenItemInput, LinenMovementRow, LinenOrderInput, LinenOrderMailData, LinenOrderRow, ShiftInput, ShiftRow } from "../linen-types";
+import type { CleaningTime, HkSetup, LinenCountLine, TicketInput, TicketRow, LinenItemInput, LinenMovementRow, LinenOrderInput, LinenOrderMailData, LinenOrderRow, ShiftInput, ShiftRow } from "../linen-types";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
 import type { BaseUnit } from "@/domain/units";
@@ -141,7 +141,7 @@ const EXPORT: [table: string, where: string, omit?: string[]][] = [
   ["production_requests", BY_LIBRARY],
   ["rooms", BY_LIBRARY], ["room_events", "room_id in (select id from rooms where library_id = $1)"], ["hk_checklist_items", BY_LIBRARY],
   ["hk_settings", BY_LIBRARY], ["linen_items", BY_LIBRARY], ["linen_set_items", "item_id in (select id from linen_items where library_id = $1)"], ["occupancy_plan", BY_LIBRARY],
-  ["linen_orders", BY_LIBRARY], ["linen_order_lines", "order_id in (select id from linen_orders where library_id = $1)"], ["linen_movements", BY_LIBRARY], ["hk_shifts", BY_LIBRARY], ["datev_settings", BY_LIBRARY],
+  ["linen_orders", BY_LIBRARY], ["linen_order_lines", "order_id in (select id from linen_orders where library_id = $1)"], ["linen_movements", BY_LIBRARY], ["hk_shifts", BY_LIBRARY], ["datev_settings", BY_LIBRARY], ["hk_tickets", BY_LIBRARY, ["photo"]],
 ];
 
 export async function exportLibrary(s: Session): Promise<Record<string, Record<string, unknown>[]>> {
@@ -189,7 +189,7 @@ export async function getControlling(s: Session, fromDay: string, toDay: string)
 
 // ---------------------------------------------------------------- housekeeping
 
-export type RoomPatch = { status?: Room["status"]; occupancy?: Room["occupancy"]; note?: string | null; checked?: string[] };
+export type RoomPatch = { status?: Room["status"]; occupancy?: Room["occupancy"]; note?: string | null; checked?: string[]; dnd?: boolean; vip?: boolean; arrivalTime?: string | null; start?: boolean };
 export type RoomRow = Room & { assigneeName: string | null };
 export type RoomLog = { at: string; number: string; fromStatus: string | null; toStatus: string; byName: string };
 
@@ -239,7 +239,11 @@ export async function updateRoom(s: Session, roomId: string, patch: RoomPatch) {
     const [room] = await tx<Room[]>`select * from rooms where id = ${roomId} and archived_at is null for update`;
     if (!room) throw new Error("Zimmer nicht gefunden.");
     if (patch.occupancy !== undefined && patch.occupancy !== room.occupancy && !manager) throw new Error("Die Belegung ändert die Leitung.");
+    if ((patch.vip !== undefined && patch.vip !== room.vip) || (patch.arrivalTime !== undefined && patch.arrivalTime !== room.arrivalTime)) {
+      if (!manager) throw new Error("VIP und Anreisezeit trägt die Leitung ein.");
+    }
     const set: Record<string, unknown> = {};
+    if (patch.start && room.status === "dirty") set.cleaningStartedAt = new Date();
     if (patch.status !== undefined && patch.status !== room.status) {
       if (!canSetStatus(s.role, room.status, patch.status)) throw new Error(`Von „${STATUS_LABEL[room.status]}“ auf „${STATUS_LABEL[patch.status]}“ stellt nur die Leitung um.`);
       if (patch.status === "clean") {
@@ -248,8 +252,14 @@ export async function updateRoom(s: Session, roomId: string, patch: RoomPatch) {
         if (missing.length) throw new Error(`Noch nicht abgehakt: ${missing.map((i) => i.label).join(", ")}.`);
       }
       set.status = patch.status;
-      await tx`insert into room_events ${tx({ roomId, fromStatus: room.status, toStatus: patch.status, checked: tx.json(patch.checked ?? []), byUser: s.userId })}`;
+      set.cleaningStartedAt = null;
+      if (patch.status === "clean") set.dnd = false;
+      const minutes = patch.status === "clean" && room.cleaningStartedAt ? Math.min(600, Math.round((Date.now() - Date.parse(room.cleaningStartedAt)) / 60000)) : null;
+      await tx`insert into room_events ${tx({ roomId, fromStatus: room.status, toStatus: patch.status, checked: tx.json(patch.checked ?? []), byUser: s.userId, minutes })}`;
     }
+    if (patch.dnd !== undefined) set.dnd = patch.dnd;
+    if (patch.vip !== undefined) set.vip = patch.vip;
+    if (patch.arrivalTime !== undefined) set.arrivalTime = patch.arrivalTime;
     if (patch.occupancy !== undefined) set.occupancy = patch.occupancy;
     if (patch.note !== undefined) set.note = patch.note;
     if (!Object.keys(set).length) return;
@@ -280,7 +290,7 @@ export async function startHousekeepingDay(s: Session, outletId: string) {
     const due = rooms.filter(needsServiceToday);
     for (const r of due) await tx`insert into room_events ${tx({ roomId: r.id, fromStatus: r.status, toStatus: "dirty", byUser: s.userId })}`;
     if (due.length) await tx`update rooms set status = 'dirty', updated_at = now(), updated_by = ${s.userId} where id = any(${due.map((r) => r.id)}::uuid[])`;
-    await tx`update rooms set assigned_to = null where outlet_id = ${outletId} and assigned_to is not null`;
+    await tx`update rooms set assigned_to = null, dnd = false, cleaning_started_at = null where outlet_id = ${outletId}`;
     return due.length;
   });
 }
@@ -2117,5 +2127,66 @@ export async function saveDatevSettings(s: Session, v: DatevSettings, creditors:
       if (!isUuid(c.supplierId)) continue;
       await tx`update suppliers set creditor_account = ${c.creditor} where id = ${c.supplierId} and library_id = ${s.libraryId}`;
     }
+  });
+}
+
+// ---------------------------------------------------------------- housekeeping: reports and cleaning times
+
+export async function listTickets(s: Session, outletId: string): Promise<TicketRow[]> {
+  return run(s, async (tx) => {
+    await assertOutletAccess(tx, outletId);
+    return tx<TicketRow[]>`
+      select t.id, t.kind, t.title, t.note, t.status, t.resolution, t.room_id, r.number as room_number, t.photo is not null as has_photo, t.created_at, t.closed_at,
+        (select m.display_name from memberships m where m.user_id = t.created_by and m.library_id = t.library_id) as created_by_name
+      from hk_tickets t left join rooms r on r.id = t.room_id
+      where t.outlet_id = ${outletId} and (t.status = 'open' or t.closed_at > now() - interval '30 days')
+      order by (t.status = 'done'), t.created_at desc limit 200`;
+  });
+}
+
+export async function createTicket(s: Session, outletId: string, input: TicketInput): Promise<string> {
+  return run(s, async (tx) => {
+    await assertOutletAccess(tx, outletId);
+    if (input.roomId) {
+      if (!isUuid(input.roomId)) throw new Error("Zimmer nicht gefunden.");
+      const [r] = await tx`select 1 from rooms where id = ${input.roomId} and outlet_id = ${outletId}`;
+      if (!r) throw new Error("Zimmer nicht gefunden.");
+    }
+    const [{ id }] = await tx<{ id: string }[]>`
+      insert into hk_tickets ${tx({
+        libraryId: s.libraryId, outletId, roomId: input.roomId, kind: input.kind, title: input.title, note: input.note, createdBy: s.userId,
+        photo: input.photo ? Buffer.from(input.photo.base64, "base64") : null, photoType: input.photo?.type ?? null,
+      })} returning id`;
+    return id;
+  });
+}
+
+export async function closeTicket(s: Session, ticketId: string, resolution: string | null) {
+  if (!isUuid(ticketId)) throw new Error("Meldung nicht gefunden.");
+  await run(s, async (tx) => {
+    const done = await tx`update hk_tickets set status = 'done', resolution = ${resolution}, closed_by = ${s.userId}, closed_at = now() where id = ${ticketId} and status = 'open' returning id`;
+    if (!done.length) throw new Error("Meldung nicht gefunden oder schon erledigt.");
+  });
+}
+
+export async function getTicketPhoto(s: Session, ticketId: string): Promise<{ data: Uint8Array; type: string } | null> {
+  if (!isUuid(ticketId)) return null;
+  return run(s, async (tx) => {
+    const [t] = await tx<{ photo: Uint8Array | null; photoType: string | null }[]>`select photo, photo_type from hk_tickets where id = ${ticketId}`;
+    return t?.photo && t.photoType ? { data: t.photo, type: t.photoType } : null;
+  });
+}
+
+/** Average minutes from "start cleaning" to "cleaned" per person since a day. */
+export async function listCleaningTimes(s: Session, outletId: string, since: string): Promise<CleaningTime[]> {
+  return run(s, async (tx) => {
+    await assertOutletAccess(tx, outletId);
+    const rows = await tx<{ person: string; rooms: number; avgMinutes: number }[]>`
+      select coalesce((select m.display_name from memberships m where m.user_id = e.by_user and m.library_id = r.library_id), '–') as person,
+        count(*)::int as rooms, round(avg(e.minutes))::int as avg_minutes
+      from room_events e join rooms r on r.id = e.room_id
+      where r.outlet_id = ${outletId} and e.minutes is not null and e.at >= ${since}
+      group by 1 order by 3`;
+    return rows;
   });
 }

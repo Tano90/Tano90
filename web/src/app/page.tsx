@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, BedDouble, BookOpen, Calculator, Check, ChefHat, ClipboardCheck, CookingPot, Download, Lock, MapPin, MousePointerClick, Package, Plus, Receipt, ReceiptText, ScanBarcode, ShieldCheck, ShoppingCart, Tags, Truck, Users, UtensilsCrossed, WifiOff } from "lucide-react";
+import { ArrowRight, BarChart3, BedDouble, BookOpen, Calculator, Check, ChefHat, ClipboardCheck, CookingPot, Download, FileCheck2, Lock, MapPin, MousePointerClick, Package, Plus, Receipt, ReceiptText, ScanBarcode, ShieldCheck, ShoppingCart, Tags, Truck, Users, UtensilsCrossed, WifiOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
@@ -30,7 +30,7 @@ const MODULES = [
   { icon: ScanBarcode, label: "Inventur & Barcode", tone: "celery" }, { icon: BookOpen, label: "Lagerbericht & Schwund", tone: "accent" },
   { icon: CookingPot, label: "Zentralküche", tone: "carrot" }, { icon: ReceiptText, label: "Rechnungsabgleich", tone: "celery" },
   { icon: ClipboardCheck, label: "HACCP", tone: "accent" }, { icon: BarChart3, label: "Kasse & Menu Engineering", tone: "carrot" },
-  { icon: UtensilsCrossed, label: "Menüs mit Stückliste", tone: "celery" }, { icon: Package, label: "Preislisten-Import", tone: "accent" },
+  { icon: UtensilsCrossed, label: "Menüs mit Stückliste", tone: "celery" }, { icon: Package, label: "Preislisten-Import", tone: "accent" }, { icon: FileCheck2, label: "E-Rechnung & DATEV", tone: "carrot" },
   { icon: Calculator, label: "F&B-Controlling", tone: "carrot", addon: true }, { icon: BedDouble, label: "Housekeeping", tone: "celery", addon: true },
 ] as const;
 const TONE = { carrot: "bg-carrot text-on-saffron", celery: "bg-celery text-on-saffron", accent: "bg-accent text-on-accent" } as const;
@@ -45,7 +45,7 @@ const FACTS = [
   { icon: WifiOff, title: "Zählen ohne Netz", body: "Die Inventur speichert jede Zahl sofort und reicht sie nach, wenn das WLAN zurück ist." },
 ];
 
-const TICKER = ["Wareneinsatz live", "Grundrezepte", "Allergene", "Inventur offline", "Barcode-Scanner", "Zentralküche", "Rechnungsabgleich", "HACCP", "Kassen-Import", "Mindestbestand", "Lagerbericht", "Mehrere Standorte", "F&B-Controlling", "Housekeeping"];
+const TICKER = ["Wareneinsatz live", "Grundrezepte", "Allergene", "Inventur offline", "Barcode-Scanner", "Zentralküche", "Rechnungsabgleich", "HACCP", "Kassen-Import", "Mindestbestand", "Lagerbericht", "Mehrere Standorte", "E-Rechnung", "DATEV-Export", "F&B-Controlling", "Housekeeping"];
 
 const STEPS = [
   { title: "Einkauf erfassen", body: "Zutaten so anlegen, wie dein Lieferant sie verkauft – Karton, Sack, Flasche – mit dem Preis von der Rechnung." },
@@ -59,6 +59,7 @@ const FEATURES = [
   { icon: ScanBarcode, title: "Inventur, die ein Funkloch übersteht", body: `Zählen in Kartons plus Rest oder per Barcode-Scanner. Jede Zahl wird sofort zwischengespeichert; fällt im Kühlhaus das Netz weg, speichert ${APP_NAME} nach, sobald es zurück ist.` },
   { icon: ReceiptText, title: "Rechnung gegen Lieferung", body: "Jede Rechnungszeile steht neben Bestellung und Wareneingang. Abweichungen bei Menge und Preis sind markiert, freigeben lässt sich eine abweichende Rechnung nur mit Begründung." },
   { icon: ClipboardCheck, title: "HACCP im Grundpreis", body: "Eigene Checklisten mit Grenzwerten, Tageskontrolle pro Standort, Abweichungen nur mit Maßnahme. Das Protokoll der letzten 30 Tage geht als CSV an die Lebensmittelkontrolle." },
+  { icon: FileCheck2, title: "E-Rechnung rein, DATEV raus", body: "XRechnung und ZUGFeRD des Lieferanten hochladen: Jede Position steht neben deinem bisherigen Preis, Preissprünge sind markiert, die neuen Preise gehen auf Wunsch direkt in die Rezepte. Für den Steuerberater gibt es den Buchungsstapel im DATEV-Format." },
   { icon: ShieldCheck, title: "Fehler, bevor sie Geld kosten", body: "„2.5“ und „2,5“ ergeben dieselbe Menge, eine Bestellung kommt auch bei Doppelklick nur einmal an, und eine ungeprüfte Zutat macht ein Gericht „unbekannt“, nie „allergenfrei“." },
 ];
 
@@ -66,6 +67,7 @@ const FAQ = [
   { q: "Kann ich meine Zutaten und Preise importieren?", a: `Ja. Die Preisliste deines Lieferanten als Excel- oder CSV-Datei hochladen: ${APP_NAME} zeigt vor dem Übernehmen jede Zeile als neu, geändert oder fehlerhaft. Übernommen wird erst, wenn du zustimmst.` },
   { q: `Funktioniert ${APP_NAME} mit meiner Kasse?`, a: "Über eine Datei oder eine Schnittstelle: Verkäufe als CSV hochladen oder von der Kasse per API senden lassen. Verknüpfte Gerichte werden über ihre Rezepte vom Lager abgebucht, Stornos zurückgebucht. Fertige Anbindungen an einzelne Kassenhersteller gibt es nicht." },
   { q: "Brauche ich für HACCP oder die Zentralküche ein Zusatzmodul?", a: `Nein. Alle Küchenfunktionen sind in jedem Tarif enthalten, bezahlt wird pro Standort. Nur Housekeeping und F&B-Controlling für Hotels sind Add-ons für je ${eur(PRICING.addonMonthly)} im Monat.` },
+  { q: "Kann Mirepa E-Rechnungen lesen und an DATEV übergeben?", a: `Ja. ${APP_NAME} liest XRechnung (UBL und CII) und ZUGFeRD/Factur-X-PDFs, gleicht die Preise mit deinen ab und legt die Rechnung mit Steueraufteilung ab. Für die Buchhaltung gibt es einen DATEV-Buchungsstapel mit Wareneingang je Steuersatz und Kreditor je Lieferant. Die erste Datei bitte gemeinsam mit dem Steuerberater prüfen. Eine Finanzbuchhaltung ersetzt ${APP_NAME} nicht.` },
   { q: "Wer haftet für die Allergenangaben?", a: `${APP_NAME} rechnet aus deinen Angaben, die Kennzeichnung gegenüber Gästen verantwortet dein Betrieb. Deshalb zeigt ${APP_NAME} ungeprüfte Zutaten offen an, statt sie als allergenfrei durchzuwinken.` },
   { q: "Wo liegen meine Daten?", a: "In der EU (Frankfurt). Zahlungen laufen über Stripe; deine Kartendaten sehen wir nie." },
   { q: "Was passiert nach der Testphase?", a: "Drei Tage vorher bekommst du eine E-Mail. Schließt du kein Abo ab, bleiben alle Daten erhalten: Du kannst sie ansehen und als Datei herunterladen, nur ändern geht erst wieder mit einem Abo. Es verlängert sich nichts automatisch." },

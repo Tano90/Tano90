@@ -60,3 +60,7 @@ Belegungsplan mit CSV-Import aus dem Hotelprogramm,hotel,should,no,yes,"keine PM
 Dienstplan Housekeeping mit Personalbedarf,hotel,should,no,yes,"Schichten je Tag, auch Personen ohne Konto, Vorwoche übernehmen, Bedarf aus Minuten je Zimmer"
 E-Rechnung (XRechnung UBL/CII und ZUGFeRD-PDF) einlesen mit Preisabgleich,procurement,should,no,yes,"eigene Ergänzung; Zuordnung per Artikelnummer, Preissprung-Warnung ab 5 %, Originaldatei archiviert; E2E F37"
 DATEV-Export Eingangsrechnungen (Buchungsstapel EXTF),integrations,should,no,yes,"eine Buchung je Steuersatz, Kreditor je Lieferant; erste Datei mit Steuerberater prüfen"
+"Housekeeping: Bitte nicht stören, VIP, Anreisezeit, Dringlichkeit",hotel,should,no,yes,"Sortierung nach Anreisezeit/VIP; meistgewünscht bei Mews laut Recherche; E2E F38"
+Automatische Zimmerverteilung nach Minuten,hotel,should,no,yes,"gleichmäßig in Etagenblöcken, DND ausgenommen"
+Schäden und Fundsachen mit Foto,hotel,should,no,yes,"Foto im Browser verkleinert, Meldungen-Seite, Hinweis in der Übersicht"
+Reinigungszeit pro Zimmer und Person,hotel,could,no,yes,"Start bis gereinigt; Ø Minuten 30 Tage in der Übersicht"

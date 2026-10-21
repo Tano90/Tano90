@@ -47,10 +47,10 @@ Nur Funktionen und Preise wurden erfasst, in eigenen Worten; kein Text, Code ode
 
 ## Was Mirepa fehlte und in welcher Reihenfolge es kommt
 
-1. E-Rechnung (XRechnung, ZUGFeRD) einlesen → Preise aktualisieren, Preissprünge melden
-2. DATEV-Export der geprüften Lieferantenrechnungen
-3. Housekeeping: „Bitte nicht stören“, VIP/Anreisezeit-Priorität, automatische Zuteilung nach Minuten,
-   Schadensmeldungen und Fundsachen mit Foto, Minuten pro Zimmer
+1. ✅ E-Rechnung (XRechnung, ZUGFeRD) einlesen → Preise aktualisieren, Preissprünge melden (2026-10-21)
+2. ✅ DATEV-Export der Lieferantenrechnungen (2026-10-21)
+3. ✅ Housekeeping: „Bitte nicht stören“, VIP/Anreisezeit-Priorität, automatische Zuteilung nach Minuten,
+   Schadensmeldungen und Fundsachen mit Foto, Minuten pro Zimmer (2026-10-21)
 4. Rezepte aus Excel übernehmen (Einrichtung)
 5. Offene API (lesend) für Kunden
 6. Rechnung per Foto (braucht einen KI-Zugang des Betreibers)

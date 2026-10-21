@@ -31,7 +31,7 @@ export const INDUSTRIES: Industry[] = [
     ],
     features: [
       { icon: Calculator, title: "F&B-Controlling je Kostenstelle", body: `Wareneinsatz je Outlet und Monat, wie die Buchhaltung ihn rechnet, mit Schwund, Inventurdifferenz, Umsatz und Quote. Export als CSV für die Buchhaltung. Add-on, ${ADDON_PRICE} im Monat.` },
-      { icon: BedDouble, title: "Housekeeping", body: `Zimmerstatus von schmutzig bis kontrolliert, Belegung, Zuteilung an Reinigungskräfte, Checkliste vor „gereinigt“, Tagesbeginn per Klick und ein Hinweis, welche Anreisen noch nicht fertig sind. Add-on, ${ADDON_PRICE} im Monat.` },
+      { icon: BedDouble, title: "Housekeeping", body: `Zimmertafel mit „Bitte nicht stören“, VIP und Anreisezeit, automatische Verteilung nach Minuten, Schäden und Fundsachen mit Foto, Minuten pro Zimmer. Dazu Wäschelager, Wäschebestellung aus der Belegung und Dienstplan. Add-on, ${ADDON_PRICE} im Monat.` },
       { icon: CookingPot, title: "Bankett aus der Zentralküche", body: "Outlets fordern an, die Produktion sieht pro Tag, was zu kochen ist und welche Rohware fehlt, und bucht sie aus." },
       { icon: UtensilsCrossed, title: "Frühstück und Menüs", body: "Buffet und Bankettmenüs mit Kosten pro Gast; die Stückliste rechnet auf die Gästezahl hoch, über alle Grundrezepte." },
       { icon: Tags, title: "Allergene fürs Buffet", body: "Allergene und Nährwerte pro Rezept, als Etikett druckbar. Ungeprüfte Zutaten machen ein Gericht „unbekannt“, nie „frei“." },
@@ -52,7 +52,7 @@ export const INDUSTRIES: Industry[] = [
     ],
     features: [
       { icon: ChefHat, title: "Kalkulation beim Tippen", body: "Kosten pro Portion, Wareneinsatz und Rohertrag neben dem Rezept, über Grundrezepte hinweg." },
-      { icon: Package, title: "Preisliste hochladen", body: "Excel oder CSV des Lieferanten, mit Vorschau jeder Zeile, bevor etwas übernommen wird." },
+      { icon: Package, title: "Preise aus Liste und E-Rechnung", body: "Excel, CSV oder die E-Rechnung des Lieferanten (XRechnung, ZUGFeRD), mit Vorschau jeder Zeile und Warnung bei Preissprüngen." },
       { icon: ShoppingCart, title: "Bestellen mit Vorschlag", body: "Aus Mindest- und Zielbestand; die Bestellung geht per Mail genau einmal an den Lieferanten." },
       { icon: ScanBarcode, title: "Inventur auf dem Handy", body: "In Kartons plus Rest oder per Barcode-Scanner, gespeichert auch ohne Netz." },
       { icon: Tags, title: "Allergene und Etiketten", body: "14 EU-Allergene pro Zutat, vererbt auf jedes Gericht, als Etikett druckbar." },
