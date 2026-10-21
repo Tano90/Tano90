@@ -28,7 +28,7 @@ Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jet
 | BUG-019 | S2 | Team-Konten können bei der Zentralküche nicht anfordern („keine Berechtigung“) | behoben in 5be2517 |
 | BUG-020 | S3 | Dialog „Produzieren“ bleibt nach dem Buchen offen und zeigt „0 Anforderungen“ | behoben in 5be2517 |
 | BUG-021 | S3 | Rechnungsseite bei 390 px seitlich 778 px breit | behoben in b6ae12b |
-| BUG-022 | S2 | Angemeldete Nutzer können das Migrations-Protokoll lesen, ändern und leeren | behoben in (dieser Commit, siehe git log „0015“) |
+| BUG-022 | S2 | Angemeldete Nutzer können das Migrations-Protokoll lesen, ändern und leeren | behoben in 2e6fd5b |
 
 Offen: keine. S1 offen: keine. (22 gefunden, 22 behoben)
 
