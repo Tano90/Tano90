@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { rollUp } from "./allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, costRecipe, foodCostBp } from "./costing";
-import { applyMovement, stockReport, suggestPacks } from "./stock";
+import { applyMovement, stockReport, suggestPacks, suggestWeight } from "./stock";
 import { startOfDay, zoneOffsetMinutes } from "../lib/dates";
 import { billOfMaterials, summarizeMenu } from "./menus";
 import { classifyDishes } from "./menu-engineering";
@@ -210,5 +210,14 @@ describe("menu engineering", () => {
     expect(r.marginLineCents).toBeCloseTo((700 * 50 + 300 * 30 + 1000 * 15 + 100 * 5) / 100);
     expect(Object.fromEntries(r.dishes.map((x) => [x.id, x.group]))).toEqual({ a: "star", b: "workhorse", c: "puzzle", d: "dog" });
     expect(classifyDishes([]).dishes).toEqual([]);
+  });
+});
+
+describe("suggestWeight", () => {
+  it("fills up to the target by weight, rounded up to 100 g, pieces whole", () => {
+    expect(suggestWeight(4000, 1234, 0, "g")).toBe(2800);
+    expect(suggestWeight(4000, 1000, 3000, "g")).toBe(0);
+    expect(suggestWeight(null, 0, 0, "g")).toBe(0);
+    expect(suggestWeight(10, 2.5, 0, "piece")).toBe(8);
   });
 });

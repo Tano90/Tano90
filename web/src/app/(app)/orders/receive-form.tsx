@@ -7,8 +7,9 @@ import { Notice } from "@/components/app/notice";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { formatCents, formatQty } from "@/lib/format";
+import { type QuantityLine, orderQuantity } from "@/lib/order-quantity";
 
-type Line = { id: string; name: string; packageLabel: string; quantityPacks: number; unitPriceCents: number; receivedPacks: number; weighted: boolean };
+type Line = QuantityLine & { id: string; name: string; receivedPacks: number };
 
 export function ReceiveForm({ orderId, lines, receivable }: { orderId: string; lines: Line[]; receivable: boolean }) {
   const router = useRouter();
@@ -55,8 +56,8 @@ export function ReceiveForm({ orderId, lines, receivable }: { orderId: string; l
             {lines.map((l) => (
               <tr key={l.id} className="h-(--size-table-row) border-t border-border">
                 <th scope="row" className="px-3 text-left font-normal">{l.name}</th>
-                <td className="num px-3 text-right">{formatQty(l.quantityPacks)}</td>
-                <td className="num px-3 text-right">{formatQty(l.receivedPacks)}</td>
+                <td className="num px-3 text-right">{orderQuantity(l)}</td>
+                <td className="num px-3 text-right">{l.weighted ? orderQuantity({ ...l, quantityPacks: l.receivedPacks }) : formatQty(l.receivedPacks)}</td>
                 <td className="num px-3 text-right">{formatCents(l.unitPriceCents)}</td>
                 {receivable && (
                   <td className="px-3 py-1 text-right">

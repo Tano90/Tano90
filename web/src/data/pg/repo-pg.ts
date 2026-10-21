@@ -7,7 +7,7 @@ import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost
 import { classifyDishes } from "@/domain/menu-engineering";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { recipeNutrition } from "@/domain/nutrition";
-import { type CountBreakdown, countTotal, stockReport, suggestPacks } from "@/domain/stock";
+import { type CountBreakdown, countTotal, stockReport, suggestPacks, suggestWeight } from "@/domain/stock";
 import type { SaleInput } from "@/domain/pos";
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
@@ -1111,12 +1111,13 @@ export async function getOrder(s: Session, id: string) {
     if (!order) return null;
     const [supplier] = await tx<Supplier[]>`select * from suppliers where id = ${order.supplierId}`;
     const [outlet] = await tx<Outlet[]>`select id, library_id, name, is_central_kitchen, timezone, archived_at from outlets where id = ${order.outletId}`;
-    const items = await tx<{ id: string; name: string; label: string; weighted: boolean }[]>`
-      select si.id, si.name, p.label, si.weighted from stock_items si join packages p on p.id = si.package_id
+    const items = await tx<{ id: string; name: string; label: string; weighted: boolean; packBase: number; baseUnit: BaseUnit }[]>`
+      select si.id, si.name, p.label, si.weighted, p.quantity_base as pack_base, i.base_unit
+      from stock_items si join packages p on p.id = si.package_id join ingredients i on i.id = si.ingredient_id
       where si.id = any(${order.lines.map((l) => l.stockItemId)}::uuid[])`;
     const lines = order.lines.map((l) => {
       const si = items.find((x) => x.id === l.stockItemId)!;
-      return { ...l, name: si.name, packageLabel: si.label, weighted: si.weighted, receivedPacks: order.received[l.id] ?? 0 };
+      return { ...l, name: si.name, packageLabel: si.label, weighted: si.weighted, packBase: si.packBase, baseUnit: si.baseUnit, receivedPacks: order.received[l.id] ?? 0 };
     });
     return { order, supplier, lines, totalCents: orderTotal(order), outlet };
   });
@@ -1124,8 +1125,8 @@ export async function getOrder(s: Session, id: string) {
 
 export async function orderableItems(s: Session, outletId: string, supplierId: string) {
   return run(s, async (tx) => {
-    const rows = await tx<{ stockItemId: string; name: string; baseUnit: BaseUnit; packageLabel: string; packBase: number; priceType: string; priceCents: number; priceUnitQuantity: number | null; onHandBase: number | null; parLevelBase: number | null; onOrderBase: number }[]>`
-      select si.id as stock_item_id, si.name, i.base_unit, p.label as package_label, p.quantity_base as pack_base,
+    const rows = await tx<{ stockItemId: string; name: string; baseUnit: BaseUnit; packageLabel: string; packBase: number; weighted: boolean; priceType: string; priceCents: number; priceUnitQuantity: number | null; onHandBase: number | null; parLevelBase: number | null; onOrderBase: number }[]>`
+      select si.id as stock_item_id, si.name, i.base_unit, si.weighted, p.label as package_label, p.quantity_base as pack_base,
              si.price_type, si.price_cents, si.price_unit_quantity, sl.quantity_base as on_hand_base, oi.par_level_base,
              coalesce((
                select sum((pol.quantity_packs - pol.received_packs) * p2.quantity_base)
@@ -1143,9 +1144,11 @@ export async function orderableItems(s: Session, outletId: string, supplierId: s
       .map((r) => {
         const packPrice = r.priceType === "per_pack" ? r.priceCents : Math.round((r.priceCents / (r.priceUnitQuantity || 1)) * r.packBase);
         return {
-          stockItemId: r.stockItemId, name: r.name, baseUnit: r.baseUnit, packageLabel: r.packageLabel, packPriceCents: packPrice,
-          onHandBase: r.onHandBase ?? 0, parLevelBase: r.parLevelBase,
-          suggestedPacks: suggestPacks(r.parLevelBase, r.onHandBase ?? 0, r.onOrderBase, r.packBase),
+          stockItemId: r.stockItemId, name: r.name, baseUnit: r.baseUnit, packageLabel: r.packageLabel, packBase: r.packBase, weighted: r.weighted,
+          packPriceCents: packPrice, onHandBase: r.onHandBase ?? 0, parLevelBase: r.parLevelBase,
+          suggestedPacks: r.weighted
+            ? suggestWeight(r.parLevelBase, r.onHandBase ?? 0, r.onOrderBase, r.baseUnit) / r.packBase
+            : suggestPacks(r.parLevelBase, r.onHandBase ?? 0, r.onOrderBase, r.packBase),
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name, "de"));

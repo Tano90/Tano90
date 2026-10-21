@@ -11,11 +11,18 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
 import type { BaseUnit } from "@/domain/units";
 import { addDays } from "@/lib/dates";
-import { formatCents } from "@/lib/format";
-import { formatBase } from "@/lib/units-display";
+import { formatCents, formatQty } from "@/lib/format";
+import { formatBase, formatUnitPrice } from "@/lib/units-display";
 
 type SupplierOpt = { value: string; label: string; orderEmail: string | null; minOrderCents: number | null; leadTimeDays: number };
-type Item = { stockItemId: string; name: string; baseUnit: BaseUnit; packageLabel: string; packPriceCents: number; onHandBase: number; parLevelBase: number | null; suggestedPacks: number };
+type Item = {
+  stockItemId: string; name: string; baseUnit: BaseUnit; packageLabel: string; packBase: number; weighted: boolean;
+  packPriceCents: number; onHandBase: number; parLevelBase: number | null; suggestedPacks: number;
+};
+// Weighed items are ordered by weight in kg / l (pieces stay pieces); everything else by package.
+const FACTOR: Record<BaseUnit, number> = { g: 1000, ml: 1000, piece: 1 };
+const UNIT: Record<BaseUnit, string> = { g: "kg", ml: "l", piece: "Stk." };
+const shown = (i: Item, packs: number) => (i.weighted ? formatQty((packs * i.packBase) / FACTOR[i.baseUnit]) : String(packs));
 type Existing = { id: string; supplierId: string; expectedDeliveryDate: string | null; note: string | null; lines: { stockItemId: string; quantityPacks: number }[] };
 
 
@@ -40,24 +47,33 @@ export function OrderForm({ order, suppliers, initialSupplierId, today }: { orde
     if (!supplierId) return;
     orderableItems(supplierId).then((res) => {
       if (!alive) return;
-      if (res.ok) setItems(res.data);
-      else setLoadError(res.error);
+      if (!res.ok) return setLoadError(res.error);
+      setItems(res.data);
+      // A saved draft holds packages; weighed items are edited in kg / l.
+      if (order && order.supplierId === supplierId) {
+        const byId = new Map(res.data.map((i) => [i.stockItemId, i]));
+        setQty(Object.fromEntries(order.lines.map((l) => {
+          const i = byId.get(l.stockItemId);
+          return [l.stockItemId, i ? shown(i, l.quantityPacks) : String(l.quantityPacks)];
+        })));
+      }
     });
     return () => {
       alive = false;
     };
   }, [supplierId]);
 
-  const packs = (id: string) => Math.max(0, Number((qty[id] ?? "").replace(",", ".")) || 0);
-  const total = (items ?? []).reduce((sum, i) => sum + packs(i.stockItemId) * i.packPriceCents, 0);
-  const lines = (items ?? []).filter((i) => packs(i.stockItemId) > 0).map((i) => ({ stockItemId: i.stockItemId, quantityPacks: packs(i.stockItemId) }));
+  const typed = (id: string) => Math.max(0, Number((qty[id] ?? "").replace(",", ".")) || 0);
+  const packsOf = (i: Item) => (i.weighted ? (typed(i.stockItemId) * FACTOR[i.baseUnit]) / i.packBase : typed(i.stockItemId));
+  const total = (items ?? []).reduce((sum, i) => sum + packsOf(i) * i.packPriceCents, 0);
+  const lines = (items ?? []).filter((i) => packsOf(i) > 0).map((i) => ({ stockItemId: i.stockItemId, quantityPacks: Math.round(packsOf(i) * 10000) / 10000 }));
   const belowMin = supplier?.minOrderCents != null && total > 0 && total < supplier.minOrderCents;
 
   const applySuggestion = () => {
     if (!items) return;
     const next = { ...qty };
     let n = 0;
-    for (const i of items) if (i.suggestedPacks > 0) { next[i.stockItemId] = String(i.suggestedPacks); n++; }
+    for (const i of items) if (i.suggestedPacks > 0) { next[i.stockItemId] = shown(i, i.suggestedPacks); n++; }
     setQty(next);
     toast(n ? `${n} Artikel nach Mindestbestand vorgeschlagen` : "Alles über Mindestbestand – kein Vorschlag nötig");
   };
@@ -113,8 +129,8 @@ export function OrderForm({ order, suppliers, initialSupplierId, today }: { orde
                   <th scope="col" className="px-3 text-left">Artikel</th>
                   <th scope="col" className="px-3 text-right">Bestand</th>
                   <th scope="col" className="px-3 text-right">Ziel</th>
-                  <th scope="col" className="px-3 text-right">Preis/Gebinde</th>
-                  <th scope="col" className="px-3 text-right">Anzahl</th>
+                  <th scope="col" className="px-3 text-right">Preis</th>
+                  <th scope="col" className="px-3 text-right">Menge</th>
                   <th scope="col" className="px-3 text-right">Summe</th>
                 </tr>
               </thead>
@@ -123,21 +139,25 @@ export function OrderForm({ order, suppliers, initialSupplierId, today }: { orde
                   <tr key={i.stockItemId} className="h-(--size-table-row) border-t border-border">
                     <th scope="row" className="px-3 text-left font-normal">
                       {i.name}
-                      {i.suggestedPacks > 0 && <span className="ml-2 text-xs text-warning">Vorschlag: {i.suggestedPacks}</span>}
+                      {i.weighted && <span className="ml-2 text-xs text-text-muted">nach Gewicht</span>}
+                      {i.suggestedPacks > 0 && <span className="ml-2 text-xs text-warning">Vorschlag: {shown(i, i.suggestedPacks)}{i.weighted ? ` ${UNIT[i.baseUnit]}` : ""}</span>}
                     </th>
                     <td className="num px-3 text-right">{formatBase(i.onHandBase, i.baseUnit)}</td>
                     <td className="num px-3 text-right">{i.parLevelBase ? formatBase(i.parLevelBase, i.baseUnit) : "–"}</td>
-                    <td className="num px-3 text-right">{formatCents(i.packPriceCents)}</td>
+                    <td className="num px-3 text-right">{i.weighted ? formatUnitPrice(i.packPriceCents / i.packBase, i.baseUnit) : `${formatCents(i.packPriceCents)} / ${i.packageLabel}`}</td>
                     <td className="px-3 py-1 text-right">
+                      <span className="inline-flex items-center gap-1">
                       <input
-                        aria-label={`Anzahl ${i.packageLabel} ${i.name}`}
+                        aria-label={i.weighted ? `Menge in ${UNIT[i.baseUnit]} ${i.name}` : `Anzahl ${i.packageLabel} ${i.name}`}
                         inputMode="decimal"
                         className="num h-(--size-control-sm) w-20 rounded-sm border border-border-input bg-bg px-2 text-right"
                         value={qty[i.stockItemId] ?? ""}
                         onChange={(e) => setQty({ ...qty, [i.stockItemId]: e.target.value.replace(/[^\d,]/g, "") })}
                       />
+                      {i.weighted && <span className="w-6 text-left text-text-muted">{UNIT[i.baseUnit]}</span>}
+                      </span>
                     </td>
-                    <td className="num px-3 text-right">{packs(i.stockItemId) ? formatCents(Math.round(packs(i.stockItemId) * i.packPriceCents)) : ""}</td>
+                    <td className="num px-3 text-right">{packsOf(i) ? formatCents(Math.round(packsOf(i) * i.packPriceCents)) : ""}</td>
                   </tr>
                 ))}
               </tbody>

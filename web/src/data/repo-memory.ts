@@ -6,7 +6,7 @@ import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost
 import { classifyDishes } from "@/domain/menu-engineering";
 import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { recipeNutrition } from "@/domain/nutrition";
-import { type CountBreakdown, countTotal, stockReport, suggestPacks } from "@/domain/stock";
+import { type CountBreakdown, countTotal, stockReport, suggestPacks, suggestWeight } from "@/domain/stock";
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import type { SaleInput } from "@/domain/pos";
@@ -980,7 +980,8 @@ export async function getOrder(s: Session, id: string) {
   const supplier = d.suppliers.find((x) => x.id === order.supplierId)!;
   const lines = order.lines.map((l) => {
     const si = d.stockItems.find((x) => x.id === l.stockItemId)!;
-    return { ...l, name: si.name, packageLabel: packOf(si).label, weighted: si.weighted, receivedPacks: order.received[l.id] ?? 0 };
+    const baseUnit = d.ingredients.find((i) => i.id === si.ingredientId)?.baseUnit ?? ("g" as BaseUnit);
+    return { ...l, name: si.name, packageLabel: packOf(si).label, weighted: si.weighted, packBase: packOf(si).quantityBase, baseUnit, receivedPacks: order.received[l.id] ?? 0 };
   });
   return { order, supplier, lines, totalCents: orderTotal(order), outlet: d.outlets.find((o) => o.id === order.outletId)! };
 }
@@ -1006,15 +1007,21 @@ export async function orderableItems(s: Session, outletId: string, supplierId: s
       const level = d.levels.find((l) => l.outletId === outletId && l.ingredientId === si.ingredientId);
       const oi = d.outletIngredients.find((x) => x.outletId === outletId && x.ingredientId === si.ingredientId);
       const packPrice = si.priceType === "per_pack" ? si.priceCents : Math.round(unitCostOf(si) * pack.quantityBase);
+      const baseUnit = d.ingredients.find((i) => i.id === si.ingredientId)!.baseUnit;
+      const onHand = level?.quantityBase ?? 0;
       return {
         stockItemId: si.id,
         name: si.name,
-        baseUnit: d.ingredients.find((i) => i.id === si.ingredientId)!.baseUnit,
+        baseUnit,
         packageLabel: pack.label,
+        packBase: pack.quantityBase,
+        weighted: si.weighted,
         packPriceCents: packPrice,
-        onHandBase: level?.quantityBase ?? 0,
+        onHandBase: onHand,
         parLevelBase: oi?.parLevelBase ?? null,
-        suggestedPacks: suggestPacks(oi?.parLevelBase ?? null, level?.quantityBase ?? 0, onOrder(si.ingredientId), pack.quantityBase),
+        suggestedPacks: si.weighted
+          ? suggestWeight(oi?.parLevelBase ?? null, onHand, onOrder(si.ingredientId), baseUnit) / pack.quantityBase
+          : suggestPacks(oi?.parLevelBase ?? null, onHand, onOrder(si.ingredientId), pack.quantityBase),
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "de"));

@@ -1,6 +1,7 @@
 // Email texts, written for this product. Plain text first; the HTML is the same content, lightly formatted.
 import { formatDay } from "./dates";
-import { formatCents, formatQty } from "./format";
+import { formatCents } from "./format";
+import { type QuantityLine, orderPrice, orderQuantity } from "./order-quantity";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const wrap = (body: string) =>
@@ -8,7 +9,7 @@ const wrap = (body: string) =>
 
 export function orderMail(o: {
   libraryName: string; outletName: string; supplierName: string; customerNumber: string | null; orderNumber: string;
-  expectedDeliveryDate: string | null; note: string | null; lines: { name: string; packageLabel: string; quantityPacks: number; unitPriceCents: number }[];
+  expectedDeliveryDate: string | null; note: string | null; lines: (QuantityLine & { name: string })[];
 }) {
   const date = o.expectedDeliveryDate ? formatDay(o.expectedDeliveryDate, "full") : null;
   const total = o.lines.reduce((s, l) => s + l.quantityPacks * l.unitPriceCents, 0);
@@ -18,7 +19,7 @@ export function orderMail(o: {
     ``,
     `bitte liefern Sie an ${o.libraryName}, ${o.outletName}${date ? ` am ${date}` : ""}:`,
     ``,
-    ...o.lines.map((l) => `- ${formatQty(l.quantityPacks)} × ${l.packageLabel} ${l.name.split(",")[0]} (je ${formatCents(l.unitPriceCents)} netto)`),
+    ...o.lines.map((l) => `- ${orderQuantity(l)} ${l.name.split(",")[0]} (${orderPrice(l) ?? `je ${formatCents(l.unitPriceCents)}`} netto)`),
     ``,
     `Summe netto laut unseren Preisen: ${formatCents(total)}`,
     o.customerNumber ? `Unsere Kundennummer: ${o.customerNumber}` : null,
@@ -32,7 +33,7 @@ export function orderMail(o: {
     <p>bitte liefern Sie an <strong>${esc(o.libraryName)}, ${esc(o.outletName)}</strong>${date ? ` am <strong>${esc(date)}</strong>` : ""}:</p>
     <table style="border-collapse:collapse;width:100%">
       <thead><tr><th align="left" style="border-bottom:1px solid #e3e6ea;padding:4px">Artikel</th><th align="right" style="border-bottom:1px solid #e3e6ea;padding:4px">Menge</th><th align="right" style="border-bottom:1px solid #e3e6ea;padding:4px">Preis netto</th></tr></thead>
-      <tbody>${o.lines.map((l) => `<tr><td style="padding:4px">${esc(l.name)}</td><td align="right" style="padding:4px">${esc(formatQty(l.quantityPacks))} × ${esc(l.packageLabel)}</td><td align="right" style="padding:4px">${esc(formatCents(l.unitPriceCents))}</td></tr>`).join("")}</tbody>
+      <tbody>${o.lines.map((l) => `<tr><td style="padding:4px">${esc(l.name)}</td><td align="right" style="padding:4px">${esc(orderQuantity(l))}</td><td align="right" style="padding:4px">${esc(orderPrice(l) ?? formatCents(l.unitPriceCents))}</td></tr>`).join("")}</tbody>
     </table>
     <p>Summe netto laut unseren Preisen: <strong>${esc(formatCents(total))}</strong></p>
     ${o.customerNumber ? `<p>Unsere Kundennummer: ${esc(o.customerNumber)}</p>` : ""}

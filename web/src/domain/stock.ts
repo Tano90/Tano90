@@ -66,3 +66,12 @@ export function stockReport(moves: ReportMovement[], fromIso: string, toIso: str
   }
   return [...rows.values()];
 }
+
+/** Weighed items are ordered by weight: what is missing up to the target, rounded up to 100 g / 100 ml (whole pieces). */
+export function suggestWeight(parBase: number | null, onHandBase: number, onOrderBase: number, unit: "g" | "ml" | "piece"): number {
+  if (parBase === null) return 0;
+  const missing = parBase - onHandBase - onOrderBase;
+  if (missing <= 0) return 0;
+  const step = unit === "piece" ? 1 : 100;
+  return Math.ceil(missing / step - 1e-9) * step;
+}
