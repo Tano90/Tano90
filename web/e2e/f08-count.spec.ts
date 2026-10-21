@@ -96,3 +96,30 @@ test.describe("S17 Inventur in Gebinden", () => {
     await expect(total).toBeEditable();
   });
 });
+
+test.describe("S17 Barcode", () => {
+  test.beforeEach(async ({ login }) => {
+    reseed();
+    await login("staff");
+  });
+
+  test("B-H1 Scanner tippt den Code: ein Karton mehr, mehrfach, unbekannter Code", async ({ page, axe }) => {
+    await page.goto("/stock/count");
+    await page.getByRole("button", { name: "Inventur starten" }).click();
+    const field = page.getByLabel("Barcode scannen oder eintippen");
+    await field.fill("2000000000015");
+    await field.press("Enter");
+    await expect(page.getByText("Butter: Karton 10 × 250 g +1, jetzt 1")).toBeVisible();
+    await field.fill("2000000000015");
+    await field.press("Enter");
+    await expect(page.getByLabel("Butter: Karton 10 × 250 g")).toHaveValue("2");
+    await expect(page.getByRole("textbox", { name: /^Butter/ }).first()).toHaveValue("5");
+    await expect(page.getByText("Zwischenstand gespeichert")).toBeVisible();
+    await axe();
+    await field.fill("4000000000000");
+    await field.press("Enter");
+    await expect(page.getByText(/Barcode 4000000000000 ist keinem Artikel zugeordnet/)).toBeVisible();
+    await page.reload();
+    await expect(page.getByLabel("Butter: Karton 10 × 250 g")).toHaveValue("2");
+  });
+});

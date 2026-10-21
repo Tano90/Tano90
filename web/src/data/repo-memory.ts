@@ -894,7 +894,10 @@ export async function getOpenCount(s: Session, outletId: string) {
   const ids = new Set(d.outletIngredients.filter((x) => x.outletId === outletId).map((x) => x.ingredientId));
   const packages: Record<string, { id: string; label: string; quantityBase: number }[]> = {};
   for (const p of d.packages) if (ids.has(p.ingredientId)) (packages[p.ingredientId] ??= []).push({ id: p.id, label: p.label, quantityBase: p.quantityBase });
-  return { event: ev, draft: d.countDrafts[ev.id] ?? {}, breakdown: d.countBreakdowns?.[ev.id] ?? {}, packages };
+  // Scanned barcodes count one package of the item they are printed on.
+  const barcodes: Record<string, { ingredientId: string; packageId: string }> = {};
+  for (const si of visible(d.stockItems)) if (si.gtin && ids.has(si.ingredientId)) barcodes[si.gtin] = { ingredientId: si.ingredientId, packageId: si.packageId };
+  return { event: ev, draft: d.countDrafts[ev.id] ?? {}, breakdown: d.countBreakdowns?.[ev.id] ?? {}, packages, barcodes };
 }
 
 export async function startCount(s: Session, outletId: string) {

@@ -24,7 +24,7 @@ export default async function CountPage() {
   return (
     <>
       <PageHeader title="Inventur läuft" description={`${outlet?.name} · begonnen ${formatDateTime(open.event.occurredAt, outlet?.timezone)}`} back={{ href: "/stock", label: "Lager" }} />
-      <CountSheet eventId={open.event.id} draft={open.draft} breakdown={open.breakdown} packages={open.packages} items={stock.map((r) => ({ id: r.id, name: r.name, category: r.category, baseUnit: r.baseUnit, expectedBase: r.quantityBase }))} />
+      <CountSheet eventId={open.event.id} draft={open.draft} breakdown={open.breakdown} packages={open.packages} barcodes={open.barcodes} items={stock.map((r) => ({ id: r.id, name: r.name, category: r.category, baseUnit: r.baseUnit, expectedBase: r.quantityBase }))} />
     </>
   );
 }

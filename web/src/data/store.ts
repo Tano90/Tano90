@@ -140,7 +140,8 @@ export function seed(): Db {
     if (s.price >= 0) {
       d.stockItems.push({
         id: `${s.id}-si`, ingredientId: s.id, supplierId: s.supplier, packageId: packId, name: `${s.name}, ${s.pack[0]}`,
-        supplierSku: null, gtin: null,
+        // Demo barcodes from the in-store range (prefix 2), so they never match a real product.
+        supplierSku: null, gtin: ({ "ing-butter": "2000000000015", "ing-quark": "2000000000022" } as Record<string, string>)[s.id] ?? null,
         priceType: s.perUnitKg ? "per_unit" : "per_pack", priceCents: s.price,
         priceUnit: s.perUnitKg ? "g" : null, priceUnitQuantity: s.perUnitKg ? 1000 : null,
         isPreferred: true, weighted: !!s.perUnitKg, archivedAt: null,

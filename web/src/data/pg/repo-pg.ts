@@ -995,8 +995,14 @@ export async function getOpenCount(s: Session, outletId: string) {
       order by p.quantity_base`;
     const packages: Record<string, { id: string; label: string; quantityBase: number }[]> = {};
     for (const p of packs) (packages[p.ingredientId] ??= []).push({ id: p.id, label: p.label, quantityBase: p.quantityBase });
+    // Scanned barcodes count one package of the item they are printed on.
+    const codes = await tx<{ gtin: string; ingredientId: string; packageId: string }[]>`
+      select si.gtin, si.ingredient_id, si.package_id from stock_items si
+      join outlet_ingredients oi on oi.ingredient_id = si.ingredient_id and oi.outlet_id = ${outletId}
+      where si.gtin is not null and si.archived_at is null`;
     return {
       event,
+      barcodes: Object.fromEntries(codes.map((c) => [c.gtin, { ingredientId: c.ingredientId, packageId: c.packageId }])),
       draft: Object.fromEntries(lines.map((l) => [l.ingredientId, l.countedBase])) as Record<string, number>,
       breakdown: Object.fromEntries(lines.filter((l) => l.breakdown).map((l) => [l.ingredientId, l.breakdown!])) as Record<string, CountBreakdown>,
       packages,

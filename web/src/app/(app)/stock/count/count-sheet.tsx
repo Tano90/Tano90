@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Package as PackageIcon } from "lucide-react";
+import { Camera, ClipboardList, Package as PackageIcon, ScanBarcode } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { closeCount, saveCountLines, startCount } from "@/app/actions";
@@ -72,8 +72,9 @@ type Pack = { id: string; label: string; quantityBase: number };
 type PackValues = Record<string, string>; // package id or "loose" -> typed text
 const num = (raw: string) => (raw.trim() ? Number(raw.replace(",", ".")) : 0);
 
-export function CountSheet({ eventId, draft, breakdown, packages, items }: {
+export function CountSheet({ eventId, draft, breakdown, packages, items, barcodes }: {
   eventId: string; draft: Record<string, number>; breakdown: Record<string, CountBreakdown>; packages: Record<string, Pack[]>; items: Item[];
+  barcodes: Record<string, { ingredientId: string; packageId: string }>;
 }) {
   const router = useRouter();
   const unitOf = (id: string) => items.find((i) => i.id === id)?.baseUnit ?? "g";
@@ -154,12 +155,31 @@ export function CountSheet({ eventId, draft, breakdown, packages, items }: {
     } else setPackValues({ ...packValues, [it.id]: {} });
   };
 
+  // A scan counts one more of the scanned package (USB/Bluetooth scanners type the code and press Enter).
+  const [scanMsg, setScanMsg] = useState<string | null>(null);
+  const scan = (raw: string) => {
+    const code = raw.replace(/\D/g, "");
+    if (!code) return;
+    const hit = barcodes[code];
+    const it = hit && items.find((i) => i.id === hit.ingredientId);
+    const pack = hit && (packages[hit.ingredientId] ?? []).find((p) => p.id === hit.packageId);
+    if (!it || !pack) {
+      setScanMsg(`Barcode ${code} ist keinem Artikel zugeordnet. Hinterlege ihn bei der Zutat unter „Gebinde & Preise“.`);
+      return;
+    }
+    const before = Number((packValues[it.id]?.[pack.id] ?? "0").replace(",", ".")) || 0;
+    changePack(it, pack.id, formatQty(before + 1));
+    setScanMsg(`${it.name}: ${pack.label} +1, jetzt ${formatQty(before + 1)}`);
+    setQuery("");
+  };
+
   const shown = useMemo(() => items.filter((i) => !query || i.name.toLowerCase().includes(query.toLowerCase())), [items, query]);
   const counted = Object.values(values).filter((v) => v.trim()).length;
 
   return (
     <div className="flex flex-col gap-4">
       <Notice>Starte während einer offenen Inventur keine Lieferungen oder Umbuchungen für dieses Outlet – sonst stimmen die Differenzen nicht.</Notice>
+      <Scanner onCode={scan} message={scanMsg} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-56 flex-1"><FilterBar query={query} onQueryChange={setQuery} placeholder="Artikel suchen" /></div>
         <p role="status" className="text-xs text-text-muted">
@@ -259,6 +279,82 @@ export function CountSheet({ eventId, draft, breakdown, packages, items }: {
           }
         />
       </div>
+    </div>
+  );
+}
+
+type Detector = { detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]> };
+type DetectorClass = new (opts: { formats: string[] }) => Detector;
+
+/** Barcode field (works with any scanner that types) plus the phone camera where the browser can read barcodes. */
+function Scanner({ onCode, message }: { onCode: (code: string) => void; message: string | null }) {
+  const [code, setCode] = useState("");
+  const [camera, setCamera] = useState<DetectorClass | null>(null);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const D = (window as unknown as { BarcodeDetector?: DetectorClass }).BarcodeDetector;
+    if (D && "mediaDevices" in navigator) setCamera(() => D); // no mediaDevices outside HTTPS
+  }, []);
+  return (
+    <div className="flex flex-col gap-2 rounded-md border border-border bg-bg p-3">
+      <form
+        className="flex flex-wrap items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onCode(code);
+          setCode("");
+        }}
+      >
+        <label className="flex min-w-56 flex-1 flex-col gap-1 text-xs">
+          <span className="inline-flex items-center gap-1"><ScanBarcode aria-hidden className="size-4" /> Barcode scannen oder eintippen</span>
+          <input
+            inputMode="numeric"
+            autoComplete="off"
+            className="num h-(--size-control-lg) rounded-sm border border-border-input bg-bg px-3 text-base"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+          />
+        </label>
+        <Button type="submit" variant="secondary">Zählen</Button>
+        {camera && <Button variant="secondary" onClick={() => setOpen(true)}><Camera aria-hidden className="size-4" /> Kamera</Button>}
+      </form>
+      <p role="status" className="text-xs text-text-muted">{message ?? "Jeder Scan zählt ein Gebinde dazu."}</p>
+      {open && camera && <CameraScan Detector={camera} onCode={(c) => { onCode(c); setOpen(false); }} onClose={() => setOpen(false)} />}
+    </div>
+  );
+}
+
+function CameraScan({ Detector, onCode, onClose }: { Detector: DetectorClass; onCode: (code: string) => void; onClose: () => void }) {
+  const video = useRef<HTMLVideoElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    let stop = false;
+    (async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        if (!video.current) return;
+        video.current.srcObject = stream;
+        await video.current.play();
+        const detector = new Detector({ formats: ["ean_13", "ean_8", "upc_a", "code_128"] });
+        while (!stop) {
+          const [hit] = await detector.detect(video.current).catch(() => []);
+          if (hit?.rawValue) return onCode(hit.rawValue);
+          await new Promise((r) => setTimeout(r, 200));
+        }
+      } catch {
+        setError("Kein Zugriff auf die Kamera. Erlaube ihn in den Browser-Einstellungen oder tippe den Barcode ein.");
+      }
+    })();
+    return () => {
+      stop = true;
+      stream?.getTracks().forEach((t) => t.stop());
+    };
+  }, [Detector, onCode]);
+  return (
+    <div className="flex flex-col gap-2">
+      {error ? <p role="alert" className="text-danger">{error}</p> : <video ref={video} muted playsInline aria-label="Kamerabild für den Barcode" className="w-full max-w-sm rounded-sm bg-surface-sunken" />}
+      <div><Button variant="ghost" size="sm" onClick={onClose}>Kamera schließen</Button></div>
     </div>
   );
 }
