@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { type Column, DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { cleanDecimal } from "@/components/ui/money-input";
 import type { BaseUnit } from "@/domain/units";
 import { formatCents, formatQty } from "@/lib/format";
 import { formatBase, formatUnitPrice } from "@/lib/units-display";
@@ -103,10 +104,10 @@ function EditLevels({ row }: { row: Row }) {
       <div className="grid gap-4 sm:grid-cols-2">
         {error && <p role="alert" className="text-danger sm:col-span-2">{error}</p>}
         <Field label={`Mindestbestand (${UNIT[row.baseUnit]})`} hint="Leer = keine Warnung">
-          <Input inputMode="decimal" className="text-right" value={min} onChange={(e) => setMin(e.target.value.replace(/[^\d,]/g, ""))} />
+          <Input inputMode="decimal" className="text-right" value={min} onChange={(e) => setMin(cleanDecimal(e.target.value))} />
         </Field>
         <Field label={`Zielbestand (${UNIT[row.baseUnit]})`} hint="Leer = kein Vorschlag">
-          <Input inputMode="decimal" className="text-right" value={par} onChange={(e) => setPar(e.target.value.replace(/[^\d,]/g, ""))} />
+          <Input inputMode="decimal" className="text-right" value={par} onChange={(e) => setPar(cleanDecimal(e.target.value))} />
         </Field>
       </div>
     </Dialog>

@@ -6,6 +6,7 @@ import { receiveDelivery } from "@/app/actions";
 import { Notice } from "@/components/app/notice";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
+import { cleanDecimal } from "@/components/ui/money-input";
 import { formatCents, formatQty } from "@/lib/format";
 import { type QuantityLine, orderQuantity } from "@/lib/order-quantity";
 
@@ -66,7 +67,7 @@ export function ReceiveForm({ orderId, lines, receivable }: { orderId: string; l
                       inputMode="decimal"
                       className="num h-(--size-control-sm) w-20 rounded-sm border border-border-input bg-bg px-2 text-right"
                       value={got[l.id] ?? ""}
-                      onChange={(e) => setGot({ ...got, [l.id]: e.target.value.replace(/[^\d,]/g, "") })}
+                      onChange={(e) => setGot({ ...got, [l.id]: cleanDecimal(e.target.value) })}
                     />
                   </td>
                 )}
@@ -78,7 +79,7 @@ export function ReceiveForm({ orderId, lines, receivable }: { orderId: string; l
                         inputMode="decimal"
                         className="num h-(--size-control-sm) w-24 rounded-sm border border-border-input bg-bg px-2 text-right"
                         value={weight[l.id] ?? ""}
-                        onChange={(e) => setWeight({ ...weight, [l.id]: e.target.value.replace(/[^\d,]/g, "") })}
+                        onChange={(e) => setWeight({ ...weight, [l.id]: cleanDecimal(e.target.value) })}
                       />
                     )}
                   </td>

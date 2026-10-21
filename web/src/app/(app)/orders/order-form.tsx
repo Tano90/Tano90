@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { toast } from "@/components/ui/toast";
+import { cleanDecimal } from "@/components/ui/money-input";
 import type { BaseUnit } from "@/domain/units";
 import { addDays } from "@/lib/dates";
 import { formatCents, formatQty } from "@/lib/format";
@@ -152,7 +153,7 @@ export function OrderForm({ order, suppliers, initialSupplierId, today }: { orde
                         inputMode="decimal"
                         className="num h-(--size-control-sm) w-20 rounded-sm border border-border-input bg-bg px-2 text-right"
                         value={qty[i.stockItemId] ?? ""}
-                        onChange={(e) => setQty({ ...qty, [i.stockItemId]: e.target.value.replace(/[^\d,]/g, "") })}
+                        onChange={(e) => setQty({ ...qty, [i.stockItemId]: cleanDecimal(e.target.value) })}
                       />
                       {i.weighted && <span className="w-6 text-left text-text-muted">{UNIT[i.baseUnit]}</span>}
                       </span>

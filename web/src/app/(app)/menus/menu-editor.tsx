@@ -7,7 +7,7 @@ import { archiveMenu, saveMenu } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { Field, Input, Select } from "@/components/ui/field";
-import { MoneyInput, parseCents, readCents } from "@/components/ui/money-input";
+import { MoneyInput, cleanDecimal, parseCents, readCents } from "@/components/ui/money-input";
 import { parseQuantity } from "@/components/ui/quantity-input";
 import { toast } from "@/components/ui/toast";
 import type { Menu } from "@/data/types";
@@ -180,7 +180,7 @@ export function MenuEditor({ menu, recipes, categories, defaultVatBp, canEdit }:
                           <option value="">Rezept wählen …</option>
                           {recipes.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                         </Select>
-                        <Input aria-label={`Portionen für Gericht ${ii + 1} in ${label}`} inputMode="decimal" className="w-20 text-right" value={it.portions} onChange={(e) => editItem(ci, ii, { portions: e.target.value.replace(/[^\d,]/g, "") })} />
+                        <Input aria-label={`Portionen für Gericht ${ii + 1} in ${label}`} inputMode="decimal" className="w-20 text-right" value={it.portions} onChange={(e) => editItem(ci, ii, { portions: cleanDecimal(e.target.value) })} />
                         <span className="w-6 text-text-muted">Port.</span>
                         <span className="num w-20 text-right">
                           {r && r.missing > 0 && <AlertTriangle className="mr-1 inline size-4 text-warning" aria-label="Preis unvollständig" />}

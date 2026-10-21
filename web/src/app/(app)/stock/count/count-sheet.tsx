@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { toast } from "@/components/ui/toast";
+import { cleanDecimal } from "@/components/ui/money-input";
 import type { CountBreakdown } from "@/domain/stock";
 import type { BaseUnit } from "@/domain/units";
 import { formatDate } from "@/lib/dates";
@@ -124,7 +125,7 @@ export function CountSheet({ eventId, draft, breakdown, packages, items }: {
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const change = (it: Item, raw: string) => {
-    const clean = raw.replace(/[^\d,]/g, "");
+    const clean = cleanDecimal(raw);
     setValues({ ...values, [it.id]: clean });
     const n = clean.trim() ? Number(clean.replace(",", ".")) : null;
     dirty.current[it.id] = n === null || Number.isNaN(n) ? null : n * FACTOR[it.baseUnit];
@@ -133,7 +134,7 @@ export function CountSheet({ eventId, draft, breakdown, packages, items }: {
   };
 
   const changePack = (it: Item, key: string, raw: string) => {
-    const pv = { ...packValues[it.id], [key]: raw.replace(/[^\d,]/g, "") };
+    const pv = { ...packValues[it.id], [key]: cleanDecimal(raw) };
     setPackValues({ ...packValues, [it.id]: pv });
     const packs = Object.fromEntries((packages[it.id] ?? []).filter((p) => pv[p.id]?.trim()).map((p) => [p.id, num(pv[p.id])]));
     const looseBase = num(pv.loose ?? "") * FACTOR[it.baseUnit];

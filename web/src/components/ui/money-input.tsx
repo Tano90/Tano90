@@ -23,7 +23,7 @@ export const MoneyInput = forwardRef<HTMLInputElement, Props>(function MoneyInpu
           inputMode="decimal"
           autoComplete="off"
           value={value}
-          onChange={(e) => onValueChange(e.target.value.replace(/[^\d,]/g, ""))}
+          onChange={(e) => onValueChange(cleanDecimal(e.target.value))}
           className={cn(controlClass, "num pr-8 text-right", vat && "rounded-r-none")}
           {...props}
         />
@@ -54,6 +54,9 @@ export const MoneyInput = forwardRef<HTMLInputElement, Props>(function MoneyInpu
 });
 
 /** "12,5" -> 1250 cents; null when empty or invalid. */
+/** Keeps what a number field may hold. A dot becomes a comma: "2.5" means 2,5, not 25. */
+export const cleanDecimal = (raw: string) => raw.replace(/\./g, ",").replace(/[^\d,]/g, "");
+
 export function parseCents(raw: string): number | null {
   if (!raw.trim()) return null;
   const n = Number(raw.replace(",", "."));
