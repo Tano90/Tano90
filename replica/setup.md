@@ -12,7 +12,7 @@ Schlüssel und Passwörter trägst nur du ein, direkt bei Vercel. Bitte nichts d
 2. **Connect** (oben) → **Session pooler** → Verbindungs-URL kopieren (Port 5432, Passwort einsetzen) → wird `DATABASE_URL`.
 3. **Project Settings → API**: `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`, `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
    `service_role` → `SUPABASE_SERVICE_ROLE_KEY` (geheim, nur in Vercel).
-4. **Authentication → URL Configuration**: Site URL = deine Vercel-Adresse (Schritt 3, z. B. `https://mirepa.vercel.app`),
+4. **Authentication → URL Configuration** (vor der ersten Registrierung, sonst zeigen die Bestätigungslinks auf `localhost`): Site URL = deine Vercel-Adresse (Schritt 3, z. B. `https://mirepa.vercel.app`),
    Redirect URL hinzufügen: `https://mirepa.vercel.app/auth/callback`.
 5. **Authentication → Providers → Email**: „Confirm email“ an lassen.
 6. **Project Settings → Data API**: die Data API ausschalten (oder `public` aus „Exposed schemas“ entfernen). Mirepa
