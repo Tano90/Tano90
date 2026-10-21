@@ -13,6 +13,7 @@ import { type CountBreakdown, countTotal, stockReport, suggestPacks, suggestWeig
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
+import { controlling } from "@/domain/controlling";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
 import type { SaleInput } from "@/domain/pos";
@@ -115,6 +116,28 @@ export async function exportLibrary(s: Session): Promise<Record<string, unknown>
   if (!canManageTeam(s.role)) throw new Forbidden();
   const { apiKeys, ...rest } = db() as ReturnType<typeof db> & Record<string, unknown>;
   return { ...structuredClone(rest), apiKeys: apiKeys.map(({ keyHash: _, ...k }) => k) };
+}
+
+export async function setOutletCostCenter(s: Session, outletId: string, costCenter: string | null) {
+  if (!canManageTeam(s.role)) throw new Forbidden();
+  const o = visible(db().outlets).find((x) => x.id === outletId);
+  if (!o) throw new Error("Outlet nicht gefunden.");
+  o.costCenter = costCenter;
+}
+
+export async function getControlling(s: Session, fromDay: string, toDay: string) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  const d = db();
+  const events = new Map(d.events.filter((e) => e.status === "closed").map((e) => [e.id, e]));
+  return visible(d.outlets).filter((o) => canAccessOutlet(s, o.id)).sort((a, b) => a.name.localeCompare(b.name, "de")).map((o) => {
+    const from = startOfDay(fromDay, o.timezone), to = startOfDay(addDays(toDay, 1), o.timezone);
+    const moves = d.movements.filter((m) => m.outletId === o.id && events.has(m.eventId)).map((m) => {
+      const e = events.get(m.eventId)!;
+      return { ingredientId: m.ingredientId, eventType: e.type, occurredAt: new Date(e.occurredAt).toISOString(), deltaBase: m.deltaBase, unitCostCents: m.unitCostCents };
+    });
+    const revenue = d.sales.filter((x) => x.outletId === o.id && x.soldAt >= from && x.soldAt < to).reduce((t, x) => t + x.revenueNetCents, 0);
+    return { outletId: o.id, name: o.name, costCenter: o.costCenter ?? null, ...controlling(moves, from, to, revenue) };
+  });
 }
 
 export async function listMembers(s: Session) {

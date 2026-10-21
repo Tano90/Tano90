@@ -650,6 +650,9 @@ export async function archiveOutlet(outletId: string) {
     }
   }, ["/"]);
 }
+export async function setOutletCostCenter(outletId: string, costCenter: string) {
+  return run((s) => repo.setOutletCostCenter(s, id.parse(outletId), z.string().trim().max(20, "Höchstens 20 Zeichen.").parse(costCenter) || null), ["/analytics/controlling"]);
+}
 export async function removeMember(memberId: string) {
   return run((s) => repo.removeMember(s, memberId), ["/settings/team"], { readOnlyOk: true });
 }

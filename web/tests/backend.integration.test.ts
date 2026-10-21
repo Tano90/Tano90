@@ -290,6 +290,27 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
   });
 
+  describe("controlling", () => {
+    it("food cost per outlet adds up; staff and other libraries see nothing", async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const rows = await repo.getControlling(owner, "2020-01-01", today);
+      expect(rows.map((r) => r.name).sort()).toEqual(["Küche Mitte", "Zentralküche"]);
+      for (const r of rows) {
+        expect(r.foodCostCents).toBe(r.openingCents + r.purchasesCents + r.transfersCents - r.closingCents);
+        expect(r.openingCents).toBe(0); // nothing before 2020
+      }
+      const mitte = rows.find((r) => r.name === "Küche Mitte")!;
+      expect(mitte.purchasesCents).toBeGreaterThan(0);
+      expect(mitte.revenueCents).toBeGreaterThan(0); // seeded POS sales
+      await repo.setOutletCostCenter(owner, sid("out-mitte"), "4100");
+      expect((await repo.getControlling(owner, "2020-01-01", today)).find((r) => r.name === "Küche Mitte")!.costCenter).toBe("4100");
+      await expect(repo.getControlling(staff, "2020-01-01", today)).rejects.toThrow(/Berechtigung/);
+      await expect(repo.setOutletCostCenter(staff, sid("out-mitte"), "x")).rejects.toThrow(/Berechtigung/);
+      expect((await repo.getControlling(stranger, "2020-01-01", today)).every((r) => r.name !== "Küche Mitte")).toBe(true);
+      await repo.setOutletCostCenter(owner, sid("out-mitte"), null);
+    });
+  });
+
   describe("invoices", () => {
     it("editors match and approve; staff and other libraries cannot", async () => {
       const order = (await repo.getOrder(owner, sid("po-1")))!;

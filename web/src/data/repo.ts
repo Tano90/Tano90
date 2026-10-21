@@ -15,7 +15,7 @@ const impl: Repo = process.env.DATABASE_URL ? pg : misconfigured ? refuse : memo
 export const usingDatabase = !!process.env.DATABASE_URL;
 export const {
   getMembership, findUserIdByEmail, createLibrary, invitationPreview, acceptInvitation, deleteAccountData,
-  getLibrary, getBilling, updateLibrary, listOutlets, createOutlet, archiveOutlet, listMembers, inviteMember, updateMember, removeMember, transferOwnership, listCategories,
+  getLibrary, getBilling, updateLibrary, listOutlets, createOutlet, archiveOutlet, setOutletCostCenter, getControlling, listMembers, inviteMember, updateMember, removeMember, transferOwnership, listCategories,
   listIngredients, getIngredient, setOutletCarried, saveIngredient, archiveIngredient, savePackage, deletePackage, saveStockItem, archiveStockItem,
   setIngredientAllergens, setNutrition, listSuppliers, getSupplier, saveSupplier, archiveSupplier,
   listRecipes, getRecipe, lineOptions, previewRecipe, saveRecipe, archiveRecipe, setRecipeOutletPrice, getRecipeLabel, listMenus, getMenu, saveMenu, archiveMenu,

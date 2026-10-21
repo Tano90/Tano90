@@ -15,6 +15,7 @@ import type { SaleInput } from "@/domain/pos";
 import { hashKey, newApiKey } from "@/lib/api-key";
 import { type BillingState, accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
+import { type ControllingRow, controlling } from "@/domain/controlling";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
 import type { BaseUnit } from "@/domain/units";
@@ -64,7 +65,7 @@ export async function updateLibrary(s: Session, patch: { name: string; defaultVa
 export async function listOutlets(s: Session): Promise<Outlet[]> {
   // RLS (outlets_read) already limits staff to their own outlets.
   return run(s, (tx) => tx<Outlet[]>`
-    select id, library_id, name, is_central_kitchen, timezone, archived_at from outlets
+    select id, library_id, name, is_central_kitchen, timezone, archived_at, cost_center from outlets
     where library_id = ${s.libraryId} and archived_at is null order by name`);
 }
 
@@ -147,6 +148,36 @@ export async function exportLibrary(s: Session): Promise<Record<string, Record<s
   });
 }
 const camel = (x: string) => x.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+
+export async function setOutletCostCenter(s: Session, outletId: string, costCenter: string | null) {
+  assertTeam(s);
+  if (!isUuid(outletId)) throw new Error("Outlet nicht gefunden.");
+  const rows = await run(s, (tx) => tx`update outlets set cost_center = ${costCenter} where id = ${outletId} and library_id = ${s.libraryId} returning id`);
+  if (!rows.length) throw new Error("Outlet nicht gefunden.");
+}
+
+export type ControllingOutlet = ControllingRow & { outletId: string; name: string; costCenter: string | null };
+
+/** Food cost per outlet (cost centre) for the period, in each outlet's own days. Managers only. */
+export async function getControlling(s: Session, fromDay: string, toDay: string): Promise<ControllingOutlet[]> {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  return run(s, async (tx) => {
+    const outlets = await tx<{ id: string; name: string; timezone: string; costCenter: string | null }[]>`
+      select id, name, timezone, cost_center from outlets where library_id = ${s.libraryId} and archived_at is null order by name`;
+    const out: ControllingOutlet[] = [];
+    for (const o of outlets) {
+      const from = startOfDay(fromDay, o.timezone), to = startOfDay(addDays(toDay, 1), o.timezone);
+      const moves = await tx<{ ingredientId: string; eventType: string; occurredAt: string; deltaBase: number; unitCostCents: number }[]>`
+        select m.ingredient_id, e.type as event_type, e.occurred_at, m.delta_base::float8 as delta_base, m.unit_cost_cents::float8 as unit_cost_cents
+        from stock_movements m join stock_events e on e.id = m.stock_event_id
+        where m.outlet_id = ${o.id} and e.status = 'closed' and e.occurred_at < ${to}`;
+      const [{ revenue }] = await tx<{ revenue: number }[]>`
+        select coalesce(sum(revenue_net_cents), 0)::float8 as revenue from sales where outlet_id = ${o.id} and sold_at >= ${from} and sold_at < ${to}`;
+      out.push({ outletId: o.id, name: o.name, costCenter: o.costCenter, ...controlling(moves.map((m) => ({ ...m, occurredAt: new Date(m.occurredAt).toISOString() })), from, to, revenue) });
+    }
+    return out;
+  });
+}
 
 export async function listMembers(s: Session): Promise<Member[]> {
   assertTeam(s);
