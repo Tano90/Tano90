@@ -12,7 +12,7 @@
  let timer = null, ready = false, displaying = false, authMode = 'signin';
  let fatalMessage = '';
  // Website integration: without a configured Supabase project the suite runs as a demo in this browser only.
- if (window.GLB_CLOUD_ENABLED === false) { document.body.classList.remove('glb-locked'); status.textContent = 'Demo · Daten nur in diesem Browser'; status.className = 'cloud-status pending'; return; }
+ if (window.GLB_CLOUD_ENABLED === false) { document.body.classList.remove('glb-locked'); status.textContent = 'Demo · Daten nur in diesem Browser'; status.className = 'cloud-status pending'; window.GLB08UI?.activate?.('owner'); return; }
 
  const showStatus = (text, type = '') => {
    status.textContent = text;

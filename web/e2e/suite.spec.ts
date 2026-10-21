@@ -6,10 +6,10 @@ test.describe("SU GLB AI Suite", () => {
     await page.goto("/suite");
     await expect(page.locator("#cloud-sync-status")).toHaveText("Demo · Daten nur in diesem Browser");
     await expect(page.locator("#main")).toContainText("Beispieldaten");
-    const views = await page.locator("#sidebar [data-view]").evaluateAll((bs) => bs.map((b) => (b as HTMLElement).dataset.view!));
+    const views = [...new Set(await page.locator("#sidebar .glb08-nav-link[data-view]").evaluateAll((bs) => bs.map((b) => (b as HTMLElement).dataset.view!)))];
     expect(views.length).toBeGreaterThanOrEqual(20);
     for (const v of views) {
-      await page.locator(`#sidebar [data-view="${v}"]`).click();
+      await page.locator(`#sidebar .glb08-nav-link[data-view="${v}"]`).click();
       await expect(page.locator("#main")).not.toBeEmpty();
     }
   });
@@ -22,5 +22,37 @@ test.describe("SU GLB AI Suite", () => {
     const html = await (await page.request.get("/suite")).text();
     expect(html).toContain('<base href="/suite/">');
     expect(html).not.toContain("cdn.jsdelivr.net");
+  });
+});
+
+test.describe("SU GLB AI Suite auf dem Handy", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test("SU-M1 kein Modul ist breiter als der Bildschirm, Kopfzeile in einer Zeile, Aktionen im Blatt", async ({ page }) => {
+    await page.goto("/suite");
+    const views = [...new Set(await page.locator("#sidebar [data-view]").evaluateAll((bs) => bs.map((b) => (b as HTMLElement).dataset.view!)))];
+    for (const v of views) {
+      await page.evaluate((v) => (document.querySelector(`#sidebar [data-view="${v}"]`) as HTMLElement).click(), v);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), `${v} breiter als 390 px`).toBeLessThanOrEqual(390);
+    }
+    expect((await page.locator(".topbar").boundingBox())!.height).toBeLessThanOrEqual(64);
+    await page.getByRole("button", { name: "Konto, Backup und mehr" }).click();
+    const sheet = page.getByRole("dialog", { name: "Weitere Aktionen" });
+    await expect(sheet).toContainText("Demo · Daten nur in diesem Browser");
+    await expect(sheet.getByRole("button", { name: /Backup herunterladen/ })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+  });
+
+  test("SU-M2 Eingabe als Blatt: Speichern liegt über der unteren Leiste", async ({ page }) => {
+    await page.goto("/suite#funnel");
+    await page.locator("#glb08-bottomnav").getByRole("button", { name: "Service Funnel" }).click();
+    await page.getByRole("button", { name: "Tageserfassung" }).first().click();
+    const save = page.locator("#modal-layer .modal-footer").getByRole("button", { name: /Speichern/ });
+    await expect(save).toBeInViewport();
+    const nav = (await page.locator("#glb08-bottomnav").boundingBox())!;
+    const btn = (await save.boundingBox())!;
+    expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest(".modal-footer") !== null, [btn.x + btn.width / 2, btn.y + btn.height / 2])).toBe(true);
+    expect(nav.height).toBeGreaterThan(0);
   });
 });
