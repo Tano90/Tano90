@@ -45,6 +45,13 @@
   --color-saffron: #f6b13b;
   --color-on-saffron: #170f1a;
   --color-accent-glow: #d17cc4;
+  --color-cream: #fbf5ec;
+  --color-cream-deep: #f2e4d0;
+  --color-carrot: #ec7a2c;
+  --color-celery: #7cb35f;
+  --color-onion: #fff8ec;
+  --color-wood: #d9a36a;
+  --color-wood-dark: #b9824a;
   --font-sans: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --text-xs: 0.75rem;

@@ -65,3 +65,13 @@ System keine reduzierte Bewegung wünscht. axe ohne Verstoß, kein seitliches Sc
 - „Daten in der EU (Frankfurt)“ stimmt nur, wenn Supabase und Vercel dort eingerichtet sind (`backend.md`).
 - „Kündigen mit einem Klick“ setzt voraus, dass im Stripe-Kundenportal Kündigen aktiviert ist.
 - Impressum, Datenschutz und Nutzungsbedingungen sind Entwürfe (`/legal/*`).
+
+## Zweite Neugestaltung (2026-10-21), auf Wunsch „schöner, wärmer“
+
+Vorbild waren Ideen, nicht die Seite des Originals: hell und warm statt dunkel; eine **eigene Illustration** (Schneidbrett
+mit gewürfeltem Mirepoix, Messer in Markenfarbe) mit vier schwebenden Karten aus echten Funktionen (Wareneinsatz,
+Bestellung, Inventur, HACCP); Band in Aubergine; Live-Rechner als eigener dunkler Abschnitt „Probier es aus“;
+„Alles drin“ mit 12 Symbol-Kacheln (jede ist ein vorhandener Teil der App); „Fair und sicher“ mit sechs Fakten statt
+Kundenlogos oder Nutzerzahlen. Bewusst **nicht** übernommen: Gelb-Serif-Look, „4.000 Unternehmen vertrauen uns“,
+Partner-Logos, Zertifikate, die wir nicht haben, Stockfotos ohne Lizenz.
+
