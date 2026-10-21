@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <base href="/suite/">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="GLB AI Suite – Management Reports, KPI-Analysen, Deckungsbeitrag, Warenwirtschaft und Service Funnel">
+  <title>GLB AI Suite v0.8 – Cloud & Mobile</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b2636">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="icon" href="assets/icon-192.png" type="image/png">
+  <link rel="stylesheet" href="src/style.css">
+  <link rel="stylesheet" href="src/v04.css">
+  <link rel="stylesheet" href="src/v05.css">
+  <link rel="stylesheet" href="src/v06.css">
+  <link rel="stylesheet" href="src/cloud.css">
+  <link rel="stylesheet" href="src/v08.css">
+</head>
+<body class="glb-locked">
+  <div id="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><div class="brand-logo"><span>G</span><i></i></div><div><strong>GLB <em>AI Suite</em></strong><small>GASTRO LEADERSHIP BOARD</small></div></div>
+      <div class="workspace"><div class="workspace-icon">GB</div><div class="workspace-body"><small>ARBEITSBEREICH</small><strong id="workspace-name">Demo-Betrieb</strong></div><span class="workspace-chevron">⌄</span></div>
+      <div class="nav-label">WORKSPACE</div>
+      <nav class="nav" aria-label="Hauptnavigation">
+        <button data-view="overview" class="nav-item active"><span class="nav-ico" data-icon="grid"></span>Übersicht</button>
+        <button data-view="products" class="nav-item"><span class="nav-ico" data-icon="layers"></span>Artikel & Umsätze</button>
+        <button data-view="costs" class="nav-item"><span class="nav-ico" data-icon="calculator"></span>Deckungsbeiträge</button>
+        <button data-view="outlets" class="nav-item"><span class="nav-ico" data-icon="chart"></span>Outlets & Umsätze</button>
+        <button data-view="market" class="nav-item"><span class="nav-ico" data-icon="target"></span>Mein Markt <span class="soon">Add-on</span></button>
+        <button data-view="funnel" class="nav-item"><span class="nav-ico" data-icon="trending"></span>Service Funnel <span class="soon">Neu</span></button>
+        <button data-view="menuimport" class="nav-item"><span class="nav-ico" data-icon="upload"></span>Speisekarten <span class="soon">Neu</span></button>
+        <button data-view="recipes" class="nav-item"><span class="nav-ico" data-icon="calculator"></span>Rezepte & Rohwaren</button>
+        <button data-view="inventory" class="nav-item"><span class="nav-ico" data-icon="layers"></span>Inventur & Lager</button>
+        <button data-view="purchasing" class="nav-item"><span class="nav-ico" data-icon="cart"></span>Bestell-Forecast <span class="soon">Neu</span></button>
+        <button data-view="lifecycle" class="nav-item"><span class="nav-ico" data-icon="trending"></span>Lebenszyklen</button>
+        <button data-view="calculator" class="nav-item"><span class="nav-ico" data-icon="calculator"></span>Preiskalkulation</button>
+        <button data-view="portfolio" class="nav-item"><span class="nav-ico" data-icon="scatter"></span>Renner-Penner</button>
+        <button data-view="insights" class="nav-item"><span class="nav-ico" data-icon="sparkles"></span>GLB Intelligence <span class="nav-pip"></span></button>
+      </nav>
+      <div class="nav-label" style="margin-top:22px">DATEN & SYSTEM</div>
+      <nav class="nav" aria-label="Daten und System">
+        <button data-view="import" class="nav-item"><span class="nav-ico" data-icon="upload"></span>Datenimport</button>
+        <button data-view="settings" class="nav-item"><span class="nav-ico" data-icon="settings"></span>Einstellungen</button>
+      </nav>
+      <div class="nav-label" style="margin-top:22px">IN PLANUNG</div>
+      <nav class="nav" aria-label="Geplante Module">
+        <button data-view="roadmap" class="nav-item muted"><span class="nav-ico" data-icon="users"></span>Workforce <span class="soon">Bald</span></button>
+
+
+      </nav>
+      <div class="sidebar-bottom"><div class="side-status"><span class="status-dot"></span><div><strong>GLB Cloud · v0.8</strong><small>Online-Datenspeicherung</small></div></div><div class="side-footer">© 2026 Gastro Leadership Board</div></div>
+    </aside>
+    <div class="mobile-overlay" id="mobile-overlay"></div>
+    <div class="main-shell">
+      <header class="topbar"><div class="top-left"><button class="mobile-menu" id="mobile-menu" aria-label="Menü öffnen">☰</button><span class="breadcrumbs">GLB AI Suite</span><span class="bread-sep">/</span><span id="breadcrumb-current">Übersicht</span></div><div class="top-right"><span id="cloud-sync-status" class="cloud-status">Cloud wird geladen</span><button id="glb08-install" class="btn btn-small glb08-install" hidden type="button">App installieren</button><button id="cloud-account" class="btn btn-quiet btn-small" type="button">Mein Konto</button><button class="btn btn-quiet btn-small" data-action="export-json"><span data-icon="download"></span> Backup</button><div class="avatar">GLB</div></div></header>
+      <main id="main" tabindex="-1"></main>
+    </div>
+  </div>
+  <nav id="glb08-bottomnav" class="glb08-bottomnav" aria-label="Mobile Schnellnavigation"></nav>
+  <div id="cloud-layer" aria-live="polite"></div>
+  <div id="modal-layer" role="presentation"></div><div id="toast-layer" aria-live="polite"></div>
+  <script>window.GLB_CLOUD_ENABLED=true;</script>
+  <script src="config.js"></script>
+  <script src="vendor/supabase.min.js"></script>
+  <script src="src/core.js"></script>
+  <script src="src/v04core.js"></script>
+  <script src="src/v05core.js"></script>
+  <script src="src/v06core.js"></script>
+  <script src="src/v08roles.js"></script>
+  <script src="src/v08menu.js"></script>
+  <script src="src/app.js"></script>
+  <script src="src/v08ui.js"></script>
+  <script src="src/cloud.js"></script>
+</body>
+</html>

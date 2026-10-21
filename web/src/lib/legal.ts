@@ -53,7 +53,9 @@ export const missingOperatorFields = () => (Object.keys(OPERATOR) as OperatorFie
 
 /** Every service that processes personal data for us. The privacy policy lists exactly these. */
 export const PROCESSORS = [
-  { name: "Supabase Inc.", purpose: "Datenbank und Anmeldung (Konten, Betriebsdaten, Sitzungen)", location: "Server in der EU (Frankfurt); Unternehmen in den USA", link: "https://supabase.com/privacy" },
+  { name: "Supabase Inc.", purpose: "Datenbank und Anmeldung (Konten, Betriebsdaten, Sitzungen)", location: "Server in der Region des Supabase-Projekts; Unternehmen in den USA", link: "https://supabase.com/privacy" },
+  { name: "Cloudflare, Inc. (cdnjs)", purpose: "Auslieferung des PDF-Moduls beim Einlesen einer Speisekarte als PDF (IP-Adresse, Zeitpunkt)", location: "weltweites Netz; Unternehmen in den USA", link: "https://www.cloudflare.com/privacypolicy/" },
+  { name: "Overpass-API (overpass.private.coffee) mit Daten von OpenStreetMap", purpose: "Umkreissuche nach Betrieben in „Mein Markt“, nur wenn du sie startest (IP-Adresse, eingegebener Standort und Radius)", location: "öffentlicher Server eines Drittanbieters", link: "https://wiki.openstreetmap.org/wiki/Overpass_API" },
   { name: "Vercel Inc.", purpose: "Hosting der Website und der Anwendung, Server-Protokolle, zeitgesteuerte Aufgaben", location: "Funktionen in der EU (Frankfurt), Auslieferung über ein weltweites Netz; Unternehmen in den USA", link: "https://vercel.com/legal/privacy-policy" },
   { name: "Stripe Payments Europe Ltd.", purpose: "Abonnements, Zahlungen, Rechnungen", location: "Irland; Datenübermittlung in die USA möglich", link: "https://stripe.com/de/privacy" },
   { name: "Resend Inc.", purpose: "Versand von E-Mails (Bestellungen an Lieferanten, Einladungen, Bestands- und Kontohinweise)", location: "USA", link: "https://resend.com/legal/privacy-policy" },

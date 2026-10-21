@@ -11,7 +11,7 @@ test.describe("Nachfrage vor dem Start", () => {
 
   test("D-H1 Anfrage über die Startseite: gespeichert mit Herkunft, Mail an Vertrieb und Bestätigung", async ({ page, axe }) => {
     await page.goto("/?utm_source=linkedin&utm_medium=social&utm_campaign=vorstart");
-    const form = page.getByRole("region", { name: "Zeig uns dein teuerstes Gericht" });
+    const form = page.getByRole("region", { name: "Deine Zahlen im Board" });
     await form.getByLabel("Dein Name").fill("Jana Köhler");
     await form.getByLabel("Betrieb").fill("Café Morgenrot & Söhne");
     await form.getByLabel("E-Mail").fill("jana@anfrage.example");
@@ -31,7 +31,7 @@ test.describe("Nachfrage vor dem Start", () => {
 
   test("D-N1 Pflichtfelder, ungültige E-Mail und Bot-Falle", async ({ page }) => {
     await page.goto("/");
-    const form = page.getByRole("region", { name: "Zeig uns dein teuerstes Gericht" });
+    const form = page.getByRole("region", { name: "Deine Zahlen im Board" });
     const valid = (label: string) => form.getByLabel(label).evaluate((el: HTMLInputElement) => el.validity.valid);
     await form.getByRole("button", { name: "Vorführung anfragen" }).click();
     expect(await valid("Dein Name")).toBe(false); // the browser stops it before anything is sent

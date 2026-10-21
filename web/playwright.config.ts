@@ -26,6 +26,6 @@ export default defineConfig({
     command: `npx next start -p ${port}`,
     port,
     reuseExistingServer: false,
-    env: { DATABASE_URL: process.env.E2E_DATABASE_URL, ALLOW_DEMO: "1", APP_URL: `http://localhost:${port}`, OPERATOR_EMAILS: "inhaber@example.com", LEADS_NOTIFY_EMAIL: "vertrieb@example.com" },
+    env: { DATABASE_URL: process.env.E2E_DATABASE_URL, ALLOW_DEMO: "1", LEGACY_APP: "1", APP_URL: `http://localhost:${port}`, OPERATOR_EMAILS: "inhaber@example.com", LEADS_NOTIFY_EMAIL: "vertrieb@example.com" },
   },
 });

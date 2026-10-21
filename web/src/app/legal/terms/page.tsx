@@ -19,7 +19,7 @@ export default function TermsPage() {
       </Section>
 
       <Section title="2. Leistung">
-        <p>{APP_NAME} ist eine Software im Browser für Küchenbetriebe: Zutaten und Einkaufspreise, Rezepte und Kalkulation, Menüs, Lieferanten und Bestellungen, Lager und Inventur, Zentralküche, Kassenverkäufe, Rechnungsabgleich und HACCP-Checklisten. Maßgeblich ist der Funktionsumfang zum Zeitpunkt der Nutzung. Wir entwickeln {APP_NAME} weiter und dürfen Funktionen ändern, solange der wesentliche Zweck erhalten bleibt.</p>
+        <p>{APP_NAME} ist eine Software im Browser für Gastronomiebetriebe: Reporting und Kennzahlen, Artikel und Umsätze, Deckungsbeiträge und Preiskalkulation, Service Funnel, Speisekarten-Import, Rezepte und Rohwaren, Inventur und Lager, Bestell-Forecast, Produktlebenszyklen, Wettbewerbsbeobachtung und regelbasierte Empfehlungen. Maßgeblich ist der Funktionsumfang zum Zeitpunkt der Nutzung. Wir entwickeln {APP_NAME} weiter und dürfen Funktionen ändern, solange der wesentliche Zweck erhalten bleibt.</p>
         <p>Wir bemühen uns um eine hohe Verfügbarkeit, schulden aber keine bestimmte Verfügbarkeitsquote. Wartungen kündigen wir nach Möglichkeit vorher an und legen sie in verkehrsarme Zeiten.</p>
       </Section>
 
@@ -42,16 +42,15 @@ export default function TermsPage() {
         <ul className="list-disc pl-6">
           <li>Zugangsdaten geheim halten und Teammitglieder nur mit den Rechten einladen, die sie brauchen.</li>
           <li>Nur Inhalte eintragen, die er eintragen darf; für personenbezogene Daten von Mitarbeitenden und Lieferanten ist er datenschutzrechtlich verantwortlich.</li>
-          <li>Schnittstellen (etwa die Kassen-API) nur im vorgesehenen Umfang nutzen und Schlüssel bei Verdacht auf Missbrauch sofort widerrufen.</li>
         </ul>
       </Section>
 
-      <Section title="7. Allergene, Nährwerte, HACCP und Kalkulation">
-        <p>{APP_NAME} rechnet aus den Angaben, die der Kunde einträgt. Für die Richtigkeit von Allergen- und Nährwertangaben gegenüber Gästen, für Etiketten und für die Einhaltung des Lebensmittelrechts bleibt der Kunde verantwortlich. Die HACCP-Funktionen unterstützen die Dokumentation; sie ersetzen kein eigenes HACCP-Konzept und keine Prüfung durch den Kunden. Kalkulationen, Bestellvorschläge und Lagerwerte sind Hilfsmittel; Entscheidungen trifft der Kunde.</p>
+      <Section title="7. Kalkulation, Prognosen und Empfehlungen">
+        <p>{APP_NAME} rechnet aus den Angaben, die der Kunde einträgt oder importiert. Kalkulationen, Zielpreise, Szenarien, Prognosen, Bestellvorschläge, Lagerwerte und Empfehlungen sind Hilfsmittel; Entscheidungen trifft der Kunde.</p>
       </Section>
 
       <Section title="8. Daten des Kunden">
-        <p>Die Daten, die der Kunde einträgt, gehören ihm. Wir nutzen sie nur, um {APP_NAME} für ihn bereitzustellen. Soweit sie personenbezogen sind, verarbeiten wir sie nach dem <Link href="/legal/dpa" className="underline">Vertrag zur Auftragsverarbeitung</Link>, der Bestandteil dieser Bedingungen ist. Inhaber und Admins können jederzeit alle Daten des Betriebs als Datei herunterladen (Einstellungen → Daten exportieren), auch nach dem Ende der Testphase oder des Abos. Nach Vertragsende stellen wir die Daten auf Anforderung noch 30 Tage bereit und löschen sie danach, soweit keine gesetzliche Pflicht zur Aufbewahrung besteht.</p>
+        <p>Die Daten, die der Kunde einträgt, gehören ihm. Wir nutzen sie nur, um {APP_NAME} für ihn bereitzustellen. Soweit sie personenbezogen sind, verarbeiten wir sie nach dem <Link href="/legal/dpa" className="underline">Vertrag zur Auftragsverarbeitung</Link>, der Bestandteil dieser Bedingungen ist. Inhaber und Geschäftsführung können jederzeit alle Daten des Betriebs als Datei herunterladen (Backup), auch nach dem Ende der Testphase oder des Abos. Nach Vertragsende stellen wir die Daten auf Anforderung noch 30 Tage bereit und löschen sie danach, soweit keine gesetzliche Pflicht zur Aufbewahrung besteht.</p>
       </Section>
 
       <Section title="9. Haftung">

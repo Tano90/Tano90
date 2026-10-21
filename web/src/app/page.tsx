@@ -1,160 +1,162 @@
-import { ArrowRight, BarChart3, BookOpen, Calculator, Check, ChefHat, ClipboardCheck, CookingPot, Download, FileCheck2, Funnel, Lock, MapPin, MousePointerClick, Package, Plus, Receipt, ReceiptText, ScanBarcode, ShieldCheck, ShoppingCart, Tags, Truck, Users, UtensilsCrossed, WifiOff } from "lucide-react";
-import Image from "next/image";
+import { ArrowRight, BarChart3, Boxes, Calculator, Check, ChefHat, Download, Filter, Gauge, LineChart, MapPin, PackageSearch, Plus, ScanLine, ShieldCheck, ShoppingCart, Smartphone, Sparkles, Store, Upload, Users } from "lucide-react";
+import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { LeadForm, ViewBeacon } from "@/components/landing/lead-form";
-import { HeroArt } from "@/components/landing/hero-art";
-import { LiveCalc } from "@/components/landing/live-calc";
 import { CountUp, Reveal } from "@/components/landing/motion";
-import { Scene } from "@/components/landing/scenes";
 import { SiteFooter } from "@/components/landing/site-chrome";
 import { APP_NAME } from "@/lib/brand";
-import { INDUSTRIES } from "@/lib/industries";
 import { formatCents } from "@/lib/format";
-import { LAUNCH_MODE } from "@/lib/launch";
 import { PRICE_TAX_NOTE } from "@/lib/legal";
 import { PRICING } from "@/lib/pricing";
-import shot from "../../public/landing/rezept-kalkulation.png";
-import shotInvoice from "../../public/landing/e-rechnung.png";
-import shotFunnel from "../../public/landing/service-funnel.png";
-import shotContribution from "../../public/landing/deckungsbeitrag.png";
+import shotCosts from "../../public/landing/suite-costs.png";
+import shotFunnel from "../../public/landing/suite-funnel.png";
+import shotInsights from "../../public/landing/suite-insights.png";
+import shotInventory from "../../public/landing/suite-inventory.png";
+import shotLifecycle from "../../public/landing/suite-lifecycle.png";
+import shotMarket from "../../public/landing/suite-market.png";
+import shotMenuImport from "../../public/landing/suite-menuimport.png";
+import shotMobile from "../../public/landing/suite-mobile.png";
+import shotOverview from "../../public/landing/suite-overview.png";
+import shotPortfolio from "../../public/landing/suite-portfolio.png";
+import shotPurchasing from "../../public/landing/suite-purchasing.png";
+import shotRecipes from "../../public/landing/suite-recipes.png";
+import shotReports from "../../public/landing/suite-reports.png";
 
 // Public landing page. Static: no session lookup, so it is fast and cacheable.
-// Copy follows replica/brand.md (voice) and replica/launch/landing.md. No testimonials, logos or user
-// counts until there are real ones.
+// Only what the GLB AI Suite v0.8 (public/suite) does today. Every screenshot shows its built-in example data.
+// No testimonials, logos or user counts until there are real ones.
 
+const SUITE = "/suite";
 const cta = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-pill bg-saffron px-6 text-base font-bold text-on-saffron transition-transform duration-fast hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-saffron";
 const ctaLight = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-pill bg-accent px-6 text-base font-bold text-on-accent shadow-glow transition-transform duration-fast hover:-translate-y-0.5 hover:bg-accent-hover";
 const eur = (cents: number) => formatCents(cents).replace(",00", "");
-// "Alles drin": every tile is a screen that exists in the app today.
-const MODULES = [
-  { icon: ChefHat, label: "Rezepte & Grundrezepte", tone: "carrot" }, { icon: Tags, label: "Allergene & Etiketten", tone: "celery" },
-  { icon: ShoppingCart, label: "Bestellungen", tone: "accent" }, { icon: Truck, label: "Wareneingang", tone: "carrot" },
-  { icon: ScanBarcode, label: "Inventur & Barcode", tone: "celery" }, { icon: BookOpen, label: "Lagerbericht & Schwund", tone: "accent" },
-  { icon: CookingPot, label: "Zentralküche", tone: "carrot" }, { icon: ReceiptText, label: "Rechnungsabgleich", tone: "celery" },
-  { icon: ClipboardCheck, label: "HACCP", tone: "accent" }, { icon: BarChart3, label: "Kasse & Menu Engineering", tone: "carrot" },
-  { icon: UtensilsCrossed, label: "Menüs mit Stückliste", tone: "celery" }, { icon: Package, label: "Preislisten-Import", tone: "accent" }, { icon: FileCheck2, label: "E-Rechnung", tone: "carrot" },
-  { icon: Funnel, label: "Service Funnel", tone: "celery" }, { icon: Calculator, label: "Deckungsbeitrag & Zielpreis", tone: "accent" },
+
+type Spotlight = { icon: typeof BarChart3; kicker: string; title: string; body: string; points: string[]; shot: StaticImageData; alt: string };
+// The big modules, each with a screenshot.
+const SPOTLIGHTS: Spotlight[] = [
+  {
+    icon: BarChart3, kicker: "Management Reporting", title: "GLB Report Studio",
+    body: "Alle betriebswirtschaftlichen Kennzahlen an einem Ort: Performance, Sortiment und Rezepte, Service und Conversion, Lager und Einkauf.",
+    points: ["Filter nach Zeitraum, Outlet und Warengruppe", "ABC-Analyse, Outlet-, Artikel-, Funnel-, Kosten- und Lagerberichte", "Ansichten speichern, CSV-Export, Drucken oder als PDF sichern"],
+    shot: shotReports, alt: "GLB Report Studio mit Berichtsfilter, Reitern Performance, Sortiment und Rezepte, Service und Conversion, Lager und Einkauf sowie Kacheln für Netto-Umsatz, DB II, Wareneinsatzquote und Absatz.",
+  },
+  {
+    icon: Filter, kicker: "Service & Verkauf", title: "Service Funnel & Sales Forecast",
+    body: "Taggenau erfassen, wie oft der Service Aperitif, Wasser, Upgrades, Beilagen, Desserts und Kaffee verkauft, und sehen, was eine höhere Quote bringt.",
+    points: ["Zielquote je 100 Gäste für jede Stufe", "Schieberegler für Conversion und Gästeentwicklung", "Hochrechnung auf den Monat für Umsatz und DB II, getrennt vom echten Umsatz"],
+    shot: shotFunnel, alt: "Service Funnel mit Schiebereglern je Stufe und Kacheln für Gäste, Szenario-Umsatzveränderung und DB-II-Veränderung.",
+  },
+  {
+    icon: Calculator, kicker: "Profit Engineering", title: "Deckungsbeiträge & Zielpreise",
+    body: "Monatskosten einmal erfassen, und die Kalkulation zeigt für jeden Artikel den aktuellen und den erforderlichen Verkaufspreis nebeneinander.",
+    points: ["DB I und DB II je Artikel", "Monatliche Kosten und Zielbetriebsergebnis", "Rechnerischer Zielpreis, dazu die Preiskalkulation für einzelne Rezepte"],
+    shot: shotCosts, alt: "Deckungsbeiträge und Zielpreise mit Eingabe der Monatskosten und Kacheln für Nettoumsatz, Fixkostenquote und Zielpreis.",
+  },
+  {
+    icon: LineChart, kicker: "Menu Engineering", title: "Renner-Penner & Aktionsplan",
+    body: "Jedes Produkt in der Matrix aus Absatz und Deckungsbeitrag, mit priorisierten Schritten, was du im Betrieb als Nächstes testen kannst.",
+    points: ["Renner, Penner, Schläfer und Stars auf einen Blick", "Konkrete Maßnahmen je Artikel", "Preis-Szenarien für ausgewählte Artikel"],
+    shot: shotPortfolio, alt: "Renner-Penner-Matrix mit Produkten als Punkte in vier Feldern und daneben eine Liste priorisierter Schritte.",
+  },
+];
+
+// Further modules: a smaller card each, also with a screenshot.
+const MODULES: { icon: typeof BarChart3; title: string; body: string; shot: StaticImageData; alt: string }[] = [
+  { icon: Gauge, title: "Übersicht & Mission Control", body: "Netto-Umsatz, DB II, Wareneinsatzquote und Absatz, dazu offene Aufgaben und Hinweise für heute.", shot: shotOverview, alt: "Übersicht mit Netto-Umsatz, DB II, Wareneinsatzquote und Umsatz nach Warengruppe." },
+  { icon: Sparkles, title: "Produktlebenszyklen", body: "Einführung, Wachstum, Reife oder Rückgang je Artikel, ab vier zusammenhängenden Monaten.", shot: shotLifecycle, alt: "Produktlebenszyklus mit Phasen und Einzelanalyse eines Artikels." },
+  { icon: MapPin, title: "Mein Markt", body: "Wettbewerber im Umkreis über OpenStreetMap finden und Preise von Hand vergleichen.", shot: shotMarket, alt: "Mein Markt mit Standortangaben und Suche nach Betrieben im Radius." },
+  { icon: ShoppingCart, title: "Bestell-Forecast", body: "Aus dem Absatz der letzten 7 oder 28 Tage über die Rezepte zum Rohwarenbedarf und zu Bestellgebinden.", shot: shotPurchasing, alt: "Bestell-Forecast mit Kacheln für Tage, Bestellwert und Szenario-Einstellungen." },
+  { icon: Boxes, title: "Inventur & Lager", body: "Mehrere Lager, mobile Zählmaske, Warenbewegungen, Transfer, Schwund und Wareneingang.", shot: shotInventory, alt: "Inventur und Lagerverwaltung mit Beständen je Rohware." },
+  { icon: ChefHat, title: "Rezepte & Rohwaren", body: "Zutaten, Gebinde und Einheiten, Kosten je Portion, Import von Rezepten und Rohwaren per CSV.", shot: shotRecipes, alt: "Rezepturen und Rohwaren mit Kosten je Rezept und Rohwarenstamm." },
+  { icon: Upload, title: "Speisekarten-Import", body: "CSV, Text oder textbasierte PDF einlesen, Vorschau prüfen, korrigieren, Dubletten erkennen.", shot: shotMenuImport, alt: "Speisekarten-Import mit Upload-Feld, Texteingabe und Vorschau." },
+  { icon: ScanLine, title: "GLB Intelligence", body: "Regelbasierte Hinweise und Handlungsempfehlungen. Vorschläge, keine Automatik: du entscheidest.", shot: shotInsights, alt: "GLB Intelligence mit Handlungsempfehlungen und Analysegrundlage." },
+];
+
+const TICKER = ["Report Studio", "Mission Control", "Service Funnel", "Deckungsbeiträge", "Zielpreise", "Renner-Penner", "Lebenszyklen", "Mein Markt", "Speisekarten-Import", "Rezepte & Rohwaren", "Inventur & Lager", "Bestell-Forecast", "7 Rollen", "App fürs Handy"];
+
+// From the suite's access model (v0.8): what each role works with.
+const ROLES = [
+  ["Geschäftsführung", "Alle Module und die Mitarbeiterverwaltung"],
+  ["Restaurantleitung", "Operative und kaufmännische Module, ohne Rollenverwaltung"],
+  ["Abteilungsleitung Service", "Service Funnel und Absatzdaten, ohne Einkaufspreise und Fixkosten"],
+  ["Abteilungsleitung Küche", "Artikel, Speisekarten, Rezepte, Inventur, Bestellungen, Forecast"],
+  ["Sales", "Service Funnel, Absatz- und Marktdaten, ohne Wareneinsatzkosten"],
+  ["Mitarbeiter Service", "Mobiler Arbeitsplatz mit den Tageszahlen für den Funnel"],
+  ["Mitarbeiter Küche", "Mobile Inventur-Schnellerfassung, ohne Einkaufspreise"],
 ] as const;
-const TONE = { carrot: "bg-carrot text-on-saffron", celery: "bg-celery text-on-saffron", accent: "bg-accent text-on-accent" } as const;
 
-// "Fair und sicher": only what is true of the product and its setup today.
 const FACTS = [
-  { icon: MapPin, title: "Daten in Frankfurt", body: "Datenbank und Anwendung laufen in Rechenzentren in Frankfurt am Main." },
-  { icon: Lock, title: "Jeder Betrieb für sich", body: "Die Datenbank prüft bei jeder Abfrage, dass nur dein Team deine Daten sieht, und Teammitglieder nur ihren Standort." },
-  { icon: Download, title: "Deine Daten gehören dir", body: "Alle Daten jederzeit als Datei herunterladen, auch nach der Testphase." },
-  { icon: MousePointerClick, title: "Kündigen mit einem Klick", body: "Ohne Anruf, ohne Formular. Das Abo läuft bis zum Ende des bezahlten Zeitraums." },
-  { icon: Users, title: "Pro Standort, nicht pro Kopf", body: "Beliebig viele Nutzer. Neue Leute in der Küche kosten nichts extra." },
-  { icon: WifiOff, title: "Zählen ohne Netz", body: "Die Inventur speichert jede Zahl sofort und reicht sie nach, wenn das WLAN zurück ist." },
-];
-
-const TICKER = ["Wareneinsatz live", "Grundrezepte", "Allergene", "Inventur offline", "Barcode-Scanner", "Zentralküche", "Rechnungsabgleich", "HACCP", "Kassen-Import", "Mindestbestand", "Lagerbericht", "Mehrere Standorte", "E-Rechnung", "Service Funnel", "Deckungsbeitrag", "Soll-Ist", "Bestell-Forecast"];
-
-const STEPS = [
-  { title: "Einkauf erfassen", body: "Zutaten so anlegen, wie dein Lieferant sie verkauft – Karton, Sack, Flasche – mit dem Preis von der Rechnung." },
-  { title: "Rezepte bauen", body: `Zutaten und Grundrezepte eintragen. ${APP_NAME} rechnet Gramm, Liter und Stück um und zeigt beim Tippen, was ein Teller kostet.` },
-  { title: "Bestellen und zählen", body: "Bestellungen gehen per Mail an den Lieferanten, Lieferungen und Inventur laufen über dasselbe Lager." },
-];
-
-const FEATURES = [
-  { icon: Receipt, title: "Wareneinsatz beim Tippen", body: "Kosten pro Portion, Wareneinsatz in Prozent und Rohertrag stehen neben dem Rezept, während du es schreibst. Ändert sich ein Einkaufspreis, rechnet jedes Rezept mit, auch über Grundrezepte hinweg." },
-  { icon: CookingPot, title: "Zentralküche mit Plan", body: "Standorte fordern Rezepte an, die Zentralküche sieht pro Liefertag, was zu kochen ist und welche Rohware fehlt. Produzieren bucht die Rohware aus und schreibt jedem Standort seine Kosten zu." },
-  { icon: ScanBarcode, title: "Inventur, die ein Funkloch übersteht", body: `Zählen in Kartons plus Rest oder per Barcode-Scanner. Jede Zahl wird sofort zwischengespeichert; fällt im Kühlhaus das Netz weg, speichert ${APP_NAME} nach, sobald es zurück ist.` },
-  { icon: ReceiptText, title: "Rechnung gegen Lieferung", body: "Jede Rechnungszeile steht neben Bestellung und Wareneingang. Abweichungen bei Menge und Preis sind markiert, freigeben lässt sich eine abweichende Rechnung nur mit Begründung." },
-  { icon: ClipboardCheck, title: "HACCP im Grundpreis", body: "Eigene Checklisten mit Grenzwerten, Tageskontrolle pro Standort, Abweichungen nur mit Maßnahme. Das Protokoll der letzten 30 Tage geht als CSV an die Lebensmittelkontrolle." },
-  { icon: FileCheck2, title: "E-Rechnung rein, Preise aktuell", body: "XRechnung und ZUGFeRD des Lieferanten hochladen: Jede Position steht neben deinem bisherigen Preis, Preissprünge sind markiert, die neuen Preise gehen auf Wunsch direkt in die Rezepte." },
-  { icon: Funnel, title: "Service Funnel statt Bauchgefühl", body: "Nach dem Service Gäste und verkaufte Extras eintragen: Aperitif, Wasser, Upgrades, Beilagen, Desserts, Kaffee. Du siehst die Quote je 100 Gäste und was die Zielquote im Monat an Deckungsbeitrag bringt. Das Service-Team sieht Quoten, aber keine Kosten." },
-  { icon: ShieldCheck, title: "Fehler, bevor sie Geld kosten", body: "„2.5“ und „2,5“ ergeben dieselbe Menge, eine Bestellung kommt auch bei Doppelklick nur einmal an, und eine ungeprüfte Zutat macht ein Gericht „unbekannt“, nie „allergenfrei“." },
-];
-
-// "Neu": only features that exist, shown with screenshots of the app (demo data).
-const NEWS = [
-  {
-    icon: Funnel, kicker: "Service & Verkauf", title: "Service Funnel",
-    body: "Wie oft verkauft dein Service Aperitif, Wasser, Upgrades, Beilagen, Desserts und Kaffee? Pro Tag und Outlet erfasst, gegen deine Zielquote gestellt.",
-    points: ["Quote je 100 Gäste für jede Stufe, Abweichung vom Ziel markiert", "Schieberegler für Zielquote und Gästeentwicklung, Ergebnis sofort", "Hochrechnung auf den Monat, mit Umsatz und Deckungsbeitrag II", "Tageserfassung oder CSV-Import; nichts davon wird als Umsatz gebucht"],
-    note: "Das Service-Team sieht Quoten und Umsatz, Kosten und Deckungsbeitrag nur Inhaber und Leitung.",
-    shot: shotFunnel, alt: `Service Funnel in der ${APP_NAME}: Gäste der letzten 28 Tage, Schieberegler je Stufe und eine Tabelle mit Ist-Quote, Ziel, Zusatzmenge, Umsatz und DB II.`,
-  },
-  {
-    icon: Calculator, kicker: "Controlling", title: "Deckungsbeitrag und Zielpreis",
-    body: "Aus Kassenverkäufen, Rezeptkosten, variablen Kosten und Fixkosten: DB I und DB II je Artikel, Betriebsergebnis und Break-even-Umsatz für jeden Zeitraum.",
-    points: ["DB I und DB II je Artikel, höchster Beitrag zuerst", "Fixkosten pro Monat, anteilig auf den Zeitraum gerechnet", "Break-even-Umsatz und Betriebsergebnis auf einen Blick", "Zielpreis aus Wareneinsatz-Ziel oder gewünschtem DB II"],
-    note: null,
-    shot: shotContribution, alt: `Deckungsbeitrag in der ${APP_NAME}: Kacheln mit Umsatz netto, Wareneinsatz, DB I, DB II, Fixkosten, Betriebsergebnis und Break-even-Umsatz.`,
-  },
-  {
-    icon: FileCheck2, kicker: "Einkauf", title: "E-Rechnung rein, Preise aktuell",
-    body: "Seit 2025 müssen Betriebe E-Rechnungen empfangen können. Lade XRechnung oder ZUGFeRD hoch, und die Suite stellt jede Position neben deinen bisherigen Preis.",
-    points: ["XRechnung (UBL, CII) und ZUGFeRD/Factur-X-PDF", "Zuordnung über die Artikelnummer des Lieferanten", "Preissprünge ab 5 % markiert", "Neue Preise gehen auf Wunsch in alle Rezepte"],
-    note: null,
-    shot: shotInvoice, alt: `E-Rechnung in der ${APP_NAME}: Positionen mit bisherigem Preis, Preis laut Rechnung und markiertem Preissprung von 18,2 Prozent bei Knollensellerie.`,
-  },
+  { icon: ShieldCheck, title: "Rechte auch in der Datenbank", body: "Was eine Rolle nicht sehen darf, prüft nicht nur die Oberfläche, sondern auch die Datenbank." },
+  { icon: Smartphone, title: "Als App installierbar", body: "Auf Handy und Tablet zum Startbildschirm hinzufügen, mit eigenen mobilen Ansichten." },
+  { icon: Download, title: "Backup jederzeit", body: "Alle Daten deines Betriebs mit einem Klick als Datei sichern." },
+  { icon: PackageSearch, title: "Beispieldaten klar markiert", body: "Zum Ausprobieren gibt es Beispieldaten, die überall als solche gekennzeichnet sind." },
+  { icon: Sparkles, title: "Vorschläge statt Automatik", body: "Empfehlungen und Szenarien helfen beim Entscheiden. Übernommen wird nur, was du bestätigst." },
+  { icon: Store, title: "Mehrere Outlets", body: "Restaurant, Bar, Bankett oder Terrasse getrennt auswerten oder zusammen betrachten." },
 ];
 
 const FAQ = [
-  { q: "Kann ich meine Zutaten und Preise importieren?", a: `Ja. Die Preisliste deines Lieferanten als Excel- oder CSV-Datei hochladen: ${APP_NAME} zeigt vor dem Übernehmen jede Zeile als neu, geändert oder fehlerhaft. Übernommen wird erst, wenn du zustimmst.` },
-  { q: `Funktioniert ${APP_NAME} mit meiner Kasse?`, a: "Über eine Datei oder eine Schnittstelle: Verkäufe als CSV hochladen oder von der Kasse per API senden lassen. Verknüpfte Gerichte werden über ihre Rezepte vom Lager abgebucht, Stornos zurückgebucht. Fertige Anbindungen an einzelne Kassenhersteller gibt es nicht." },
-  { q: "Brauche ich für HACCP oder die Zentralküche ein Zusatzmodul?", a: "Nein. Alle Funktionen sind in jedem Tarif enthalten. Bezahlt wird nur pro Standort." },
-  { q: `Kann die ${APP_NAME} E-Rechnungen lesen?`, a: `Ja. ${APP_NAME} liest XRechnung (UBL und CII) und ZUGFeRD/Factur-X-PDFs, gleicht die Preise mit deinen ab und übernimmt neue Preise auf Wunsch in die Kalkulation. ${APP_NAME} ist ein Reporting- und Steuerungswerkzeug, keine Buchhaltung: Die Buchhaltung bleibt bei deinem Steuerberater.` },
-  { q: "Wer haftet für die Allergenangaben?", a: `${APP_NAME} rechnet aus deinen Angaben, die Kennzeichnung gegenüber Gästen verantwortet dein Betrieb. Deshalb zeigt ${APP_NAME} ungeprüfte Zutaten offen an, statt sie als allergenfrei durchzuwinken.` },
-  { q: "Wo liegen meine Daten?", a: "In der EU (Frankfurt). Zahlungen laufen über Stripe; deine Kartendaten sehen wir nie." },
-  { q: "Was passiert nach der Testphase?", a: "Drei Tage vorher bekommst du eine E-Mail. Schließt du kein Abo ab, bleiben alle Daten erhalten: Du kannst sie ansehen und als Datei herunterladen, nur ändern geht erst wieder mit einem Abo. Es verlängert sich nichts automatisch." },
-  { q: "Wie kündige ich?", a: "Mit einem Klick unter Einstellungen → Abo & Rechnungen, ohne Anruf und ohne Formular. Das Abo läuft bis zum Ende des bereits bezahlten Zeitraums und endet dann." },
-  { q: "Brauche ich eine App?", a: `Nein. ${APP_NAME} läuft im Browser auf Computer, Tablet und Handy. Inventur und Wareneingang sind für das Handy gebaut, ein Barcode-Scanner mit Tastatur-Modus funktioniert ohne Einrichtung.` },
+  { q: "Wie kommen meine Daten hinein?", a: "Über den Datenimport: Speisekarten als CSV, Text oder textbasierte PDF, Rezepte, Rohwaren und Tagesabsätze als CSV. Vorlagen für jede Datei liegen in der Suite. Vor dem Übernehmen siehst du eine Vorschau und kannst korrigieren." },
+  { q: `Ist ${APP_NAME} mit meiner Kasse verbunden?`, a: "Noch nicht automatisch. Verkaufszahlen kommen per CSV-Export aus der Kasse. Eine direkte Kassenanbindung ist in Planung." },
+  { q: "Wer sieht welche Zahlen?", a: "Es gibt sieben Rollen von Geschäftsführung bis Mitarbeiter Küche. Service und Sales sehen keine Einkaufspreise und keine Fixkosten, die Küche keine Finanzberichte. Die Rechte prüft auch die Datenbank." },
+  { q: "Funktioniert das auf dem Handy?", a: `Ja. ${APP_NAME} läuft im Browser und lässt sich als App installieren. Für Service und Küche gibt es eigene mobile Ansichten, etwa für die Tageszahlen im Funnel und die Inventur.` },
+  { q: "Rechnet die KI für mich?", a: "GLB Intelligence arbeitet mit nachvollziehbaren Regeln auf deinen Zahlen und macht Vorschläge. Nichts wird ohne deine Bestätigung geändert." },
+  { q: "Kann ich vorher ausprobieren?", a: `Ja. Über „Live ausprobieren“ öffnest du die Suite mit Beispieldaten. Für deinen eigenen Betrieb legst du in der Suite ein Konto an.` },
+  { q: "Wo liegen meine Daten?", a: "In der Cloud-Datenbank von Supabase, getrennt pro Betrieb. Zusätzlich kannst du jederzeit ein Backup herunterladen." },
 ];
-
-const waitlist = LAUNCH_MODE === "waitlist";
-const mainCta = waitlist ? { href: "#anfrage", label: "Vorführung anfragen" } : { href: "/signup", label: `${PRICING.trialDays} Tage kostenlos testen` };
 
 export default function LandingPage() {
   return (
     <div className="bg-bg">
       <ViewBeacon />
 
-      {/* ------------------------------------------------ hero (light, warm) */}
+      {/* ------------------------------------------------ hero */}
       <div className="relative overflow-hidden bg-cream">
         <div aria-hidden className="pointer-events-none absolute -top-40 -right-40 size-[36rem] rounded-pill bg-[radial-gradient(closest-side,var(--color-accent-subtle),transparent)]" />
         <header className="relative mx-auto flex max-w-(--size-content-max) items-center justify-between px-4 py-5 lg:px-8">
           <Link href="/" aria-label={`${APP_NAME} Startseite`}><Logo /></Link>
           <nav aria-label="Konto" className="flex items-center gap-5">
+            <a href="#rundgang" className="hidden font-semibold text-text-muted hover:text-text md:inline">Rundgang</a>
             <a href="#funktionen" className="hidden font-semibold text-text-muted hover:text-text md:inline">Funktionen</a>
-            <a href="#branchen" className="hidden font-semibold text-text-muted hover:text-text lg:inline">Branchen</a>
-            <a href="#neu" className="hidden font-semibold text-text-muted hover:text-text md:inline">Neu</a>
-            <a href="#ausprobieren" className="hidden font-semibold text-text-muted hover:text-text md:inline">Ausprobieren</a>
+            <a href="#rollen" className="hidden font-semibold text-text-muted hover:text-text lg:inline">Rollen</a>
             <a href="#preise" className="hidden font-semibold text-text-muted hover:text-text md:inline">Preise</a>
-            <Link href="/login" className="font-semibold hover:underline">Anmelden</Link>
-            <Link href={waitlist ? "#anfrage" : "/signup"} className="hidden h-(--size-control-md) items-center rounded-pill bg-accent px-4 font-bold text-on-accent hover:bg-accent-hover sm:inline-flex">
-              {waitlist ? "Vorführung anfragen" : "Kostenlos testen"}
-            </Link>
+            <Link href={SUITE} className="font-semibold hover:underline">Anmelden</Link>
+            <Link href={SUITE} className="hidden h-(--size-control-md) items-center rounded-pill bg-accent px-4 font-bold text-on-accent hover:bg-accent-hover sm:inline-flex">Kostenlos starten</Link>
           </nav>
         </header>
 
-        <section aria-labelledby="hero" className="relative mx-auto grid max-w-(--size-content-max) items-center gap-10 px-4 pt-6 pb-16 lg:grid-cols-2 lg:px-8 lg:pt-12 lg:pb-24">
+        <section aria-labelledby="hero" className="relative mx-auto grid max-w-(--size-content-max) items-center gap-10 px-4 pt-6 pb-16 lg:grid-cols-[5fr_7fr] lg:px-8 lg:pt-12 lg:pb-24">
           <div className="min-w-0 animate-rise">
-            <a href="#neu" className="mb-5 inline-flex max-w-full items-center gap-2 rounded-pill border border-border bg-bg py-1 pr-3 pl-1 text-sm shadow-card hover:bg-row-hover">
-              <span className="rounded-pill bg-accent px-2 py-0.5 text-xs font-bold text-on-accent">Neu</span>
-              <span className="truncate">Service Funnel, Deckungsbeitrag, Soll-Ist und Forecast</span>
+            <a href="#funktionen" className="mb-5 inline-flex max-w-full items-center gap-2 rounded-pill border border-border bg-bg py-1 pr-3 pl-1 text-sm shadow-card hover:bg-row-hover">
+              <span className="rounded-pill bg-accent px-2 py-0.5 text-xs font-bold text-on-accent">v0.8</span>
+              <span className="truncate">Report Studio, Service Funnel, 7 Rollen, App fürs Handy</span>
               <ArrowRight aria-hidden className="size-4 shrink-0" />
             </a>
             <h1 id="hero" className="text-display lg:text-hero">
               Gastro führen mit <span className="relative isolate inline-block whitespace-nowrap text-accent">echten Zahlen.<span aria-hidden className="absolute inset-x-0 bottom-1 -z-10 h-4 -rotate-1 rounded-sm bg-saffron/70" /></span>
             </h1>
             <p className="mt-6 max-w-xl text-base text-text-muted lg:text-lg lg:font-normal">
-              Controlling, Kalkulation, Warenwirtschaft und Einkauf in einer Suite, für Restaurants, Bars, Catering und Kantinen. Ändert sich ein Einkaufspreis, rechnet jedes Rezept mit,
-              und du siehst den echten Wareneinsatz, bevor die Karte gedruckt ist.
+              Das Gastro Leadership Board: Umsatz, Deckungsbeitrag, Service Funnel, Rezepte, Lager und Einkauf in einer Suite.
+              Mit Reports für die Leitung und mobilen Ansichten für Service und Küche.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href={mainCta.href} className={ctaLight}>{mainCta.label} <ArrowRight aria-hidden className="size-4" /></Link>
-              <a href="#ausprobieren" className="inline-flex h-(--size-control-lg) items-center rounded-pill border border-border-input bg-bg px-6 text-base font-semibold hover:bg-row-hover">Live ausprobieren</a>
+              <Link href={SUITE} className={ctaLight}>Live ausprobieren <ArrowRight aria-hidden className="size-4" /></Link>
+              <a href="#rundgang" className="inline-flex h-(--size-control-lg) items-center rounded-pill border border-border-input bg-bg px-6 text-base font-semibold hover:bg-row-hover">Rundgang ansehen</a>
             </div>
             <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-text-muted">
-              {(waitlist ? ["30 Minuten mit deinen Rezepten", "Unverbindlich", "Daten in Frankfurt"] : ["Ohne Kreditkarte", "Kündigen mit einem Klick", "Daten in Frankfurt"]).map((x) => (
+              {["Mit Beispieldaten sofort testen", "Ohne Kreditkarte", "Im Browser und als App"].map((x) => (
                 <li key={x} className="flex items-center gap-1.5"><Check aria-hidden className="size-4 text-success" />{x}</li>
               ))}
             </ul>
           </div>
-          <div className="animate-rise [animation-delay:150ms]"><HeroArt /></div>
+          <div className="relative animate-rise [animation-delay:150ms]">
+            <figure className="overflow-hidden rounded-lg border border-border bg-surface shadow-pop">
+              <Image src={shotOverview} alt="Übersicht der GLB AI Suite: Netto-Umsatz 22.766 Euro, DB II, Wareneinsatzquote und verkaufte Einheiten, mit Beispieldaten." placeholder="blur" priority className="h-auto w-full" sizes="(min-width: 1024px) 760px, 100vw" />
+            </figure>
+            <figure className="absolute -bottom-10 -left-6 hidden w-36 overflow-hidden rounded-lg border-4 border-ink shadow-pop sm:block lg:w-44">
+              <Image src={shotMobile} alt="Die Suite auf dem Handy." placeholder="blur" className="h-auto w-full" sizes="176px" />
+            </figure>
+          </div>
         </section>
       </div>
 
@@ -164,86 +166,80 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ------------------------------------------------ what's new, with real screenshots */}
-      <section id="neu" aria-labelledby="new" className="bg-bg">
-        <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-          <Reveal>
-            <p className="text-sm font-bold uppercase tracking-wide text-accent">Neu in der {APP_NAME}</p>
-            <h2 id="new" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Service bis zum Ergebnis.</h2>
-          </Reveal>
-          <div className="mt-12 flex flex-col gap-20">
-            {NEWS.map((n, i) => (
-              <article key={n.title} aria-labelledby={`new-${i}`} className="grid items-center gap-8 lg:grid-cols-2 lg:gap-14">
-                <Reveal className={i % 2 ? "lg:order-2" : ""}>
-                  <p className="inline-flex items-center gap-2 rounded-pill bg-accent-subtle px-3 py-1 text-xs font-bold text-accent"><n.icon aria-hidden className="size-4" />{n.kicker}</p>
-                  <h3 id={`new-${i}`} className="mt-3 text-xl">{n.title}</h3>
-                  <p className="mt-2 text-base text-text-muted">{n.body}</p>
-                  <ul className="mt-5 flex flex-col gap-2">
-                    {n.points.map((p) => <li key={p} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{p}</li>)}
-                  </ul>
-                  {n.note && <p className="mt-4 text-sm text-text-muted">{n.note}</p>}
-                </Reveal>
-                <Reveal delay={120}>
-                  <figure className="overflow-hidden rounded-lg border border-border bg-surface shadow-pop">
-                    <Image src={n.shot} alt={n.alt} placeholder="blur" className="h-auto w-full" sizes="(min-width: 1024px) 600px, 100vw" />
-                  </figure>
-                </Reveal>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ------------------------------------------------ try it (dark) */}
-      <section id="ausprobieren" aria-labelledby="try" className="relative overflow-hidden bg-ink text-on-ink">
-        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_60%_at_85%_20%,var(--color-accent)_0%,transparent_70%)] opacity-70" />
-        <div className="relative mx-auto grid max-w-(--size-content-max) items-center gap-12 px-4 py-20 lg:grid-cols-[5fr_6fr] lg:px-8">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-wide text-saffron">Probier es aus</p>
-            <h2 id="try" className="mt-2 text-xl lg:text-display">Ein Preis ändert sich. Der Teller rechnet mit.</h2>
-            <p className="mt-4 max-w-lg text-base text-on-ink-muted">
-              Zieh am Linsenpreis oder am Verkaufspreis. Genau so rechnet {APP_NAME} jedes Rezept und jedes Menü neu, sobald eine
-              Rechnung einen neuen Einkaufspreis bringt, auch über Grundrezepte hinweg.
-            </p>
-            <div className="mt-8"><Link href={mainCta.href} className={cta}>{mainCta.label} <ArrowRight aria-hidden className="size-4" /></Link></div>
-          </div>
-          <div className="relative">
-            <div aria-hidden className="absolute -top-5 -left-5 size-12 animate-wobble rounded-md bg-saffron/90" />
-            <div aria-hidden className="absolute -right-3 -bottom-4 size-8 animate-wobble rounded-sm bg-accent-glow [animation-delay:1s]" />
-            <LiveCalc />
-          </div>
-        </div>
-      </section>
-
       <main>
-        {/* ------------------------------------------------ problem */}
-        <section aria-labelledby="problem" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-          <Reveal>
-            <p className="text-sm font-bold uppercase tracking-wide text-accent">Das Problem</p>
-            <h2 id="problem" className="mt-2 max-w-3xl text-xl lg:text-display">Die Kalkulation stimmt am Tag, an dem sie gemacht wird</h2>
-          </Reveal>
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
-            <p className="rounded-lg border border-border bg-surface p-6 text-base text-text-muted">Butter wird teurer, der Lieferant ändert die Gebindegröße, ein Grundrezept bekommt eine Zutat mehr. Die Tabelle von letztem Quartal weiß davon nichts, und der Wareneinsatz auf der Karte ist eine Schätzung.</p>
-            <p className="rounded-lg border border-border bg-surface p-6 text-base text-text-muted">Einkauf, Lager und Rezepte liegen in verschiedenen Listen. Wer bestellt, sieht nicht, was noch da ist; wer zählt, weiß nicht, was seit der letzten Inventur geliefert oder weggeworfen wurde.</p>
+        {/* ------------------------------------------------ video walkthrough */}
+        <section id="rundgang" aria-labelledby="tour" className="relative overflow-hidden bg-ink text-on-ink">
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_60%_at_85%_20%,var(--color-accent)_0%,transparent_70%)] opacity-70" />
+          <div className="relative mx-auto grid max-w-(--size-content-max) items-center gap-12 px-4 py-20 lg:grid-cols-[4fr_7fr] lg:px-8">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide text-saffron">Rundgang</p>
+              <h2 id="tour" className="mt-2 text-xl lg:text-display">Die Suite in 26 Sekunden</h2>
+              <p className="mt-4 max-w-lg text-base text-on-ink-muted">
+                Report Studio, Service Funnel, Renner-Penner, Deckungsbeiträge, Lebenszyklen, Mein Markt, Bestell-Forecast und GLB Intelligence,
+                aufgenommen in der Suite mit ihren Beispieldaten.
+              </p>
+              <div className="mt-8"><Link href={SUITE} className={cta}>Selbst ausprobieren <ArrowRight aria-hidden className="size-4" /></Link></div>
+            </div>
+            <figure className="overflow-hidden rounded-lg border border-ink-raised shadow-pop">
+              <video controls muted playsInline preload="metadata" poster="/landing/suite-reports.png" className="h-auto w-full" aria-label={`Rundgang durch die ${APP_NAME}, ohne Ton`}>
+                <source src="/landing/suite-rundgang.mp4" type="video/mp4" />
+                <track kind="captions" src="/landing/suite-rundgang.vtt" srcLang="de" label="Deutsch" default />
+              </video>
+              <figcaption className="bg-ink-raised px-4 py-2 text-xs text-on-ink-muted">Ohne Ton. Untertitel nennen das jeweilige Modul.</figcaption>
+            </figure>
           </div>
         </section>
 
-        {/* ------------------------------------------------ industries */}
-        <section id="branchen" aria-labelledby="industries" className="bg-cream">
+        {/* ------------------------------------------------ spotlights */}
+        <section id="funktionen" aria-labelledby="features" className="bg-bg">
           <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
             <Reveal>
-              <p className="text-sm font-bold uppercase tracking-wide text-accent">Für deine Branche</p>
-              <h2 id="industries" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Bistro bis zur Kantine</h2>
+              <p className="text-sm font-bold uppercase tracking-wide text-accent">Funktionen</p>
+              <h2 id="features" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Service bis zum Ergebnis.</h2>
             </Reveal>
-            <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {INDUSTRIES.map((i, n) => (
-                <li key={i.slug}><Reveal delay={n * 100} className="h-full">
-                  <Link href={`/branchen/${i.slug}`} className="group flex h-full flex-col rounded-lg bg-bg p-5 shadow-card transition-transform duration-base hover:-translate-y-1">
-                    <Scene industry={i.slug} className="h-auto w-full transition-transform duration-base group-hover:scale-105" />
-                    <span className="mt-4 text-lg font-bold">{APP_NAME} für {i.name}</span>
-                    <span className="mt-1 flex-1 text-sm text-text-muted">{i.lead}</span>
-                    <span className="mt-4 inline-flex items-center gap-1 font-semibold text-accent">Mehr erfahren <ArrowRight aria-hidden className="size-4 transition-transform duration-fast group-hover:translate-x-1" /></span>
-                  </Link>
+            <div className="mt-12 flex flex-col gap-20">
+              {SPOTLIGHTS.map((n, i) => (
+                <article key={n.title} aria-labelledby={`spot-${i}`} className="grid items-center gap-8 lg:grid-cols-[5fr_7fr] lg:gap-14">
+                  <Reveal className={i % 2 ? "lg:order-2" : ""}>
+                    <p className="inline-flex items-center gap-2 rounded-pill bg-accent-subtle px-3 py-1 text-xs font-bold text-accent"><n.icon aria-hidden className="size-4" />{n.kicker}</p>
+                    <h3 id={`spot-${i}`} className="mt-3 text-xl">{n.title}</h3>
+                    <p className="mt-2 text-base text-text-muted">{n.body}</p>
+                    <ul className="mt-5 flex flex-col gap-2">
+                      {n.points.map((p) => <li key={p} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{p}</li>)}
+                    </ul>
+                  </Reveal>
+                  <Reveal delay={120}>
+                    <figure className="overflow-hidden rounded-lg border border-border bg-surface shadow-pop">
+                      <Image src={n.shot} alt={n.alt} placeholder="blur" className="h-auto w-full" sizes="(min-width: 1024px) 700px, 100vw" />
+                    </figure>
+                  </Reveal>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------ module gallery */}
+        <section aria-labelledby="modules" className="bg-cream">
+          <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold uppercase tracking-wide text-accent">Alles drin</p>
+                <h2 id="modules" className="mt-2 max-w-2xl text-xl lg:text-display">Ein Board statt zehn Listen</h2>
+              </div>
+              <p className="max-w-sm text-text-muted">Jede Karte ist ein Modul der {APP_NAME}, so wie es heute aussieht.</p>
+            </div>
+            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {MODULES.map(({ icon: Icon, title, body, shot, alt }, i) => (
+                <li key={title}><Reveal delay={(i % 4) * 80} className="h-full">
+                  <article className="flex h-full flex-col overflow-hidden rounded-lg bg-bg shadow-card transition-transform duration-base hover:-translate-y-1">
+                    <Image src={shot} alt={alt} placeholder="blur" className="h-auto w-full border-b border-border" sizes="(min-width: 1024px) 300px, (min-width: 640px) 50vw, 100vw" />
+                    <div className="flex flex-1 flex-col gap-2 p-5">
+                      <span className="inline-flex size-10 items-center justify-center rounded-md bg-accent-subtle text-accent"><Icon aria-hidden className="size-5" /></span>
+                      <h3 className="text-lg">{title}</h3>
+                      <p className="text-sm text-text-muted">{body}</p>
+                    </div>
+                  </article>
                 </Reveal></li>
               ))}
             </ul>
@@ -254,10 +250,10 @@ export default function LandingPage() {
         <section aria-label="In Zahlen" className="bg-ink text-on-ink">
           <dl className="mx-auto grid max-w-(--size-content-max) grid-cols-2 gap-8 px-4 py-14 lg:grid-cols-4 lg:px-8">
             {[
-              { value: 14, suffix: "", label: "EU-Allergene pro Zutat, vererbt auf jedes Gericht" },
-              { value: MODULES.length, suffix: "", label: "Bereiche in einem Abo, ohne Zusatzmodule" },
-              { value: 0, suffix: " €", label: "für jeden weiteren Nutzer im Team" },
-              { value: PRICING.trialDays, suffix: " Tage", label: "kostenlos testen, ohne Kreditkarte" },
+              { value: SPOTLIGHTS.length + MODULES.length, suffix: "", label: "Module in einer Oberfläche" },
+              { value: ROLES.length, suffix: "", label: "Rollen vom Service bis zur Geschäftsführung" },
+              { value: 6, suffix: "", label: "Stufen im Service Funnel" },
+              { value: 28, suffix: " Tage", label: "Absatz als Grundlage für den Bestell-Forecast" },
             ].map((x) => (
               <div key={x.label} className="flex flex-col-reverse justify-end gap-1">
                 <dt className="text-sm text-on-ink-muted">{x.label}</dt>
@@ -267,124 +263,81 @@ export default function LandingPage() {
           </dl>
         </section>
 
-        {/* ------------------------------------------------ how */}
-        <section aria-labelledby="how" className="bg-surface">
-          <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-            <Reveal>
-              <p className="text-sm font-bold uppercase tracking-wide text-accent">So funktioniert es</p>
-              <h2 id="how" className="mt-2 text-xl lg:text-display">In drei Schritten zum echten Wareneinsatz</h2>
+        {/* ------------------------------------------------ roles */}
+        <section id="rollen" aria-labelledby="roles" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
+          <div className="grid items-center gap-12 lg:grid-cols-[7fr_4fr]">
+            <div>
+              <Reveal>
+                <p className="text-sm font-bold uppercase tracking-wide text-accent">Rollen</p>
+                <h2 id="roles" className="mt-2 max-w-2xl text-xl lg:text-display">Jeder sieht, was er braucht</h2>
+                <p className="mt-3 max-w-xl text-text-muted">Service und Sales arbeiten mit Quoten und Absatz, ohne Einkaufspreise und Fixkosten zu sehen. Die Leitung sieht das ganze Bild.</p>
+              </Reveal>
+              <ul className="mt-8 flex flex-col divide-y divide-border rounded-lg border border-border bg-surface">
+                {ROLES.map(([role, scope]) => (
+                  <li key={role} className="flex flex-col gap-1 px-5 py-3 sm:flex-row sm:items-baseline sm:gap-4">
+                    <span className="flex items-center gap-2 font-semibold sm:w-60 sm:shrink-0"><Users aria-hidden className="size-4 text-accent" />{role}</span>
+                    <span className="text-sm text-text-muted">{scope}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <Reveal delay={120} className="mx-auto w-64">
+              <figure className="overflow-hidden rounded-lg border-8 border-ink shadow-pop">
+                <Image src={shotMobile} alt="Die Suite auf dem Handy: Übersicht mit Netto-Umsatz und Berichtsfilter." placeholder="blur" className="h-auto w-full" sizes="256px" />
+              </figure>
             </Reveal>
-            <ol className="mt-10 grid gap-6 md:grid-cols-3">
-              {STEPS.map((s, i) => (
-                <li key={s.title} className="relative rounded-lg border border-border bg-bg p-6 shadow-card">
-                  <span aria-hidden className="num text-display text-accent">0{i + 1}</span>
-                  <h3 className="mt-2 text-lg">{s.title}</h3>
-                  <p className="mt-1 text-text-muted">{s.body}</p>
-                </li>
-              ))}
-            </ol>
-            <figure className="mt-12 overflow-hidden rounded-lg border border-border shadow-pop">
-              <Image src={shot} alt={`Rezept „Linsensuppe“ in der ${APP_NAME}: Zutatenzeilen mit Kosten, daneben Wareneinsatz pro Portion 0,63 € und 8,5 % Wareneinsatz.`} placeholder="blur" className="h-auto w-full" sizes="(min-width: 1280px) 1200px, 100vw" />
-              <figcaption className="bg-bg px-4 py-3 text-sm text-text-muted">So sieht ein Rezept in der {APP_NAME} aus: Kosten pro Zeile, rechts der Wareneinsatz, während du tippst.</figcaption>
-            </figure>
           </div>
         </section>
 
-        {/* ------------------------------------------------ features */}
-        <section id="funktionen" aria-labelledby="features" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-          <Reveal>
-            <p className="text-sm font-bold uppercase tracking-wide text-accent">Funktionen</p>
-            <h2 id="features" className="mt-2 max-w-3xl text-xl lg:text-display">Gebaut für die Momente, in denen es sonst schiefgeht</h2>
-          </Reveal>
-          <ul className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map(({ icon: Icon, title, body }, i) => (
-              <li key={title} className={i === 0 ? "rounded-lg bg-ink p-7 text-on-ink md:col-span-2 lg:row-span-2 lg:p-9" : "rounded-lg border border-border bg-surface p-6 transition-transform duration-base hover:-translate-y-1"}>
-                <span className={i === 0 ? "inline-flex size-12 items-center justify-center rounded-md bg-saffron text-on-saffron" : "inline-flex size-10 items-center justify-center rounded-md bg-accent-subtle text-accent"}>
-                  <Icon aria-hidden className={i === 0 ? "size-6" : "size-5"} />
-                </span>
-                <h3 className={i === 0 ? "mt-5 text-xl" : "mt-4 text-lg"}>{title}</h3>
-                <p className={i === 0 ? "mt-2 max-w-xl text-base text-on-ink-muted" : "mt-1 text-text-muted"}>{body}</p>
-                {i === 0 && (
-                  <div aria-hidden className="mt-8 grid max-w-md grid-cols-3 gap-3 text-sm" title="Beispiel">
-                    {[["Butter", "+12 %"], ["Pasta", "0,94 €"], ["Fond", "−0,08 €"]].map(([a, b]) => (
-                      <div key={a} className="rounded-md bg-ink-raised p-3"><p className="text-on-ink-muted">{a}</p><p className="num text-lg text-saffron">{b}</p></div>
-                    ))}
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* ------------------------------------------------ all modules */}
-        <section aria-labelledby="modules" className="bg-cream">
+        {/* ------------------------------------------------ trust, facts only */}
+        <section aria-labelledby="facts" className="bg-surface">
           <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-sm font-bold uppercase tracking-wide text-accent">Alles drin</p>
-                <h2 id="modules" className="mt-2 max-w-2xl text-xl lg:text-display">Ein Werkzeug statt zehn Listen</h2>
-              </div>
-              <p className="max-w-sm text-text-muted">Kein Modul extra, kein Zusatzpreis. Jede Kachel ist ein Teil der {APP_NAME}, den es heute gibt.</p>
-            </div>
-            <ul className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {MODULES.map(({ icon: Icon, label, tone }, i) => (
-                <li key={label} className={`relative flex flex-col items-start gap-4 rounded-lg bg-bg p-5 shadow-card transition-transform duration-base hover:-translate-y-1 hover:rotate-[-1deg] ${i % 2 ? "lg:translate-y-4" : ""}`}>
-                  <span className={`inline-flex size-11 items-center justify-center rounded-md ${TONE[tone]}`}><Icon aria-hidden className="size-5" /></span>
-                  <span className="font-semibold">{label}</span>
+            <Reveal>
+              <p className="text-sm font-bold uppercase tracking-wide text-accent">Verlässlich</p>
+              <h2 id="facts" className="mt-2 max-w-2xl text-xl lg:text-display">Worauf du dich verlassen kannst</h2>
+            </Reveal>
+            <ul className="mt-10 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+              {FACTS.map(({ icon: Icon, title, body }) => (
+                <li key={title}>
+                  <span className="inline-flex size-12 items-center justify-center rounded-md border-2 border-saffron text-accent"><Icon aria-hidden className="size-6" /></span>
+                  <h3 className="mt-4 text-lg">{title}</h3>
+                  <p className="mt-1 text-text-muted">{body}</p>
                 </li>
               ))}
             </ul>
           </div>
         </section>
 
-        {/* ------------------------------------------------ trust, facts only */}
-        <section aria-labelledby="facts" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-          <Reveal>
-            <p className="text-sm font-bold uppercase tracking-wide text-accent">Fair und sicher</p>
-            <h2 id="facts" className="mt-2 max-w-2xl text-xl lg:text-display">Worauf du dich verlassen kannst</h2>
-          </Reveal>
-          <ul className="mt-10 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-            {FACTS.map(({ icon: Icon, title, body }) => (
-              <li key={title}>
-                <span className="inline-flex size-12 items-center justify-center rounded-md border-2 border-saffron text-accent"><Icon aria-hidden className="size-6" /></span>
-                <h3 className="mt-4 text-lg">{title}</h3>
-                <p className="mt-1 text-text-muted">{body}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-
         {/* ------------------------------------------------ pricing */}
-        <section id="preise" aria-labelledby="pricing" className="bg-surface">
+        <section id="preise" aria-labelledby="pricing" className="bg-bg">
           <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
             <h2 id="pricing" className="text-xl lg:text-display">Preise</h2>
-            <p className="mt-2 text-text-muted">Alle Funktionen in jedem Tarif. Beliebig viele Nutzer. {PRICE_TAX_NOTE}</p>
+            <p className="mt-2 text-text-muted">Alle Module in jedem Tarif. {PRICE_TAX_NOTE}</p>
             <div className="mt-10 grid gap-6 md:grid-cols-2">
-              <div className="rounded-lg border border-border bg-bg p-8">
-                <h3 className="text-lg">Eine Küche</h3>
-                <p className="mt-1 text-text-muted">Für das Restaurant, das Café, den Imbiss.</p>
+              <div className="rounded-lg border border-border bg-surface p-8">
+                <h3 className="text-lg">Ein Betrieb</h3>
+                <p className="mt-1 text-text-muted">Für das Restaurant, die Bar, das Café.</p>
                 <p className="num mt-6 text-display">{eur(PRICING.firstOutletMonthly)} <span className="text-sm font-normal text-text-muted">pro Monat</span></p>
                 <p className="text-xs font-normal text-text-muted">oder {eur(PRICING.firstOutletYearly)} pro Jahr (2 Monate geschenkt)</p>
                 <ul className="mt-6 flex flex-col gap-2">
-                  {["1 Standort", "Unbegrenzt Zutaten, Rezepte, Bestellungen", "Inventur, Rechnungsabgleich, HACCP", "Beliebig viele Nutzer", "Kündigen mit einem Klick"].map((x) => (
+                  {["Report Studio und Mission Control", "Service Funnel, Deckungsbeiträge, Renner-Penner", "Rezepte, Inventur, Bestell-Forecast", "Alle 7 Rollen"].map((x) => (
                     <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{x}</li>
                   ))}
                 </ul>
               </div>
               <div className="relative rounded-lg bg-ink p-8 text-on-ink shadow-glow">
                 <span className="absolute -top-3 right-6 rounded-pill bg-saffron px-3 py-1 text-xs font-bold text-on-saffron">für Gruppen</span>
-                <h3 className="text-lg">Mehrere Küchen</h3>
-                <p className="mt-1 text-on-ink-muted">Für Gruppen, Filialen und Zentralküchen.</p>
+                <h3 className="text-lg">Weitere Standorte</h3>
+                <p className="mt-1 text-on-ink-muted">Für Gruppen und Betriebe mit mehreren Häusern.</p>
                 <p className="num mt-6 text-display">+ {eur(PRICING.extraOutletMonthly)} <span className="text-sm font-normal text-on-ink-muted">pro weiterem Standort und Monat</span></p>
                 <p className="text-xs font-normal text-on-ink-muted">oder {eur(PRICING.extraOutletYearly)} pro Jahr und Standort</p>
                 <ul className="mt-6 flex flex-col gap-2">
-                  {["Eigener Bestand und eigene Bestellungen je Standort", "Gemeinsame Rezepte und Zutaten", "Zentralküche: Anforderungen und Produktionsplan", "Teammitglieder nur für ihren Standort", "Abgerechnet wird, was angelegt ist – keine Sprünge"].map((x) => (
+                  {["Outlets einzeln und gesamt auswerten", "Mehrere Lager mit Transfer", "Rollen je Mitarbeiter"].map((x) => (
                     <li key={x} className="flex gap-2"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-saffron" />{x}</li>
                   ))}
                 </ul>
               </div>
             </div>
-            <p className="mt-4 text-xs font-normal text-text-muted">Beispiel: drei Standorte = {eur(PRICING.firstOutletMonthly + 2 * PRICING.extraOutletMonthly)} pro Monat.</p>
           </div>
         </section>
 
@@ -393,13 +346,13 @@ export default function LandingPage() {
           <div className="grid gap-10 rounded-lg border border-border bg-bg p-6 shadow-pop lg:grid-cols-[5fr_7fr] lg:p-10">
             <div>
               <p className="text-sm font-bold uppercase tracking-wide text-accent">Vorführung</p>
-              <h2 id="lead" className="mt-2 text-xl lg:text-display">Zeig uns dein teuerstes Gericht</h2>
+              <h2 id="lead" className="mt-2 text-xl lg:text-display">Deine Zahlen im Board</h2>
               <p className="mt-3 text-text-muted">
-                In einer halben Stunde legen wir zusammen deine wichtigsten Zutaten und ein Rezept an, und du siehst, was der Teller
-                wirklich kostet. Für einen oder viele Standorte, mit oder ohne Zentralküche.
+                In einer halben Stunde importieren wir zusammen deine Speisekarte und einen Monat Verkäufe, und du siehst Renner,
+                Penner und Deckungsbeiträge deines Betriebs.
               </p>
               <ul className="mt-6 flex flex-col gap-2 text-sm">
-                {["30 Minuten, per Video oder bei euch", "Mit euren echten Einkaufspreisen", "Kostenlos und unverbindlich"].map((x) => (
+                {["30 Minuten, per Video oder bei euch", "Mit deiner echten Speisekarte", "Kostenlos und unverbindlich"].map((x) => (
                   <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{x}</li>
                 ))}
               </ul>
@@ -429,8 +382,8 @@ export default function LandingPage() {
         <section aria-labelledby="final" className="relative overflow-hidden bg-ink text-on-ink">
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_80%_at_50%_120%,var(--color-accent)_0%,transparent_70%)]" />
           <div className="relative mx-auto max-w-(--size-content-max) px-4 py-24 text-center lg:px-8">
-            <h2 id="final" className="mx-auto max-w-3xl text-xl lg:text-display">Leg dein teuerstes Gericht an und sieh, was es wirklich kostet.</h2>
-            <div className="mt-8 flex justify-center"><Link href={mainCta.href} className={cta}>{mainCta.label} <ArrowRight aria-hidden className="size-4" /></Link></div>
+            <h2 id="final" className="mx-auto max-w-3xl text-xl lg:text-display">Sieh deinen Betrieb so, wie die Zahlen ihn sehen.</h2>
+            <div className="mt-8 flex justify-center"><Link href={SUITE} className={cta}>Live ausprobieren <ArrowRight aria-hidden className="size-4" /></Link></div>
           </div>
         </section>
       </main>

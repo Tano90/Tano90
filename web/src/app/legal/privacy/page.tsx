@@ -43,7 +43,7 @@ export default function PrivacyPage() {
               <tr className="border-t border-border"><td className="py-2 pr-3">Abo und Zahlung: Firma, Rechnungsanschrift, E-Mail, Zahlungsart (Kartendaten nur bei Stripe), Rechnungen</td><td className="pr-3">Abrechnung</td><td className="pr-3">Art. 6 Abs. 1 lit. b und c DSGVO</td><td>Rechnungen und Buchungsbelege 10 Jahre (§ 147 AO, § 257 HGB), sonst bis Vertragsende</td></tr>
               <tr className="border-t border-border"><td className="py-2 pr-3">E-Mails, die {APP_NAME} versendet: Empfängeradresse und Inhalt (Bestellung an Lieferanten, Einladung, Bestands- und Kontohinweise)</td><td className="pr-3">Zustellung</td><td className="pr-3">Art. 6 Abs. 1 lit. b DSGVO; für Lieferanten im Auftrag deines Betriebs</td><td>nach den Fristen von Resend</td></tr>
               <tr className="border-t border-border"><td className="py-2 pr-3">Schutz vor Missbrauch: IP-Adresse bei Anmelde- und Registrierungsversuchen, zusätzlich die E-Mail-Adresse bei Anmeldelinks und beim Zurücksetzen des Passworts</td><td className="pr-3">Begrenzung von Versuchen gegen das Erraten von Passwörtern</td><td className="pr-3">Art. 6 Abs. 1 lit. f DSGVO</td><td>spätestens nach zwei Tagen gelöscht</td></tr>
-              <tr className="border-t border-border"><td className="py-2 pr-3">Betriebsdaten: Zutaten, Rezepte, Lieferanten und deren Ansprechpartner, Bestellungen, Bestände, Kassenverkäufe (ohne Daten von Gästen), HACCP-Einträge mit Name und Zeitpunkt</td><td className="pr-3">die Funktionen von {APP_NAME}</td><td className="pr-3">Auftragsverarbeitung für deinen Betrieb (Art. 28 DSGVO)</td><td>bis dein Betrieb sie löscht oder der Vertrag endet</td></tr>
+              <tr className="border-t border-border"><td className="py-2 pr-3">Betriebsdaten: Artikel, Umsätze, Kosten, Rezepte und Rohwaren, Lager und Inventur, Bestellungen, Service-Funnel-Zahlen, Wettbewerber (ohne Daten von Gästen)</td><td className="pr-3">die Funktionen von {APP_NAME}</td><td className="pr-3">Auftragsverarbeitung für deinen Betrieb (Art. 28 DSGVO)</td><td>bis dein Betrieb sie löscht oder der Vertrag endet</td></tr>
             </tbody>
           </table>
         </div>
@@ -55,6 +55,7 @@ export default function PrivacyPage() {
         <ul className="list-disc pl-6">
           <li><strong>Anmeldung</strong> (Supabase, beginnt mit <code>sb-</code>): hält dich angemeldet; gelöscht beim Abmelden oder nach Ablauf der Sitzung.</li>
           <li><strong>kl_outlet</strong>: merkt sich den gewählten Standort; gelöscht, wenn du den Browser schließt.</li>
+          <li><strong>Speicher im Browser (localStorage)</strong>: Die Suite speichert dort die Anmeldung und, wenn du sie ohne Konto ausprobierst, die Beispieldaten und deine Änderungen. Sie verlassen deinen Browser nicht; du löschst sie mit den Website-Daten deines Browsers.</li>
         </ul>
         <p>Wir nutzen keine Analyse-, Werbe- oder Tracking-Dienste; die Aufrufe der Startseite zählen wir selbst, ohne Cookie und ohne Personenbezug. Die Schrift ist auf unserem Server eingebunden; beim Laden der Seite wird keine Verbindung zu Schriftanbietern aufgebaut.</p>
       </Section>
