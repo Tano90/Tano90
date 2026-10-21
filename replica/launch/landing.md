@@ -9,7 +9,7 @@ Lager und Zentralküche. FAQ korrigiert: Import und Kassen-Anbindung standen dor
 3. und 5. Durchgang gebaut. Vier neue Funktionen auf der Seite (Zentralküche, Barcode-Inventur, Rechnungsabgleich, HACCP).
 
 **Einschränkung:** `fixes.md` hat noch keine belegte Positionierung (0 Bewertungen). Die Seite führt deshalb mit dem, was
-Pantra nachweislich kann (durch E2E-Tests belegt), und nicht mit Klagen über das Original. Sobald `feedback.md` existiert:
+Mirepa nachweislich kann (durch E2E-Tests belegt), und nicht mit Klagen über das Original. Sobald `feedback.md` existiert:
 Problem-Abschnitt und Feature-Reihenfolge neu ordnen.
 
 Regel für jede Aussage auf der Seite: Sie muss im Produkt stimmen und getestet sein. Beim Gegenlesen umgeschrieben:
@@ -55,8 +55,8 @@ Kundenstimmen, Logos, Nutzerzahlen, Sterne – es gibt noch keine Kunden. Kommen
 schriftlicher Erlaubnis. Bewertungen des Originals sind Recherche, keine Testimonials. Der Name des Originals erscheint nirgends.
 
 ## Vor dem Start prüfen
-- **Name:** Pantra hat einen Namensvetter im App Store (`brand.md`). Nach deiner Entscheidung ändert sich nur `APP_NAME`; Screenshots dann neu.
-- Hero-Bild `web/public/landing/rezept-kalkulation.png` zeigt die Navigation vor Zentralküche und HACCP; mit dem Namen zusammen neu aufnehmen.
+- **Name:** Mirepa (statt Pantra, 2026-10-21). Nur per Websuche geprüft; Register und Domain stehen in `brand.md` noch aus.
+  Hero-Bild und Seiten-Screenshots sind mit dem neuen Namen neu aufgenommen.
 - „Daten in der EU (Frankfurt)“ stimmt nur, wenn Supabase und Vercel dort eingerichtet sind (`backend.md`).
 - „Kündigen mit einem Klick“ setzt voraus, dass im Stripe-Kundenportal Kündigen aktiviert ist.
 - Impressum, Datenschutz und Nutzungsbedingungen sind Entwürfe (`/legal/*`).

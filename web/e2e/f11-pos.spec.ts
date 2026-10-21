@@ -86,7 +86,7 @@ test.describe("F11 Kassenverkäufe", () => {
     await page.getByRole("dialog").getByLabel("Name").fill("Kasse Theke");
     await page.getByRole("dialog").getByRole("button", { name: "Erstellen" }).click();
     const key = await page.getByLabel("Neuer API-Schlüssel").inputValue();
-    expect(key).toMatch(/^pantra_[\w-]{32}$/);
+    expect(key).toMatch(/^mirepa_[\w-]{32}$/);
     await page.getByRole("button", { name: "Fertig" }).click();
     const [stored] = await db()`select key_hash from api_keys where name = 'Kasse Theke'`;
     expect(stored.key_hash).not.toContain(key.slice(7, 20)); // only the hash is kept
@@ -97,7 +97,7 @@ test.describe("F11 Kassenverkäufe", () => {
     expect(first.status()).toBe(200);
     expect(await first.json()).toMatchObject({ imported: 1, duplicates: 0, depleted: 1 });
     expect(await (await send(key)).json()).toMatchObject({ imported: 0, duplicates: 1, depleted: 0 });
-    expect((await send("pantra_falsch")).status()).toBe(401);
+    expect((await send("mirepa_falsch")).status()).toBe(401);
     expect((await send(key, { sales: [{ id: "x", plu: "1", quantity: 1, soldAt: "20.10.2026" }] })).status()).toBe(400);
 
     await page.reload();

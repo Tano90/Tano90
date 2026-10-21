@@ -1,4 +1,4 @@
-# Deploy-Checkliste: Pantra
+# Deploy-Checkliste: Mirepa
 
 Datum: 2026-10-21 · Vorabprüfung auf `9e92c72` · **Go von dir: noch nicht**
 
@@ -10,8 +10,8 @@ Vier Punkte stoppen den Deploy, jeder für sich:
    durchgeklickt (Testplan A02). Score 94,1, Must-haves 20 von 21.
 2. **Rechtsseiten sind Entwürfe:** Impressum, Datenschutz, Nutzungsbedingungen ohne Betreiberangaben und ohne rechtliche
    Prüfung. In Deutschland ist ein vollständiges Impressum Pflicht.
-3. **Name ungeklärt:** „Pantra“ hat seit Kurzem einen Namensvetter im App Store (`brand.md`). Erst entscheiden, dann
-   Domain kaufen, sonst kaufst du sie zweimal.
+3. **Name gewählt, aber nicht geprüft:** Mirepa (2026-10-21, statt Pantra, das einen Namensvetter im App Store hat).
+   Bisher nur Websuche; Markenregister, Domain und Stores sind hier gesperrt. Vor dem Domainkauf prüfen (`brand.md`).
 4. **Produktionsdienste fehlen:** kein Supabase-, Stripe-, Resend- oder Vercel-Konto verbunden. Die lege ich nicht an.
 
 Alles, was sich ohne deine Konten prüfen lässt, ist grün. Live ging nichts, es gibt keine URL.
@@ -33,7 +33,7 @@ Alles, was sich ohne deine Konten prüfen lässt, ist grün. Live ging nichts, e
 | Datenschutz und Nutzungsbedingungen live, alle Auftragsverarbeiter | ❌ Entwurf | `/legal/privacy` nennt Supabase, Vercel, Stripe, Resend; Betreiber, Rechtsgrundlagen, Fristen fehlen; `/legal/terms` und `/legal/imprint` Entwurf |
 | Cookie-Banner | ✅ nicht nötig, solange es so bleibt | nur technisch notwendige Cookies (Sitzung, gewähltes Outlet) |
 | Konto löschen funktioniert | ⚠️ teilweise | Daten: E2E A04-H1/N1 grün, inkl. Zentralküchen-Anforderungen (Migration 0012); Login-Löschung über die Supabase Admin API nicht getestet (kein Projekt) |
-| Favicon, Titel, OG-Bild, E-Mails, App-Icon eigen | ⚠️ teilweise | Titel „… · Pantra“ ✅, E-Mail-Absender ✅, Favicon nur Platzhalter, **kein OG-Bild**, kein Logo (Briefing in `brand.md`) |
+| Favicon, Titel, OG-Bild, E-Mails, App-Icon eigen | ⚠️ teilweise | Titel „… · Mirepa“ ✅, E-Mail-Absender ✅, Favicon nur Platzhalter, **kein OG-Bild**, kein Logo (Briefing in `brand.md`) |
 | Kamera-Scan (Barcode) | 🖐 von Hand offen | F08-B5: Chrome auf Android über HTTPS; erst auf der Live-Domain prüfbar |
 
 ## Produktion (vorbereitet, von dir auszuführen)
@@ -76,7 +76,7 @@ Die Domain kaufst du (Name erst nach der Markenprüfung in `brand.md`). Dann:
 
 ## Mobile
 
-Keine native App. Pantra läuft im Browser (Handy-Layout geprüft). `launch/listing.json` ist für später vorbereitet.
+Keine native App. Mirepa läuft im Browser (Handy-Layout geprüft). `launch/listing.json` ist für später vorbereitet.
 
 ## Erste Woche nach dem Start
 
@@ -88,8 +88,8 @@ Keine native App. Pantra läuft im Browser (Handy-Layout geprüft). `launch/list
 
 ## Bis zum Go
 
-1. **Name entscheiden** (Kuvo, Fenno, Tellerwert oder Pantra, `brand.md`); dann Markenrecherche durch eine Anwältin
-   oder einen Anwalt, Domain kaufen, Logo und OG-Bild anfertigen.
+1. **Namen prüfen:** Mirepa in DPMA, EUIPO/TMview, USPTO (Klassen 9 und 42), Domains und Stores (Liste in `brand.md`);
+   dann Markenrecherche durch eine Anwältin oder einen Anwalt, Domain kaufen, Logo und OG-Bild anfertigen.
 2. **Rechtsseiten** mit Betreiberangaben füllen und prüfen lassen.
 3. **Konten anlegen** (oben), Schlüssel in Vercel eintragen. `ALLOW_DEMO` nie setzen.
 4. **A02 durchklicken** mit dem Produktions- oder einem Staging-Supabase-Projekt: registrieren, Bestätigungsmail, Magic

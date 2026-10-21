@@ -1,7 +1,18 @@
 {
-  "name": "Pantra",
-  "avoid": ["Apicbase", "Apic base", "Apicbase NV"],
-  "domains": ["apicbase.com", "get.apicbase.com", "support.apicbase.com", "developers.apicbase.com"],
+  "name": "Mirepa",
+  "avoid": [
+    "Apicbase",
+    "Apic base",
+    "Apicbase NV",
+    "Pantra"
+  ],
+  "domains": [
+    "apicbase.com",
+    "get.apicbase.com",
+    "support.apicbase.com",
+    "developers.apicbase.com"
+  ],
   "colors": [],
-  "_colors_note": "The original's brand colours could not be read (site blocked in this environment). Add them here after looking at get.apicbase.com, then re-run the sweep."
+  "_colors_note": "The original's brand colours could not be read (site blocked in this environment). Add them here after looking at get.apicbase.com, then re-run the sweep.",
+  "_avoid_note": "\"Pantra\" was this app's earlier working name; it clashes with an existing iOS pantry app, so the sweep keeps it out."
 }

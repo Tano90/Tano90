@@ -1,6 +1,6 @@
 // POS sales API: a till (or a small bridge script) posts receipt lines with an outlet's API key.
 // Repeating a request is safe: lines are deduplicated by their id per outlet.
-//   curl -X POST https://DEINE-DOMAIN/api/pos/sales -H "Authorization: Bearer pantra_…" -H "Content-Type: application/json" \
+//   curl -X POST https://DEINE-DOMAIN/api/pos/sales -H "Authorization: Bearer mirepa_…" -H "Content-Type: application/json" \
 //     -d '{"sales":[{"id":"B17-1","plu":"1001","name":"Linsensuppe","quantity":2,"netRevenueCents":1480,"soldAt":"2026-10-20T12:30:00+02:00"}]}'
 import { NextResponse } from "next/server";
 import { z } from "zod";

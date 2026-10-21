@@ -1,4 +1,4 @@
-# Parität: Pantra gegen das Original
+# Parität: Mirepa gegen das Original
 
 Stand: 2026-10-21 (nach dem 6. Bau- und Testdurchgang) · Grundlage: `replica/features.csv`, `replica/recon.md`,
 `replica/bugs.md`, E2E-Lauf 188/188, Unit- und Integrationstests 61/61.
@@ -106,11 +106,11 @@ Die Parität ist erreicht: alle Must- und Should-haves bis auf deinen Login-Durc
 Der nächste sinnvolle Schritt ist **nicht** mehr Nachbau, sondern herauszufinden, was Küchen am Original stört, und das besser zu machen.
 
 **„Besser als das Original“** bleibt bisher unbelegt: `/replica-entrepreneur` fand in dieser Umgebung keine öffentlichen Nutzerbewertungen.
-Was Pantra heute anders macht (Live-Kalkulation, offline-feste Inventur in Gebinden, „unbekannt“ schlägt „frei“ auch auf dem Etikett,
+Was Mirepa heute anders macht (Live-Kalkulation, offline-feste Inventur in Gebinden, „unbekannt“ schlägt „frei“ auch auf dem Etikett,
 Vorschau vor jedem Preis-Import, wiederholbare Kassen-Importe mit Stornos, abgefangene Eingabefehler, HACCP im Grundpreis), ist eigene Einschätzung.
 
 ## Nächster Skill
 
 1. Du: A02 mit deinem Supabase-Projekt.
-2. `/replica-entrepreneur` mit Bewertungen oder Gesprächsnotizen, die du beschaffst (G2, Capterra, App-Stores, eigene Küchen) – daraus der Plan, was Pantra besser machen soll.
+2. `/replica-entrepreneur` mit Bewertungen oder Gesprächsnotizen, die du beschaffst (G2, Capterra, App-Stores, eigene Küchen) – daraus der Plan, was Mirepa besser machen soll.
 3. Erst dann wieder `/replica-build`, für diese Verbesserungen statt für Could-haves.

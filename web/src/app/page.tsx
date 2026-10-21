@@ -15,27 +15,27 @@ const ctaSecondary = "inline-flex h-(--size-control-lg) items-center rounded-sm 
 
 const STEPS = [
   { title: "Einkauf erfassen", body: "Zutaten so anlegen, wie dein Lieferant sie verkauft – Karton, Sack, Flasche – mit dem Preis von der Rechnung." },
-  { title: "Rezepte bauen", body: "Zutaten und Grundrezepte eintragen. Pantra rechnet Gramm, Liter und Stück um und zeigt beim Tippen, was ein Teller kostet." },
+  { title: "Rezepte bauen", body: `Zutaten und Grundrezepte eintragen. ${APP_NAME} rechnet Gramm, Liter und Stück um und zeigt beim Tippen, was ein Teller kostet.` },
   { title: "Bestellen und zählen", body: "Bestellungen gehen per Mail an den Lieferanten, Lieferungen und Inventur laufen über dasselbe Lager." },
 ];
 
 const FEATURES = [
   { icon: Receipt, title: "Wareneinsatz beim Tippen", body: "Kosten pro Portion, Wareneinsatz in Prozent und Rohertrag stehen neben dem Rezept, während du es schreibst. Ändert sich ein Einkaufspreis, rechnet jedes Rezept mit, auch über Grundrezepte hinweg." },
   { icon: CookingPot, title: "Zentralküche mit Plan", body: "Standorte fordern Rezepte an, die Zentralküche sieht pro Liefertag, was zu kochen ist und welche Rohware fehlt. Produzieren bucht die Rohware aus und schreibt jedem Standort seine Kosten zu." },
-  { icon: ScanBarcode, title: "Inventur, die ein Funkloch übersteht", body: "Zählen in Kartons plus Rest oder per Barcode-Scanner. Jede Zahl wird sofort zwischengespeichert; fällt im Kühlhaus das Netz weg, speichert Pantra nach, sobald es zurück ist." },
+  { icon: ScanBarcode, title: "Inventur, die ein Funkloch übersteht", body: `Zählen in Kartons plus Rest oder per Barcode-Scanner. Jede Zahl wird sofort zwischengespeichert; fällt im Kühlhaus das Netz weg, speichert ${APP_NAME} nach, sobald es zurück ist.` },
   { icon: ReceiptText, title: "Rechnung gegen Lieferung", body: "Jede Rechnungszeile steht neben Bestellung und Wareneingang. Abweichungen bei Menge und Preis sind markiert, freigeben lässt sich eine abweichende Rechnung nur mit Begründung." },
   { icon: ClipboardCheck, title: "HACCP im Grundpreis", body: "Eigene Checklisten mit Grenzwerten, Tageskontrolle pro Standort, Abweichungen nur mit Maßnahme. Das Protokoll der letzten 30 Tage geht als CSV an die Lebensmittelkontrolle." },
   { icon: ShieldCheck, title: "Fehler, bevor sie Geld kosten", body: "„2.5“ und „2,5“ ergeben dieselbe Menge, eine Bestellung kommt auch bei Doppelklick nur einmal an, und eine ungeprüfte Zutat macht ein Gericht „unbekannt“, nie „allergenfrei“." },
 ];
 
 const FAQ = [
-  { q: "Kann ich meine Zutaten und Preise importieren?", a: "Ja. Die Preisliste deines Lieferanten als Excel- oder CSV-Datei hochladen: Pantra zeigt vor dem Übernehmen jede Zeile als neu, geändert oder fehlerhaft. Übernommen wird erst, wenn du zustimmst." },
-  { q: "Funktioniert Pantra mit meiner Kasse?", a: "Über eine Datei oder eine Schnittstelle: Verkäufe als CSV hochladen oder von der Kasse per API senden lassen. Verknüpfte Gerichte werden über ihre Rezepte vom Lager abgebucht, Stornos zurückgebucht. Fertige Anbindungen an einzelne Kassenhersteller gibt es nicht." },
+  { q: "Kann ich meine Zutaten und Preise importieren?", a: `Ja. Die Preisliste deines Lieferanten als Excel- oder CSV-Datei hochladen: ${APP_NAME} zeigt vor dem Übernehmen jede Zeile als neu, geändert oder fehlerhaft. Übernommen wird erst, wenn du zustimmst.` },
+  { q: `Funktioniert ${APP_NAME} mit meiner Kasse?`, a: "Über eine Datei oder eine Schnittstelle: Verkäufe als CSV hochladen oder von der Kasse per API senden lassen. Verknüpfte Gerichte werden über ihre Rezepte vom Lager abgebucht, Stornos zurückgebucht. Fertige Anbindungen an einzelne Kassenhersteller gibt es nicht." },
   { q: "Brauche ich für HACCP oder die Zentralküche ein Zusatzmodul?", a: "Nein. Alle Funktionen sind in jedem Tarif enthalten. Bezahlt wird nur pro Standort." },
-  { q: "Wer haftet für die Allergenangaben?", a: "Pantra rechnet aus deinen Angaben, die Kennzeichnung gegenüber Gästen verantwortet dein Betrieb. Deshalb zeigt Pantra ungeprüfte Zutaten offen an, statt sie als allergenfrei durchzuwinken." },
+  { q: "Wer haftet für die Allergenangaben?", a: `${APP_NAME} rechnet aus deinen Angaben, die Kennzeichnung gegenüber Gästen verantwortet dein Betrieb. Deshalb zeigt ${APP_NAME} ungeprüfte Zutaten offen an, statt sie als allergenfrei durchzuwinken.` },
   { q: "Wo liegen meine Daten?", a: "In der EU (Frankfurt). Zahlungen laufen über Stripe; deine Kartendaten sehen wir nie." },
   { q: "Wie kündige ich?", a: "Mit einem Klick unter Einstellungen → Abo & Rechnungen, ohne Anruf und ohne Formular. Das Abo läuft bis zum Ende des bereits bezahlten Zeitraums und endet dann." },
-  { q: "Brauche ich eine App?", a: "Nein. Pantra läuft im Browser auf Computer, Tablet und Handy. Inventur und Wareneingang sind für das Handy gebaut, ein Barcode-Scanner mit Tastatur-Modus funktioniert ohne Einrichtung." },
+  { q: "Brauche ich eine App?", a: `Nein. ${APP_NAME} läuft im Browser auf Computer, Tablet und Handy. Inventur und Wareneingang sind für das Handy gebaut, ein Barcode-Scanner mit Tastatur-Modus funktioniert ohne Einrichtung.` },
 ];
 
 const eur = (cents: number) => formatCents(cents).replace(",00", "");
@@ -68,7 +68,7 @@ export default function LandingPage() {
             <p className="mt-3 text-xs font-normal text-text-muted">Ohne Kreditkarte. Kündigen mit einem Klick.</p>
           </div>
           <figure className="overflow-hidden rounded-lg border border-border shadow-pop">
-            <Image src={shot} alt="Rezept „Linsensuppe“ in Pantra: Zutatenzeilen mit Kosten, daneben Wareneinsatz pro Portion 0,63 € und 8,5 % Wareneinsatz." priority placeholder="blur" sizes="(min-width: 1024px) 58vw, 100vw" />
+            <Image src={shot} alt={`Rezept „Linsensuppe“ in ${APP_NAME}: Zutatenzeilen mit Kosten, daneben Wareneinsatz pro Portion 0,63 € und 8,5 % Wareneinsatz.`} priority placeholder="blur" sizes="(min-width: 1024px) 58vw, 100vw" />
             <figcaption className="sr-only">Der Rezept-Editor mit Live-Kalkulation</figcaption>
           </figure>
         </section>

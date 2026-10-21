@@ -1,4 +1,4 @@
-# Marke: Pantra
+# Marke: Mirepa
 
 Stand: 2026-10-21 (zweiter Durchgang, „ohne Reviews“). Die Positionierung aus `/replica-entrepreneur` fehlt weiter (0 Bewertungen, Quellen gesperrt). Der Name
 stützt sich deshalb auf das, was das Produkt nachweislich besser macht: Es zeigt live, was ein Teller kostet, und hält das
@@ -7,7 +7,32 @@ Lager dazu. Wenn die Bewertungen eine andere Positionierung ergeben, kann der Na
 
 ## Name
 
-> **Neu am 2026-10-21: Pantra hat einen Namensvetter.** Im App Store gibt es „Pantra: Pantry Inventory“ (iOS, Entwickler
+**Entschieden am 2026-10-21: Mirepa.** Du hast die Wahl mir überlassen, mit der Vorgabe „ein Name, den es noch nicht gibt“.
+Mirepa ist ein Kunstwort aus *Mirepoix*, dem gewürfelten Röstgemüse, auf dem die klassische Küche ihre Fonds und Saucen
+aufbaut: die Grundlage, auf der alles andere rechnet. Drei Silben, im Deutschen und Englischen gleich gesprochen
+(Mi-re-pa), keine schiefe Bedeutung bekannt. Nichts teilt Klang, Schriftbild oder Bedeutung mit dem Original.
+
+**„Gibt es noch nicht“ heißt hier: Die Websuche fand nichts.** Markenregister, Domain-Abfragen und die Stores sind in
+dieser Umgebung gesperrt. Das ist eine Vorprüfung, keine Freigabe; vor dem Domainkauf die Zeilen unten abarbeiten.
+
+### Kandidaten dieser Runde (Websuche 2026-10-21)
+
+| Name | Ergebnis | Entscheidung |
+| --- | --- | --- |
+| Pantra | iOS-App „Pantra: Pantry Inventory“ (Haushaltsvorrat) | raus |
+| Kuvo | KUVO, Radio-App eines Senders in Denver, und KUVO, Club-App von Pioneer DJ | raus |
+| Fenno | Fennoa, Buchhaltungssoftware aus Finnland (750+ Kanzleien) | raus, zu nah |
+| Platevo | **platevo.io: Restaurant-Software** (digitale Speisekarte, Bestellungen, Küchenmonitor) | raus |
+| Gramzo | gramzo.in, Essensbestell-App | raus |
+| Kalkulo | Rechner-App „Kalkulilo“ im App Store | raus, zu nah |
+| Portora | nur Pflanzensorte, Burg und Schule in Nordirland; kein Unternehmen gefunden | Ersatz, falls Mirepa in einem Register scheitert |
+| Tellerwert | kein Produkt; beschreibend, schwer einzutragen | Ersatz nur für DACH |
+| **Mirepa** | **kein Treffer**, auch nicht mit Branche; „Mirepoix“ als Software ebenfalls nicht gefunden | **gewählt** |
+
+Der Name steht an einer Stelle (`web/src/lib/brand.ts`); die Landingpage liest ihn von dort. Der alte Name „Pantra“
+steht in `brand.json` → `avoid`, damit der Sweep jeden Rest findet. API-Schlüssel beginnen jetzt mit `mirepa_`.
+
+> **Vorher am 2026-10-21: Pantra hat einen Namensvetter.** Im App Store gibt es „Pantra: Pantry Inventory“ (iOS, Entwickler
 > Artur Popov), eine Vorratsverwaltung für den Haushalt mit Mindestbestand, Einkaufsliste und Schwund-Historie
 > ([App Store](https://apps.apple.com/us/app/pantra-pantry-inventory/id6757634576), gefunden per Websuche 2026-10-21; am
 > 2026-10-20 fand die Suche sie noch nicht). Gleicher Name, Software, Lebensmittel-Bestand: Das ist genau die Nähe, die
@@ -15,7 +40,7 @@ Lager dazu. Wenn die Bewertungen eine andere Positionierung ergeben, kann der Na
 > nebeneinander. **Empfehlung jetzt: vor dem Start umbenennen**, solange es nur eine Konstante ist
 > (`web/src/lib/brand.ts`). Die Wahl liegt bei dir, siehe „Entscheidung“ unten. Bis dahin bleibt Pantra im Code.
 
-**Bisherige Empfehlung: Pantra.** Kunstwort, klingt nach *pantry* (Vorratskammer), sagt also Lager und Küche, ohne beschreibend
+**Frühere Empfehlung (überholt): Pantra.** Kunstwort, klingt nach *pantry* (Vorratskammer), sagt also Lager und Küche, ohne beschreibend
 und damit schwach schützbar zu sein. Zwei Silben, nach einmal Hören schreibbar, im Deutschen und Englischen ohne
 schiefe Bedeutung. Nichts teilt Klang, Schriftbild oder Bedeutung mit „Apicbase“.
 
@@ -49,6 +74,12 @@ In dieser Umgebung sind Markenregister, Domain-Abfragen, App Stores und soziale 
 Prüfungen ist gelaufen.** Nur die Websuche nach „Name + Branche“ lief. Kein Treffer heißt nur, dass die Suche nichts
 gefunden hat. Es heißt nicht „frei“.
 
+Stand 2026-10-21 für **Mirepa**: Websuche ohne Treffer (auch „Mirepa app/software/restaurant/food“); alle anderen Zeilen
+**noch zu prüfen**: DPMA, EUIPO/TMview, USPTO (Klassen 9 und 42), ISED, WIPO, `mirepa.com`/`.de`/`.app`, App Store und
+Google Play, Handles auf X, Instagram, TikTok, GitHub, LinkedIn.
+
+Ältere Tabelle der ersten Runde:
+
 | Prüfung | Pantra | Tellerwert | Kuvo | Fenno | (5.) |
 | --- | --- | --- | --- | --- | --- |
 | Websuche Name + Branche | 2026-10-21: **iOS-App „Pantra: Pantry Inventory“** (Haushalts-Vorrat); keine Gastro-Software | 2026-10-21: kein Produkt gefunden (Nachbarn: GastroCalc, Rezeptrechner PRO) | 2026-10-21: kein Produkt gefunden | 2026-10-21: kein Produkt gefunden | – |
@@ -66,7 +97,7 @@ Nur vier Kandidaten hatten die Websuche überstanden, nach dem Fund oben sind es
 Das ist eine Vorprüfung, keine rechtliche Freigabe: Bevor Geld in den Namen fließt (Domain, Logo, Anmeldung), sollte eine
 Markenanwältin oder ein Markenanwalt recherchieren.
 
-### Entscheidung
+### Entscheidung (erste Runde, überholt)
 
 | Option | Für | Gegen |
 | --- | --- | --- |
@@ -103,7 +134,7 @@ zum stärksten Unterschied, der Live-Kalkulation. Sobald echte Bewertungen da si
 
 ## Palette
 
-Die Markenfarbe des Originals ist unbekannt: Seine Seite ist hier gesperrt, und es gibt keine Screenshots. Pantra nutzt
+Die Markenfarbe des Originals ist unbekannt: Seine Seite ist hier gesperrt, und es gibt keine Screenshots. Mirepa nutzt
 **Aubergine**, eine Farbfamilie, die keine Statusrolle belegt (Rot = Fehler, Grün = Erfolg, Bernstein = Warnung, Blau = Hinweis).
 Damit wird ein Button nie mit einer Meldung verwechselt. Vor dem Start mit dem Original vergleichen und dessen Farben in
 `brand.json` → `colors` eintragen, damit der Sweep sie findet.
@@ -121,7 +152,7 @@ Damit wird ein Button nie mit einer Meldung verwechselt. Vor dem Start mit dem O
 
 ## Logo-Briefing
 
-- **Idee:** ein Vorratsglas oder Regalfach, das zugleich ein „P“ ist. Ordnung im Lager und Klarheit beim Preis.
+- **Idee:** drei gewürfelte Stücke (Mirepoix), die zusammen ein „M“ bilden: die Grundlage, aus der alles entsteht.
 - **Markentyp:** Symbol plus Wortmarke. Das Symbol muss allein als App-Icon und Favicon funktionieren.
 - **Größen:** lesbar bei 16 px (Favicon) und als 1024 px App-Icon. Bei 16 px höchstens zwei Formen, keine feinen Linien.
 - **Farben:** Aubergine #7a2e6e auf Weiß, Weiß auf Aubergine. Funktioniert auch einfarbig schwarz (Kassenbon, Fax an Lieferanten).
@@ -130,11 +161,11 @@ Damit wird ein Button nie mit einer Meldung verwechselt. Vor dem Start mit dem O
   (16, 32, 180, SVG), Social-Bild 1200×630.
 - **Darf dem Original nicht ähneln:** kein gemeinsames Grundelement, kein gleiches Farbpaar, kein gleicher Buchstabentrick.
   Die Entwürfe neben das Logo des Originals legen und prüfen. Dessen Logo konnte hier nicht angesehen werden.
-- **Aktuell:** `web/src/app/icon.svg` ist ein Platzhalter (weißes „P“ auf Aubergine), kein Logo.
+- **Aktuell:** `web/src/app/icon.svg` ist ein Platzhalter (weißes „M“ auf Aubergine), kein Logo.
 
 ## Stimme
 
-Pantra spricht wie eine erfahrene Kollegin am Pass: weiß, was zu tun ist, und sagt es so, dass es in der Hektik ankommt.
+Mirepa spricht wie eine erfahrene Kollegin am Pass: weiß, was zu tun ist, und sagt es so, dass es in der Hektik ankommt.
 Wir duzen.
 
 **Drei Wörter**
@@ -171,12 +202,12 @@ Ein Fehler zog sich durch die ganze App: Zahlen mit Mehrzahl auch bei 1 („1 Ei
 „1 Eintrag gespeichert“, „1 Zeile übernehmen“, „1 neuer Preis (davon 1 neue Zutat)“. Große Zahlen mit Tausenderpunkt
 („24.000 Verkäufe“).
 
-Alle Texte sind für Pantra neu geschrieben. Die des Originals hat der Klon nie gesehen, weil die Recon nur Zusammenfassungen kannte.
+Alle Texte sind für Mirepa neu geschrieben. Die des Originals hat der Klon nie gesehen, weil die Recon nur Zusammenfassungen kannte.
 
 ## Sweep
 
 `python3 ~/.claude/skills/replica-brand/sweep.py . --config replica/brand.json` → 2026-10-21: **sauber** („Nothing of the
 original's name, domain or colours found“). `contrast.py`: 31 Paare, 0 AA-Fehler. Die Farben des Originals sind weiter
 unbekannt und deshalb nicht im Sweep.
-Per Augenschein geprüft: Seitentitel (Vorlage „Seite · Pantra“), Favicon (Platzhalter), Absendername der E-Mails, Kopf der App
+Per Augenschein geprüft: Seitentitel (Vorlage „Seite · Mirepa“), Favicon (Platzhalter), Absendername der E-Mails, Kopf der App
 und der Anmeldeseiten. Noch offen: OG-Bild und App-Icon, die kommen mit dem Logo.

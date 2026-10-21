@@ -373,3 +373,4 @@ Status: fixed in b6ae12b (`min-w-0` am fieldset)
 - HACCP: einen schon eingetragenen Wert leeren und speichern löscht ihn nicht (Einträge bleiben fürs Protokoll), das Feld zeigt nach dem Neuladen wieder den alten Wert. Gewollt, aber ohne Hinweis.
 - GTIN-Prüfziffer wird nicht geprüft: ein Tippfehler in der GTIN wird gespeichert und findet beim Scan nichts. Kein Datenfehler, nur ein Hinweis fehlt.
 - Kamera-Scan (BarcodeDetector) nur von Hand prüfbar: Chrome auf Android, HTTPS. Checkliste F08-B5.
+- Live-Kalkulation im Rezept blieb einmal bei „0,00 €“ stehen (E2E F02-E4 im vollen Lauf am 2026-10-21, danach 10 von 10 einzeln und der nächste volle Lauf 189/189 grün). Trace beim Wiederholen überschrieben, Ursache nicht belegt. Verdacht: Schlägt die letzte Vorschau-Anfrage fehl, zeigt der Editor still den alten Stand und fragt erst beim nächsten Tastendruck neu. Prüfen, ob ein Hinweis oder eine Wiederholung nötig ist.
