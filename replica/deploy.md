@@ -8,8 +8,9 @@ Vier Punkte stoppen den Deploy, jeder für sich:
 
 1. **Ein Must-have offen:** Login, gebaut und mit Demo-Konten getestet, aber nie mit einem echten Supabase-Projekt
    durchgeklickt (Testplan A02). Score 94,1, Must-haves 20 von 21.
-2. **Rechtsseiten sind Entwürfe:** Impressum, Datenschutz, Nutzungsbedingungen ohne Betreiberangaben und ohne rechtliche
-   Prüfung. In Deutschland ist ein vollständiges Impressum Pflicht.
+2. **Rechtsseiten ohne Betreiberangaben:** Impressum, Datenschutz, Nutzungsbedingungen und Auftragsverarbeitung sind
+   ausgeschrieben (2026-10-21), aber 13 Angaben des Betreibers fehlen (`npm run legal:check` → exit 1), und eine rechtliche
+   Prüfung steht aus. In Deutschland ist ein vollständiges Impressum Pflicht.
 3. **Name gewählt, aber nicht geprüft:** Mirepa (2026-10-21, statt Pantra, das einen Namensvetter im App Store hat).
    Bisher nur Websuche; Markenregister, Domain und Stores sind hier gesperrt. Vor dem Domainkauf prüfen (`brand.md`).
 4. **Produktionsdienste fehlen:** kein Supabase-, Stripe-, Resend- oder Vercel-Konto verbunden. Die lege ich nicht an.
@@ -30,7 +31,7 @@ Alles, was sich ohne deine Konten prüfen lässt, ist grün. Live ging nichts, e
 | Store-Listing | ✅ 0 Fehler, 1 Warnung (HACCP in Großbuchstaben, gewollt) | `listing.py replica/launch/listing.json` (erst mit nativer App relevant) |
 | Produktions-Build | ✅ | `npm run build` |
 | Abhängigkeiten | ✅ 0 Schwachstellen | `npm audit --omit=dev` |
-| Datenschutz und Nutzungsbedingungen live, alle Auftragsverarbeiter | ❌ Entwurf | `/legal/privacy` nennt Supabase, Vercel, Stripe, Resend; Betreiber, Rechtsgrundlagen, Fristen fehlen; `/legal/terms` und `/legal/imprint` Entwurf |
+| Datenschutz und Nutzungsbedingungen live, alle Auftragsverarbeiter | ⚠️ Text fertig, Betreiberangaben fehlen | `/legal/imprint`, `/legal/privacy` (Zwecke, Rechtsgrundlagen, Fristen aus dem Code, Cookies, Drittland), `/legal/terms` (B2B-AGB), `/legal/dpa` (AVV nach Art. 28 mit TOMs); Dienstleister aus einer Liste (`src/lib/legal.ts`), E2E `legal.spec.ts`; `npm run legal:check` → **exit 1**, 13 Felder offen; anwaltliche Prüfung offen |
 | Cookie-Banner | ✅ nicht nötig, solange es so bleibt | nur technisch notwendige Cookies (Sitzung, gewähltes Outlet) |
 | Konto löschen funktioniert | ⚠️ teilweise | Daten: E2E A04-H1/N1 grün, inkl. Zentralküchen-Anforderungen (Migration 0012); Login-Löschung über die Supabase Admin API nicht getestet (kein Projekt) |
 | Favicon, Titel, OG-Bild, E-Mails, App-Icon eigen | ⚠️ teilweise | Titel „… · Mirepa“ ✅, E-Mail-Absender ✅, Favicon nur Platzhalter, **kein OG-Bild**, kein Logo (Briefing in `brand.md`) |
@@ -90,8 +91,19 @@ Keine native App. Mirepa läuft im Browser (Handy-Layout geprüft). `launch/list
 
 1. **Namen prüfen:** Mirepa in DPMA, EUIPO/TMview, USPTO (Klassen 9 und 42), Domains und Stores (Liste in `brand.md`);
    dann Markenrecherche durch eine Anwältin oder einen Anwalt, Domain kaufen, Logo und OG-Bild anfertigen.
-2. **Rechtsseiten** mit Betreiberangaben füllen und prüfen lassen.
+2. **Rechtsseiten:** deine Angaben in `web/src/lib/legal.ts` → `OPERATOR` eintragen, bis `npm run legal:check` grün ist;
+   dann alle vier Seiten anwaltlich prüfen lassen. Die Seiten versprechen auch Dinge, die du organisatorisch einlösen
+   musst: Zwei-Faktor-Anmeldung für alle Zugänge zu Produktivsystemen (AVV, Anlage 1), Datenherausgabe binnen 30 Tagen
+   nach Vertragsende und danach Löschen (von Hand; es gibt keinen Export aller Daten), Standort aus der Abrechnung nehmen
+   auf Nachricht (in der App gibt es kein Archivieren von Standorten), sechs Wochen Vorlauf bei Preis- und AGB-Änderungen.
 3. **Konten anlegen** (oben), Schlüssel in Vercel eintragen. `ALLOW_DEMO` nie setzen.
 4. **A02 durchklicken** mit dem Produktions- oder einem Staging-Supabase-Projekt: registrieren, Bestätigungsmail, Magic
    Link, Passwort zurücksetzen, falsches Passwort.
 5. Diese Checkliste erneut ausführen (`/replica-deploy`). Erst wenn alles ✅ ist, frage ich nach deinem Go.
+
+## Lücken im Produkt, beim Schreiben der Rechtsseiten gefunden
+
+- **Testphase endet nicht:** Nach 14 Tagen ohne Abo geht die Nutzung unverändert weiter; es gibt weder Sperre noch
+  Erinnerungsmail. Die Bedingungen versprechen nichts anderes, aber ohne Ende der Testphase zahlt niemand.
+- **Standorte lassen sich nicht archivieren:** Die Abrechnung passt sich nur beim Anlegen an.
+- **Kein Gesamtexport:** CSV gibt es für Lagerbericht und HACCP-Protokoll, nicht für alle Daten eines Betriebs.

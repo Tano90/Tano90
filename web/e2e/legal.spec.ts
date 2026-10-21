@@ -1,0 +1,42 @@
+import { expect, expectNoHorizontalScroll, test } from "./fixtures";
+
+const PAGES = [
+  ["/legal/imprint", "Impressum"],
+  ["/legal/privacy", "Datenschutzerklärung"],
+  ["/legal/terms", "Nutzungsbedingungen"],
+  ["/legal/dpa", "Vertrag zur Auftragsverarbeitung"],
+] as const;
+
+test.describe("L02 Rechtsseiten", () => {
+  for (const [path, title] of PAGES) {
+    test(`L02 ${title}: erreichbar, barrierefrei, 390 px`, async ({ page, axe }) => {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
+      await axe();
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expectNoHorizontalScroll(page);
+    });
+  }
+
+  test("L02-E1 fehlende Betreiberangaben sind sichtbar markiert, nicht erfunden", async ({ page }) => {
+    await page.goto("/legal/imprint");
+    await expect(page.getByRole("note")).toContainText("Angaben des Betreibers fehlen");
+    await expect(page.getByText("[fehlt: Name oder Firma]").first()).toBeVisible();
+  });
+
+  test("L02-E2 Datenschutz nennt jeden Dienstleister und die Cookies, AVV dieselben", async ({ page }) => {
+    for (const path of ["/legal/privacy", "/legal/dpa"]) {
+      await page.goto(path);
+      for (const name of ["Supabase Inc.", "Vercel Inc.", "Stripe Payments Europe Ltd.", "Resend Inc."]) await expect(page.getByRole("cell", { name, exact: true })).toBeVisible();
+    }
+    await page.goto("/legal/privacy");
+    await expect(page.getByText("kl_outlet")).toBeVisible();
+    await expect(page.locator("main")).toContainText(/die dein Betrieb in \S+ eingetragen hat/); // no word glued to the app name
+    await expect(page.getByRole("link", { name: "Auftragsverarbeitung" })).toHaveAttribute("href", "/legal/dpa");
+  });
+
+  test("L02-E3 Preise in den Bedingungen kommen aus derselben Quelle wie die Preisseite", async ({ page }) => {
+    await page.goto("/legal/terms");
+    await expect(page.getByText(/derzeit 49\s€ im Monat für den ersten Standort und 39\s€ für jeden weiteren/)).toBeVisible();
+  });
+});

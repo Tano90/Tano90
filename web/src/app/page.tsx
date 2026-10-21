@@ -164,9 +164,10 @@ export default function LandingPage() {
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-(--size-content-max) flex-wrap justify-between gap-4 px-4 py-6 text-xs font-normal text-text-muted lg:px-8">
           <span>© {APP_NAME}</span>
-          <nav aria-label="Rechtliches" className="flex gap-4">
+          <nav aria-label="Rechtliches" className="flex flex-wrap gap-x-4 gap-y-1">
             <Link href="/legal/privacy" className="hover:underline">Datenschutz</Link>
             <Link href="/legal/terms" className="hover:underline">Nutzungsbedingungen</Link>
+            <Link href="/legal/dpa" className="hover:underline">Auftragsverarbeitung</Link>
             <Link href="/legal/imprint" className="hover:underline">Impressum</Link>
           </nav>
         </div>
