@@ -22,7 +22,7 @@ Originals vorhanden, daher kein Layoutvergleich.
 | S10 | Lieferanten | 2026-10-20 | done | – | Archivieren muss offene Bestellungen ablehnen und die Preise mit archivieren |
 | S11 | Lieferant | 2026-10-20 | done | Sortiment direkt hier pflegen (geht über die Zutat) | – |
 | S12 | Bestellungen | 2026-10-20 | done | – | – |
-| S13 | Neue Bestellung | 2026-10-20 | partial | E-Mail an den Lieferanten (nur Status), Bestell-PDF | seit 5. Durchgang: gewogene Artikel nach Gewicht (kg/l), gespeichert als Bruchteil des Gebindes |
+| S13 | Neue Bestellung | 2026-10-21 | partial | Bestell-PDF (die Bestellung geht als E-Mail an den Lieferanten) | seit 5. Durchgang: gewogene Artikel nach Gewicht (kg/l), gespeichert als Bruchteil des Gebindes |
 | S14 | Wareneingang | 2026-10-20 | done | Ersatzartikel, Mehrlieferung | **Fehler gefunden und behoben:** nach einer Teillieferung behielt das Formular alte Werte, ein zweites Erfassen hätte doppelt gebucht. Formular setzt sich jetzt zurück, der Server lehnt Überlieferungen ab. |
 | S15 | Rechnungsabgleich | – | stub | alles | – |
 | S16 | Lager | 2026-10-20 | done | – | Mindest- und Zielbestand pro Zeile im Dialog, in kg/l/Stk. statt Basiseinheit |
