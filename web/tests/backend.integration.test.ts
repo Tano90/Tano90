@@ -311,6 +311,35 @@ describe.skipIf(!url)("backend against Postgres", () => {
     });
   });
 
+  describe("housekeeping", () => {
+    it("rooms per outlet, checklist before cleaned, staff only report cleaning, start of day, no access across outlets or libraries", async () => {
+      await admin`delete from rooms where outlet_id = ${sid("out-mitte")}`;
+      expect(await repo.createRooms(owner, sid("out-mitte"), { numbers: ["101", "102", "103", "Suite 1"], floor: "1", roomType: "DZ" })).toEqual({ added: 4, skipped: [] });
+      expect(await repo.createRooms(owner, sid("out-mitte"), { numbers: ["103", "104"], floor: "1", roomType: "DZ" })).toEqual({ added: 1, skipped: ["103"] });
+      await expect(repo.createRooms(staff, sid("out-mitte"), { numbers: ["999"], floor: null, roomType: null })).rejects.toThrow(/Berechtigung/);
+      await repo.saveHkChecklist(owner, ["Bett beziehen", "Bad reinigen"]);
+      const view = await repo.listRooms(staff, sid("out-mitte"));
+      expect(view.rooms).toHaveLength(5);
+      const r101 = view.rooms.find((r) => r.number === "101")!;
+      await expect(repo.updateRoom(staff, r101.id, { status: "clean", checked: [view.checklist[0].id] })).rejects.toThrow(/Noch nicht abgehakt: Bad reinigen/);
+      await repo.updateRoom(staff, r101.id, { status: "clean", checked: view.checklist.map((i) => i.id) });
+      await expect(repo.updateRoom(staff, r101.id, { status: "inspected" })).rejects.toThrow(/nur die Leitung/);
+      await expect(repo.updateRoom(staff, r101.id, { occupancy: "occupied" })).rejects.toThrow(/Belegung ändert die Leitung/);
+      await repo.updateRoom(owner, r101.id, { status: "inspected", occupancy: "occupied" });
+      expect(await repo.assignRooms(owner, [r101.id], view.me ?? view.staff[0].id)).toBe(1);
+      await expect(repo.assignRooms(staff, [r101.id], null)).rejects.toThrow(/Berechtigung/);
+      expect(await repo.startHousekeepingDay(owner, sid("out-mitte"))).toBe(1);
+      const after = (await repo.listRooms(owner, sid("out-mitte"))).rooms.find((r) => r.number === "101")!;
+      expect([after.status, after.assignedTo]).toEqual(["dirty", null]);
+      expect((await repo.listRooms(owner, sid("out-mitte"))).recent.map((e) => e.toStatus)).toEqual(["dirty", "inspected", "clean"]);
+      await expect(repo.listRooms(staff, sid("out-zentral"))).rejects.toThrow(/Berechtigung/);
+      await expect(repo.listRooms({ ...stranger, libraryId: owner.libraryId }, sid("out-mitte"))).rejects.toThrow(/Berechtigung/);
+      expect((await repo.exportLibrary(owner)).rooms).toHaveLength(5);
+      await admin`delete from rooms where outlet_id = ${sid("out-mitte")}`;
+      await repo.saveHkChecklist(owner, []);
+    });
+  });
+
   describe("invoices", () => {
     it("editors match and approve; staff and other libraries cannot", async () => {
       const order = (await repo.getOrder(owner, sid("po-1")))!;

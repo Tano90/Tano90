@@ -13,6 +13,7 @@ import { Forbidden, OUTLET_COOKIE, SESSION_COOKIE, authMode, canEditLibrary, can
 import type { Session } from "@/data/types";
 import { createLead, updateLead } from "@/data/leads";
 import { READ_ONLY_MESSAGE, accessOf } from "@/domain/access";
+import { parseRoomNumbers } from "@/domain/housekeeping";
 import { billingConfigured, createCheckout, createPortal, syncOutletQuantity } from "@/lib/billing";
 import { sendMail } from "@/lib/mail";
 import { invitationMail, leadNotifyMail, leadThanksMail, orderMail } from "@/lib/mail-templates";
@@ -528,6 +529,35 @@ export async function produce(requestIds: string[]) {
 }
 export async function deliverProduction(requestIds: string[]) {
   return run(async (s) => repo.deliverProduction(s, await currentOutletId(s), z.array(id).min(1).max(200).parse(requestIds)), ["/production"]);
+}
+
+// ---------------------------------------------------------------- housekeeping
+
+const roomStatus = z.enum(["dirty", "clean", "inspected", "out_of_order"]);
+const occupancy = z.enum(["vacant", "occupied", "departure", "arrival"]);
+const shortText = (max: number) => z.string().trim().max(max).transform((v) => v || null).nullable();
+
+export async function createRooms(input: { numbers: string; floor: string; roomType: string }) {
+  return run(async (s) => {
+    const numbers = parseRoomNumbers(z.string().max(4000).parse(input.numbers));
+    return repo.createRooms(s, await currentOutletId(s), { numbers, floor: shortText(20).parse(input.floor), roomType: shortText(60).parse(input.roomType) });
+  }, ["/housekeeping"]);
+}
+const RoomPatchSchema = z.object({ status: roomStatus.optional(), occupancy: occupancy.optional(), note: shortText(300).optional(), checked: z.array(id).max(100).optional() });
+export async function updateRoom(roomId: string, patch: z.input<typeof RoomPatchSchema>) {
+  return run((s) => repo.updateRoom(s, id.parse(roomId), RoomPatchSchema.parse(patch)), ["/housekeeping"]);
+}
+export async function assignRooms(roomIds: string[], membershipId: string | null) {
+  return run((s) => repo.assignRooms(s, z.array(id).min(1).max(500).parse(roomIds), membershipId ? id.parse(membershipId) : null), ["/housekeeping"]);
+}
+export async function startHousekeepingDay() {
+  return run(async (s) => repo.startHousekeepingDay(s, await currentOutletId(s)), ["/housekeeping"]);
+}
+export async function archiveRoom(roomId: string) {
+  return run((s) => repo.archiveRoom(s, id.parse(roomId)), ["/housekeeping"]);
+}
+export async function saveHkChecklist(labels: string[]) {
+  return run((s) => repo.saveHkChecklist(s, z.array(z.string().trim().min(1).max(120)).max(40, "Höchstens 40 Punkte.").parse(labels.filter((l) => l.trim()))), ["/housekeeping"]);
 }
 
 // ---------------------------------------------------------------- HACCP

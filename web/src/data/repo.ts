@@ -24,5 +24,6 @@ export const {
   listProduction, requestProduction, cancelProductionRequest, produce, deliverProduction,
   getInvoice, saveInvoice, approveInvoice, listChecklists, getHaccpDay, saveHaccpRecords, haccpDeviations, saveChecklist, archiveChecklist, getMenuEngineering, importSales, importSalesWithKey, listPosItems, linkPosItem, listApiKeys, createApiKey, revokeApiKey,
   dashboard, exportLibrary,
+  listRooms, createRooms, updateRoom, assignRooms, startHousekeepingDay, archiveRoom, saveHkChecklist,
 } = impl;
-export type { Billing, ChecklistDraft, HaccpEntry, IngredientFilter, ProductionInput, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "./repo-memory";
+export type { Billing, ChecklistDraft, RoomPatch, HaccpEntry, IngredientFilter, ProductionInput, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "./repo-memory";

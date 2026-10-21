@@ -14,6 +14,7 @@ import { hashKey, newApiKey } from "@/lib/api-key";
 import { accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import { controlling } from "@/domain/controlling";
+import { STATUS_LABEL, canSetStatus, needsServiceToday } from "@/domain/housekeeping";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
 import type { SaleInput } from "@/domain/pos";
@@ -21,7 +22,7 @@ import { type BaseUnit } from "@/domain/units";
 import { Forbidden, assertCanChangeMember, canAccessOutlet, canEditLibrary, canManageTeam } from "./session-rules";
 import { addMovement, db, newId, now } from "./store";
 import type {
-  AllergenRow, Category, CountEntry, HaccpItem, Ingredient, Menu, Nutrition, Package, PurchaseOrder, Recipe, RecipeLine, Session, StockEvent, StockItem, Supplier,
+  AllergenRow, Category, CountEntry, HaccpItem, Room, Ingredient, Menu, Nutrition, Package, PurchaseOrder, Recipe, RecipeLine, Session, StockEvent, StockItem, Supplier,
 } from "./types";
 
 const visible = <T extends { archivedAt: string | null }>(rows: T[]) => rows.filter((r) => !r.archivedAt);
@@ -138,6 +139,94 @@ export async function getControlling(s: Session, fromDay: string, toDay: string)
     const revenue = d.sales.filter((x) => x.outletId === o.id && x.soldAt >= from && x.soldAt < to).reduce((t, x) => t + x.revenueNetCents, 0);
     return { outletId: o.id, name: o.name, costCenter: o.costCenter ?? null, ...controlling(moves, from, to, revenue) };
   });
+}
+
+// ---------------------------------------------------------------- housekeeping
+
+const hkStaff = (s: Session, outletId: string) =>
+  db().members.filter((m) => m.role === "owner" || m.role === "admin" || m.role === "chef" || m.allOutlets || m.outletIds.includes(outletId))
+    .map((m) => ({ id: m.id, name: m.name, userId: m.userId })).sort((a, b) => a.name.localeCompare(b.name, "de"));
+
+export async function listRooms(s: Session, outletId: string) {
+  assertOutlet(s, outletId);
+  const d = db();
+  const staff = hkStaff(s, outletId);
+  const name = (memberId: string | null) => d.members.find((m) => m.id === memberId)?.name ?? null;
+  const rooms = d.rooms.filter((r) => r.outletId === outletId && !r.archivedAt)
+    .sort((a, b) => (a.floor ?? "").localeCompare(b.floor ?? "") || a.number.length - b.number.length || a.number.localeCompare(b.number))
+    .map((r) => ({ ...r, assigneeName: name(r.assignedTo) }));
+  const byRoom = new Map(d.rooms.map((r) => [r.id, r]));
+  const recent = d.roomEvents.filter((e) => byRoom.get(e.roomId)?.outletId === outletId).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 30)
+    .map((e) => ({ at: e.at, number: byRoom.get(e.roomId)!.number, fromStatus: e.fromStatus, toStatus: e.toStatus, byName: d.members.find((m) => m.userId === e.byUser)?.name ?? "–" }));
+  return { rooms, checklist: [...d.hkChecklist].sort((a, b) => a.position - b.position), staff: staff.map(({ id, name: n }) => ({ id, name: n })), recent, me: staff.find((m) => m.userId === s.userId)?.id ?? null };
+}
+
+export async function createRooms(s: Session, outletId: string, input: { numbers: string[]; floor: string | null; roomType: string | null }) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  assertOutlet(s, outletId);
+  const d = db();
+  const taken = new Set(d.rooms.filter((r) => r.outletId === outletId && !r.archivedAt).map((r) => r.number.toLowerCase()));
+  const added = input.numbers.filter((n) => !taken.has(n.toLowerCase()));
+  for (const number of added) d.rooms.push({ id: newId("room"), libraryId: d.library.id, outletId, number, floor: input.floor, roomType: input.roomType, status: "dirty", occupancy: "vacant", assignedTo: null, note: null, updatedAt: now(), updatedBy: s.userId, archivedAt: null });
+  return { added: added.length, skipped: input.numbers.filter((n) => taken.has(n.toLowerCase())) };
+}
+
+export async function updateRoom(s: Session, roomId: string, patch: RoomPatch) {
+  const d = db();
+  const room = d.rooms.find((r) => r.id === roomId && !r.archivedAt);
+  if (!room) throw new Error("Zimmer nicht gefunden.");
+  assertOutlet(s, room.outletId);
+  const manager = canEditLibrary(s.role);
+  if (patch.occupancy !== undefined && patch.occupancy !== room.occupancy && !manager) throw new Error("Die Belegung ändert die Leitung.");
+  if (patch.status !== undefined && patch.status !== room.status) {
+    if (!canSetStatus(s.role, room.status, patch.status)) throw new Error(`Von „${STATUS_LABEL[room.status]}“ auf „${STATUS_LABEL[patch.status]}“ stellt nur die Leitung um.`);
+    if (patch.status === "clean") {
+      const missing = d.hkChecklist.filter((i) => !patch.checked?.includes(i.id));
+      if (missing.length) throw new Error(`Noch nicht abgehakt: ${missing.map((i) => i.label).join(", ")}.`);
+    }
+    d.roomEvents.push({ id: newId("rev"), roomId, fromStatus: room.status, toStatus: patch.status, checked: patch.checked ?? [], byUser: s.userId, at: now() });
+    room.status = patch.status;
+  }
+  if (patch.occupancy !== undefined) room.occupancy = patch.occupancy;
+  if (patch.note !== undefined) room.note = patch.note;
+  room.updatedAt = now();
+  room.updatedBy = s.userId;
+}
+
+export async function assignRooms(s: Session, roomIds: string[], membershipId: string | null) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  const d = db();
+  if (membershipId && !d.members.some((m) => m.id === membershipId)) throw new Error("Diese Person gehört nicht zum Betrieb.");
+  const rooms = d.rooms.filter((r) => roomIds.includes(r.id) && !r.archivedAt);
+  for (const r of rooms) r.assignedTo = membershipId;
+  return rooms.length;
+}
+
+export async function startHousekeepingDay(s: Session, outletId: string) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  assertOutlet(s, outletId);
+  const d = db();
+  const rooms = d.rooms.filter((r) => r.outletId === outletId && !r.archivedAt);
+  const due = rooms.filter(needsServiceToday);
+  for (const r of due) {
+    d.roomEvents.push({ id: newId("rev"), roomId: r.id, fromStatus: r.status, toStatus: "dirty", checked: [], byUser: s.userId, at: now() });
+    r.status = "dirty";
+  }
+  for (const r of rooms) r.assignedTo = null;
+  return due.length;
+}
+
+export async function archiveRoom(s: Session, roomId: string) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  const room = db().rooms.find((r) => r.id === roomId && !r.archivedAt);
+  if (!room) throw new Error("Zimmer nicht gefunden.");
+  room.archivedAt = now();
+  room.assignedTo = null;
+}
+
+export async function saveHkChecklist(s: Session, labels: string[]) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  db().hkChecklist = labels.map((label, position) => ({ id: newId("hki"), position, label }));
 }
 
 export async function listMembers(s: Session) {
@@ -793,6 +882,8 @@ export async function importSalesWithKey(key: string, rows: SaleInput[]): Promis
   k.lastUsedAt = now();
   return importInto(k.outletId, rows, null);
 }
+
+export type RoomPatch = { status?: Room["status"]; occupancy?: Room["occupancy"]; note?: string | null; checked?: string[] };
 
 export type ProductionInput = { recipeId: string; portions: number; neededOn: string; note: string | null };
 

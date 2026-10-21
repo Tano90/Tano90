@@ -5,7 +5,7 @@ import type { CostContext } from "@/domain/costing";
 import { billOfMaterials } from "@/domain/menus";
 import { type CountBreakdown, applyMovement } from "@/domain/stock";
 import type {
-  AllergenRow, ApiKey, Category, CountDraft, HaccpChecklist, HaccpRecord, ProductionRequest, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
+  AllergenRow, ApiKey, Category, CountDraft, HaccpChecklist, HaccpRecord, HkChecklistItem, ProductionRequest, Room, RoomEvent, Ingredient, Library, Member, Menu, Nutrition, Outlet, OutletIngredient, Package,
   PosItem, PurchaseOrder, Recipe, RecipeLine, Sale, StockEvent, StockItem, StockLevel, StockMovement, Supplier,
 } from "./types";
 
@@ -26,6 +26,9 @@ export type Db = {
   outletPrices: { recipeId: string; outletId: string; sellPriceCents: number }[];
   haccpChecklists: HaccpChecklist[];
   production: ProductionRequest[];
+  rooms: Room[];
+  roomEvents: RoomEvent[];
+  hkChecklist: HkChecklistItem[];
   haccpRecords: HaccpRecord[];
   invoices: {
     id: string; orderId: string; supplierId: string; invoiceNumber: string; invoiceDate: string; status: "matched" | "mismatch" | "approved";
@@ -95,7 +98,7 @@ export function seed(): Db {
       ...["Mittagstisch", "Abendkarte"].map((name, i) => ({ id: `cat-m${i}`, kind: "menu" as const, name })),
     ],
     ingredients: [], packages: [], suppliers: [], stockItems: [], allergens: {}, verified: {}, nutrition: {},
-    recipes: [], menus: [], outletPrices: [], invoices: [], haccpChecklists: [], haccpRecords: [], production: [], posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
+    recipes: [], menus: [], outletPrices: [], invoices: [], haccpChecklists: [], haccpRecords: [], production: [], rooms: [], roomEvents: [], hkChecklist: [], posItems: [], sales: [], apiKeys: [], outletIngredients: [], orders: [], events: [], movements: [], levels: [], countDrafts: {}, seq: 3,
   };
 
   const sup = (id: string, companyName: string, orderEmail: string, leadTimeDays: number) =>

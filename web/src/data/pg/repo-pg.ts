@@ -16,13 +16,14 @@ import { hashKey, newApiKey } from "@/lib/api-key";
 import { type BillingState, accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
 import { type ControllingRow, controlling } from "@/domain/controlling";
+import { STATUS_LABEL, canSetStatus, needsServiceToday } from "@/domain/housekeeping";
 import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
 import type { BaseUnit } from "@/domain/units";
 import type { Billing, ChecklistDraft, HaccpEntry, ImportResult, ProductionInput, IngredientFilter, IngredientInput, InvoiceInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
 import { Forbidden, assertCanChangeMember, canEditLibrary, canManageTeam } from "../session-rules";
 import type {
-  AllergenRow, Category, CountEntry, HaccpChecklist, HaccpItem, ProductionRequest, Ingredient, Library, Member, Menu, MenuCourse, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
+  AllergenRow, Category, CountEntry, HaccpChecklist, HaccpItem, HkChecklistItem, ProductionRequest, Room, Ingredient, Library, Member, Menu, MenuCourse, Nutrition, Outlet, Package, PurchaseOrder, Recipe, RecipeLine, Session,
   StockEvent, StockItem, StockMovement, Supplier,
 } from "../types";
 import { type Tx, asService, asUser, friendly } from "./client";
@@ -134,6 +135,7 @@ const EXPORT: [table: string, where: string, omit?: string[]][] = [
   ["haccp_checklists", BY_LIBRARY], ["haccp_items", "checklist_id in (select id from haccp_checklists where library_id = $1)"],
   ["haccp_records", "item_id in (select i.id from haccp_items i join haccp_checklists c on c.id = i.checklist_id where c.library_id = $1)"],
   ["production_requests", BY_LIBRARY],
+  ["rooms", BY_LIBRARY], ["room_events", "room_id in (select id from rooms where library_id = $1)"], ["hk_checklist_items", BY_LIBRARY],
 ];
 
 export async function exportLibrary(s: Session): Promise<Record<string, Record<string, unknown>[]>> {
@@ -176,6 +178,121 @@ export async function getControlling(s: Session, fromDay: string, toDay: string)
       out.push({ outletId: o.id, name: o.name, costCenter: o.costCenter, ...controlling(moves.map((m) => ({ ...m, occurredAt: new Date(m.occurredAt).toISOString() })), from, to, revenue) });
     }
     return out;
+  });
+}
+
+// ---------------------------------------------------------------- housekeeping
+
+export type RoomPatch = { status?: Room["status"]; occupancy?: Room["occupancy"]; note?: string | null; checked?: string[] };
+export type RoomRow = Room & { assigneeName: string | null };
+export type RoomLog = { at: string; number: string; fromStatus: string | null; toStatus: string; byName: string };
+
+async function assertOutletAccess(tx: Tx, outletId: string) {
+  if (!isUuid(outletId)) throw new Error("Outlet nicht gefunden.");
+  const [{ ok }] = await tx<{ ok: boolean }[]>`select can_access_outlet(${outletId}) as ok`;
+  if (!ok) throw new Forbidden();
+}
+
+/** Rooms of an outlet with who cleans them, the cleaning checklist, the people who can be assigned and the latest changes. */
+export async function listRooms(s: Session, outletId: string) {
+  return run(s, async (tx) => {
+    await assertOutletAccess(tx, outletId);
+    const rooms = await tx<RoomRow[]>`
+      select r.*, m.display_name as assignee_name from rooms r left join memberships m on m.id = r.assigned_to
+      where r.outlet_id = ${outletId} and r.archived_at is null
+      order by coalesce(r.floor, ''), length(r.number), r.number`;
+    const checklist = await tx<HkChecklistItem[]>`select id, position, label from hk_checklist_items where library_id = ${s.libraryId} order by position`;
+    // Through the service role: staff may not read other memberships, but the board shows who cleans which room.
+    const staff = await asService((sv) => sv<{ id: string; name: string; userId: string }[]>`
+      select m.id, m.display_name as name, m.user_id from memberships m where m.library_id = ${s.libraryId}
+        and (m.role in ('owner', 'admin', 'chef') or m.all_outlets or exists (select 1 from membership_outlets mo where mo.membership_id = m.id and mo.outlet_id = ${outletId}))
+      order by m.display_name`);
+    const recent = await tx<RoomLog[]>`
+      select e.at, r.number, e.from_status, e.to_status, coalesce((select m.display_name from memberships m where m.user_id = e.by_user and m.library_id = r.library_id), '–') as by_name
+      from room_events e join rooms r on r.id = e.room_id where r.outlet_id = ${outletId} order by e.at desc limit 30`;
+    const me = staff.find((m) => m.userId === s.userId)?.id ?? null;
+    return { rooms, checklist, staff: staff.map(({ id, name }) => ({ id, name })), recent, me };
+  });
+}
+
+export async function createRooms(s: Session, outletId: string, input: { numbers: string[]; floor: string | null; roomType: string | null }) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  return run(s, async (tx) => {
+    await assertOutletAccess(tx, outletId);
+    const added = await tx<{ number: string }[]>`
+      insert into rooms ${tx(input.numbers.map((number) => ({ libraryId: s.libraryId, outletId, number, floor: input.floor, roomType: input.roomType, updatedBy: s.userId })))}
+      on conflict (outlet_id, lower(number)) where archived_at is null do nothing returning number`;
+    return { added: added.length, skipped: input.numbers.filter((n) => !added.some((a) => a.number === n)) };
+  });
+}
+
+export async function updateRoom(s: Session, roomId: string, patch: RoomPatch) {
+  if (!isUuid(roomId)) throw new Error("Zimmer nicht gefunden.");
+  const manager = canEditLibrary(s.role);
+  return run(s, async (tx) => {
+    const [room] = await tx<Room[]>`select * from rooms where id = ${roomId} and archived_at is null for update`;
+    if (!room) throw new Error("Zimmer nicht gefunden.");
+    if (patch.occupancy !== undefined && patch.occupancy !== room.occupancy && !manager) throw new Error("Die Belegung ändert die Leitung.");
+    const set: Record<string, unknown> = {};
+    if (patch.status !== undefined && patch.status !== room.status) {
+      if (!canSetStatus(s.role, room.status, patch.status)) throw new Error(`Von „${STATUS_LABEL[room.status]}“ auf „${STATUS_LABEL[patch.status]}“ stellt nur die Leitung um.`);
+      if (patch.status === "clean") {
+        const items = await tx<{ id: string; label: string }[]>`select id, label from hk_checklist_items where library_id = ${room.libraryId} order by position`;
+        const missing = items.filter((i) => !patch.checked?.includes(i.id));
+        if (missing.length) throw new Error(`Noch nicht abgehakt: ${missing.map((i) => i.label).join(", ")}.`);
+      }
+      set.status = patch.status;
+      await tx`insert into room_events ${tx({ roomId, fromStatus: room.status, toStatus: patch.status, checked: tx.json(patch.checked ?? []), byUser: s.userId })}`;
+    }
+    if (patch.occupancy !== undefined) set.occupancy = patch.occupancy;
+    if (patch.note !== undefined) set.note = patch.note;
+    if (!Object.keys(set).length) return;
+    await tx`update rooms set ${tx({ ...set, updatedAt: new Date(), updatedBy: s.userId })} where id = ${roomId}`;
+  });
+}
+
+export async function assignRooms(s: Session, roomIds: string[], membershipId: string | null) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  if (roomIds.some((x) => !isUuid(x)) || (membershipId && !isUuid(membershipId))) throw new Error("Zimmer nicht gefunden.");
+  return run(s, async (tx) => {
+    if (membershipId) {
+      const [m] = await asService((sv) => sv`select 1 from memberships where id = ${membershipId} and library_id = ${s.libraryId}`);
+      if (!m) throw new Error("Diese Person gehört nicht zum Betrieb.");
+    }
+    const done = await tx`update rooms set assigned_to = ${membershipId}, updated_at = now(), updated_by = ${s.userId}
+      where id = any(${roomIds}::uuid[]) and library_id = ${s.libraryId} and archived_at is null returning id`;
+    return done.length;
+  });
+}
+
+/** Start of the day: occupied and departing rooms go to dirty, assignments are cleared. */
+export async function startHousekeepingDay(s: Session, outletId: string) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  return run(s, async (tx) => {
+    await assertOutletAccess(tx, outletId);
+    const rooms = await tx<Room[]>`select * from rooms where outlet_id = ${outletId} and archived_at is null for update`;
+    const due = rooms.filter(needsServiceToday);
+    for (const r of due) await tx`insert into room_events ${tx({ roomId: r.id, fromStatus: r.status, toStatus: "dirty", byUser: s.userId })}`;
+    if (due.length) await tx`update rooms set status = 'dirty', updated_at = now(), updated_by = ${s.userId} where id = any(${due.map((r) => r.id)}::uuid[])`;
+    await tx`update rooms set assigned_to = null where outlet_id = ${outletId} and assigned_to is not null`;
+    return due.length;
+  });
+}
+
+export async function archiveRoom(s: Session, roomId: string) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  if (!isUuid(roomId)) throw new Error("Zimmer nicht gefunden.");
+  await run(s, async (tx) => {
+    const done = await tx`update rooms set archived_at = now(), assigned_to = null where id = ${roomId} and library_id = ${s.libraryId} and archived_at is null returning id`;
+    if (!done.length) throw new Error("Zimmer nicht gefunden.");
+  });
+}
+
+export async function saveHkChecklist(s: Session, labels: string[]) {
+  if (!canEditLibrary(s.role)) throw new Forbidden();
+  await run(s, async (tx) => {
+    await tx`delete from hk_checklist_items where library_id = ${s.libraryId}`;
+    if (labels.length) await tx`insert into hk_checklist_items ${tx(labels.map((label, position) => ({ libraryId: s.libraryId, position, label })))}`;
   });
 }
 

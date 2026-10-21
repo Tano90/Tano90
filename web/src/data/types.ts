@@ -179,3 +179,11 @@ export type CountDraft = Record<string, number>; // ingredientId -> counted base
 export type CountEntry = number | { packs: Record<string, number>; looseBase: number } | null;
 
 export type Session = { userId: string; name: string; email: string; role: Role; libraryId: string; outletIds: string[] | "all" };
+
+export type Room = {
+  id: string; libraryId: string; outletId: string; number: string; floor: string | null; roomType: string | null;
+  status: "dirty" | "clean" | "inspected" | "out_of_order"; occupancy: "vacant" | "occupied" | "departure" | "arrival";
+  assignedTo: string | null; note: string | null; updatedAt: string; updatedBy: string | null; archivedAt: string | null;
+};
+export type RoomEvent = { id: string; roomId: string; fromStatus: string | null; toStatus: string; checked: string[]; byUser: string | null; at: string };
+export type HkChecklistItem = { id: string; position: number; label: string };
