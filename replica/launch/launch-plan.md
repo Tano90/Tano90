@@ -1,6 +1,7 @@
 # Launch-Plan
 
-Voraussetzung: `/replica-deploy` grün, alle Must-haves fertig (`parity.md`: noch 5 offen), Entwürfe der Rechtsseiten geprüft.
+Voraussetzung: `/replica-deploy` grün, alle Must-haves fertig (`parity.md`: noch 1 offen, dein Login-Durchklick A02),
+Entwürfe der Rechtsseiten geprüft, **Name entschieden** (`brand.md`: Pantra hat einen Namensvetter im App Store).
 
 ## Vor dem Start (4–6 Wochen)
 
@@ -24,10 +25,11 @@ Erst lesen, dann schreiben: in jeder Community zuerst Fragen beantworten, Pantra
 
 Führt mit dem, was belegt besser ist, nicht mit dem Vergleich zum Original (den Namen des Originals nicht nennen):
 
-> Pantra: Was jeder Teller kostet, live – und das Lager rechnet mit.
+> Pantra: Was jeder Teller kostet, live – und Lager und Zentralküche rechnen mit.
 > Zutaten so anlegen, wie der Lieferant sie verkauft; Rezepte zeigen beim Tippen den Wareneinsatz pro Portion; die
-> Inventur auf dem Handy speichert jede Zahl sofort, auch ohne Netz. Pro Standort bezahlt, beliebig viele Nutzer,
-> Kündigen mit einem Klick.
+> Zentralküche sieht pro Tag, was die Standorte brauchen und welche Rohware fehlt; die Inventur auf dem Handy speichert
+> jede Zahl sofort, auch ohne Netz. HACCP und Rechnungsabgleich ohne Zusatzmodul. Pro Standort bezahlt, beliebig viele
+> Nutzer, Kündigen mit einem Klick.
 
 Für HN zusätzlich ehrlich die Technik: Postgres mit Row Level Security als Zugriffsgrenze, Lager als Buchungsjournal mit
 gleitendem Durchschnittspreis im Datenbank-Trigger.
@@ -49,4 +51,4 @@ nachfragen, was sie in Pantra nicht tun konnten. Das ist die echte Feature-Liste
 wird erst mit einer echten App. Dann: Screenshots in den aktuell geforderten Größen, Datenschutz-Angaben (App Privacy /
 Data safety: E-Mail, Name, Betriebsdaten; keine Werbung, kein Tracking), Altersfreigabe 4+, Datenschutz- und Support-URL,
 Review-Notizen mit einem Demo-Konto. Nach Apple-Richtlinie 4.1 (Nachahmer) helfen die eigenen Funktionen und die eigene
-Marke durch die Prüfung: Live-Kalkulation und Offline-Inventur gehören in die ersten Zeilen und Screenshots.
+Marke durch die Prüfung: Live-Kalkulation, Zentralküche und Offline-Inventur gehören in die ersten Zeilen und Screenshots.

@@ -28,6 +28,15 @@ test.describe("L01 Landingpage", () => {
     await expect(page.getByText(/Mit einem Klick unter Einstellungen/)).toBeVisible();
   });
 
+  test("L01-E3 Funktionen und FAQ nennen, was gebaut ist", async ({ page }) => {
+    await page.goto("/");
+    const features = page.getByRole("region", { name: /Gebaut für die Momente/ });
+    for (const title of ["Zentralküche mit Plan", "Rechnung gegen Lieferung", "HACCP im Grundpreis"]) await expect(features.getByRole("heading", { name: title })).toBeVisible();
+    await page.getByText("Kann ich meine Zutaten und Preise importieren?").click();
+    await expect(page.getByText(/^Ja\. Die Preisliste deines Lieferanten/)).toBeVisible();
+    await expect(page.locator("body")).not.toContainText("Noch nicht.");
+  });
+
   test("L01-N1 Rechtsseiten verlinkt", async ({ page }) => {
     await page.goto("/");
     for (const name of ["Datenschutz", "Nutzungsbedingungen", "Impressum"]) {

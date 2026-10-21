@@ -1,4 +1,4 @@
-import { ArrowRight, Check, ClipboardList, Receipt, ShieldCheck, Truck, WifiOff } from "lucide-react";
+import { ArrowRight, Check, ClipboardCheck, CookingPot, Receipt, ReceiptText, ScanBarcode, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { APP_NAME } from "@/lib/brand";
@@ -21,19 +21,21 @@ const STEPS = [
 
 const FEATURES = [
   { icon: Receipt, title: "Wareneinsatz beim Tippen", body: "Kosten pro Portion, Wareneinsatz in Prozent und Rohertrag stehen neben dem Rezept, während du es schreibst. Ändert sich ein Einkaufspreis, rechnet jedes Rezept mit, auch über Grundrezepte hinweg." },
-  { icon: ShieldCheck, title: "Allergene, die nichts schönrechnen", body: "Eine Zutat ohne geprüfte Allergene macht das Gericht „unbekannt“, nie „frei“. Fehlt ein Preis oder ein Stückgewicht, steht an der Zeile, was genau fehlt." },
-  { icon: Truck, title: "Bestellung genau einmal beim Lieferanten", body: "Vorschlag aus Mindestbestand und offenen Bestellungen, Versand per Mail. Auch bei Doppelklick oder zwei offenen Tabs kommt beim Lieferanten nur eine Bestellung an." },
-  { icon: ClipboardList, title: "Wareneingang in zwei Klicks", body: "Bestellte Mengen sind vorausgefüllt. Teillieferungen bleiben offen, Überlieferungen werden abgefangen statt doppelt gebucht." },
-  { icon: WifiOff, title: "Inventur, die ein Funkloch übersteht", body: "Jede Zahl wird sofort zwischengespeichert. Fällt im Kühlhaus das Netz weg, zeigt Pantra das an und speichert nach, sobald es zurück ist." },
+  { icon: CookingPot, title: "Zentralküche mit Plan", body: "Standorte fordern Rezepte an, die Zentralküche sieht pro Liefertag, was zu kochen ist und welche Rohware fehlt. Produzieren bucht die Rohware aus und schreibt jedem Standort seine Kosten zu." },
+  { icon: ScanBarcode, title: "Inventur, die ein Funkloch übersteht", body: "Zählen in Kartons plus Rest oder per Barcode-Scanner. Jede Zahl wird sofort zwischengespeichert; fällt im Kühlhaus das Netz weg, speichert Pantra nach, sobald es zurück ist." },
+  { icon: ReceiptText, title: "Rechnung gegen Lieferung", body: "Jede Rechnungszeile steht neben Bestellung und Wareneingang. Abweichungen bei Menge und Preis sind markiert, freigeben lässt sich eine abweichende Rechnung nur mit Begründung." },
+  { icon: ClipboardCheck, title: "HACCP im Grundpreis", body: "Eigene Checklisten mit Grenzwerten, Tageskontrolle pro Standort, Abweichungen nur mit Maßnahme. Das Protokoll der letzten 30 Tage geht als CSV an die Lebensmittelkontrolle." },
+  { icon: ShieldCheck, title: "Fehler, bevor sie Geld kosten", body: "„2.5“ und „2,5“ ergeben dieselbe Menge, eine Bestellung kommt auch bei Doppelklick nur einmal an, und eine ungeprüfte Zutat macht ein Gericht „unbekannt“, nie „allergenfrei“." },
 ];
 
 const FAQ = [
-  { q: "Kann ich meine Zutaten und Preise importieren?", a: "Noch nicht. Ein Import per Excel ist in Arbeit. Bis dahin legst du Zutaten einzeln an; die meisten Küchen starten mit den 30 Artikeln, die sie am häufigsten kaufen." },
-  { q: "Funktioniert Pantra mit meiner Kasse?", a: "Noch nicht. Eine Schnittstelle, über die Kassen Verkäufe übertragen, ist geplant. Bis dahin rechnet Pantra mit Rezepten, Einkauf und Inventur, aber ohne automatischen Abzug verkaufter Gerichte." },
+  { q: "Kann ich meine Zutaten und Preise importieren?", a: "Ja. Die Preisliste deines Lieferanten als Excel- oder CSV-Datei hochladen: Pantra zeigt vor dem Übernehmen jede Zeile als neu, geändert oder fehlerhaft. Übernommen wird erst, wenn du zustimmst." },
+  { q: "Funktioniert Pantra mit meiner Kasse?", a: "Über eine Datei oder eine Schnittstelle: Verkäufe als CSV hochladen oder von der Kasse per API senden lassen. Verknüpfte Gerichte werden über ihre Rezepte vom Lager abgebucht, Stornos zurückgebucht. Fertige Anbindungen an einzelne Kassenhersteller gibt es nicht." },
+  { q: "Brauche ich für HACCP oder die Zentralküche ein Zusatzmodul?", a: "Nein. Alle Funktionen sind in jedem Tarif enthalten. Bezahlt wird nur pro Standort." },
   { q: "Wer haftet für die Allergenangaben?", a: "Pantra rechnet aus deinen Angaben, die Kennzeichnung gegenüber Gästen verantwortet dein Betrieb. Deshalb zeigt Pantra ungeprüfte Zutaten offen an, statt sie als allergenfrei durchzuwinken." },
   { q: "Wo liegen meine Daten?", a: "In der EU (Frankfurt). Zahlungen laufen über Stripe; deine Kartendaten sehen wir nie." },
   { q: "Wie kündige ich?", a: "Mit einem Klick unter Einstellungen → Abo & Rechnungen, ohne Anruf und ohne Formular. Das Abo läuft bis zum Ende des bereits bezahlten Zeitraums und endet dann." },
-  { q: "Brauche ich eine App?", a: "Nein. Pantra läuft im Browser auf Computer, Tablet und Handy. Die Inventur ist für das Handy gebaut." },
+  { q: "Brauche ich eine App?", a: "Nein. Pantra läuft im Browser auf Computer, Tablet und Handy. Inventur und Wareneingang sind für das Handy gebaut, ein Barcode-Scanner mit Tastatur-Modus funktioniert ohne Einrichtung." },
 ];
 
 const eur = (cents: number) => formatCents(cents).replace(",00", "");
@@ -56,7 +58,7 @@ export default function LandingPage() {
           <div>
             <h1 id="hero" className="text-display">Was jeder Teller kostet. Live.</h1>
             <p className="mt-4 max-w-xl text-base text-text-muted">
-              Für Küchen mit einem oder mehreren Standorten: Rezepte, Einkaufspreise, Bestellungen und Inventur in einem Werkzeug –
+              Für Küchen mit einem oder mehreren Standorten: Rezepte, Einkauf, Lager und Zentralküche in einem Werkzeug –
               und der Wareneinsatz stimmt, auch wenn sich Preise jede Woche ändern.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -119,7 +121,7 @@ export default function LandingPage() {
               <p className="num mt-4 text-xl">{eur(PRICING.firstOutletMonthly)} <span className="text-sm font-normal text-text-muted">pro Monat</span></p>
               <p className="text-xs font-normal text-text-muted">oder {eur(PRICING.firstOutletYearly)} pro Jahr (2 Monate geschenkt)</p>
               <ul className="mt-4 flex flex-col gap-2">
-                {["1 Standort", "Unbegrenzt Zutaten, Rezepte, Bestellungen", "Beliebig viele Nutzer", "Kündigen mit einem Klick"].map((x) => (
+                {["1 Standort", "Unbegrenzt Zutaten, Rezepte, Bestellungen", "Inventur, Rechnungsabgleich, HACCP", "Beliebig viele Nutzer", "Kündigen mit einem Klick"].map((x) => (
                   <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{x}</li>
                 ))}
               </ul>
@@ -130,7 +132,7 @@ export default function LandingPage() {
               <p className="num mt-4 text-xl">+ {eur(PRICING.extraOutletMonthly)} <span className="text-sm font-normal text-text-muted">pro weiterem Standort und Monat</span></p>
               <p className="text-xs font-normal text-text-muted">oder {eur(PRICING.extraOutletYearly)} pro Jahr und Standort</p>
               <ul className="mt-4 flex flex-col gap-2">
-                {["Eigener Bestand und eigene Bestellungen je Standort", "Gemeinsame Rezepte und Zutaten", "Teammitglieder nur für ihren Standort", "Abgerechnet wird, was angelegt ist – keine Sprünge"].map((x) => (
+                {["Eigener Bestand und eigene Bestellungen je Standort", "Gemeinsame Rezepte und Zutaten", "Zentralküche: Anforderungen und Produktionsplan", "Teammitglieder nur für ihren Standort", "Abgerechnet wird, was angelegt ist – keine Sprünge"].map((x) => (
                   <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{x}</li>
                 ))}
               </ul>

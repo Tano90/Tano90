@@ -4,6 +4,10 @@ Gebaut: `web/src/app/page.tsx` (Route `/`, statisch). Die App liegt jetzt unter 
 `landing-mobile.png`. Geprüft: axe WCAG 2.2 AA ohne Verstoß, Kontrast über die Tokens (31 Paare, 0 Fehler), kein seitliches
 Scrollen bei 390 px, FAQ per Tastatur (E2E `landing.spec.ts`).
 
+**Stand 2026-10-21:** Positionierung aus `brand.md` (Winkel 1, ohne Bewertungen auf deinen Wunsch): Live-Kalkulation plus
+Lager und Zentralküche. FAQ korrigiert: Import und Kassen-Anbindung standen dort noch als „noch nicht“, sind aber seit dem
+3. und 5. Durchgang gebaut. Vier neue Funktionen auf der Seite (Zentralküche, Barcode-Inventur, Rechnungsabgleich, HACCP).
+
 **Einschränkung:** `fixes.md` hat noch keine belegte Positionierung (0 Bewertungen). Die Seite führt deshalb mit dem, was
 Pantra nachweislich kann (durch E2E-Tests belegt), und nicht mit Klagen über das Original. Sobald `feedback.md` existiert:
 Problem-Abschnitt und Feature-Reihenfolge neu ordnen.
@@ -13,7 +17,7 @@ Regel für jede Aussage auf der Seite: Sie muss im Produkt stimmen und getestet 
 
 ## 1. Hero
 - **Überschrift:** Was jeder Teller kostet. Live.
-- **Darunter:** Für Küchen mit einem oder mehreren Standorten: Rezepte, Einkaufspreise, Bestellungen und Inventur in einem Werkzeug – und der Wareneinsatz stimmt, auch wenn sich Preise jede Woche ändern.
+- **Darunter:** Für Küchen mit einem oder mehreren Standorten: Rezepte, Einkauf, Lager und Zentralküche in einem Werkzeug – und der Wareneinsatz stimmt, auch wenn sich Preise jede Woche ändern.
 - **Button:** 14 Tage kostenlos testen → `/signup` · zweiter Link: Preise
 - **Bild:** echter Screenshot des Rezept-Editors (Seed-Daten, keine echten Kunden)
 
@@ -28,16 +32,20 @@ Einkauf erfassen → Rezepte bauen → Bestellen und zählen (der Kernablauf F01
 | Funktion | Beleg |
 | --- | --- |
 | Wareneinsatz beim Tippen, rechnet bei Preisänderung über Grundrezepte mit | E2E F02-H1, F03-H1, F04-H1 |
-| Allergene: ungeprüft = „unbekannt“, nie „frei“; fehlender Preis wird an der Zeile genannt | Unit-Test `allergens`, E2E F02-E1/E2 |
-| Bestellung genau einmal beim Lieferanten, auch bei Doppelklick und zwei Tabs | E2E F06-E1, F06-E2 |
-| Wareneingang vorausgefüllt, Teillieferung, Überlieferung abgefangen | E2E F07-H1, F07-N1 |
-| Inventur übersteht ein Funkloch | E2E F08-E2 (BUG-004 behoben) |
+| Zentralküche: Anforderung, Plan je Liefertag mit Rohware und Fehlmengen, Produzieren bucht aus und verteilt Kosten | E2E F13-H1/H2, Integrationstest |
+| Inventur in Gebinden oder per Barcode-Scanner, übersteht ein Funkloch | E2E F08-E2, F08-B1/B3 (BUG-004, BUG-016 behoben) |
+| Rechnung gegen Bestellung und Lieferung, Freigabe bei Abweichung nur mit Begründung | E2E F12-H1, F12-E1 |
+| HACCP im Grundpreis: Checklisten, Grenzwerte, Maßnahme Pflicht, CSV-Protokoll | E2E F14-H1, F14-E1 |
+| Fehler abfangen: Punkt/Komma, Bestellung genau einmal, ungeprüfte Allergene nie „frei“ | E2E X-DEC, F06-E1/E2, Unit-Test `allergens` |
+
+Nicht auf der Seite: Kamera-Scan per Handy (nur von Hand prüfbar, F08-B5 offen) und „Fertigware im Lager“ (nicht gebaut).
 
 ## 5. Preise
 Aus `pricing.md`, Werte aus einer Quelle (`web/src/lib/pricing.ts`), E2E prüft das Rechenbeispiel.
 
 ## 6. FAQ
-Import (noch nicht – ehrlich gesagt), Kasse (noch nicht), Haftung Allergene, Datenstandort, Kündigen, App nötig?
+Import (ja: Excel/CSV mit Vorschau), Kasse (CSV oder API; keine fertigen Hersteller-Anbindungen), Zusatzmodule (keine),
+Haftung Allergene, Datenstandort, Kündigen, App nötig?
 
 ## 7. Abschluss
 „Leg dein teuerstes Gericht an und sieh, was es wirklich kostet.“ + Button.
@@ -47,6 +55,8 @@ Kundenstimmen, Logos, Nutzerzahlen, Sterne – es gibt noch keine Kunden. Kommen
 schriftlicher Erlaubnis. Bewertungen des Originals sind Recherche, keine Testimonials. Der Name des Originals erscheint nirgends.
 
 ## Vor dem Start prüfen
+- **Name:** Pantra hat einen Namensvetter im App Store (`brand.md`). Nach deiner Entscheidung ändert sich nur `APP_NAME`; Screenshots dann neu.
+- Hero-Bild `web/public/landing/rezept-kalkulation.png` zeigt die Navigation vor Zentralküche und HACCP; mit dem Namen zusammen neu aufnehmen.
 - „Daten in der EU (Frankfurt)“ stimmt nur, wenn Supabase und Vercel dort eingerichtet sind (`backend.md`).
 - „Kündigen mit einem Klick“ setzt voraus, dass im Stripe-Kundenportal Kündigen aktiviert ist.
 - Impressum, Datenschutz und Nutzungsbedingungen sind Entwürfe (`/legal/*`).

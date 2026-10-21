@@ -12,6 +12,10 @@ und widersprechen sich teils. Vor jeder Entscheidung die Preisseiten selbst öff
 | meez | Tarif pro Monat | Starter 24 $ (19 $ jährlich), Starter Plus 89 $ (79 $), Scale 199 $ (179 $) mit Inventur für mehrere Standorte | getmeez.com/pricing (Suchauszug) | Suchauszug der offiziellen Seite |
 | Rezeptrechner PRO (DACH) | Jahresabo | ca. 120–140 €/Jahr, nur Kalkulation/Nährwerte/Etiketten | digistore24.com (Produktseiten), capterra | Händlerseiten, Tarifzuordnung unklar |
 
+Stand der Tabelle: 2026-10-20, am 2026-10-21 nicht erneut gelesen (Quellen weiter gesperrt). Laut Recon ist HACCP beim
+Original ein Zusatzmodul; bei Pantra ist es wie die Zentralküche in jedem Tarif enthalten. Die Preise bleiben unverändert:
+49 € + 39 € je weiterem Standort.
+
 ## Was Nutzer zu Preis und Abrechnung sagen
 
 Keine Daten: 0 Bewertungen gesammelt (siehe `fixes.md`). Diese Spalte wird ergänzt, sobald `feedback.md` existiert.
