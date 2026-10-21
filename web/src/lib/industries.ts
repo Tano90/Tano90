@@ -2,6 +2,11 @@
 import type { LucideIcon } from "lucide-react";
 import { BedDouble, Calculator, ChefHat, ClipboardCheck, CookingPot, Package, ReceiptText, ScanBarcode, ShoppingCart, Tags, UtensilsCrossed, WifiOff } from "lucide-react";
 
+import { formatCents } from "./format";
+import { PRICING } from "./pricing";
+
+const ADDON_PRICE = formatCents(PRICING.addonMonthly).replace(",00", "");
+
 export type Industry = {
   slug: "hotel" | "restaurant" | "catering" | "kantine";
   name: string;
@@ -25,8 +30,8 @@ export const INDUSTRIES: Industry[] = [
       "Zimmerstatus auf Zetteln und per Funk: Die Rezeption weiß nicht, ob das Zimmer für die Anreise fertig ist.",
     ],
     features: [
-      { icon: Calculator, title: "F&B-Controlling je Kostenstelle", body: "Wareneinsatz je Outlet und Monat, wie die Buchhaltung ihn rechnet, mit Schwund, Inventurdifferenz, Umsatz und Quote. Export als CSV für die Buchhaltung." },
-      { icon: BedDouble, title: "Housekeeping", body: "Zimmerstatus von schmutzig bis kontrolliert, Belegung, Zuteilung an Reinigungskräfte, Checkliste vor „gereinigt“, Tagesbeginn per Klick und ein Hinweis, welche Anreisen noch nicht fertig sind." },
+      { icon: Calculator, title: "F&B-Controlling je Kostenstelle", body: `Wareneinsatz je Outlet und Monat, wie die Buchhaltung ihn rechnet, mit Schwund, Inventurdifferenz, Umsatz und Quote. Export als CSV für die Buchhaltung. Add-on, ${ADDON_PRICE} im Monat.` },
+      { icon: BedDouble, title: "Housekeeping", body: `Zimmerstatus von schmutzig bis kontrolliert, Belegung, Zuteilung an Reinigungskräfte, Checkliste vor „gereinigt“, Tagesbeginn per Klick und ein Hinweis, welche Anreisen noch nicht fertig sind. Add-on, ${ADDON_PRICE} im Monat.` },
       { icon: CookingPot, title: "Bankett aus der Zentralküche", body: "Outlets fordern an, die Produktion sieht pro Tag, was zu kochen ist und welche Rohware fehlt, und bucht sie aus." },
       { icon: UtensilsCrossed, title: "Frühstück und Menüs", body: "Buffet und Bankettmenüs mit Kosten pro Gast; die Stückliste rechnet auf die Gästezahl hoch, über alle Grundrezepte." },
       { icon: Tags, title: "Allergene fürs Buffet", body: "Allergene und Nährwerte pro Rezept, als Etikett druckbar. Ungeprüfte Zutaten machen ein Gericht „unbekannt“, nie „frei“." },

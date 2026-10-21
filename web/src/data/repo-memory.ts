@@ -1,6 +1,7 @@
 // Data layer. Every function here has the signature the Supabase version will have:
 // async, takes the session, enforces the same rules as the RLS policies in supabase/migrations/0001_schema.sql.
 import "server-only";
+import type { AddonKey } from "@/domain/addons";
 import { type AllergenMap, rollUp } from "@/domain/allergens";
 import { type CostContext, type CostIngredient, type CostRecipe, type RecipeCost, costPerBaseUnit, costRecipe, foodCostBp, netPrice } from "@/domain/costing";
 import { evaluate } from "@/domain/haccp";
@@ -63,10 +64,10 @@ export async function deleteAccountData(_userId: string): Promise<{ ok: boolean;
   return { ok: false, reason: "Im Demo-Modus können Konten nicht gelöscht werden." };
 }
 
-export type Billing = { plan: "trial" | "active" | "past_due" | "cancelled"; subscriptionStatus: string | null; trialEndsAt: string | null; currentPeriodEnd: string | null; stripeCustomerId: string | null; stripeSubscriptionId: string | null };
+export type Billing = { plan: "trial" | "active" | "past_due" | "cancelled"; subscriptionStatus: string | null; trialEndsAt: string | null; currentPeriodEnd: string | null; stripeCustomerId: string | null; stripeSubscriptionId: string | null; addons: AddonKey[] };
 
 export async function getBilling(_s: Session): Promise<Billing> {
-  return { plan: "trial", subscriptionStatus: null, trialEndsAt: new Date(Date.now() + 14 * 86400000).toISOString(), currentPeriodEnd: null, stripeCustomerId: null, stripeSubscriptionId: null };
+  return { plan: "trial", subscriptionStatus: null, trialEndsAt: new Date(Date.now() + 14 * 86400000).toISOString(), currentPeriodEnd: null, stripeCustomerId: null, stripeSubscriptionId: null, addons: [] };
 }
 
 // ---------------------------------------------------------------- library & team

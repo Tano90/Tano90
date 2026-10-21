@@ -1,3 +1,4 @@
+import { AddonLocked, AddonTrialHint, addonState } from "@/components/app/addon-gate";
 import { NoPermission } from "@/components/app/notice";
 import { PageHeader } from "@/components/app/page-header";
 import { getControlling } from "@/data/repo";
@@ -17,6 +18,8 @@ export default async function ControllingPage({ searchParams }: { searchParams: 
   if (!canEditLibrary(s.role)) {
     return (<><PageHeader title="F&B-Controlling" back={{ href: "/analytics/pos", label: "Auswertungen" }} /><NoPermission what="Das Controlling sehen Inhaber, Admins und die Leitung." /></>);
   }
+  const addon = await addonState(s, "controlling");
+  if (!addon.open) return (<><PageHeader title="F&B-Controlling" back={{ href: "/analytics/pos", label: "Auswertungen" }} /><AddonLocked addon="controlling" s={s} /></>);
   const today = dayIn();
   const current = today.slice(0, 7);
   const months = Array.from({ length: 12 }, (_, i) => {
@@ -35,6 +38,7 @@ export default async function ControllingPage({ searchParams }: { searchParams: 
         description="Wareneinsatz je Outlet bzw. Kostenstelle, wie die Buchhaltung ihn rechnet: Anfangsbestand + Einkauf ± Umbuchungen − Endbestand. Bewertet zum gleitenden Durchschnittspreis."
         back={{ href: "/analytics/pos", label: "Auswertungen" }}
       />
+      {addon.trial && <AddonTrialHint addon="controlling" />}
       <ControllingTable
         rows={rows}
         month={month}

@@ -3,7 +3,10 @@ import { PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
 import { getBilling, listOutlets } from "@/data/repo";
 import { canManageBilling, requireSession } from "@/data/session";
-import { billingConfigured, yearlyConfigured } from "@/lib/billing";
+import { addonConfigured, billingConfigured, yearlyConfigured } from "@/lib/billing";
+import { ADDONS, ADDON_KEYS } from "@/domain/addons";
+import { formatCents } from "@/lib/format";
+import { PRICING } from "@/lib/pricing";
 import { accessOf } from "@/domain/access";
 import { formatDate } from "@/lib/dates";
 import { PRICE_TAX_NOTE } from "@/lib/legal";
@@ -37,7 +40,15 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
           {billing.currentPeriodEnd && <div><dt className="text-xs text-text-muted">{billing.plan === "cancelled" ? "Zugang bis" : "Nächste Abrechnung"}</dt><dd>{date(billing.currentPeriodEnd)}</dd></div>}
         </dl>
         {billing.plan === "past_due" && <Notice tone="warning">Die letzte Zahlung ist fehlgeschlagen. Aktualisiere deine Zahlungsart, damit der Zugang erhalten bleibt.</Notice>}
-        <BillingButtons hasCustomer={!!billing.stripeCustomerId} configured={billingConfigured()} yearly={yearlyConfigured()} />
+        <BillingButtons
+          hasCustomer={!!billing.stripeCustomerId}
+          subscribed={!!billing.stripeSubscriptionId && billing.plan !== "cancelled"}
+          configured={billingConfigured()}
+          yearly={yearlyConfigured()}
+          inTrial={access.kind === "trial"}
+          price={`${formatCents(PRICING.addonMonthly)} im Monat pro Betrieb`}
+          addons={ADDON_KEYS.map((key) => ({ key, name: ADDONS[key].name, pitch: ADDONS[key].pitch, booked: billing.addons.includes(key), configured: addonConfigured(key) }))}
+        />
         <p className="text-xs font-normal text-text-muted">Kündigen geht jederzeit mit einem Klick über „Abo verwalten“. Bezahlung und Rechnungen laufen über Stripe; deine Kartendaten sehen wir nie. {PRICE_TAX_NOTE}</p>
       </div>
     </>

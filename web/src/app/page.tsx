@@ -22,7 +22,8 @@ import shot from "../../public/landing/rezept-kalkulation.png";
 
 const cta = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-pill bg-saffron px-6 text-base font-bold text-on-saffron transition-transform duration-fast hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-saffron";
 const ctaLight = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-pill bg-accent px-6 text-base font-bold text-on-accent shadow-glow transition-transform duration-fast hover:-translate-y-0.5 hover:bg-accent-hover";
-// "Alles drin": every tile is a screen that exists in the app today.
+const eur = (cents: number) => formatCents(cents).replace(",00", "");
+// "Alles drin": every tile is a screen that exists in the app today. `addon` tiles cost extra.
 const MODULES = [
   { icon: ChefHat, label: "Rezepte & Grundrezepte", tone: "carrot" }, { icon: Tags, label: "Allergene & Etiketten", tone: "celery" },
   { icon: ShoppingCart, label: "Bestellungen", tone: "accent" }, { icon: Truck, label: "Wareneingang", tone: "carrot" },
@@ -30,7 +31,7 @@ const MODULES = [
   { icon: CookingPot, label: "Zentralküche", tone: "carrot" }, { icon: ReceiptText, label: "Rechnungsabgleich", tone: "celery" },
   { icon: ClipboardCheck, label: "HACCP", tone: "accent" }, { icon: BarChart3, label: "Kasse & Menu Engineering", tone: "carrot" },
   { icon: UtensilsCrossed, label: "Menüs mit Stückliste", tone: "celery" }, { icon: Package, label: "Preislisten-Import", tone: "accent" },
-  { icon: Calculator, label: "F&B-Controlling", tone: "carrot" }, { icon: BedDouble, label: "Housekeeping", tone: "celery" },
+  { icon: Calculator, label: "F&B-Controlling", tone: "carrot", addon: true }, { icon: BedDouble, label: "Housekeeping", tone: "celery", addon: true },
 ] as const;
 const TONE = { carrot: "bg-carrot text-on-saffron", celery: "bg-celery text-on-saffron", accent: "bg-accent text-on-accent" } as const;
 
@@ -64,7 +65,7 @@ const FEATURES = [
 const FAQ = [
   { q: "Kann ich meine Zutaten und Preise importieren?", a: `Ja. Die Preisliste deines Lieferanten als Excel- oder CSV-Datei hochladen: ${APP_NAME} zeigt vor dem Übernehmen jede Zeile als neu, geändert oder fehlerhaft. Übernommen wird erst, wenn du zustimmst.` },
   { q: `Funktioniert ${APP_NAME} mit meiner Kasse?`, a: "Über eine Datei oder eine Schnittstelle: Verkäufe als CSV hochladen oder von der Kasse per API senden lassen. Verknüpfte Gerichte werden über ihre Rezepte vom Lager abgebucht, Stornos zurückgebucht. Fertige Anbindungen an einzelne Kassenhersteller gibt es nicht." },
-  { q: "Brauche ich für HACCP oder die Zentralküche ein Zusatzmodul?", a: "Nein. Alle Funktionen sind in jedem Tarif enthalten. Bezahlt wird nur pro Standort." },
+  { q: "Brauche ich für HACCP oder die Zentralküche ein Zusatzmodul?", a: `Nein. Alle Küchenfunktionen sind in jedem Tarif enthalten, bezahlt wird pro Standort. Nur Housekeeping und F&B-Controlling für Hotels sind Add-ons für je ${eur(PRICING.addonMonthly)} im Monat.` },
   { q: "Wer haftet für die Allergenangaben?", a: `${APP_NAME} rechnet aus deinen Angaben, die Kennzeichnung gegenüber Gästen verantwortet dein Betrieb. Deshalb zeigt ${APP_NAME} ungeprüfte Zutaten offen an, statt sie als allergenfrei durchzuwinken.` },
   { q: "Wo liegen meine Daten?", a: "In der EU (Frankfurt). Zahlungen laufen über Stripe; deine Kartendaten sehen wir nie." },
   { q: "Was passiert nach der Testphase?", a: "Drei Tage vorher bekommst du eine E-Mail. Schließt du kein Abo ab, bleiben alle Daten erhalten: Du kannst sie ansehen und als Datei herunterladen, nur ändern geht erst wieder mit einem Abo. Es verlängert sich nichts automatisch." },
@@ -72,7 +73,6 @@ const FAQ = [
   { q: "Brauche ich eine App?", a: `Nein. ${APP_NAME} läuft im Browser auf Computer, Tablet und Handy. Inventur und Wareneingang sind für das Handy gebaut, ein Barcode-Scanner mit Tastatur-Modus funktioniert ohne Einrichtung.` },
 ];
 
-const eur = (cents: number) => formatCents(cents).replace(",00", "");
 const waitlist = LAUNCH_MODE === "waitlist";
 const mainCta = waitlist ? { href: "#anfrage", label: "Vorführung anfragen" } : { href: "/signup", label: `${PRICING.trialDays} Tage kostenlos testen` };
 
@@ -191,7 +191,7 @@ export default function LandingPage() {
           <dl className="mx-auto grid max-w-(--size-content-max) grid-cols-2 gap-8 px-4 py-14 lg:grid-cols-4 lg:px-8">
             {[
               { value: 14, suffix: "", label: "EU-Allergene pro Zutat, vererbt auf jedes Gericht" },
-              { value: MODULES.length, suffix: "", label: "Bereiche in einem Abo, ohne Zusatzmodule" },
+              { value: MODULES.filter((m) => !("addon" in m)).length, suffix: "", label: "Bereiche im Grundpreis, ohne Zusatzmodule" },
               { value: 0, suffix: " €", label: "für jeden weiteren Nutzer im Team" },
               { value: PRICING.trialDays, suffix: " Tage", label: "kostenlos testen, ohne Kreditkarte" },
             ].map((x) => (
@@ -260,11 +260,12 @@ export default function LandingPage() {
                 <p className="text-sm font-bold uppercase tracking-wide text-accent">Alles drin</p>
                 <h2 id="modules" className="mt-2 max-w-2xl text-xl lg:text-display">Ein Werkzeug statt zehn Listen</h2>
               </div>
-              <p className="max-w-sm text-text-muted">Kein Modul extra, kein Zusatzpreis. Jede Kachel ist ein Teil von {APP_NAME}, den es heute gibt.</p>
+              <p className="max-w-sm text-text-muted">Alles für die Küche im Grundpreis. Für Hotels gibt es Housekeeping und F&B-Controlling als Add-on. Jede Kachel ist ein Teil von {APP_NAME}, den es heute gibt.</p>
             </div>
             <ul className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {MODULES.map(({ icon: Icon, label, tone }, i) => (
-                <li key={label} className={`flex flex-col items-start gap-4 rounded-lg bg-bg p-5 shadow-card transition-transform duration-base hover:-translate-y-1 hover:rotate-[-1deg] ${i % 2 ? "lg:translate-y-4" : ""}`}>
+              {MODULES.map(({ icon: Icon, label, tone, ...m }, i) => (
+                <li key={label} className={`relative flex flex-col items-start gap-4 rounded-lg bg-bg p-5 shadow-card transition-transform duration-base hover:-translate-y-1 hover:rotate-[-1deg] ${i % 2 ? "lg:translate-y-4" : ""}`}>
+                  {"addon" in m && <span className="absolute top-3 right-3 rounded-pill bg-saffron px-2 py-0.5 text-xs font-bold text-on-saffron">Add-on</span>}
                   <span className={`inline-flex size-11 items-center justify-center rounded-md ${TONE[tone]}`}><Icon aria-hidden className="size-5" /></span>
                   <span className="font-semibold">{label}</span>
                 </li>
@@ -294,7 +295,7 @@ export default function LandingPage() {
         <section id="preise" aria-labelledby="pricing" className="bg-surface">
           <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
             <h2 id="pricing" className="text-xl lg:text-display">Preise</h2>
-            <p className="mt-2 text-text-muted">Alle Funktionen in jedem Tarif. Beliebig viele Nutzer. {PRICE_TAX_NOTE}</p>
+            <p className="mt-2 text-text-muted">Alle Küchenfunktionen in jedem Tarif. Beliebig viele Nutzer. {PRICE_TAX_NOTE}</p>
             <div className="mt-10 grid gap-6 md:grid-cols-2">
               <div className="rounded-lg border border-border bg-bg p-8">
                 <h3 className="text-lg">Eine Küche</h3>
@@ -321,6 +322,13 @@ export default function LandingPage() {
               </div>
             </div>
             <p className="mt-4 text-xs font-normal text-text-muted">Beispiel: drei Standorte = {eur(PRICING.firstOutletMonthly + 2 * PRICING.extraOutletMonthly)} pro Monat.</p>
+            <div className="mt-8 flex flex-col gap-4 rounded-lg border-2 border-dashed border-saffron bg-bg p-6 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 className="flex items-center gap-2 text-lg"><BedDouble aria-hidden className="size-5 text-accent" /> Add-ons für Hotels</h3>
+                <p className="mt-1 max-w-2xl text-text-muted">Housekeeping und F&B-Controlling, einzeln buchbar, je {eur(PRICING.addonMonthly)} pro Monat und Betrieb (jährlich {eur(PRICING.addonYearly)}), egal wie viele Standorte. In der Testphase enthalten, monatlich kündbar.</p>
+              </div>
+              <Link href="/branchen/hotel" className="inline-flex shrink-0 items-center gap-1 font-semibold text-accent hover:underline">Mehr für Hotels <ArrowRight aria-hidden className="size-4" /></Link>
+            </div>
           </div>
         </section>
 

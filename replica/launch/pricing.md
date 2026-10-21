@@ -24,7 +24,11 @@ Keine Daten: 0 Bewertungen gesammelt (siehe `fixes.md`). Diese Spalte wird ergä
 
 - **14 Tage kostenlos, ohne Kreditkarte.** Kein Gratis-Tarif: Lager und Bestellungen verursachen echte Kosten (E-Mail, Datenbank).
 - **Pro Standort, nicht pro Nutzer.** Eine Küche hat wechselndes Personal; Nutzer-Preise bestrafen genau das. Unbegrenzte Nutzer.
-- **Alle Funktionen in jedem Tarif.** Keine Module, kein „Preis auf Anfrage“.
+- **Alle Küchenfunktionen in jedem Tarif.** Keine Küchen-Module, kein „Preis auf Anfrage“.
+- **Zwei Add-ons für Hotels (Entscheidung 2026-10-21, für Zusatzumsatz):** Housekeeping und F&B-Controlling, einzeln
+  buchbar, je **29 € im Monat bzw. 290 € im Jahr pro Betrieb** (nicht pro Standort). In der Testphase enthalten;
+  danach ist ein nicht gebuchtes Add-on gesperrt, die Daten bleiben gespeichert und im Export. Das Versprechen
+  „keine Zusatzmodule“ gilt weiter für alles, was eine Küche braucht.
 - **Monatlich oder jährlich**, jährlich = 2 Monate geschenkt.
 
 | Tarif | Für wen | Monatlich | Jährlich |
@@ -54,3 +58,18 @@ Mit den ersten Betrieben über die Zahlungsbereitschaft sprechen (siehe `launch-
 3. Preis jährlich, gestaffelt: 490,00 € / 390,00 €; pro Jahr → `STRIPE_PRICE_ID_YEARLY`.
 4. Steuer: keine. Als Kleinunternehmer Stripe Tax nicht aktivieren (die App schaltet es bei `SMALL_BUSINESS` ohnehin ab). In Stripe → Einstellungen → Rechnungen als Standard-Fußzeile eintragen: „Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.“ Unter Einstellungen → Unternehmen Name und Anschrift (Mattias Segato Consulting, Hohenzollernstraße 12, 52351 Düren) hinterlegen; beides gehört auf jede Rechnung.
 5. Kundenportal: Kündigen erlauben (zum Periodenende), Zahlungsart ändern, Rechnungen zeigen, Wechsel monatlich ↔ jährlich erlauben.
+
+## Add-ons in Stripe anlegen
+
+Je Add-on ein Produkt mit zwei Preisen (monatlich 29 €, jährlich 290 €, Menge 1), dann in Vercel:
+
+| Variable | Preis |
+| --- | --- |
+| `STRIPE_PRICE_ADDON_HOUSEKEEPING` | Housekeeping monatlich |
+| `STRIPE_PRICE_ADDON_HOUSEKEEPING_YEARLY` | Housekeeping jährlich |
+| `STRIPE_PRICE_ADDON_CONTROLLING` | F&B-Controlling monatlich |
+| `STRIPE_PRICE_ADDON_CONTROLLING_YEARLY` | F&B-Controlling jährlich |
+
+Ohne diese Variablen lässt sich das Add-on nicht buchen (die Schaltflächen sind dann aus). Gebucht wird beim
+Abschluss (Häkchen) oder später unter Einstellungen → Abo („Dazubuchen“, anteilig berechnet). Welche Add-ons ein
+Betrieb hat, übernimmt der Webhook aus den Positionen des Abos.

@@ -476,5 +476,25 @@ describe.skipIf(!url)("backend against Postgres", () => {
       [lib] = await admin`select plan, stripe_subscription_id from libraries where id = ${stranger.libraryId}`;
       expect(lib).toMatchObject({ plan: "cancelled", stripe_subscription_id: null });
     });
+    it("takes the booked add-ons from the subscription's prices", async () => {
+      const { handleStripeEvent } = await import("../src/lib/billing");
+      process.env.STRIPE_PRICE_ADDON_HOUSEKEEPING = "price_hk";
+      process.env.STRIPE_PRICE_ADDON_CONTROLLING_YEARLY = "price_fc_y";
+      await admin`delete from processed_webhooks where event_id like 'evt_addon_%'`;
+      const sub = (id: string, prices: string[]) => JSON.parse(event(id, "customer.subscription.updated", {
+        object: "subscription", id: "sub_addon", status: "active", metadata: { library_id: stranger.libraryId },
+        items: { data: prices.map((p) => ({ price: { id: p }, current_period_end: 1893456000 })) },
+      }));
+      expect(await handleStripeEvent(sub("evt_addon_1", ["price_base", "price_hk", "price_fc_y"]))).toBe("applied");
+      let [lib] = await admin`select addons from libraries where id = ${stranger.libraryId}`;
+      expect(lib.addons).toEqual(["housekeeping", "controlling"]);
+      expect(await handleStripeEvent(sub("evt_addon_2", ["price_base"]))).toBe("applied");
+      [lib] = await admin`select addons from libraries where id = ${stranger.libraryId}`;
+      expect(lib.addons).toEqual([]);
+    });
+    it("does not let a member book add-ons by writing the column", async () => {
+      const { asUser } = await import("../src/data/pg/client");
+      await expect(asUser(stranger.userId, (tx) => tx`update libraries set addons = '{housekeeping}' where id = ${stranger.libraryId}`)).rejects.toThrow(/permission denied/);
+    });
   });
 });

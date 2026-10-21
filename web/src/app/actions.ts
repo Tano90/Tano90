@@ -13,8 +13,9 @@ import { Forbidden, OUTLET_COOKIE, SESSION_COOKIE, authMode, canEditLibrary, can
 import type { Session } from "@/data/types";
 import { createLead, updateLead } from "@/data/leads";
 import { READ_ONLY_MESSAGE, accessOf } from "@/domain/access";
+import { type AddonKey, addonLockedMessage, addonOpen, isAddonKey } from "@/domain/addons";
 import { parseRoomNumbers } from "@/domain/housekeeping";
-import { billingConfigured, createCheckout, createPortal, syncOutletQuantity } from "@/lib/billing";
+import { billingConfigured, changeAddon, createCheckout, createPortal, syncOutletQuantity } from "@/lib/billing";
 import { sendMail } from "@/lib/mail";
 import { invitationMail, leadNotifyMail, leadThanksMail, orderMail } from "@/lib/mail-templates";
 import { APP_NAME } from "@/lib/brand";
@@ -28,13 +29,16 @@ export type Result<T = null> = { ok: true; data: T } | { ok: false; error: strin
 /**
  * Every signed-in action. After the trial or a cancelled subscription the library is read-only: the action is refused
  * here unless it is one that must keep working then (billing, team, previews), marked `readOnlyOk`.
+ * Actions of a paid add-on (`addon`) also need it booked once the trial is over.
  */
-async function run<T>(fn: (s: Session) => Promise<T>, paths: string[] = [], opts: { readOnlyOk?: boolean } = {}): Promise<Result<T>> {
+async function run<T>(fn: (s: Session) => Promise<T>, paths: string[] = [], opts: { readOnlyOk?: boolean; addon?: AddonKey } = {}): Promise<Result<T>> {
   try {
     const s = await requireSession();
-    if (!opts.readOnlyOk) {
-      const access = accessOf(await repo.getBilling(s));
-      if (access.readOnly) throw new Error(READ_ONLY_MESSAGE[access.kind]);
+    if (!opts.readOnlyOk || opts.addon) {
+      const billing = await repo.getBilling(s);
+      const access = accessOf(billing);
+      if (!opts.readOnlyOk && access.readOnly) throw new Error(READ_ONLY_MESSAGE[access.kind]);
+      if (opts.addon && !addonOpen(access, billing.addons, opts.addon)) throw new Error(addonLockedMessage(opts.addon));
     }
     const data = await fn(s);
     for (const p of paths) revalidatePath(p, "layout");
@@ -248,13 +252,24 @@ export async function updateLeadStatus(leadId: string, input: z.input<typeof Lea
 
 // ---------------------------------------------------------------- billing
 
-export async function startCheckout(interval: "month" | "year" = "month"): Promise<Result<string>> {
+export async function startCheckout(interval: "month" | "year" = "month", addons: AddonKey[] = []): Promise<Result<string>> {
   return run(async (s) => {
     if (!canManageBilling(s.role)) throw new Error("Nur Inhaber können das Abo verwalten.");
     if (!billingConfigured()) throw new Error("Die Abrechnung ist noch nicht eingerichtet.");
     const billing = await repo.getBilling(s);
-    return createCheckout({ libraryId: s.libraryId, email: s.email, outletCount: (await repo.listOutlets(s)).length, customerId: billing.stripeCustomerId, interval: z.enum(["month", "year"]).parse(interval) });
+    return createCheckout({ libraryId: s.libraryId, email: s.email, outletCount: (await repo.listOutlets(s)).length, customerId: billing.stripeCustomerId, interval: z.enum(["month", "year"]).parse(interval), addons: [...new Set(addons.filter(isAddonKey))] });
   }, [], { readOnlyOk: true });
+}
+
+/** Books or cancels one add-on on the running subscription. */
+export async function setAddon(key: AddonKey, on: boolean): Promise<Result<AddonKey[]>> {
+  return run(async (s) => {
+    if (!canManageBilling(s.role)) throw new Error("Nur Inhaber können das Abo verwalten.");
+    if (!isAddonKey(key)) throw new Error("Unbekanntes Add-on.");
+    const billing = await repo.getBilling(s);
+    if (!billing.stripeSubscriptionId || billing.plan === "cancelled") throw new Error("Schließe zuerst das Abo ab; Add-ons wählst du dabei mit aus.");
+    return changeAddon(s.libraryId, billing.stripeSubscriptionId, key, on);
+  }, ["/settings/billing", "/housekeeping", "/analytics/controlling"], { readOnlyOk: true });
 }
 
 export async function openBillingPortal(): Promise<Result<string>> {
@@ -533,6 +548,8 @@ export async function deliverProduction(requestIds: string[]) {
 
 // ---------------------------------------------------------------- housekeeping
 
+const HK = { addon: "housekeeping" } as const;
+
 const roomStatus = z.enum(["dirty", "clean", "inspected", "out_of_order"]);
 const occupancy = z.enum(["vacant", "occupied", "departure", "arrival"]);
 const shortText = (max: number) => z.string().trim().max(max).transform((v) => v || null).nullable();
@@ -541,23 +558,23 @@ export async function createRooms(input: { numbers: string; floor: string; roomT
   return run(async (s) => {
     const numbers = parseRoomNumbers(z.string().max(4000).parse(input.numbers));
     return repo.createRooms(s, await currentOutletId(s), { numbers, floor: shortText(20).parse(input.floor), roomType: shortText(60).parse(input.roomType) });
-  }, ["/housekeeping"]);
+  }, ["/housekeeping"], HK);
 }
 const RoomPatchSchema = z.object({ status: roomStatus.optional(), occupancy: occupancy.optional(), note: shortText(300).optional(), checked: z.array(id).max(100).optional() });
 export async function updateRoom(roomId: string, patch: z.input<typeof RoomPatchSchema>) {
-  return run((s) => repo.updateRoom(s, id.parse(roomId), RoomPatchSchema.parse(patch)), ["/housekeeping"]);
+  return run((s) => repo.updateRoom(s, id.parse(roomId), RoomPatchSchema.parse(patch)), ["/housekeeping"], HK);
 }
 export async function assignRooms(roomIds: string[], membershipId: string | null) {
-  return run((s) => repo.assignRooms(s, z.array(id).min(1).max(500).parse(roomIds), membershipId ? id.parse(membershipId) : null), ["/housekeeping"]);
+  return run((s) => repo.assignRooms(s, z.array(id).min(1).max(500).parse(roomIds), membershipId ? id.parse(membershipId) : null), ["/housekeeping"], HK);
 }
 export async function startHousekeepingDay() {
-  return run(async (s) => repo.startHousekeepingDay(s, await currentOutletId(s)), ["/housekeeping"]);
+  return run(async (s) => repo.startHousekeepingDay(s, await currentOutletId(s)), ["/housekeeping"], HK);
 }
 export async function archiveRoom(roomId: string) {
-  return run((s) => repo.archiveRoom(s, id.parse(roomId)), ["/housekeeping"]);
+  return run((s) => repo.archiveRoom(s, id.parse(roomId)), ["/housekeeping"], HK);
 }
 export async function saveHkChecklist(labels: string[]) {
-  return run((s) => repo.saveHkChecklist(s, z.array(z.string().trim().min(1).max(120)).max(40, "Höchstens 40 Punkte.").parse(labels.filter((l) => l.trim()))), ["/housekeeping"]);
+  return run((s) => repo.saveHkChecklist(s, z.array(z.string().trim().min(1).max(120)).max(40, "Höchstens 40 Punkte.").parse(labels.filter((l) => l.trim()))), ["/housekeeping"], HK);
 }
 
 // ---------------------------------------------------------------- HACCP
@@ -681,7 +698,7 @@ export async function archiveOutlet(outletId: string) {
   }, ["/"]);
 }
 export async function setOutletCostCenter(outletId: string, costCenter: string) {
-  return run((s) => repo.setOutletCostCenter(s, id.parse(outletId), z.string().trim().max(20, "Höchstens 20 Zeichen.").parse(costCenter) || null), ["/analytics/controlling"]);
+  return run((s) => repo.setOutletCostCenter(s, id.parse(outletId), z.string().trim().max(20, "Höchstens 20 Zeichen.").parse(costCenter) || null), ["/analytics/controlling"], { addon: "controlling" });
 }
 export async function removeMember(memberId: string) {
   return run((s) => repo.removeMember(s, memberId), ["/settings/team"], { readOnlyOk: true });

@@ -5,5 +5,7 @@ export const PRICING = {
   extraOutletMonthly: 3900,
   firstOutletYearly: 49000, // 2 months free
   extraOutletYearly: 39000,
+  addonMonthly: 2900, // per add-on and library, not per outlet
+  addonYearly: 29000,
   trialDays: 14,
 } as const;

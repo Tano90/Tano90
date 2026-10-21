@@ -91,7 +91,7 @@ deckt das. Stripe behält pro Zahlung eine Gebühr ein; die aktuellen Sätze sie
 Reihenfolge beim Umschalten:
 1. Domain kaufen, in Vercel verbinden, bei Resend verifizieren (DNS-Einträge stehen in `deploy.md`).
 2. Vercel und Supabase auf Pro.
-3. Stripe Live: Produkt und die zwei gestaffelten Preise anlegen (`launch/pricing.md`), Rechnungs-Fußzeile
+3. Stripe Live: Produkt und die zwei gestaffelten Preise anlegen, dazu die Add-ons Housekeeping und F&B-Controlling (je 29 €/Monat und 290 €/Jahr, `launch/pricing.md`), Rechnungs-Fußzeile
    „Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.“, Firmenanschrift, Webhook. Variablen `STRIPE_*` in Vercel.
 4. `NEXT_PUBLIC_LAUNCH_MODE=open`, `APP_URL` und Supabase-URLs auf die Domain umstellen, neu deployen.
 5. Einen echten Kauf machen und erstatten.

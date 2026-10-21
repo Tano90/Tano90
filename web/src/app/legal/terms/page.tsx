@@ -19,7 +19,7 @@ export default function TermsPage() {
       </Section>
 
       <Section title="2. Leistung">
-        <p>{APP_NAME} ist eine Software im Browser für Küchenbetriebe: Zutaten und Einkaufspreise, Rezepte und Kalkulation, Menüs, Lieferanten und Bestellungen, Lager und Inventur, Zentralküche, Kassenverkäufe, Rechnungsabgleich und HACCP-Checklisten. Maßgeblich ist der Funktionsumfang zum Zeitpunkt der Nutzung. Wir entwickeln {APP_NAME} weiter und dürfen Funktionen ändern, solange der wesentliche Zweck erhalten bleibt.</p>
+        <p>{APP_NAME} ist eine Software im Browser für Küchenbetriebe: Zutaten und Einkaufspreise, Rezepte und Kalkulation, Menüs, Lieferanten und Bestellungen, Lager und Inventur, Zentralküche, Kassenverkäufe, Rechnungsabgleich und HACCP-Checklisten, als Add-ons außerdem Housekeeping und F&B-Controlling. Maßgeblich ist der Funktionsumfang zum Zeitpunkt der Nutzung. Wir entwickeln {APP_NAME} weiter und dürfen Funktionen ändern, solange der wesentliche Zweck erhalten bleibt.</p>
         <p>Wir bemühen uns um eine hohe Verfügbarkeit, schulden aber keine bestimmte Verfügbarkeitsquote. Wartungen kündigen wir nach Möglichkeit vorher an und legen sie in verkehrsarme Zeiten.</p>
       </Section>
 
@@ -28,7 +28,7 @@ export default function TermsPage() {
       </Section>
 
       <Section title="4. Preise und Zahlung">
-        <p>Es gelten die Preise auf unserer Website zum Zeitpunkt des Abschlusses, derzeit {eur(PRICING.firstOutletMonthly)} im Monat für den ersten Standort und {eur(PRICING.extraOutletMonthly)} für jeden weiteren, bei jährlicher Zahlung {eur(PRICING.firstOutletYearly)} und {eur(PRICING.extraOutletYearly)} im Jahr. {SMALL_BUSINESS ? "Als Kleinunternehmer nach § 19 UStG berechnen wir keine Umsatzsteuer; die Preise sind Endpreise." : "Alle Preise zuzüglich Umsatzsteuer."} Alle Funktionen sind enthalten; die Zahl der Nutzer ist nicht begrenzt.</p>
+        <p>Es gelten die Preise auf unserer Website zum Zeitpunkt des Abschlusses, derzeit {eur(PRICING.firstOutletMonthly)} im Monat für den ersten Standort und {eur(PRICING.extraOutletMonthly)} für jeden weiteren, bei jährlicher Zahlung {eur(PRICING.firstOutletYearly)} und {eur(PRICING.extraOutletYearly)} im Jahr. {SMALL_BUSINESS ? "Als Kleinunternehmer nach § 19 UStG berechnen wir keine Umsatzsteuer; die Preise sind Endpreise." : "Alle Preise zuzüglich Umsatzsteuer."} Alle Funktionen sind enthalten außer den Add-ons Housekeeping und F&B-Controlling, die einzeln für je {eur(PRICING.addonMonthly)} im Monat bzw. {eur(PRICING.addonYearly)} im Jahr pro Kunde gebucht werden können; in der Testphase sind sie enthalten. Ein Add-on ist monatlich bzw. zum Ende des Zahlungszeitraums abbestellbar; die Daten bleiben erhalten. Die Zahl der Nutzer ist nicht begrenzt.</p>
         <p>Abgerechnet wird die Zahl der angelegten Standorte. Legt der Kunde einen weiteren Standort an, erhöht sich die Menge, und der Unterschied wird anteilig für den laufenden Zeitraum berechnet. Archiviert er einen Standort, verringert sich die Menge, und der Unterschied wird anteilig mit der nächsten Rechnung verrechnet. Die Zahlung läuft im Voraus über unseren Zahlungsdienstleister Stripe.</p>
         <p>Preisänderungen kündigen wir mindestens sechs Wochen vor Beginn des Abrechnungszeitraums an, ab dem sie gelten. Der Kunde kann bis dahin zum Ende des laufenden Zeitraums kündigen.</p>
       </Section>

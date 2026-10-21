@@ -55,7 +55,7 @@ export async function getLibrary(s: Session): Promise<Library> {
 
 export async function getBilling(s: Session): Promise<Billing> {
   return run(s, async (tx) => one(await tx<Billing[]>`
-    select plan, subscription_status, trial_ends_at, current_period_end, stripe_customer_id, stripe_subscription_id from libraries where id = ${s.libraryId}`, "Betrieb"));
+    select plan, subscription_status, trial_ends_at, current_period_end, stripe_customer_id, stripe_subscription_id, addons from libraries where id = ${s.libraryId}`, "Betrieb"));
 }
 
 export async function updateLibrary(s: Session, patch: { name: string; defaultVatBp: number; wageCentsPerHour: number | null }) {
