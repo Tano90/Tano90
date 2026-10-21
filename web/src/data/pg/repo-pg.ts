@@ -775,9 +775,13 @@ async function depletePending(tx: Tx, libraryId: string, outletId: string, userI
     const [ev] = await tx<{ id: string }[]>`
       insert into stock_events (library_id, outlet_id, type, occurred_at, note, created_by, closed_at)
       values (${libraryId}, ${outletId}, 'sale', ${occurredAt}, ${`${group.length} Verkäufe`}, ${userId}, now()) returning id`;
-    if (bom.lines.length) {
-      await tx`insert into stock_movements ${tx(bom.lines.map((l) => ({ stockEventId: ev.id, outletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase })))}`;
-      await tx`insert into outlet_ingredients ${tx(bom.lines.map((l) => ({ outletId, ingredientId: l.ingredientId })))} on conflict do nothing`;
+    const lines = bom.lines.filter((l) => Math.abs(l.quantityBase) > 1e-9); // a sale and its cancellation on the same day
+    if (lines.length) {
+      // Net cancellations come back at the current average cost, so they do not drag the average down.
+      const avg = new Map((await tx<{ ingredientId: string; avg: number }[]>`
+        select ingredient_id, avg_cost_cents as avg from stock_levels where outlet_id = ${outletId} and ingredient_id = any(${lines.map((l) => l.ingredientId)}::uuid[])`).map((r) => [r.ingredientId, r.avg]));
+      await tx`insert into stock_movements ${tx(lines.map((l) => ({ stockEventId: ev.id, outletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase, unitCostCents: avg.get(l.ingredientId) ?? 0 })))}`;
+      await tx`insert into outlet_ingredients ${tx(lines.map((l) => ({ outletId, ingredientId: l.ingredientId })))} on conflict do nothing`;
     }
     await tx`update sales set depleted_event_id = ${ev.id} where id = any(${group.map((x) => x.id)}::uuid[])`;
   }

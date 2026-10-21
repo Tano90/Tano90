@@ -43,11 +43,25 @@ test.describe("F11 Kassenverkäufe", () => {
 
   test("F11-E1 fehlerhafte Zeilen werden benannt, gültige übernommen", async ({ page }) => {
     await page.goto("/analytics/pos");
-    await upload(page, "Beleg;PLU;Menge;Zeitpunkt\nA;1001;zwei;20.10.2026\nB;1001;1;20.10.2026 10:00\nC;1001;-1;20.10.2026\n");
+    await upload(page, "Beleg;PLU;Menge;Zeitpunkt\nA;1001;zwei;20.10.2026\nB;1001;1;20.10.2026 10:00\nC;1001;0;20.10.2026\n");
     await expect(page.getByText("2 Zeilen konnten nicht übernommen werden")).toBeVisible();
     await expect(page.getByText("Zeile 2:")).toBeVisible();
-    await expect(page.getByText(/Stornos/)).toBeVisible();
+    await expect(page.getByText(/Menge 0 ergibt keinen Verkauf/)).toBeVisible();
     await expect(page.getByRole("status").filter({ hasText: "1 Verkäufe übernommen" })).toBeVisible();
+  });
+
+  test("F11-E7 Storno am selben Tag hebt die Abbuchung auf, späterer Storno bucht zurück", async ({ page }) => {
+    const linsen = await stockQuantity("Rote Linsen");
+    const [{ avg }] = await db()`select avg_cost_cents as avg from stock_levels where outlet_id = ${sid("out-mitte")} and ingredient_id = ${sid("ing-linsen")}`;
+    await page.goto("/analytics/pos");
+    await upload(page, "Beleg;PLU;Menge;Umsatz netto;Zeitpunkt\nS1;1001;2;14,77;20.10.2026 12:00\nS2;1001;-2;-14,77;20.10.2026 12:05\n");
+    await expect(page.getByRole("status").filter({ hasText: "2 Verkäufe übernommen" })).toBeVisible();
+    expect(await stockQuantity("Rote Linsen")).toBeCloseTo(linsen, 6);
+    await upload(page, "Beleg;PLU;Menge;Zeitpunkt\nS3;1001;3;20.10.2026 18:00\nS4;1001;-1;21.10.2026 09:00\n");
+    await expect(page.getByRole("status").filter({ hasText: "2 Verkäufe übernommen" })).toBeVisible();
+    expect(await stockQuantity("Rote Linsen")).toBeCloseTo(linsen - 160, 6); // 3 sold, 1 cancelled the next day: 2 portions of 80 g
+    const [{ avg: after }] = await db()`select avg_cost_cents as avg from stock_levels where outlet_id = ${sid("out-mitte")} and ingredient_id = ${sid("ing-linsen")}`;
+    expect(Number(after)).toBeCloseTo(Number(avg), 8); // the return comes back at the average, not at 0
   });
 
   test("F11-E2 falsche Datei: fehlende Spalten", async ({ page }) => {

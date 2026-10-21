@@ -44,7 +44,7 @@ export function SalesImport() {
       <h2 id="import" className="text-lg">Verkäufe importieren</h2>
       <p className="text-text-muted">
         CSV-Export der Kasse mit Kopfzeile, z. B. <code className="num rounded-sm bg-surface-sunken px-1">Belegposition;PLU;Artikel;Menge;Umsatz netto;Zeitpunkt</code>.
-        Schon importierte Belegpositionen werden übersprungen, du kannst dieselbe Datei also gefahrlos noch einmal hochladen.
+        Stornos mit negativer Menge buchen zurück ins Lager. Schon importierte Belegpositionen werden übersprungen, du kannst dieselbe Datei also gefahrlos noch einmal hochladen.
       </p>
       <FileUpload
         label="Verkäufe als CSV hochladen"

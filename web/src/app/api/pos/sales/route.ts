@@ -15,8 +15,8 @@ const Body = z.object({
     id: z.string().trim().min(1).max(200),
     plu: z.string().trim().min(1).max(64),
     name: z.string().trim().max(200).optional(),
-    quantity: z.number().positive().max(100000),
-    netRevenueCents: z.number().int().min(0).max(100_000_000).optional(),
+    quantity: z.number().min(-100000).max(100000).refine((q) => q !== 0, "Menge 0 ergibt keinen Verkauf; Stornos mit negativer Menge."),
+    netRevenueCents: z.number().int().min(-100_000_000).max(100_000_000).optional(),
     soldAt: z.iso.datetime({ offset: true }),
   })).min(1).max(1000),
 });

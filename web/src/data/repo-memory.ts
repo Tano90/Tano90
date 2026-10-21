@@ -691,7 +691,10 @@ function depletePending(outletId: string, userId: string | null): number {
     const ev: StockEvent = { id: newId("ev"), outletId, type: "sale", status: "closed", occurredAt, counterpartOutletId: null, purchaseOrderId: null, note: `${group.length} Verkäufe`, createdBy: userId, closedAt: now() };
     d.events.push(ev);
     for (const l of bom.lines) {
-      addMovement(d, { eventId: ev.id, outletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase, countedBase: null, reason: null });
+      if (Math.abs(l.quantityBase) < 1e-9) continue; // a sale and its cancellation on the same day
+      // Net cancellations come back at the current average cost, so they do not drag the average down.
+      const avg = d.levels.find((x) => x.outletId === outletId && x.ingredientId === l.ingredientId)?.avgCostCents ?? 0;
+      addMovement(d, { eventId: ev.id, outletId, ingredientId: l.ingredientId, deltaBase: -l.quantityBase, unitCostCents: avg, countedBase: null, reason: null });
       if (!d.outletIngredients.some((x) => x.outletId === outletId && x.ingredientId === l.ingredientId)) {
         d.outletIngredients.push({ outletId, ingredientId: l.ingredientId, parLevelBase: null, minLevelBase: null });
       }

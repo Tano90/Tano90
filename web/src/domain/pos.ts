@@ -92,7 +92,7 @@ export function parseSalesCsv(text: string, offsetFor: OffsetFor = () => 0): { r
       !get("externalId") ? "Belegposition fehlt." :
       !get("plu") ? "PLU fehlt." :
       quantity === null ? `Menge „${get("quantity")}“ ist keine Zahl.` :
-      quantity <= 0 ? "Menge muss größer als 0 sein (Stornos werden noch nicht verarbeitet)." :
+      quantity === 0 ? "Menge 0 ergibt keinen Verkauf. Stornos bitte mit negativer Menge." :
       revenue === null ? `Umsatz „${get("revenueNetCents")}“ ist keine Zahl.` :
       !soldAt ? `Zeitpunkt „${get("soldAt")}“ nicht erkannt (z. B. 20.10.2026 12:30).` : null;
     if (problem) return void errors.push({ row, message: problem });

@@ -177,8 +177,9 @@ describe("pos csv", () => {
   });
   it("names every bad row and a missing column", () => {
     const { rows, errors } = parseSalesCsv("Beleg;PLU;Menge;Zeitpunkt\n;1;1;20.10.2026\nb;1;-1;20.10.2026\nc;1;eins;20.10.2026\nd;1;1;31.02.2026\ne;1;1;20.10.2026\n");
-    expect(rows).toHaveLength(1);
-    expect(errors.map((e) => e.row)).toEqual([2, 3, 4, 5]);
+    expect(rows).toHaveLength(2);
+    expect(errors.map((e) => e.row)).toEqual([2, 4, 5]); // -1 is a cancellation now, not an error
+    expect(rows.map((r) => r.quantity)).toEqual([-1, 1]);
     expect(parseSalesCsv("Beleg;PLU;Menge;Zeitpunkt\n\na;1;x;20.10.2026\n").errors[0].row).toBe(3); // blank line still counts
     expect(parseSalesCsv("PLU;Menge\n1;1").errors[0].message).toMatch(/Spalte fehlt: Belegposition, Zeitpunkt/);
   });
