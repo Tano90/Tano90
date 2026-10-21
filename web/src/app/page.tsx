@@ -1,7 +1,9 @@
-import { ArrowRight, Check, ClipboardCheck, CookingPot, Receipt, ReceiptText, ScanBarcode, ShieldCheck } from "lucide-react";
+import { ArrowRight, Check, ClipboardCheck, CookingPot, Plus, Receipt, ReceiptText, ScanBarcode, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "@/components/brand/logo";
 import { LeadForm, ViewBeacon } from "@/components/landing/lead-form";
+import { LiveCalc } from "@/components/landing/live-calc";
 import { APP_NAME } from "@/lib/brand";
 import { formatCents } from "@/lib/format";
 import { LAUNCH_MODE } from "@/lib/launch";
@@ -13,8 +15,9 @@ import shot from "../../public/landing/rezept-kalkulation.png";
 // Copy follows replica/brand.md (voice) and replica/launch/landing.md. No testimonials, logos or user
 // counts until there are real ones.
 
-const cta = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-sm bg-accent px-6 text-base font-semibold text-on-accent hover:bg-accent-hover";
-const ctaSecondary = "inline-flex h-(--size-control-lg) items-center rounded-sm border border-border-input bg-bg px-6 text-base font-semibold hover:bg-row-hover";
+const cta = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-pill bg-saffron px-6 text-base font-bold text-on-saffron transition-transform duration-fast hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-saffron";
+const ctaGhost = "inline-flex h-(--size-control-lg) items-center rounded-pill border border-on-ink-muted px-6 text-base font-semibold text-on-ink hover:bg-ink-raised";
+const TICKER = ["Wareneinsatz live", "Grundrezepte", "Allergene", "Inventur offline", "Barcode-Scanner", "Zentralküche", "Rechnungsabgleich", "HACCP", "Kassen-Import", "Mindestbestand", "Lagerbericht", "Mehrere Standorte"];
 
 const STEPS = [
   { title: "Einkauf erfassen", body: "Zutaten so anlegen, wie dein Lieferant sie verkauft – Karton, Sack, Flasche – mit dem Preis von der Rechnung." },
@@ -50,122 +53,175 @@ export default function LandingPage() {
   return (
     <div className="bg-bg">
       <ViewBeacon />
-      <header className="mx-auto flex max-w-(--size-content-max) items-center justify-between px-4 py-4 lg:px-8">
-        <span className="text-lg font-semibold">{APP_NAME}</span>
-        <nav aria-label="Konto" className="flex items-center gap-4">
-          <Link href="/login" className="font-semibold hover:underline">Anmelden</Link>
-          <Link href={waitlist ? "#anfrage" : "/signup"} className="hidden h-(--size-control-md) items-center rounded-sm bg-accent px-4 font-semibold text-on-accent hover:bg-accent-hover sm:inline-flex">
-            {waitlist ? "Vorführung anfragen" : "Kostenlos testen"}
-          </Link>
-        </nav>
-      </header>
 
-      <main>
-        <section aria-labelledby="hero" className="mx-auto grid max-w-(--size-content-max) items-center gap-12 px-4 pt-12 pb-16 lg:grid-cols-[5fr_7fr] lg:px-8 lg:pt-20">
-          <div>
-            <h1 id="hero" className="text-display">Was jeder Teller kostet. Live.</h1>
-            <p className="mt-4 max-w-xl text-base text-text-muted">
-              Für Küchen mit einem oder mehreren Standorten: Rezepte, Einkauf, Lager und Zentralküche in einem Werkzeug –
-              und der Wareneinsatz stimmt, auch wenn sich Preise jede Woche ändern.
+      {/* ------------------------------------------------ stage */}
+      <div className="relative overflow-hidden bg-ink text-on-ink">
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(55%_60%_at_80%_10%,var(--color-accent)_0%,transparent_70%)] opacity-70" />
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(40%_40%_at_0%_100%,var(--color-accent-hover)_0%,transparent_70%)] opacity-60" />
+        <header className="relative mx-auto flex max-w-(--size-content-max) items-center justify-between px-4 py-5 lg:px-8">
+          <Link href="/" aria-label={`${APP_NAME} Startseite`}><Logo tone="light" /></Link>
+          <nav aria-label="Konto" className="flex items-center gap-5">
+            <a href="#funktionen" className="hidden font-semibold text-on-ink-muted hover:text-on-ink md:inline">Funktionen</a>
+            <a href="#preise" className="hidden font-semibold text-on-ink-muted hover:text-on-ink md:inline">Preise</a>
+            <Link href="/login" className="font-semibold hover:underline">Anmelden</Link>
+            <Link href={waitlist ? "#anfrage" : "/signup"} className="hidden h-(--size-control-md) items-center rounded-pill bg-saffron px-4 font-bold text-on-saffron sm:inline-flex">
+              {waitlist ? "Vorführung anfragen" : "Kostenlos testen"}
+            </Link>
+          </nav>
+        </header>
+
+        <section aria-labelledby="hero" className="relative mx-auto grid max-w-(--size-content-max) items-center gap-12 px-4 pt-10 pb-20 lg:grid-cols-[6fr_5fr] lg:px-8 lg:pt-16 lg:pb-28">
+          <div className="animate-rise">
+            <p className="mb-4 inline-flex items-center gap-2 rounded-pill border border-ink-raised bg-ink-raised px-3 py-1 text-xs text-on-ink-muted">
+              <span aria-hidden className="size-2 rounded-pill bg-saffron" /> Für Küchen mit einem oder vielen Standorten
+            </p>
+            <h1 id="hero" className="text-display lg:text-hero">
+              Was jeder Teller kostet. <span className="relative whitespace-nowrap text-saffron">Live.<span aria-hidden className="absolute -bottom-1 left-0 h-1 w-full rounded-pill bg-saffron/60" /></span>
+            </h1>
+            <p className="mt-6 max-w-xl text-base text-on-ink-muted lg:text-lg lg:font-normal">
+              Rezepte, Einkauf, Lager und Zentralküche in einem Werkzeug. Ändert sich ein Einkaufspreis, rechnet jedes Rezept mit.
+              Probier es aus: Zieh am Regler.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href={mainCta.href} className={cta}>{mainCta.label} <ArrowRight aria-hidden className="size-4" /></Link>
-              <a href={waitlist ? "#preise" : "#anfrage"} className={ctaSecondary}>{waitlist ? "Preise" : "Vorführung anfragen"}</a>
+              <a href={waitlist ? "#preise" : "#anfrage"} className={ctaGhost}>{waitlist ? "Preise ansehen" : "Vorführung anfragen"}</a>
             </div>
-            <p className="mt-3 text-xs font-normal text-text-muted">{waitlist ? "30 Minuten mit deinen eigenen Rezepten. Unverbindlich." : "Ohne Kreditkarte. Kündigen mit einem Klick."}</p>
+            <p className="mt-4 text-xs font-normal text-on-ink-muted">{waitlist ? "30 Minuten mit deinen eigenen Rezepten. Unverbindlich." : "Ohne Kreditkarte. Kündigen mit einem Klick."}</p>
           </div>
-          <figure className="overflow-hidden rounded-lg border border-border shadow-pop">
-            <Image src={shot} alt={`Rezept „Linsensuppe“ in ${APP_NAME}: Zutatenzeilen mit Kosten, daneben Wareneinsatz pro Portion 0,63 € und 8,5 % Wareneinsatz.`} priority placeholder="blur" sizes="(min-width: 1024px) 58vw, 100vw" />
-            <figcaption className="sr-only">Der Rezept-Editor mit Live-Kalkulation</figcaption>
-          </figure>
-        </section>
-
-        <section aria-labelledby="problem" className="bg-surface">
-          <div className="mx-auto max-w-(--size-content-max) px-4 py-16 lg:px-8">
-            <h2 id="problem" className="text-xl">Die Kalkulation stimmt am Tag, an dem sie gemacht wird</h2>
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              <p className="text-base text-text-muted">Butter wird teurer, der Lieferant ändert die Gebindegröße, ein Grundrezept bekommt eine Zutat mehr. Die Tabelle von letztem Quartal weiß davon nichts, und der Wareneinsatz auf der Karte ist eine Schätzung.</p>
-              <p className="text-base text-text-muted">Einkauf, Lager und Rezepte liegen in verschiedenen Listen. Wer bestellt, sieht nicht, was noch da ist; wer zählt, weiß nicht, was seit der letzten Inventur geliefert oder weggeworfen wurde.</p>
-            </div>
+          <div className="relative animate-rise [animation-delay:150ms]">
+            <div aria-hidden className="absolute -top-6 -left-6 size-12 animate-wobble rounded-md bg-saffron/90" />
+            <div aria-hidden className="absolute -right-4 -bottom-5 size-8 animate-wobble rounded-sm bg-accent-glow [animation-delay:1s]" />
+            <LiveCalc />
           </div>
         </section>
 
-        <section aria-labelledby="how" className="mx-auto max-w-(--size-content-max) px-4 py-16 lg:px-8">
-          <h2 id="how" className="text-xl">So funktioniert es</h2>
-          <ol className="mt-8 grid gap-8 md:grid-cols-3">
-            {STEPS.map((s, i) => (
-              <li key={s.title}>
-                <span aria-hidden className="num flex size-10 items-center justify-center rounded-pill bg-accent-subtle font-semibold text-accent">{i + 1}</span>
-                <h3 className="mt-3 text-lg">{s.title}</h3>
-                <p className="mt-1 text-text-muted">{s.body}</p>
-              </li>
-            ))}
-          </ol>
+        <div aria-hidden className="relative overflow-hidden border-y border-ink-raised py-4">
+          <div className="flex w-max animate-marquee gap-10 whitespace-nowrap text-sm font-semibold text-on-ink-muted">
+            {[...TICKER, ...TICKER].map((t, i) => <span key={i} className="flex items-center gap-10">{t}<span className="size-1.5 rounded-pill bg-saffron" /></span>)}
+          </div>
+        </div>
+      </div>
+
+      <main>
+        {/* ------------------------------------------------ problem */}
+        <section aria-labelledby="problem" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
+          <p className="text-sm font-bold uppercase tracking-wide text-accent">Das Problem</p>
+          <h2 id="problem" className="mt-2 max-w-3xl text-xl lg:text-display">Die Kalkulation stimmt am Tag, an dem sie gemacht wird</h2>
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            <p className="rounded-lg border border-border bg-surface p-6 text-base text-text-muted">Butter wird teurer, der Lieferant ändert die Gebindegröße, ein Grundrezept bekommt eine Zutat mehr. Die Tabelle von letztem Quartal weiß davon nichts, und der Wareneinsatz auf der Karte ist eine Schätzung.</p>
+            <p className="rounded-lg border border-border bg-surface p-6 text-base text-text-muted">Einkauf, Lager und Rezepte liegen in verschiedenen Listen. Wer bestellt, sieht nicht, was noch da ist; wer zählt, weiß nicht, was seit der letzten Inventur geliefert oder weggeworfen wurde.</p>
+          </div>
         </section>
 
-        <section aria-labelledby="features" className="bg-surface">
-          <div className="mx-auto max-w-(--size-content-max) px-4 py-16 lg:px-8">
-            <h2 id="features" className="text-xl">Gebaut für die Momente, in denen es sonst schiefgeht</h2>
-            <ul className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {FEATURES.map(({ icon: Icon, title, body }) => (
-                <li key={title} className="rounded-md border border-border bg-surface-raised p-6">
-                  <Icon aria-hidden className="size-6 text-accent" />
-                  <h3 className="mt-3 text-lg">{title}</h3>
-                  <p className="mt-1 text-text-muted">{body}</p>
+        {/* ------------------------------------------------ how */}
+        <section aria-labelledby="how" className="bg-surface">
+          <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
+            <p className="text-sm font-bold uppercase tracking-wide text-accent">So funktioniert es</p>
+            <h2 id="how" className="mt-2 text-xl lg:text-display">In drei Schritten zum echten Wareneinsatz</h2>
+            <ol className="mt-10 grid gap-6 md:grid-cols-3">
+              {STEPS.map((s, i) => (
+                <li key={s.title} className="relative rounded-lg border border-border bg-bg p-6 shadow-card">
+                  <span aria-hidden className="num text-display text-accent">0{i + 1}</span>
+                  <h3 className="mt-2 text-lg">{s.title}</h3>
+                  <p className="mt-1 text-text-muted">{s.body}</p>
                 </li>
               ))}
-            </ul>
+            </ol>
+            <figure className="mt-12 overflow-hidden rounded-lg border border-border shadow-pop">
+              <Image src={shot} alt={`Rezept „Linsensuppe“ in ${APP_NAME}: Zutatenzeilen mit Kosten, daneben Wareneinsatz pro Portion 0,63 € und 8,5 % Wareneinsatz.`} placeholder="blur" sizes="(min-width: 1280px) 1200px, 100vw" />
+              <figcaption className="bg-bg px-4 py-3 text-sm text-text-muted">So sieht ein Rezept in {APP_NAME} aus: Kosten pro Zeile, rechts der Wareneinsatz, während du tippst.</figcaption>
+            </figure>
           </div>
         </section>
 
-        <section id="preise" aria-labelledby="pricing" className="mx-auto max-w-(--size-content-max) px-4 py-16 lg:px-8">
-          <h2 id="pricing" className="text-xl">Preise</h2>
-          <p className="mt-2 text-text-muted">Alle Funktionen in jedem Tarif. Beliebig viele Nutzer. {PRICE_TAX_NOTE}</p>
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
-            <div className="rounded-lg border border-border p-6">
-              <h3 className="text-lg">Eine Küche</h3>
-              <p className="mt-1 text-text-muted">Für das Restaurant, das Café, den Imbiss.</p>
-              <p className="num mt-4 text-xl">{eur(PRICING.firstOutletMonthly)} <span className="text-sm font-normal text-text-muted">pro Monat</span></p>
-              <p className="text-xs font-normal text-text-muted">oder {eur(PRICING.firstOutletYearly)} pro Jahr (2 Monate geschenkt)</p>
-              <ul className="mt-4 flex flex-col gap-2">
-                {["1 Standort", "Unbegrenzt Zutaten, Rezepte, Bestellungen", "Inventur, Rechnungsabgleich, HACCP", "Beliebig viele Nutzer", "Kündigen mit einem Klick"].map((x) => (
+        {/* ------------------------------------------------ features */}
+        <section id="funktionen" aria-labelledby="features" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
+          <p className="text-sm font-bold uppercase tracking-wide text-accent">Funktionen</p>
+          <h2 id="features" className="mt-2 max-w-3xl text-xl lg:text-display">Gebaut für die Momente, in denen es sonst schiefgeht</h2>
+          <ul className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map(({ icon: Icon, title, body }, i) => (
+              <li key={title} className={i === 0 ? "rounded-lg bg-ink p-7 text-on-ink md:col-span-2 lg:row-span-2 lg:p-9" : "rounded-lg border border-border bg-surface p-6 transition-transform duration-base hover:-translate-y-1"}>
+                <span className={i === 0 ? "inline-flex size-12 items-center justify-center rounded-md bg-saffron text-on-saffron" : "inline-flex size-10 items-center justify-center rounded-md bg-accent-subtle text-accent"}>
+                  <Icon aria-hidden className={i === 0 ? "size-6" : "size-5"} />
+                </span>
+                <h3 className={i === 0 ? "mt-5 text-xl" : "mt-4 text-lg"}>{title}</h3>
+                <p className={i === 0 ? "mt-2 max-w-xl text-base text-on-ink-muted" : "mt-1 text-text-muted"}>{body}</p>
+                {i === 0 && (
+                  <div aria-hidden className="mt-8 grid max-w-md grid-cols-3 gap-3 text-sm" title="Beispiel">
+                    {[["Butter", "+12 %"], ["Pasta", "0,94 €"], ["Fond", "−0,08 €"]].map(([a, b]) => (
+                      <div key={a} className="rounded-md bg-ink-raised p-3"><p className="text-on-ink-muted">{a}</p><p className="num text-lg text-saffron">{b}</p></div>
+                    ))}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* ------------------------------------------------ pricing */}
+        <section id="preise" aria-labelledby="pricing" className="bg-surface">
+          <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
+            <h2 id="pricing" className="text-xl lg:text-display">Preise</h2>
+            <p className="mt-2 text-text-muted">Alle Funktionen in jedem Tarif. Beliebig viele Nutzer. {PRICE_TAX_NOTE}</p>
+            <div className="mt-10 grid gap-6 md:grid-cols-2">
+              <div className="rounded-lg border border-border bg-bg p-8">
+                <h3 className="text-lg">Eine Küche</h3>
+                <p className="mt-1 text-text-muted">Für das Restaurant, das Café, den Imbiss.</p>
+                <p className="num mt-6 text-display">{eur(PRICING.firstOutletMonthly)} <span className="text-sm font-normal text-text-muted">pro Monat</span></p>
+                <p className="text-xs font-normal text-text-muted">oder {eur(PRICING.firstOutletYearly)} pro Jahr (2 Monate geschenkt)</p>
+                <ul className="mt-6 flex flex-col gap-2">
+                  {["1 Standort", "Unbegrenzt Zutaten, Rezepte, Bestellungen", "Inventur, Rechnungsabgleich, HACCP", "Beliebig viele Nutzer", "Kündigen mit einem Klick"].map((x) => (
+                    <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{x}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="relative rounded-lg bg-ink p-8 text-on-ink shadow-glow">
+                <span className="absolute -top-3 right-6 rounded-pill bg-saffron px-3 py-1 text-xs font-bold text-on-saffron">für Gruppen</span>
+                <h3 className="text-lg">Mehrere Küchen</h3>
+                <p className="mt-1 text-on-ink-muted">Für Gruppen, Filialen und Zentralküchen.</p>
+                <p className="num mt-6 text-display">+ {eur(PRICING.extraOutletMonthly)} <span className="text-sm font-normal text-on-ink-muted">pro weiterem Standort und Monat</span></p>
+                <p className="text-xs font-normal text-on-ink-muted">oder {eur(PRICING.extraOutletYearly)} pro Jahr und Standort</p>
+                <ul className="mt-6 flex flex-col gap-2">
+                  {["Eigener Bestand und eigene Bestellungen je Standort", "Gemeinsame Rezepte und Zutaten", "Zentralküche: Anforderungen und Produktionsplan", "Teammitglieder nur für ihren Standort", "Abgerechnet wird, was angelegt ist – keine Sprünge"].map((x) => (
+                    <li key={x} className="flex gap-2"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-saffron" />{x}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <p className="mt-4 text-xs font-normal text-text-muted">Beispiel: drei Standorte = {eur(PRICING.firstOutletMonthly + 2 * PRICING.extraOutletMonthly)} pro Monat.</p>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------ inquiry */}
+        <section id="anfrage" aria-labelledby="lead" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
+          <div className="grid gap-10 rounded-lg border border-border bg-bg p-6 shadow-pop lg:grid-cols-[5fr_7fr] lg:p-10">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide text-accent">Vorführung</p>
+              <h2 id="lead" className="mt-2 text-xl lg:text-display">Zeig uns dein teuerstes Gericht</h2>
+              <p className="mt-3 text-text-muted">
+                In einer halben Stunde legen wir zusammen deine wichtigsten Zutaten und ein Rezept an, und du siehst, was der Teller
+                wirklich kostet. Für einen oder viele Standorte, mit oder ohne Zentralküche.
+              </p>
+              <ul className="mt-6 flex flex-col gap-2 text-sm">
+                {["30 Minuten, per Video oder bei euch", "Mit euren echten Einkaufspreisen", "Kostenlos und unverbindlich"].map((x) => (
                   <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{x}</li>
                 ))}
               </ul>
             </div>
-            <div className="rounded-lg border-2 border-accent p-6">
-              <h3 className="text-lg">Mehrere Küchen</h3>
-              <p className="mt-1 text-text-muted">Für Gruppen, Filialen und Zentralküchen.</p>
-              <p className="num mt-4 text-xl">+ {eur(PRICING.extraOutletMonthly)} <span className="text-sm font-normal text-text-muted">pro weiterem Standort und Monat</span></p>
-              <p className="text-xs font-normal text-text-muted">oder {eur(PRICING.extraOutletYearly)} pro Jahr und Standort</p>
-              <ul className="mt-4 flex flex-col gap-2">
-                {["Eigener Bestand und eigene Bestellungen je Standort", "Gemeinsame Rezepte und Zutaten", "Zentralküche: Anforderungen und Produktionsplan", "Teammitglieder nur für ihren Standort", "Abgerechnet wird, was angelegt ist – keine Sprünge"].map((x) => (
-                  <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{x}</li>
-                ))}
-              </ul>
-            </div>
+            <LeadForm appName={APP_NAME} />
           </div>
-          <p className="mt-4 text-xs font-normal text-text-muted">Beispiel: drei Standorte = {eur(PRICING.firstOutletMonthly + 2 * PRICING.extraOutletMonthly)} pro Monat.</p>
         </section>
 
-        <section id="anfrage" aria-labelledby="lead" className="mx-auto grid max-w-(--size-content-max) gap-8 px-4 py-16 lg:grid-cols-[5fr_7fr] lg:px-8">
-          <div>
-            <h2 id="lead" className="text-xl">Zeig uns dein teuerstes Gericht</h2>
-            <p className="mt-2 text-text-muted">
-              In einer halben Stunde legen wir zusammen deine wichtigsten Zutaten und ein Rezept an, und du siehst, was der Teller
-              wirklich kostet. Für einen oder viele Standorte, mit oder ohne Zentralküche.
-            </p>
-          </div>
-          <LeadForm appName={APP_NAME} />
-        </section>
-
+        {/* ------------------------------------------------ faq */}
         <section aria-labelledby="faq" className="bg-surface">
-          <div className="mx-auto max-w-(--size-form-max) px-4 py-16">
+          <div className="mx-auto max-w-(--size-form-max) px-4 py-20">
             <h2 id="faq" className="text-xl">Häufige Fragen</h2>
-            <div className="mt-6 flex flex-col divide-y divide-border rounded-md border border-border bg-surface-raised">
+            <div className="mt-6 flex flex-col gap-3">
               {FAQ.map(({ q, a }) => (
-                <details key={q} className="group px-4 py-3">
-                  <summary className="cursor-pointer list-none font-semibold marker:hidden">{q}</summary>
+                <details key={q} className="group rounded-md border border-border bg-bg px-5 py-4 open:shadow-card">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold marker:hidden">
+                    {q}<Plus aria-hidden className="size-4 shrink-0 text-accent transition-transform duration-base group-open:rotate-45" />
+                  </summary>
                   <p className="mt-2 text-text-muted">{a}</p>
                 </details>
               ))}
@@ -173,20 +229,24 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section aria-labelledby="final" className="mx-auto max-w-(--size-content-max) px-4 py-20 text-center lg:px-8">
-          <h2 id="final" className="text-xl">Leg dein teuerstes Gericht an und sieh, was es wirklich kostet.</h2>
-          <div className="mt-8 flex justify-center"><Link href={mainCta.href} className={cta}>{mainCta.label} <ArrowRight aria-hidden className="size-4" /></Link></div>
+        {/* ------------------------------------------------ final */}
+        <section aria-labelledby="final" className="relative overflow-hidden bg-ink text-on-ink">
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_80%_at_50%_120%,var(--color-accent)_0%,transparent_70%)]" />
+          <div className="relative mx-auto max-w-(--size-content-max) px-4 py-24 text-center lg:px-8">
+            <h2 id="final" className="mx-auto max-w-3xl text-xl lg:text-display">Leg dein teuerstes Gericht an und sieh, was es wirklich kostet.</h2>
+            <div className="mt-8 flex justify-center"><Link href={mainCta.href} className={cta}>{mainCta.label} <ArrowRight aria-hidden className="size-4" /></Link></div>
+          </div>
         </section>
       </main>
 
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-(--size-content-max) flex-wrap justify-between gap-4 px-4 py-6 text-xs font-normal text-text-muted lg:px-8">
-          <span>© {APP_NAME}</span>
+      <footer className="bg-ink text-on-ink-muted">
+        <div className="mx-auto flex max-w-(--size-content-max) flex-wrap items-center justify-between gap-4 border-t border-ink-raised px-4 py-8 text-xs font-normal lg:px-8">
+          <span className="flex items-center gap-3"><Logo tone="light" /> <span>© {APP_NAME}</span></span>
           <nav aria-label="Rechtliches" className="flex flex-wrap gap-x-4 gap-y-1">
-            <Link href="/legal/privacy" className="hover:underline">Datenschutz</Link>
-            <Link href="/legal/terms" className="hover:underline">Nutzungsbedingungen</Link>
-            <Link href="/legal/dpa" className="hover:underline">Auftragsverarbeitung</Link>
-            <Link href="/legal/imprint" className="hover:underline">Impressum</Link>
+            <Link href="/legal/privacy" className="hover:text-on-ink hover:underline">Datenschutz</Link>
+            <Link href="/legal/terms" className="hover:text-on-ink hover:underline">Nutzungsbedingungen</Link>
+            <Link href="/legal/dpa" className="hover:text-on-ink hover:underline">Auftragsverarbeitung</Link>
+            <Link href="/legal/imprint" className="hover:text-on-ink hover:underline">Impressum</Link>
           </nav>
         </div>
       </footer>

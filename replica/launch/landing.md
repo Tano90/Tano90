@@ -56,7 +56,12 @@ schriftlicher Erlaubnis. Bewertungen des Originals sind Recherche, keine Testimo
 
 ## Vor dem Start prüfen
 - **Name:** Mirepa (statt Pantra, 2026-10-21). Nur per Websuche geprüft; Register und Domain stehen in `brand.md` noch aus.
-  Hero-Bild und Seiten-Screenshots sind mit dem neuen Namen neu aufgenommen.
+
+## Neugestaltung (2026-10-21)
+Dunkle Bühne mit Logo, Überschrift und einem **Live-Rechner** (Linsensuppe aus den Demodaten, Regler für Linsenpreis und
+Verkaufspreis, Wareneinsatz und Anteil rechnen sofort mit, Zielstrich 30 %); laufendes Band mit Stichworten; Funktionen
+als Mosaik; Preiskarten hell und dunkel; Anfrage als Karte; dunkler Abschluss und Fußzeile. Bewegung nur, wenn das
+System keine reduzierte Bewegung wünscht. axe ohne Verstoß, kein seitliches Scrollen bei 390 px.
 - „Daten in der EU (Frankfurt)“ stimmt nur, wenn Supabase und Vercel dort eingerichtet sind (`backend.md`).
 - „Kündigen mit einem Klick“ setzt voraus, dass im Stripe-Kundenportal Kündigen aktiviert ist.
 - Impressum, Datenschutz und Nutzungsbedingungen sind Entwürfe (`/legal/*`).

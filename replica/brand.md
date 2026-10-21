@@ -150,6 +150,12 @@ Damit wird ein Button nie mit einer Meldung verwechselt. Vor dem Start mit dem O
 
 `python3 replica/design/contrast.py replica/design/tokens.json`: **31 Paare, 0 AA-Fehler.** Alle anderen Rollen bleiben gleich.
 
+## Zweite Markenfarbe (2026-10-21)
+
+**Safran** `#f6b13b` für Knöpfe und Akzente auf dunklem Grund, dazu die Bühnenfarbe **Tinte** `#170f1a`. Neue Rollen in
+den Tokens: `ink`, `ink-raised`, `on-ink`, `on-ink-muted`, `saffron`, `on-saffron`, `accent-glow`; `contrast.py`:
+39 Paare, 0 AA-Fehler. Safran nur auf dunklem Grund oder mit `on-saffron` als Schrift, nie als Textfarbe auf Weiß.
+
 ## Logo-Briefing
 
 - **Idee:** drei gewürfelte Stücke (Mirepoix), die zusammen ein „M“ bilden: die Grundlage, aus der alles entsteht.
@@ -161,7 +167,11 @@ Damit wird ein Button nie mit einer Meldung verwechselt. Vor dem Start mit dem O
   (16, 32, 180, SVG), Social-Bild 1200×630.
 - **Darf dem Original nicht ähneln:** kein gemeinsames Grundelement, kein gleiches Farbpaar, kein gleicher Buchstabentrick.
   Die Entwürfe neben das Logo des Originals legen und prüfen. Dessen Logo konnte hier nicht angesehen werden.
-- **Aktuell:** `web/src/app/icon.svg` ist ein Platzhalter (weißes „M“ auf Aubergine), kein Logo.
+- **Umgesetzt (2026-10-21):** Bildmarke aus fünf Würfeln, die ein „M“ bilden, auf Aubergine; der mittlere Würfel in
+  Safran (die Karotte im Mirepoix), leicht gedreht. Wortmarke „mirepa“ klein, extrafett, eng. Komponente
+  `web/src/components/brand/logo.tsx`, Favicon `web/src/app/icon.svg`, Vorschaubild für geteilte Links
+  `web/src/app/opengraph-image.tsx` (Abbild: `replica/launch/og-image.png`). Eine Designerin kann daraus noch eine
+  Reinzeichnung machen; das App-Icon 1024 px für die Stores folgt mit der nativen App.
 
 ## Stimme
 

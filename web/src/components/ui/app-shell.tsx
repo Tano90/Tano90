@@ -6,7 +6,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { APP_NAME } from "@/lib/brand";
+import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/cn";
 import { Select } from "./field";
 
@@ -51,7 +51,7 @@ export function AppShell({ outlets, outletId, onOutletChange, user, children }: 
         )}
       >
         <div className="flex h-(--size-header) items-center justify-between px-2">
-          <span className="font-semibold text-nav-text-active">{APP_NAME}</span>
+          <Logo tone="light" />
           <button type="button" className="text-nav-text lg:hidden" aria-label="Navigation schließen" onClick={() => setOpen(false)}>
             <X aria-hidden className="size-5" />
           </button>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/brand/logo";
 import { APP_NAME } from "@/lib/brand";
 import { FIELD_LABELS, LEGAL_DATE, OPERATOR, type OperatorField, missingOperatorFields } from "@/lib/legal";
 
@@ -14,7 +15,7 @@ export function LegalPage({ title, children }: { title: string; children: React.
   return (
     <div className="min-h-dvh bg-bg">
       <header className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-        <Link href="/" className="text-lg font-semibold">{APP_NAME}</Link>
+        <Link href="/" aria-label={`${APP_NAME} Startseite`}><Logo /></Link>
         <nav aria-label="Rechtliches" className="flex flex-wrap justify-end gap-x-4 gap-y-1 text-sm">
           <Link href="/legal/imprint" className="hover:underline">Impressum</Link>
           <Link href="/legal/privacy" className="hover:underline">Datenschutz</Link>
