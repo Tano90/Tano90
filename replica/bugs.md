@@ -1,6 +1,6 @@
 # Bugs
 
-Gefunden mit `/replica-test` am 2026-10-20/21 (fünf Durchgänge; BUG-008 bis 011 schon beim Bauen von S18/S20/S21 reproduziert und mit Test behoben) · Korrekturen: Commits in der Tabelle ·
+Gefunden mit `/replica-test` am 2026-10-20/21 (sechs Durchgänge; BUG-008 bis 011 schon beim Bauen von S18/S20/S21, BUG-019 bis 021 beim Bauen von S15/S23 reproduziert und mit Test behoben) · Korrekturen: Commits in der Tabelle ·
 Chromium 1440 px, de-DE, Europe/Berlin · Produktions-Build auf Postgres 16 mit Demo-Seed.
 
 Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jetzt besteht.
@@ -22,6 +22,12 @@ Nur Reproduziertes. Jede Korrektur hat einen Test, der vorher fehlschlug und jet
 | BUG-013 | S3 | CSV-Export führt Zutatennamen mit `=` in Excel als Formel aus (CSV-Injektion) | behoben in 6d2a0f3 |
 | BUG-014 | S2 | Tippfehler in einem Preisfeld löscht den Preis beim Speichern | behoben in 69f447e |
 | BUG-015 | S2 | Dezimalpunkt in Zahlenfeldern verzehnfacht die Zahl („2.5“ kg → 25 kg) | behoben in 3342447 |
+| BUG-016 | S3 | Barcode mit führenden Nullen (GTIN-14/UPC) findet den Artikel nicht | behoben in 9cdf1a7 |
+| BUG-017 | S3 | Dieselbe GTIN an zwei Gebinden, der Scan zählt still eines davon | behoben in 9cdf1a7 |
+| BUG-018 | S3 | Zentralküche nimmt Anforderungen für vergangene Tage an | behoben in 9cdf1a7 |
+| BUG-019 | S2 | Team-Konten können bei der Zentralküche nicht anfordern („keine Berechtigung“) | behoben in 5be2517 |
+| BUG-020 | S3 | Dialog „Produzieren“ bleibt nach dem Buchen offen und zeigt „0 Anforderungen“ | behoben in 5be2517 |
+| BUG-021 | S3 | Rechnungsseite bei 390 px seitlich 778 px breit | behoben in b6ae12b |
 
 Offen: keine. S1 offen: keine.
 
@@ -240,6 +246,117 @@ Status: fixed in 3342447 (`cleanDecimal` macht aus dem Punkt ein Komma; an allen
 
 ---
 
+### BUG-016: Barcode mit führenden Nullen findet den Artikel nicht
+
+- Severity: S3 (Inventur per Scanner zählt nichts; Umweg: Code von Hand ohne Nullen eintippen)
+- Flow / case: F08 / F08-B3 (e2e `B-E1`)
+- Screen: S17 (Inventur)
+- Build: vor 9cdf1a7
+
+Steps
+1. Inventur starten.
+2. Im Feld „Barcode scannen oder eintippen“ `02000000000015` eingeben, Enter. (Dieselbe Butter, GTIN-14-Form; so senden viele Scanner und GS1-128-Etiketten den Code. Gleiches gilt für UPC-A gegen EAN-13.)
+
+Expected: „Butter: Karton 10 × 250 g +1, jetzt 1“.
+Actual: „Barcode 02000000000015 ist keinem Artikel zugeordnet“.
+Evidence: e2e `B-E1`, auf dem alten Stand rot.
+Suspected cause: Codes wurden als Text verglichen; EAN-8, UPC-A, EAN-13 und GTIN-14 desselben Artikels unterscheiden sich nur in führenden Nullen.
+Status: fixed in 9cdf1a7 (`lib/gtin.ts`: Vergleich über den 14-stelligen Schlüssel, im Zählblatt und in beiden Backends)
+
+---
+
+### BUG-017: Dieselbe GTIN an zwei verschiedenen Gebinden
+
+- Severity: S3 (Scan zählt still das falsche Gebinde, die Inventur stimmt nicht; Umweg: GTIN von Hand korrigieren, sobald man es merkt)
+- Flow / case: F08 / F08-B4 (Integrationstest „one GTIN cannot point at two different packages“)
+- Screen: S04 (Zutat, Gebinde & Preise), S17
+- Build: vor 9cdf1a7
+
+Steps
+1. Zutat „Speisequark 20 %“ → Lieferantenartikel → GTIN `2000000000015` (die der Butter) → speichern.
+2. Inventur, `2000000000015` scannen.
+
+Expected: Speichern wird abgelehnt, weil der Code schon zur Butter gehört.
+Actual: gespeichert; der Scan zählt danach nur eines der beiden Gebinde, je nachdem welches zuletzt geladen wird, ohne Hinweis.
+Evidence: Integrationstest, auf dem alten Stand rot („promise resolved … instead of rejecting“).
+Suspected cause: Keine Prüfung beim Speichern, die Zuordnung Code → Gebinde war ein einfaches Objekt (letzter gewinnt).
+Status: fixed in 9cdf1a7 (Speichern lehnt ab, wenn der Code auf ein anderes Gebinde zeigt; dasselbe Gebinde bei zwei Lieferanten darf ihn teilen)
+
+---
+
+### BUG-018: Zentralküche: Anforderung für einen vergangenen Tag
+
+- Severity: S3 (Anforderung landet im Plan für einen Tag, der vorbei ist; Umweg: stornieren und neu anfordern)
+- Flow / case: F13 / F13-N2 (e2e `Z-N2`)
+- Screen: S23
+- Build: vor 9cdf1a7
+
+Steps
+1. /production als Küche Mitte, Rezept Kräuterquark, 3 Portionen.
+2. Liefertag `2020-01-01` eintippen, „Anfordern“.
+
+Expected: „Der Liefertag liegt in der Vergangenheit.“, nichts gespeichert.
+Actual: gespeichert, erscheint unter „Eigene Anforderungen“ und im Plan der Zentralküche.
+Evidence: e2e `Z-N2`, auf dem alten Stand rot.
+Suspected cause: Nur das `min`-Attribut am Datumsfeld, das Eintippen nicht verhindert; der Server prüfte das Datum nicht.
+Status: fixed in 9cdf1a7 (Server vergleicht mit dem heutigen Tag in der Zeitzone des anfordernden Outlets)
+
+---
+
+### BUG-019: Team-Konten können bei der Zentralküche nicht anfordern
+
+- Severity: S2 (Kern der Funktion für Outlet-Mitarbeitende kaputt; nur Inhaber/Admin konnten anfordern)
+- Flow / case: F13 / F13-N3 (e2e `Z-N3`, Integrationstest „production“)
+- Screen: S23
+- Build: vor 5be2517 (beim Bauen gefunden, nie gepusht)
+
+Steps
+1. Als Team-Konto von Küche Mitte /production öffnen, Kräuterquark, 4 Portionen, „Anfordern“.
+
+Expected: Anforderung gespeichert.
+Actual: „Dafür fehlt dir die Berechtigung.“
+Evidence: Integrationstest schlug mit 42501 fehl.
+Suspected cause: Die Policy aus Migration 0011 suchte die Zentralküche in `outlets` unter der RLS des Team-Kontos, das die Zentralküche nicht sehen darf. Zusätzlich verglich ein unqualifiziertes `library_id` in der Unterabfrage die Spalte mit sich selbst.
+Status: fixed in 5be2517 (Migration 0013, Prüfung in einer security-definer-Funktion mit ausdrücklicher Bibliothek)
+
+---
+
+### BUG-020: Dialog „Produzieren“ bleibt nach dem Buchen offen
+
+- Severity: S3 (Dialog muss von Hand geschlossen werden, Titel zeigt „0 Anforderungen produzieren?“)
+- Flow / case: F13 / F13-H2 (e2e `Z-H2`)
+- Screen: S23
+- Build: vor 5be2517 (beim Bauen gefunden)
+
+Steps
+1. Als Zentralküche eine Anforderung wählen, „Produzieren (1)“, im Dialog „Produzieren“.
+
+Expected: Dialog schließt, Zeile zeigt „produziert“.
+Actual: Buchung klappt, Dialog bleibt offen mit „0 Anforderungen produzieren?“ und verdeckt die Liste.
+Evidence: e2e `Z-H2` (Seitenabbild mit offenem Dialog).
+Suspected cause: Der Bestätigungsdialog war ungesteuert und schließt nur über „Abbrechen“.
+Status: fixed in 5be2517 (Dialog gesteuert, schließt nach Erfolg)
+
+---
+
+### BUG-021: Rechnungsseite bei 390 px zu breit
+
+- Severity: S3 (am Handy seitliches Scrollen der ganzen Seite)
+- Flow / case: F12 / F12-E3 (e2e `R-E3`)
+- Screen: S15
+- Build: vor b6ae12b (vom Screenshot-Skript gefunden)
+
+Steps
+1. Bei 390 px Breite /orders/<B-0001>/invoice öffnen.
+
+Expected: Tabelle scrollt in ihrem Rahmen, Seite nicht.
+Actual: Seite 778 px breit.
+Evidence: `scripts/screenshot-screens.mjs` („horizontal overflow: 778px“), e2e `R-E3` auf dem alten Stand rot.
+Suspected cause: `<fieldset>` hat im Browser `min-width: min-content` und reichte die Mindestbreite der Tabelle nach außen durch.
+Status: fixed in b6ae12b (`min-w-0` am fieldset)
+
+---
+
 ## Zu prüfen (nicht reproduziert oder nicht automatisierbar)
 
 - Ungespeicherte Änderungen beim Wechsel über die Seitennavigation (nicht nur Neuladen) gehen ohne Nachfrage verloren. Gilt auch für Zutaten- und Bestellformulare.
@@ -252,3 +369,7 @@ Status: fixed in 3342447 (`cleanDecimal` macht aus dem Punkt ein Komma; an allen
 - Kassen-API: Ratenlimit greift pro Schlüssel (60/min, geprüft); ein Angreifer ohne Schlüssel bekommt 401, aber auch dafür zählt das Limit nur pro vermutetem Schlüssel. Ein IP-basiertes Limit fehlt.
 - Inventur in Gebinden: wird ein Gebinde gelöscht, während eine Inventur mit genau diesem Gebinde offen ist, lehnt der Server den Zwischenstand ab und das Zählblatt versucht es alle 5 Sekunden erneut („Speichern fehlgeschlagen“), bis neu geladen wird. Nicht reproduziert (dafür müsste jemand parallel ein Gebinde löschen).
 - Zwei Personen bearbeiten gleichzeitig dasselbe Menü oder Rezept: der letzte Speichervorgang gewinnt ohne Hinweis. Nicht getestet, vermutlich zu erwarten.
+- Rechnungsabgleich: wird nach dem Erfassen der Rechnung noch nachgeliefert (Teillieferung), bleibt der gespeicherte Abgleich auf dem alten Stand, bis jemand die Rechnung erneut speichert. Nicht reproduziert, im Seed gibt es keine Teillieferung mit Rechnung.
+- HACCP: einen schon eingetragenen Wert leeren und speichern löscht ihn nicht (Einträge bleiben fürs Protokoll), das Feld zeigt nach dem Neuladen wieder den alten Wert. Gewollt, aber ohne Hinweis.
+- GTIN-Prüfziffer wird nicht geprüft: ein Tippfehler in der GTIN wird gespeichert und findet beim Scan nichts. Kein Datenfehler, nur ein Hinweis fehlt.
+- Kamera-Scan (BarcodeDetector) nur von Hand prüfbar: Chrome auf Android, HTTPS. Checkliste F08-B5.

@@ -8,7 +8,7 @@ Automatisiert: `cd web && E2E_DATABASE_URL=… npm run e2e` (Specs in `web/e2e/`
 schlägt fehl bei Konsolenfehlern, Seitenfehlern und jeder 5xx-Antwort; Screens werden mit axe (WCAG 2.2 AA)
 geprüft. Datenbank-Integrationstests: `TEST_DATABASE_URL=… npm test`.
 
-Lauf vom 2026-10-21 (5. Durchgang, nach Stornos, Menu Engineering, Bestellen nach Gewicht, Preislisten-Import): **165/165 E2E bestanden**, **52/52 Unit- und Integrationstests**. Neu: 21 E2E-Fälle, 4 Unit-Tests; 1 Bug (BUG-015, behoben). 4. Durchgang: 144/144, Neu: 17 E2E-Fälle, 3 Unit-/Integrationstests; 1 Bug (BUG-014, behoben); ein Flake auf seine Ursache zurückgeführt (Eingabe vor dem Laden der Seitenskripte) und in den Fixtures behoben. 3. Durchgang: Neu seit dem 2. Durchgang 26 E2E-Fälle und 8 Unit-/Integrationstests; 6 Bugs (BUG-008 bis 013), alle behoben. 2. Durchgang: 34 Fälle, BUG-007. Erster Durchgang: 61 Fälle, 6 Bugs, alle behoben. Ergebnis-Spalte: ✅ bestanden · ❌ fehlgeschlagen (→ `bugs.md`) · ⏸ blockiert · 🖐 manuell offen
+Lauf vom 2026-10-21 (6. Durchgang, nach Barcode-Inventur, Rechnungsabgleich, HACCP, Zentralküche): **188/188 E2E bestanden**, **61/61 Unit- und Integrationstests**. Neu: 23 E2E-Fälle, 5 Integrationstests; 3 Bugs (BUG-016 bis 018, behoben). 5. Durchgang ( nach Stornos, Menu Engineering, Bestellen nach Gewicht, Preislisten-Import): **165/165 E2E bestanden**, **52/52 Unit- und Integrationstests**. Neu: 21 E2E-Fälle, 4 Unit-Tests; 1 Bug (BUG-015, behoben). 4. Durchgang: 144/144, Neu: 17 E2E-Fälle, 3 Unit-/Integrationstests; 1 Bug (BUG-014, behoben); ein Flake auf seine Ursache zurückgeführt (Eingabe vor dem Laden der Seitenskripte) und in den Fixtures behoben. 3. Durchgang: Neu seit dem 2. Durchgang 26 E2E-Fälle und 8 Unit-/Integrationstests; 6 Bugs (BUG-008 bis 013), alle behoben. 2. Durchgang: 34 Fälle, BUG-007. Erster Durchgang: 61 Fälle, 6 Bugs, alle behoben. Ergebnis-Spalte: ✅ bestanden · ❌ fehlgeschlagen (→ `bugs.md`) · ⏸ blockiert · 🖐 manuell offen
 
 | case | flow | type | steps | expected | auto | result |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -134,8 +134,30 @@ Lauf vom 2026-10-21 (5. Durchgang, nach Stornos, Menu Engineering, Bestellen nac
 | F11-N1 | | negativ: Team-Konto, kein Schlüssel | Seite / API ohne Auth | Zuordnen ja, keine Schlüssel; 401 | e2e | ✅ |
 | F11-N2 | | negativ: API-Grenzen | kaputtes JSON, >60/min, fremdes Outlet | 400, 429, Schlüssel bucht nur ins eigene Outlet | e2e | ✅ |
 | F11-N3 | | negativ: fremdes Outlet | Team-Konto importiert in Zentralküche | abgelehnt | int | ✅ |
-| F12 | Rechnungsabgleich | – | – | – | – | ⏸ nicht gebaut |
-| F13 | Zentralküche | – | – | – | – | ⏸ nicht gebaut |
+| F08-B1 | Inventur mit Barcode | happy | Inventur starten, 2000000000015 scannen (Enter), zweimal | Butter: Karton +1, dann 2; Summe 5 kg; Zwischenstand gespeichert, nach Neuladen noch da | e2e | ✅ |
+| F08-B2 | | edge: unbekannter Code | 4000000000000 | Hinweis „keinem Artikel zugeordnet“, nichts gezählt | e2e | ✅ |
+| F08-B3 | | edge: führende Nullen | 02000000000015 (GTIN-14-Form) | zählt Butter | e2e | ✅ (zuerst ❌ → BUG-016) |
+| F08-B4 | | negativ: GTIN doppelt | GTIN der Butter beim Quark eintragen | abgelehnt; gleiche GTIN beim selben Gebinde eines zweiten Lieferanten erlaubt | int | ✅ (zuerst ❌ → BUG-017) |
+| F08-B5 | | edge: Kamera | Handy, Chrome/Android, Kamera-Knopf, EAN-13 vor die Linse | zählt ein Gebinde; Firefox/Safari zeigen keinen Kamera-Knopf | manual | 🖐 |
+| F12-H1 | Rechnungsabgleich | happy | B-0001 → Rechnung abgleichen → Nummer → speichern → freigeben | „stimmt überein“, freigegeben mit Name, 4 Zeilen in der DB | e2e | ✅ |
+| F12-E1 | | edge: Abweichung | Menge und Preis ändern | Zeilen markiert, Differenz, Freigabe nur mit Begründung | e2e | ✅ |
+| F12-E2 | | edge: Nummer doppelt, Ändern nach Freigabe | gleiche Nummer bei anderer Bestellung; freigegebene Rechnung ändern | abgelehnt; Freigabe aufgehoben | e2e | ✅ |
+| F12-E3 | | edge: 390 px | Rechnungsseite am Handy | Tabelle scrollt in sich | e2e | ✅ (im Build gefunden und behoben) |
+| F12-E4 | | edge: Doppelklick | Speichern doppelt | eine Rechnung, 4 Zeilen | e2e | ✅ |
+| F12-N1 | | negativ: offene Bestellung, Team-Konto, fremder Betrieb | Rechnung vor Wareneingang; als Team; fremde Bibliothek | abgelehnt / nur lesen / nicht gefunden | e2e+int | ✅ |
+| F13-H1 | Zentralküche | happy: anfordern | Küche Mitte: Linsensuppe 12,5 Portionen, Hinweis mit Emoji | in „Eigene Anforderungen“; stornieren setzt „storniert“ | e2e | ✅ |
+| F13-H2 | | happy: produzieren, liefern | Zentralküche: Kräuterquark wählen → Produzieren → bestätigen → Geliefert | Rohwarenbedarf je Tag, Quark-Bestand sinkt, Kosten an der Anforderung, danach aus dem Plan | e2e | ✅ (zuerst ❌: Dialog blieb offen, im Build behoben) |
+| F13-E1 | | edge: zwei Tabs produzieren gleichzeitig | parallel produce auf dieselbe Anforderung | einmal gebucht, zweiter Versuch „Nichts mehr zu produzieren“ | int | ✅ |
+| F13-E2 | | edge: Doppelklick auf Anfordern | dblclick | genau eine Anforderung | e2e | ✅ |
+| F13-E3 | | edge: 390 px | Seite am Handy | kein seitliches Scrollen | e2e | ✅ |
+| F13-N1 | | negativ: leer | ohne Rezept / ohne Portionen | Meldung, nichts gespeichert | e2e | ✅ |
+| F13-N2 | | negativ: Vergangenheit | Liefertag 2020-01-01 | „Der Liefertag liegt in der Vergangenheit.“ | e2e | ✅ (zuerst ❌ → BUG-018) |
+| F13-N3 | | negativ: Rechte | Team-Konto Küche Mitte; fremder Betrieb; Team produziert für Zentralküche | anfordern ja, kein Plan; nichts sichtbar; abgelehnt | e2e+int | ✅ (Team-Anforderung zuerst ❌, im Build mit Migration 0013 behoben) |
+| F14-H1 | HACCP | happy | Tageskontrolle: Kühlraum 3,5, Tiefkühler −19, Reinigung ok | 3 von 3 erledigt, Name und Zeit | e2e | ✅ |
+| F14-E1 | | edge: Abweichung | Kühlraum 7 °C | nur mit Maßnahme; im Protokoll und in der CSV (Formel-Zeichen entschärft) | e2e | ✅ |
+| F14-E2 | | edge: Vortag, künftiger Tag, 390 px | nachtragen; morgen | erlaubt; abgelehnt; kein seitliches Scrollen | e2e | ✅ |
+| F14-H2 | | happy: Checkliste verwalten | Küchenleitung legt an, bearbeitet | gespeichert | e2e | ✅ |
+| F14-N1 | | negativ: Punkt mit Einträgen löschen; Team-Konto; fremdes Outlet; anderer Betrieb | | abgelehnt / keine Verwaltung / RLS lehnt ab | e2e+int | ✅ |
 | A01-H1 | Anmelden/Abmelden | happy | anmelden, abmelden | Übersicht, dann Login-Seite | e2e | ✅ |
 | A01-N1 | | negativ: unbekannte E-Mail | anmelden | „E-Mail oder Passwort stimmt nicht“ | e2e | ✅ |
 | A01-E1 | | edge: Sitzung abgelaufen | Cookie weg, dann speichern | zurück zur Anmeldung, nichts gespeichert | e2e | ✅ |
