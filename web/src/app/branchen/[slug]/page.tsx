@@ -1,5 +1,6 @@
 import { ArrowRight, Check, Info, X } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ViewBeacon } from "@/components/landing/lead-form";
@@ -96,6 +97,18 @@ export default async function IndustryPage({ params }: { params: Promise<{ slug:
             )}
           </div>
         </section>
+
+        {i.shot && (
+          <section aria-labelledby="shot" className="mx-auto max-w-(--size-content-max) px-4 pt-20 lg:px-8">
+            <Reveal><h2 id="shot" className="text-xl lg:text-display">So sieht es aus</h2></Reveal>
+            <Reveal delay={100}>
+              <figure className="mt-8 overflow-hidden rounded-lg border border-border shadow-pop">
+                <Image src={i.shot.src} alt={i.shot.alt} placeholder="blur" className="h-auto w-full" sizes="(min-width: 1280px) 1200px, 100vw" />
+                <figcaption className="bg-bg px-4 py-3 text-sm text-text-muted">{i.shot.caption}</figcaption>
+              </figure>
+            </Reveal>
+          </section>
+        )}
 
         <section aria-labelledby="others" className="mx-auto max-w-(--size-content-max) px-4 py-16 lg:px-8">
           <h2 id="others" className="text-lg">Andere Branchen</h2>

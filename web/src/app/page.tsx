@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, BedDouble, BookOpen, Calculator, Check, ChefHat, ClipboardCheck, CookingPot, Download, FileCheck2, Lock, MapPin, MousePointerClick, Package, Plus, Receipt, ReceiptText, ScanBarcode, ShieldCheck, ShoppingCart, Tags, Truck, Users, UtensilsCrossed, WifiOff } from "lucide-react";
+import { ArrowRight, BarChart3, BedDouble, BookOpen, Calculator, Check, ChefHat, ClipboardCheck, CookingPot, Download, FileCheck2, Lock, MapPin, MousePointerClick, Package, Plus, Receipt, ReceiptText, ScanBarcode, ShieldCheck, ShoppingCart, Tags, Truck, Users, UtensilsCrossed, WifiOff, Wrench } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
@@ -15,6 +15,9 @@ import { LAUNCH_MODE } from "@/lib/launch";
 import { PRICE_TAX_NOTE } from "@/lib/legal";
 import { PRICING } from "@/lib/pricing";
 import shot from "../../public/landing/rezept-kalkulation.png";
+import shotInvoice from "../../public/landing/e-rechnung.png";
+import shotHkOverview from "../../public/landing/housekeeping-uebersicht.png";
+import shotHkRooms from "../../public/landing/housekeeping-zimmer.png";
 
 // Public landing page. Static: no session lookup, so it is fast and cacheable.
 // Copy follows replica/brand.md (voice) and replica/launch/landing.md. No testimonials, logos or user
@@ -63,6 +66,31 @@ const FEATURES = [
   { icon: ShieldCheck, title: "Fehler, bevor sie Geld kosten", body: "„2.5“ und „2,5“ ergeben dieselbe Menge, eine Bestellung kommt auch bei Doppelklick nur einmal an, und eine ungeprüfte Zutat macht ein Gericht „unbekannt“, nie „allergenfrei“." },
 ];
 
+// "Neu in Mirepa": only features that exist, shown with screenshots of the app (demo data).
+const NEWS = [
+  {
+    icon: FileCheck2, kicker: "Einkauf & Buchhaltung", title: "E-Rechnung rein, DATEV raus",
+    body: "Seit 2025 müssen Betriebe E-Rechnungen empfangen können. Lade XRechnung oder ZUGFeRD hoch, und Mirepa stellt jede Position neben deinen bisherigen Preis.",
+    points: ["XRechnung (UBL, CII) und ZUGFeRD/Factur-X-PDF", "Zuordnung über die Artikelnummer des Lieferanten", "Preissprünge ab 5 % markiert, neue Preise gehen auf Wunsch in alle Rezepte", "Buchungsstapel im DATEV-Format für den Steuerberater"],
+    note: "Die erste DATEV-Datei bitte gemeinsam mit dem Steuerberater prüfen.",
+    shot: shotInvoice, alt: "E-Rechnung in Mirepa: Positionen mit bisherigem Preis, Preis laut Rechnung und markiertem Preissprung von 18,2 Prozent bei Knollensellerie.",
+  },
+  {
+    icon: BedDouble, kicker: "Housekeeping-Paket für Hotels", title: "Belegung, Wäsche, Personal und Kosten auf einen Blick",
+    body: "Die Übersicht rechnet aus Anreisen, Abreisen und Bleibern, was morgen an Wäsche und Stunden gebraucht wird, und sagt, was jetzt wichtig ist.",
+    points: ["Wäschebedarf und Bestellvorschlag je Artikel, mit Reichweite in Tagen", "Personal: benötigte gegen geplante Stunden für 14 Tage", "Wäschekosten pro belegter Zimmernacht, Mehrverbrauch als Schwund-Hinweis", "Dienstplan mit „Vorwoche übernehmen“"],
+    note: `Add-on für ${eur(PRICING.addonMonthly)} im Monat, in der Testphase enthalten. Belegung per Hand oder als CSV aus dem Hotelprogramm.`,
+    shot: shotHkOverview, alt: "Housekeeping-Übersicht: Belegung 82 Prozent, Anreisen, Abreisen, Bleiber, Personalstunden, Wäschekosten pro Zimmernacht und eine Liste mit Hinweisen.",
+  },
+  {
+    icon: Wrench, kicker: "Housekeeping-Paket für Hotels", title: "Die Zimmertafel, die mitdenkt",
+    body: "Anreisen nach Uhrzeit und VIP zuerst, „Bitte nicht stören“ zuletzt. Ein Klick verteilt die Zimmer gerecht nach Minuten auf das Team.",
+    points: ["„Bitte nicht stören“, VIP und Anreisezeit je Zimmer", "Automatisch verteilen, in Blöcken je Etage", "Schäden und Fundsachen mit Foto vom Handy", "Minuten pro Zimmer und Person, Checkliste vor „gereinigt“"],
+    note: null,
+    shot: shotHkRooms, alt: "Zimmertafel: Zimmer farbig nach Status, mit VIP-Stern, Anreisezeiten, Belegung und dem Knopf „Automatisch verteilen“.",
+  },
+];
+
 const FAQ = [
   { q: "Kann ich meine Zutaten und Preise importieren?", a: `Ja. Die Preisliste deines Lieferanten als Excel- oder CSV-Datei hochladen: ${APP_NAME} zeigt vor dem Übernehmen jede Zeile als neu, geändert oder fehlerhaft. Übernommen wird erst, wenn du zustimmst.` },
   { q: `Funktioniert ${APP_NAME} mit meiner Kasse?`, a: "Über eine Datei oder eine Schnittstelle: Verkäufe als CSV hochladen oder von der Kasse per API senden lassen. Verknüpfte Gerichte werden über ihre Rezepte vom Lager abgebucht, Stornos zurückgebucht. Fertige Anbindungen an einzelne Kassenhersteller gibt es nicht." },
@@ -91,6 +119,7 @@ export default function LandingPage() {
           <nav aria-label="Konto" className="flex items-center gap-5">
             <a href="#funktionen" className="hidden font-semibold text-text-muted hover:text-text md:inline">Funktionen</a>
             <a href="#branchen" className="hidden font-semibold text-text-muted hover:text-text lg:inline">Branchen</a>
+            <a href="#neu" className="hidden font-semibold text-text-muted hover:text-text md:inline">Neu</a>
             <a href="#ausprobieren" className="hidden font-semibold text-text-muted hover:text-text md:inline">Ausprobieren</a>
             <a href="#preise" className="hidden font-semibold text-text-muted hover:text-text md:inline">Preise</a>
             <Link href="/login" className="font-semibold hover:underline">Anmelden</Link>
@@ -101,15 +130,17 @@ export default function LandingPage() {
         </header>
 
         <section aria-labelledby="hero" className="relative mx-auto grid max-w-(--size-content-max) items-center gap-10 px-4 pt-6 pb-16 lg:grid-cols-2 lg:px-8 lg:pt-12 lg:pb-24">
-          <div className="animate-rise">
-            <p className="mb-5 inline-flex items-center gap-2 rounded-pill bg-bg px-3 py-1 text-xs text-text-muted shadow-card">
-              <span aria-hidden className="size-2 rounded-pill bg-saffron" /> Software für Küchen, Catering und Zentralküchen
-            </p>
+          <div className="min-w-0 animate-rise">
+            <a href="#neu" className="mb-5 inline-flex max-w-full items-center gap-2 rounded-pill border border-border bg-bg py-1 pr-3 pl-1 text-sm shadow-card hover:bg-row-hover">
+              <span className="rounded-pill bg-accent px-2 py-0.5 text-xs font-bold text-on-accent">Neu</span>
+              <span className="truncate">E-Rechnung, DATEV und das Housekeeping-Paket</span>
+              <ArrowRight aria-hidden className="size-4 shrink-0" />
+            </a>
             <h1 id="hero" className="text-display lg:text-hero">
               Was jeder Teller kostet. <span className="relative isolate inline-block whitespace-nowrap text-accent">Live.<span aria-hidden className="absolute inset-x-0 bottom-1 -z-10 h-4 -rotate-1 rounded-sm bg-saffron/70" /></span>
             </h1>
             <p className="mt-6 max-w-xl text-base text-text-muted lg:text-lg lg:font-normal">
-              Rezepte, Einkauf, Lager und Zentralküche in einem Werkzeug. Ändert sich ein Einkaufspreis, rechnet jedes Rezept mit,
+              Rezepte, Einkauf, Lager und Zentralküche in einem Werkzeug, für Restaurants, Catering und Hotels. Ändert sich ein Einkaufspreis, rechnet jedes Rezept mit,
               und du siehst den echten Wareneinsatz, bevor die Karte gedruckt ist.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -131,6 +162,36 @@ export default function LandingPage() {
           {[...TICKER, ...TICKER].map((t, i) => <span key={i} className="flex items-center gap-10">{t}<span className="size-1.5 rounded-pill bg-saffron" /></span>)}
         </div>
       </div>
+
+      {/* ------------------------------------------------ what's new, with real screenshots */}
+      <section id="neu" aria-labelledby="new" className="bg-bg">
+        <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
+          <Reveal>
+            <p className="text-sm font-bold uppercase tracking-wide text-accent">Neu in {APP_NAME}</p>
+            <h2 id="new" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Lieferschein bis zum Steuerberater. Und das ganze Housekeeping.</h2>
+          </Reveal>
+          <div className="mt-12 flex flex-col gap-20">
+            {NEWS.map((n, i) => (
+              <article key={n.title} aria-labelledby={`new-${i}`} className="grid items-center gap-8 lg:grid-cols-2 lg:gap-14">
+                <Reveal className={i % 2 ? "lg:order-2" : ""}>
+                  <p className="inline-flex items-center gap-2 rounded-pill bg-accent-subtle px-3 py-1 text-xs font-bold text-accent"><n.icon aria-hidden className="size-4" />{n.kicker}</p>
+                  <h3 id={`new-${i}`} className="mt-3 text-xl">{n.title}</h3>
+                  <p className="mt-2 text-base text-text-muted">{n.body}</p>
+                  <ul className="mt-5 flex flex-col gap-2">
+                    {n.points.map((p) => <li key={p} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{p}</li>)}
+                  </ul>
+                  {n.note && <p className="mt-4 text-sm text-text-muted">{n.note}</p>}
+                </Reveal>
+                <Reveal delay={120}>
+                  <figure className="overflow-hidden rounded-lg border border-border bg-surface shadow-pop">
+                    <Image src={n.shot} alt={n.alt} placeholder="blur" className="h-auto w-full" sizes="(min-width: 1024px) 600px, 100vw" />
+                  </figure>
+                </Reveal>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ------------------------------------------------ try it (dark) */}
       <section id="ausprobieren" aria-labelledby="try" className="relative overflow-hidden bg-ink text-on-ink">

@@ -2,6 +2,10 @@
 import type { LucideIcon } from "lucide-react";
 import { BedDouble, Calculator, ChefHat, ClipboardCheck, CookingPot, Package, ReceiptText, ScanBarcode, ShoppingCart, Tags, UtensilsCrossed, WifiOff } from "lucide-react";
 
+import type { StaticImageData } from "next/image";
+import shotHk from "../../public/landing/housekeeping-uebersicht.png";
+import shotInvoice from "../../public/landing/e-rechnung.png";
+import shotRecipe from "../../public/landing/rezept-kalkulation.png";
 import { formatCents } from "./format";
 import { PRICING } from "./pricing";
 
@@ -16,6 +20,8 @@ export type Industry = {
   features: { icon: LucideIcon; title: string; body: string }[];
   note?: string;
   cards: { title: string; detail: string }[];
+  /** A screenshot of the app with demo data. */
+  shot?: { src: StaticImageData; alt: string; caption: string };
 };
 
 export const INDUSTRIES: Industry[] = [
@@ -39,6 +45,7 @@ export const INDUSTRIES: Industry[] = [
     ],
     note: "Noch keine Anbindung an das Hotelprogramm (PMS): Die Belegung trägt die Hausdame ein. Mirepa ist keine Finanzbuchhaltung, sondern liefert ihr die F&B-Zahlen.",
     cards: [{ title: "Zimmer 214 kontrolliert", detail: "Anreise 15:00 · freigegeben" }, { title: "Frühstück: 23,4 %", detail: "Wareneinsatz Oktober" }],
+    shot: { src: shotHk, alt: "Housekeeping-Übersicht mit Belegung, Anreisen, Personalstunden, Wäschekosten pro Zimmernacht und Hinweisen.", caption: "Die Housekeeping-Übersicht: Belegung, Wäschebedarf, Personal und Kosten, und was jetzt wichtig ist." },
   },
   {
     slug: "restaurant",
@@ -59,6 +66,7 @@ export const INDUSTRIES: Industry[] = [
       { icon: Calculator, title: "Kasse und Menu Engineering", body: "Verkäufe per CSV oder Schnittstelle, Abbuchung über die Rezepte, und welches Gericht Renner oder Ladenhüter ist." },
     ],
     cards: [{ title: "Linsensuppe: 0,63 €", detail: "Wareneinsatz 8,5 %" }, { title: "Preisliste übernommen", detail: "12 Preise geändert" }],
+    shot: { src: shotRecipe, alt: "Rezept Linsensuppe mit Kosten pro Zeile und Wareneinsatz pro Portion.", caption: "Ein Rezept in Mirepa: Kosten pro Zeile, rechts der Wareneinsatz, während du tippst." },
   },
   {
     slug: "catering",
@@ -79,6 +87,7 @@ export const INDUSTRIES: Industry[] = [
       { icon: ClipboardCheck, title: "HACCP", body: "Temperaturen und Kontrollen mit Grenzwerten, Protokoll für die Kontrolle." },
     ],
     cards: [{ title: "Hochzeit, 120 Gäste", detail: "Kosten pro Gast 14,80 €" }, { title: "Rohware fehlt: 2", detail: "Sahne, Lachs" }],
+    shot: { src: shotInvoice, alt: "E-Rechnung mit Positionen, bisherigem Preis und markiertem Preissprung.", caption: "E-Rechnung des Lieferanten: neue Preise gehen direkt in die Menükalkulation." },
   },
   {
     slug: "kantine",
