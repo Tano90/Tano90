@@ -23,18 +23,18 @@ export default function TermsPage() {
       </Section>
 
       <Section title="3. Vertragsschluss und Testphase">
-        <p>Der Vertrag kommt mit der Registrierung zustande. Die ersten {PRICING.trialDays} Tage sind kostenlos und ohne Angabe einer Zahlungsart. Die Testphase geht nicht automatisch in ein kostenpflichtiges Abo über; ein Abo entsteht erst, wenn der Kunde es unter Einstellungen → Abo &amp; Rechnungen abschließt.</p>
+        <p>Der Vertrag kommt mit der Registrierung zustande. Die ersten {PRICING.trialDays} Tage sind kostenlos und ohne Angabe einer Zahlungsart. Die Testphase geht nicht automatisch in ein kostenpflichtiges Abo über; ein Abo entsteht erst, wenn der Kunde es unter Einstellungen → Abo &amp; Rechnungen abschließt. Wir erinnern die Inhaber drei Tage vor dem Ende per E-Mail. Nach dem Ende lassen sich die Daten weiter ansehen und exportieren; ändern und neue Buchungen, auch über die Kassen-Schnittstelle, gehen erst wieder mit einem Abo.</p>
       </Section>
 
       <Section title="4. Preise und Zahlung">
         <p>Es gelten die Preise auf unserer Website zum Zeitpunkt des Abschlusses, derzeit {eur(PRICING.firstOutletMonthly)} im Monat für den ersten Standort und {eur(PRICING.extraOutletMonthly)} für jeden weiteren, bei jährlicher Zahlung {eur(PRICING.firstOutletYearly)} und {eur(PRICING.extraOutletYearly)} im Jahr, jeweils zuzüglich Umsatzsteuer. Alle Funktionen sind enthalten; die Zahl der Nutzer ist nicht begrenzt.</p>
-        <p>Abgerechnet wird die Zahl der angelegten Standorte. Legt der Kunde einen weiteren Standort an, erhöht sich die Menge, und der Unterschied wird anteilig für den laufenden Zeitraum berechnet. Soll ein Standort aus der Abrechnung genommen werden, genügt eine Nachricht an uns; wir schreiben den Unterschied anteilig gut. Die Zahlung läuft im Voraus über unseren Zahlungsdienstleister Stripe.</p>
+        <p>Abgerechnet wird die Zahl der angelegten Standorte. Legt der Kunde einen weiteren Standort an, erhöht sich die Menge, und der Unterschied wird anteilig für den laufenden Zeitraum berechnet. Archiviert er einen Standort, verringert sich die Menge, und der Unterschied wird anteilig mit der nächsten Rechnung verrechnet. Die Zahlung läuft im Voraus über unseren Zahlungsdienstleister Stripe.</p>
         <p>Preisänderungen kündigen wir mindestens sechs Wochen vor Beginn des Abrechnungszeitraums an, ab dem sie gelten. Der Kunde kann bis dahin zum Ende des laufenden Zeitraums kündigen.</p>
       </Section>
 
       <Section title="5. Laufzeit und Kündigung">
         <p>Ein Abo läuft je nach Wahl einen Monat oder ein Jahr und verlängert sich jeweils um denselben Zeitraum. Der Kunde kann jederzeit zum Ende des bezahlten Zeitraums kündigen, mit einem Klick unter Einstellungen → Abo &amp; Rechnungen. Wir können mit einer Frist von einem Monat zum Ende eines Abrechnungszeitraums kündigen. Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt.</p>
-        <p>Kommt der Kunde mit einer Zahlung in Verzug, weisen wir in {APP_NAME} darauf hin. Bleibt die Zahlung auch nach einer Erinnerung aus, dürfen wir den Zugang bis zum Ausgleich auf Lesen beschränken.</p>
+        <p>Kommt der Kunde mit einer Zahlung in Verzug, weisen wir in {APP_NAME} darauf hin. Bleibt die Zahlung auch nach einer Erinnerung aus, dürfen wir den Zugang bis zum Ausgleich auf Lesen beschränken. Nach dem Ende eines Abos bleibt der Zugang zum Lesen und Exportieren bestehen.</p>
       </Section>
 
       <Section title="6. Pflichten des Kunden">
@@ -50,7 +50,7 @@ export default function TermsPage() {
       </Section>
 
       <Section title="8. Daten des Kunden">
-        <p>Die Daten, die der Kunde einträgt, gehören ihm. Wir nutzen sie nur, um {APP_NAME} für ihn bereitzustellen. Soweit sie personenbezogen sind, verarbeiten wir sie nach dem <Link href="/legal/dpa" className="underline">Vertrag zur Auftragsverarbeitung</Link>, der Bestandteil dieser Bedingungen ist. Nach Vertragsende kann der Kunde seine Daten innerhalb von 30 Tagen bei uns anfordern; danach löschen wir sie, soweit keine gesetzliche Pflicht zur Aufbewahrung besteht.</p>
+        <p>Die Daten, die der Kunde einträgt, gehören ihm. Wir nutzen sie nur, um {APP_NAME} für ihn bereitzustellen. Soweit sie personenbezogen sind, verarbeiten wir sie nach dem <Link href="/legal/dpa" className="underline">Vertrag zur Auftragsverarbeitung</Link>, der Bestandteil dieser Bedingungen ist. Inhaber und Admins können jederzeit alle Daten des Betriebs als Datei herunterladen (Einstellungen → Daten exportieren), auch nach dem Ende der Testphase oder des Abos. Nach Vertragsende stellen wir die Daten auf Anforderung noch 30 Tage bereit und löschen sie danach, soweit keine gesetzliche Pflicht zur Aufbewahrung besteht.</p>
       </Section>
 
       <Section title="9. Haftung">

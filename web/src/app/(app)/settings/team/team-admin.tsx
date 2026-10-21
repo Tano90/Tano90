@@ -3,7 +3,7 @@
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { createOutlet, inviteMember, removeMember, transferOwnership, updateMember } from "@/app/actions";
+import { archiveOutlet, createOutlet, inviteMember, removeMember, transferOwnership, updateMember } from "@/app/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
@@ -33,6 +33,7 @@ export function TeamAdmin({ members, outlets, me }: { members: Member[]; outlets
             <li key={o.id} className="flex items-center gap-2 px-4 py-3">
               <span className="font-semibold">{o.name}</span>
               {o.isCentralKitchen && <Badge tone="info">Zentralküche</Badge>}
+              {outlets.length > 1 && <ArchiveOutlet outlet={o} />}
             </li>
           ))}
         </ul>
@@ -64,6 +65,34 @@ export function TeamAdmin({ members, outlets, me }: { members: Member[]; outlets
         </div>
       </section>
     </div>
+  );
+}
+
+function ArchiveOutlet({ outlet }: { outlet: O }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <ConfirmDialog
+      open={open}
+      onOpenChange={(o) => { setOpen(o); setError(null); }}
+      trigger={<Button variant="ghost" size="sm" className="ml-auto" aria-label={`${outlet.name} archivieren`}>Archivieren</Button>}
+      title={`${outlet.name} archivieren?`}
+      description={error ?? "Das Outlet verschwindet aus der Auswahl und aus der Abrechnung (anteilig gutgeschrieben). Bestände, Buchungen und Berichte bleiben gespeichert; Kassen-Schlüssel dieses Outlets werden widerrufen."}
+      confirmLabel="Archivieren"
+      danger
+      loading={pending}
+      onConfirm={() =>
+        start(async () => {
+          const res = await archiveOutlet(outlet.id);
+          if (!res.ok) return setError(res.error);
+          setOpen(false);
+          toast.success(`${outlet.name} archiviert`);
+          router.refresh();
+        })
+      }
+    />
   );
 }
 

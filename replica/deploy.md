@@ -46,7 +46,7 @@ Alles, was sich ohne deine Konten prüfen lässt, ist grün. Live ging nichts, e
 - [ ] **Supabase Auth:** Site-URL = Produktionsdomain, Redirect-URL `https://DEINE-DOMAIN/auth/callback`, E-Mail-Bestätigung an, SMTP auf Resend umstellen.
 - [x] OAuth (Google/Apple): nicht im Einsatz, nichts zu verifizieren.
 - [ ] **E-Mail-Domain** in Resend verifiziert (DNS unten), `MAIL_FROM` darauf.
-- [ ] **Cron:** `CRON_SECRET` setzen; die Crons stehen in `web/vercel.json` (`/api/cron/low-stock` 04:00 UTC, `/api/cron/cleanup` 03:30 UTC).
+- [ ] **Cron:** `CRON_SECRET` setzen; die Crons stehen in `web/vercel.json` (`/api/cron/low-stock` 04:00 UTC, `/api/cron/trial` 08:00 UTC, `/api/cron/cleanup` 03:30 UTC).
 
 ## Host und Domain
 
@@ -101,9 +101,18 @@ Keine native App. Mirepa läuft im Browser (Handy-Layout geprüft). `launch/list
    Link, Passwort zurücksetzen, falsches Passwort.
 5. Diese Checkliste erneut ausführen (`/replica-deploy`). Erst wenn alles ✅ ist, frage ich nach deinem Go.
 
-## Lücken im Produkt, beim Schreiben der Rechtsseiten gefunden
+## Lücken im Produkt, beim Schreiben der Rechtsseiten gefunden (geschlossen 2026-10-21)
 
-- **Testphase endet nicht:** Nach 14 Tagen ohne Abo geht die Nutzung unverändert weiter; es gibt weder Sperre noch
-  Erinnerungsmail. Die Bedingungen versprechen nichts anderes, aber ohne Ende der Testphase zahlt niemand.
-- **Standorte lassen sich nicht archivieren:** Die Abrechnung passt sich nur beim Anlegen an.
-- **Kein Gesamtexport:** CSV gibt es für Lagerbericht und HACCP-Protokoll, nicht für alle Daten eines Betriebs.
+- **Ende der Testphase:** Nach 14 Tagen ohne Abo ist der Betrieb nur noch lesbar. Jede schreibende Aktion wird auf dem
+  Server abgelehnt, ebenso die Kassen-API (402). Ausgenommen sind Abo, Kundenportal, Team und die Vorschau-Berechnungen.
+  Hinweisband in der App ab drei Tagen vor dem Ende. Erinnerungsmail an die Inhaber drei Tage vorher und nach dem Ende,
+  je einmal (Cron `/api/cron/trial`, täglich 08:00 UTC). Dasselbe gilt nach einem beendeten Abo.
+  Getestet: Unit `access.test.ts`, Integrationstest, E2E T-H1/T-N1.
+- **Standorte archivieren:** unter Einstellungen → Outlets & Team. Abgelehnt beim letzten Standort, bei offenen
+  Bestellungen, einer laufenden Inventur, offenen Anforderungen der Zentralküche und bei Teammitgliedern, die nur diesem
+  Standort zugeordnet sind. Kassen-Schlüssel des Standorts werden widerrufen, die Abrechnung wird anteilig angepasst.
+  Getestet: Integrationstest, E2E O-H1.
+- **Export:** Einstellungen → Daten exportieren lädt alle Daten des Betriebs als JSON herunter (`/api/export`, Inhaber
+  und Admins, auch im Nur-Lesen-Zustand). Ohne Schlüssel-Hashes, Token-Hashes und Stripe-IDs. Getestet: Integrationstest
+  (auch: nichts aus einem fremden Betrieb), E2E E-H1.
+- **Cron:** Der neue Job steht in `web/vercel.json`. Er braucht dasselbe `CRON_SECRET` wie die anderen.

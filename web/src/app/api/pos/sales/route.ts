@@ -40,5 +40,6 @@ export async function POST(request: Request) {
     externalId: x.id, plu: x.plu, name: x.name || x.plu, quantity: x.quantity, revenueNetCents: x.netRevenueCents ?? 0, soldAt: new Date(x.soldAt).toISOString(),
   })));
   if (!result) return error(401, "Unbekannter oder widerrufener API-Schlüssel.");
+  if (result === "read_only") return error(402, "Testphase oder Abo beendet: Verkäufe werden erst wieder mit einem Abo übernommen.");
   return NextResponse.json(result);
 }

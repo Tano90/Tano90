@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { getBilling, listOutlets } from "@/data/repo";
 import { canManageBilling, requireSession } from "@/data/session";
 import { billingConfigured, yearlyConfigured } from "@/lib/billing";
+import { accessOf } from "@/domain/access";
 import { formatDate } from "@/lib/dates";
 import { BillingButtons } from "./billing-buttons";
 
@@ -19,7 +20,8 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
     return (<><PageHeader title="Abo & Rechnungen" back={{ href: "/settings", label: "Einstellungen" }} /><NoPermission what="Das Abo verwaltet die Inhaberin oder der Inhaber des Betriebs." /></>);
   }
   const [billing, outlets] = await Promise.all([getBilling(s), listOutlets(s)]);
-  const p = PLAN[billing.plan];
+  const access = accessOf(billing);
+  const p = access.kind === "trial_over" ? { label: "Testphase vorbei", tone: "danger" as const } : PLAN[billing.plan];
   return (
     <>
       <PageHeader title="Abo & Rechnungen" back={{ href: "/settings", label: "Einstellungen" }} />
@@ -30,7 +32,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         <dl className="grid grid-cols-2 gap-4 rounded-md border border-border bg-bg p-4">
           <div><dt className="text-xs text-text-muted">Status</dt><dd><Badge tone={p.tone}>{p.label}</Badge></dd></div>
           <div><dt className="text-xs text-text-muted">Outlets (abgerechnet)</dt><dd className="num">{outlets.length}</dd></div>
-          {billing.plan === "trial" && <div><dt className="text-xs text-text-muted">Testphase endet</dt><dd>{date(billing.trialEndsAt)}</dd></div>}
+          {billing.plan === "trial" && <div><dt className="text-xs text-text-muted">{access.readOnly ? "Testphase endete" : "Testphase endet"}</dt><dd>{date(billing.trialEndsAt)}</dd></div>}
           {billing.currentPeriodEnd && <div><dt className="text-xs text-text-muted">{billing.plan === "cancelled" ? "Zugang bis" : "Nächste Abrechnung"}</dt><dd>{date(billing.currentPeriodEnd)}</dd></div>}
         </dl>
         {billing.plan === "past_due" && <Notice tone="warning">Die letzte Zahlung ist fehlgeschlagen. Aktualisiere deine Zahlungsart, damit der Zugang erhalten bleibt.</Notice>}

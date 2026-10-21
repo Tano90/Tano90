@@ -3,10 +3,11 @@
 // after MAX_ATTEMPTS it is marked dead and stays visible there (the dead-letter log).
 import "server-only";
 import { asService } from "@/data/pg/client";
-import { DEFAULT_TZ, dayIn } from "./dates";
+import { DEFAULT_TZ, dayIn, formatDate } from "./dates";
 import { formatBase } from "./units-display";
 import { sendMail } from "./mail";
-import { lowStockMail } from "./mail-templates";
+import { APP_NAME } from "./brand";
+import { lowStockMail, trialMail } from "./mail-templates";
 
 const MAX_ATTEMPTS = 5;
 
@@ -59,6 +60,27 @@ export async function lowStockAlerts(now = new Date()) {
       });
       for (const r of recipients) await sendMail({ to: r.email, ...mail, idempotencyKey: `low-stock-${o.outletId}-${day}-${r.email}` });
       await asService((tx) => tx`insert into stock_alerts_sent ${tx(low.map((l) => ({ outletId: o.outletId, ingredientId: l.ingredientId, day })))} on conflict do nothing`);
+    });
+    results[r]++;
+  }
+  return results;
+}
+
+/** Daily: tell the owners three days before the trial ends, and once after it ended. Each mail at most once. */
+export async function trialReminders(now = new Date()) {
+  const libs = await asService((tx) => tx<{ id: string; name: string; trialEndsAt: string; ended: boolean }[]>`
+    select id, name, trial_ends_at, trial_ends_at <= ${now} as ended from libraries
+    where plan = 'trial' and trial_ends_at <= ${now}::timestamptz + interval '3 days' and trial_ends_at > ${now}::timestamptz - interval '7 days'`);
+  const results: Record<string, number> = { ok: 0, failed: 0, dead: 0, skipped: 0 };
+  for (const l of libs) {
+    const r = await item("trial", `${l.id}:${l.ended ? "ended" : "ends-soon"}`, async () => {
+      const owners = await asService((tx) => tx<{ email: string }[]>`select email from memberships where library_id = ${l.id} and role = 'owner' and email <> ''`);
+      const mail = trialMail({
+        appName: APP_NAME, libraryName: l.name, ended: l.ended,
+        endsOn: formatDate(l.trialEndsAt, DEFAULT_TZ, "long"),
+        link: `${process.env.APP_URL ?? "http://localhost:3000"}/settings/billing`,
+      });
+      for (const o of owners) await sendMail({ to: o.email, ...mail, idempotencyKey: `trial-${l.id}-${l.ended ? "ended" : "soon"}-${o.email}` });
     });
     results[r]++;
   }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { cleanup, lowStockAlerts } from "@/lib/jobs";
+import { cleanup, lowStockAlerts, trialReminders } from "@/lib/jobs";
 
-const JOBS: Record<string, () => Promise<unknown>> = { "low-stock": () => lowStockAlerts(), cleanup };
+const JOBS: Record<string, () => Promise<unknown>> = { "low-stock": () => lowStockAlerts(), trial: () => trialReminders(), cleanup };
 
 // Vercel Cron sends `Authorization: Bearer $CRON_SECRET`. Anything else is rejected.
 export async function GET(request: Request, { params }: { params: Promise<{ job: string }> }) {

@@ -11,7 +11,9 @@ import { billOfMaterials, summarizeMenu } from "@/domain/menus";
 import { recipeNutrition } from "@/domain/nutrition";
 import { type CountBreakdown, countTotal, stockReport, suggestPacks, suggestWeight } from "@/domain/stock";
 import { hashKey, newApiKey } from "@/lib/api-key";
+import { accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
+import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
 import type { SaleInput } from "@/domain/pos";
 import { type BaseUnit } from "@/domain/units";
@@ -88,6 +90,31 @@ export async function createOutlet(s: Session, name: string, isCentralKitchen: b
   d.outlets.push({ id, libraryId: d.library.id, name, isCentralKitchen, timezone: "Europe/Berlin", archivedAt: null });
   for (const i of d.ingredients) d.outletIngredients.push({ outletId: id, ingredientId: i.id, parLevelBase: null, minLevelBase: null });
   return id;
+}
+
+export async function archiveOutlet(s: Session, outletId: string) {
+  if (!canManageTeam(s.role)) throw new Forbidden();
+  const d = db();
+  const o = visible(d.outlets).find((x) => x.id === outletId);
+  if (!o) throw new Error("Outlet nicht gefunden.");
+  if (visible(d.outlets).length <= 1) throw new Error("Das letzte Outlet lässt sich nicht archivieren.");
+  const orders = d.orders.filter((x) => x.outletId === outletId && ["draft", "ordered", "partially_delivered"].includes(x.status)).length;
+  if (orders) throw new Error(`${countOf(orders, "Bestellung ist", "Bestellungen sind")} noch offen (auch Entwürfe). Erst liefern lassen, stornieren oder löschen.`);
+  if (d.events.some((e) => e.outletId === outletId && e.type === "count" && e.status === "open")) throw new Error("Hier läuft noch eine Inventur. Erst abschließen oder verwerfen.");
+  const requests = d.production.filter((p) => (p.fromOutletId === outletId || p.kitchenOutletId === outletId) && (p.status === "requested" || p.status === "produced")).length;
+  if (requests) throw new Error(`${countOf(requests, "Anforderung", "Anforderungen")} der Zentralküche ${requests === 1 ? "ist" : "sind"} noch offen.`);
+  const live = new Set(visible(d.outlets).filter((x) => x.id !== outletId).map((x) => x.id));
+  const stranded = d.members.filter((m) => m.role !== "owner" && m.role !== "admin" && !m.allOutlets && m.outletIds.includes(outletId) && !m.outletIds.some((id) => live.has(id)));
+  if (stranded.length) throw new Error(`Nur diesem Outlet zugeordnet: ${stranded.map((m) => m.name).join(", ")}. Erst einem anderen Outlet zuordnen oder entfernen.`);
+  o.archivedAt = now();
+  for (const k of d.apiKeys) if (k.outletId === outletId && !k.revokedAt) k.revokedAt = now();
+}
+
+/** The whole demo store is one library; secrets (key hashes) are left out, as in the database export. */
+export async function exportLibrary(s: Session): Promise<Record<string, unknown>> {
+  if (!canManageTeam(s.role)) throw new Forbidden();
+  const { apiKeys, ...rest } = db() as ReturnType<typeof db> & Record<string, unknown>;
+  return { ...structuredClone(rest), apiKeys: apiKeys.map(({ keyHash: _, ...k }) => k) };
 }
 
 export async function listMembers(s: Session) {
@@ -736,9 +763,10 @@ export async function importSales(s: Session, outletId: string, rows: SaleInput[
 }
 
 /** For the POS API: the key decides library and outlet. Returns null for an unknown or revoked key. */
-export async function importSalesWithKey(key: string, rows: SaleInput[]): Promise<ImportResult | null> {
+export async function importSalesWithKey(key: string, rows: SaleInput[]): Promise<ImportResult | "read_only" | null> {
   const k = db().apiKeys.find((x) => x.keyHash === hashKey(key) && !x.revokedAt);
   if (!k || !k.outletId) return null;
+  if (accessOf(await getBilling({} as Session)).readOnly) return "read_only";
   k.lastUsedAt = now();
   return importInto(k.outletId, rows, null);
 }

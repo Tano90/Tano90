@@ -15,7 +15,7 @@ const impl: Repo = process.env.DATABASE_URL ? pg : misconfigured ? refuse : memo
 export const usingDatabase = !!process.env.DATABASE_URL;
 export const {
   getMembership, findUserIdByEmail, createLibrary, invitationPreview, acceptInvitation, deleteAccountData,
-  getLibrary, getBilling, updateLibrary, listOutlets, createOutlet, listMembers, inviteMember, updateMember, removeMember, transferOwnership, listCategories,
+  getLibrary, getBilling, updateLibrary, listOutlets, createOutlet, archiveOutlet, listMembers, inviteMember, updateMember, removeMember, transferOwnership, listCategories,
   listIngredients, getIngredient, setOutletCarried, saveIngredient, archiveIngredient, savePackage, deletePackage, saveStockItem, archiveStockItem,
   setIngredientAllergens, setNutrition, listSuppliers, getSupplier, saveSupplier, archiveSupplier,
   listRecipes, getRecipe, lineOptions, previewRecipe, saveRecipe, archiveRecipe, setRecipeOutletPrice, getRecipeLabel, listMenus, getMenu, saveMenu, archiveMenu,
@@ -23,6 +23,6 @@ export const {
   listOrders, orderCounts, getOrder, orderableItems, saveOrderDraft, sendOrder, deleteOrderDraft, receiveDelivery,
   listProduction, requestProduction, cancelProductionRequest, produce, deliverProduction,
   getInvoice, saveInvoice, approveInvoice, listChecklists, getHaccpDay, saveHaccpRecords, haccpDeviations, saveChecklist, archiveChecklist, getMenuEngineering, importSales, importSalesWithKey, listPosItems, linkPosItem, listApiKeys, createApiKey, revokeApiKey,
-  dashboard,
+  dashboard, exportLibrary,
 } = impl;
 export type { Billing, ChecklistDraft, HaccpEntry, IngredientFilter, ProductionInput, IngredientInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "./repo-memory";

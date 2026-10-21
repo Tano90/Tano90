@@ -213,6 +213,52 @@ describe.skipIf(!url)("backend against Postgres", () => {
     expect(events[0].n).toBe(1);
   });
 
+  describe("trial end, outlet archive, export", () => {
+    it("after the trial a POS key books nothing, owners get one reminder before and one after", async () => {
+      const { trialReminders } = await import("../src/lib/jobs");
+      const { key } = await repo.createApiKey(owner, sid("out-mitte"), "Testkasse");
+      const sale = [{ externalId: "T-1", plu: "1001", name: "Linsensuppe", quantity: 1, revenueNetCents: 739, soldAt: "2026-10-20T10:00:00.000Z" }];
+      await admin`update libraries set trial_ends_at = now() + interval '2 days' where id = ${owner.libraryId}`;
+      expect(await trialReminders()).toMatchObject({ ok: 1 });
+      expect(await trialReminders()).toMatchObject({ ok: 0, skipped: 1 });
+      expect(await repo.importSalesWithKey(key, sale)).toMatchObject({ imported: 1 });
+      await admin`update libraries set trial_ends_at = now() - interval '1 hour' where id = ${owner.libraryId}`;
+      expect(await trialReminders()).toMatchObject({ ok: 1 });
+      expect(await repo.importSalesWithKey(key, [{ ...sale[0], externalId: "T-2" }])).toBe("read_only");
+      await admin`update libraries set plan = 'active' where id = ${owner.libraryId}`;
+      expect(await repo.importSalesWithKey(key, [{ ...sale[0], externalId: "T-3" }])).toMatchObject({ imported: 1 });
+      await admin`update libraries set plan = 'trial', trial_ends_at = now() + interval '14 days' where id = ${owner.libraryId}`;
+      await admin`delete from job_runs where job = 'trial'`;
+    });
+
+    it("an outlet is archived only without open work or stranded staff; its POS keys are revoked", async () => {
+      await expect(repo.archiveOutlet(staff, sid("out-mitte"))).rejects.toThrow(/Berechtigung/);
+      await expect(repo.archiveOutlet(owner, sid("out-zentral"))).rejects.toThrow(/Anforderungen der Zentralküche/);
+      await expect(repo.archiveOutlet(owner, sid("out-mitte"))).rejects.toThrow(/noch offen|Inventur|Nur diesem Outlet zugeordnet/);
+      const popup = await repo.createOutlet(owner, "Pop-up Test", false);
+      const { key } = await repo.createApiKey(owner, popup, "Pop-up-Kasse");
+      await repo.archiveOutlet(owner, popup);
+      expect((await repo.listOutlets(owner)).some((o) => o.id === popup)).toBe(false);
+      expect(await repo.importSalesWithKey(key, [{ externalId: "P-1", plu: "1", name: "x", quantity: 1, revenueNetCents: 1, soldAt: "2026-10-20T10:00:00.000Z" }])).toBeNull();
+      await expect(repo.archiveOutlet({ ...stranger, libraryId: owner.libraryId }, sid("out-zentral"))).rejects.toThrow();
+      const strangerOnly = (await repo.listOutlets(stranger))[0].id;
+      await expect(repo.archiveOutlet(stranger, strangerOnly)).rejects.toThrow(/letzte Outlet/);
+    });
+
+    it("the export holds the library's data and nothing secret, and nothing of another library", async () => {
+      const data = await repo.exportLibrary(owner);
+      expect(data.libraries.map((l) => l.id)).toEqual([owner.libraryId]);
+      expect(data.recipes.length).toBeGreaterThan(0);
+      expect(data.haccp_records.length).toBeGreaterThan(0);
+      const text = JSON.stringify(data);
+      expect(text).not.toMatch(/keyHash|tokenHash|key_hash|token_hash|stripeCustomerId/);
+      const theirs = JSON.stringify(await repo.exportLibrary(stranger));
+      expect(theirs).not.toContain(owner.libraryId);
+      expect(theirs).not.toContain(sid("rec-linsensuppe"));
+      await expect(repo.exportLibrary(staff)).rejects.toThrow(/Berechtigung/);
+    });
+  });
+
   describe("invoices", () => {
     it("editors match and approve; staff and other libraries cannot", async () => {
       const order = (await repo.getOrder(owner, sid("po-1")))!;

@@ -34,6 +34,7 @@ const FAQ = [
   { q: "Brauche ich für HACCP oder die Zentralküche ein Zusatzmodul?", a: "Nein. Alle Funktionen sind in jedem Tarif enthalten. Bezahlt wird nur pro Standort." },
   { q: "Wer haftet für die Allergenangaben?", a: `${APP_NAME} rechnet aus deinen Angaben, die Kennzeichnung gegenüber Gästen verantwortet dein Betrieb. Deshalb zeigt ${APP_NAME} ungeprüfte Zutaten offen an, statt sie als allergenfrei durchzuwinken.` },
   { q: "Wo liegen meine Daten?", a: "In der EU (Frankfurt). Zahlungen laufen über Stripe; deine Kartendaten sehen wir nie." },
+  { q: "Was passiert nach der Testphase?", a: "Drei Tage vorher bekommst du eine E-Mail. Schließt du kein Abo ab, bleiben alle Daten erhalten: Du kannst sie ansehen und als Datei herunterladen, nur ändern geht erst wieder mit einem Abo. Es verlängert sich nichts automatisch." },
   { q: "Wie kündige ich?", a: "Mit einem Klick unter Einstellungen → Abo & Rechnungen, ohne Anruf und ohne Formular. Das Abo läuft bis zum Ende des bereits bezahlten Zeitraums und endet dann." },
   { q: "Brauche ich eine App?", a: `Nein. ${APP_NAME} läuft im Browser auf Computer, Tablet und Handy. Inventur und Wareneingang sind für das Handy gebaut, ein Barcode-Scanner mit Tastatur-Modus funktioniert ohne Einrichtung.` },
 ];

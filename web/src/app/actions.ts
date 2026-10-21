@@ -11,6 +11,7 @@ import { headers } from "next/headers";
 import * as repo from "@/data/repo";
 import { Forbidden, OUTLET_COOKIE, SESSION_COOKIE, authMode, canEditLibrary, canManageBilling, currentOutletId, currentUser, demoAllowed, requireSession } from "@/data/session";
 import type { Session } from "@/data/types";
+import { READ_ONLY_MESSAGE, accessOf } from "@/domain/access";
 import { billingConfigured, createCheckout, createPortal, syncOutletQuantity } from "@/lib/billing";
 import { sendMail } from "@/lib/mail";
 import { invitationMail, orderMail } from "@/lib/mail-templates";
@@ -19,9 +20,17 @@ import { supabaseAdmin, supabaseServer } from "@/lib/supabase/server";
 
 export type Result<T = null> = { ok: true; data: T } | { ok: false; error: string };
 
-async function run<T>(fn: (s: Session) => Promise<T>, paths: string[] = []): Promise<Result<T>> {
+/**
+ * Every signed-in action. After the trial or a cancelled subscription the library is read-only: the action is refused
+ * here unless it is one that must keep working then (billing, team, previews), marked `readOnlyOk`.
+ */
+async function run<T>(fn: (s: Session) => Promise<T>, paths: string[] = [], opts: { readOnlyOk?: boolean } = {}): Promise<Result<T>> {
   try {
     const s = await requireSession();
+    if (!opts.readOnlyOk) {
+      const access = accessOf(await repo.getBilling(s));
+      if (access.readOnly) throw new Error(READ_ONLY_MESSAGE[access.kind]);
+    }
     const data = await fn(s);
     for (const p of paths) revalidatePath(p, "layout");
     return { ok: true, data };
@@ -201,7 +210,7 @@ export async function startCheckout(interval: "month" | "year" = "month"): Promi
     if (!billingConfigured()) throw new Error("Die Abrechnung ist noch nicht eingerichtet.");
     const billing = await repo.getBilling(s);
     return createCheckout({ libraryId: s.libraryId, email: s.email, outletCount: (await repo.listOutlets(s)).length, customerId: billing.stripeCustomerId, interval: z.enum(["month", "year"]).parse(interval) });
-  });
+  }, [], { readOnlyOk: true });
 }
 
 export async function openBillingPortal(): Promise<Result<string>> {
@@ -210,7 +219,7 @@ export async function openBillingPortal(): Promise<Result<string>> {
     const billing = await repo.getBilling(s);
     if (!billing.stripeCustomerId) throw new Error("Noch kein Abo vorhanden.");
     return createPortal(billing.stripeCustomerId);
-  });
+  }, [], { readOnlyOk: true });
 }
 
 // ---------------------------------------------------------------- schemas
@@ -330,7 +339,7 @@ const RecipeSchema = z.object({
 });
 export type RecipeInput = z.input<typeof RecipeSchema>;
 export async function previewRecipe(input: RecipeInput) {
-  return run((s) => repo.previewRecipe(s, RecipeSchema.parse(input)));
+  return run((s) => repo.previewRecipe(s, RecipeSchema.parse(input)), [], { readOnlyOk: true });
 }
 export async function saveRecipe(input: RecipeInput) {
   return run((s) => repo.saveRecipe(s, RecipeSchema.parse(input)), ["/recipes", "/ingredients"]);
@@ -535,7 +544,7 @@ export async function previewPriceList(supplierId: string, rows: z.input<typeof 
   return run(async (s) => {
     if (!canEditLibrary(s.role)) throw new Forbidden();
     return planImport(s, id.parse(supplierId), PriceRowsSchema.parse(rows));
-  });
+  }, [], { readOnlyOk: true });
 }
 export async function applyPriceList(supplierId: string, rows: z.input<typeof PriceRowsSchema>) {
   return run((s) => applyImport(s, id.parse(supplierId), PriceRowsSchema.parse(rows)), ["/ingredients", "/recipes", "/suppliers", "/menus"]);
@@ -586,13 +595,23 @@ export async function createOutlet(outletName: string, isCentralKitchen: boolean
 const MemberSchema = z.object({ role: z.enum(["admin", "chef", "outlet_staff"]), outletIds: z.array(id) })
   .refine((v) => v.role !== "outlet_staff" || v.outletIds.length > 0, "Bitte mindestens ein Outlet wählen.");
 export async function updateMember(memberId: string, input: z.input<typeof MemberSchema>) {
-  return run((s) => repo.updateMember(s, memberId, MemberSchema.parse(input)), ["/settings/team"]);
+  return run((s) => repo.updateMember(s, memberId, MemberSchema.parse(input)), ["/settings/team"], { readOnlyOk: true });
+}
+export async function archiveOutlet(outletId: string) {
+  return run(async (s) => {
+    await repo.archiveOutlet(s, outletId);
+    const billing = await repo.getBilling(s);
+    if (billing.stripeSubscriptionId && billingConfigured()) {
+      // Billing follows the outlet count, credited pro rata. If Stripe is down the next change re-syncs.
+      await syncOutletQuantity(billing.stripeSubscriptionId, (await repo.listOutlets(s)).length).catch((e) => console.error("[billing] quantity sync failed", e));
+    }
+  }, ["/"]);
 }
 export async function removeMember(memberId: string) {
-  return run((s) => repo.removeMember(s, memberId), ["/settings/team"]);
+  return run((s) => repo.removeMember(s, memberId), ["/settings/team"], { readOnlyOk: true });
 }
 export async function transferOwnership(memberId: string) {
-  return run((s) => repo.transferOwnership(s, memberId), ["/"]);
+  return run((s) => repo.transferOwnership(s, memberId), ["/"], { readOnlyOk: true });
 }
 
 const ROLE_LABEL = { admin: "Admin", chef: "Küchenleitung", outlet_staff: "Teammitglied" } as const;

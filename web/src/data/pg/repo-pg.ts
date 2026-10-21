@@ -13,7 +13,9 @@ import { recipeNutrition } from "@/domain/nutrition";
 import { type CountBreakdown, countTotal, stockReport, suggestPacks, suggestWeight } from "@/domain/stock";
 import type { SaleInput } from "@/domain/pos";
 import { hashKey, newApiKey } from "@/lib/api-key";
+import { type BillingState, accessOf } from "@/domain/access";
 import { addDays, dayIn, startOfDay } from "@/lib/dates";
+import { countOf } from "@/lib/format";
 import { gtinKey } from "@/lib/gtin";
 import type { BaseUnit } from "@/domain/units";
 import type { Billing, ChecklistDraft, HaccpEntry, ImportResult, ProductionInput, IngredientFilter, IngredientInput, InvoiceInput, MenuDraft, RecipeDraft, StockItemInput, SupplierInput } from "../repo-memory";
@@ -74,6 +76,77 @@ export async function createOutlet(s: Session, name: string, isCentralKitchen: b
     return o.id;
   });
 }
+
+/**
+ * Takes an outlet out of use (and out of billing). Refused while work is still open there or while someone can only
+ * reach this outlet; its history stays, its POS keys are revoked.
+ */
+export async function archiveOutlet(s: Session, outletId: string) {
+  assertTeam(s);
+  if (!isUuid(outletId)) throw new Error("Outlet nicht gefunden.");
+  await run(s, async (tx) => {
+    const [o] = await tx`select id from outlets where id = ${outletId} and library_id = ${s.libraryId} and archived_at is null for update`;
+    if (!o) throw new Error("Outlet nicht gefunden.");
+    const [{ n }] = await tx<{ n: number }[]>`select count(*)::int as n from outlets where library_id = ${s.libraryId} and archived_at is null`;
+    if (n <= 1) throw new Error("Das letzte Outlet lässt sich nicht archivieren.");
+    const [{ orders }] = await tx<{ orders: number }[]>`select count(*)::int as orders from purchase_orders where outlet_id = ${outletId} and status in ('draft', 'ordered', 'partially_delivered')`;
+    if (orders) throw new Error(`${countOf(orders, "Bestellung ist", "Bestellungen sind")} noch offen (auch Entwürfe). Erst liefern lassen, stornieren oder löschen.`);
+    const [count] = await tx`select 1 from stock_events where outlet_id = ${outletId} and type = 'count' and status = 'open'`;
+    if (count) throw new Error("Hier läuft noch eine Inventur. Erst abschließen oder verwerfen.");
+    const [{ requests }] = await tx<{ requests: number }[]>`
+      select count(*)::int as requests from production_requests where (from_outlet_id = ${outletId} or kitchen_outlet_id = ${outletId}) and status in ('requested', 'produced')`;
+    if (requests) throw new Error(`${countOf(requests, "Anforderung", "Anforderungen")} der Zentralküche ${requests === 1 ? "ist" : "sind"} noch offen.`);
+    const stranded = await tx<{ name: string }[]>`
+      select m.display_name as name from memberships m join membership_outlets mo on mo.membership_id = m.id and mo.outlet_id = ${outletId}
+      where m.library_id = ${s.libraryId} and m.role not in ('owner', 'admin') and not m.all_outlets
+        and not exists (select 1 from membership_outlets x join outlets xo on xo.id = x.outlet_id and xo.archived_at is null where x.membership_id = m.id and x.outlet_id <> ${outletId})
+      order by m.display_name`;
+    if (stranded.length) throw new Error(`Nur diesem Outlet zugeordnet: ${stranded.map((m) => m.name).join(", ")}. Erst einem anderen Outlet zuordnen oder entfernen.`);
+    await tx`update outlets set archived_at = now() where id = ${outletId}`;
+    await tx`update api_keys set revoked_at = now() where outlet_id = ${outletId} and revoked_at is null`;
+  });
+}
+
+// Everything a library owns, for the export. Each table is filtered by library explicitly, and the query runs under
+// the user's row-level security as well. Secrets (key and token hashes) and internal bookkeeping are left out.
+const BY_LIBRARY = "library_id = $1";
+const EXPORT: [table: string, where: string, omit?: string[]][] = [
+  ["libraries", "id = $1", ["stripe_customer_id", "stripe_subscription_id"]],
+  ["outlets", BY_LIBRARY], ["memberships", BY_LIBRARY], ["membership_outlets", "membership_id in (select id from memberships where library_id = $1)"],
+  ["invitations", BY_LIBRARY, ["token_hash"]], ["api_keys", BY_LIBRARY, ["key_hash"]], ["categories", BY_LIBRARY],
+  ["ingredients", BY_LIBRARY], ["packages", "ingredient_id in (select id from ingredients where library_id = $1)"],
+  ["ingredient_allergens", "ingredient_id in (select id from ingredients where library_id = $1)"],
+  ["ingredient_nutrition", "ingredient_id in (select id from ingredients where library_id = $1)"],
+  ["outlet_ingredients", "outlet_id in (select id from outlets where library_id = $1)"],
+  ["suppliers", BY_LIBRARY], ["stock_items", BY_LIBRARY], ["stock_item_price_history", "stock_item_id in (select id from stock_items where library_id = $1)"],
+  ["recipes", BY_LIBRARY], ["recipe_lines", "recipe_id in (select id from recipes where library_id = $1)"],
+  ["recipe_extra_allergens", "recipe_id in (select id from recipes where library_id = $1)"],
+  ["recipe_outlet_prices", "recipe_id in (select id from recipes where library_id = $1)"],
+  ["menus", BY_LIBRARY], ["menu_courses", "menu_id in (select id from menus where library_id = $1)"],
+  ["menu_items", "course_id in (select c.id from menu_courses c join menus m on m.id = c.menu_id where m.library_id = $1)"],
+  ["purchase_orders", BY_LIBRARY], ["purchase_order_lines", "purchase_order_id in (select id from purchase_orders where library_id = $1)"],
+  ["invoices", BY_LIBRARY], ["invoice_lines", "invoice_id in (select id from invoices where library_id = $1)"],
+  ["stock_events", BY_LIBRARY], ["stock_movements", "stock_event_id in (select id from stock_events where library_id = $1)"],
+  ["stock_count_lines", "stock_event_id in (select id from stock_events where library_id = $1)"],
+  ["stock_levels", "outlet_id in (select id from outlets where library_id = $1)"],
+  ["pos_items", BY_LIBRARY], ["sales", BY_LIBRARY], ["imports", BY_LIBRARY],
+  ["haccp_checklists", BY_LIBRARY], ["haccp_items", "checklist_id in (select id from haccp_checklists where library_id = $1)"],
+  ["haccp_records", "item_id in (select i.id from haccp_items i join haccp_checklists c on c.id = i.checklist_id where c.library_id = $1)"],
+  ["production_requests", BY_LIBRARY],
+];
+
+export async function exportLibrary(s: Session): Promise<Record<string, Record<string, unknown>[]>> {
+  assertTeam(s);
+  return run(s, async (tx) => {
+    const out: Record<string, Record<string, unknown>[]> = {};
+    for (const [table, where, omit = []] of EXPORT) {
+      const rows = await tx.unsafe<Record<string, unknown>[]>(`select * from ${table} where ${where}`, [s.libraryId]);
+      out[table] = rows.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => !omit.some((o) => k === o || k === camel(o)))));
+    }
+    return out;
+  });
+}
+const camel = (x: string) => x.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
 
 export async function listMembers(s: Session): Promise<Member[]> {
   assertTeam(s);
@@ -825,11 +898,13 @@ export async function importSales(s: Session, outletId: string, rows: SaleInput[
 }
 
 /** For the POS API: the key decides library and outlet. Returns null for an unknown or revoked key. */
-export async function importSalesWithKey(key: string, rows: SaleInput[]): Promise<ImportResult | null> {
+export async function importSalesWithKey(key: string, rows: SaleInput[]): Promise<ImportResult | "read_only" | null> {
   return asService(async (tx) => {
     const [k] = await tx<{ id: string; libraryId: string; outletId: string | null }[]>`
       update api_keys set last_used_at = now() where key_hash = ${hashKey(key)} and revoked_at is null returning id, library_id, outlet_id`;
     if (!k?.outletId) return null;
+    const [lib] = await tx<BillingState[]>`select plan, trial_ends_at from libraries where id = ${k.libraryId}`;
+    if (accessOf(lib).readOnly) return "read_only";
     return importInto(tx, k.libraryId, k.outletId, rows, null);
   });
 }

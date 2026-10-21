@@ -49,7 +49,7 @@ export default function DpaPage() {
       </Section>
 
       <Section title="8. Löschung und Rückgabe">
-        <p>Nach Vertragsende stellt der Auftragsverarbeiter die Daten auf Anforderung innerhalb von 30 Tagen in einem gängigen Format bereit und löscht sie danach, einschließlich vorhandener Kopien, soweit keine gesetzliche Pflicht zur Aufbewahrung besteht. Sicherungskopien werden im regulären Zyklus überschrieben.</p>
+        <p>Der Verantwortliche kann alle Daten jederzeit selbst als JSON-Datei herunterladen. Nach Vertragsende stellt der Auftragsverarbeiter die Daten auf Anforderung innerhalb von 30 Tagen in diesem Format bereit und löscht sie danach, einschließlich vorhandener Kopien, soweit keine gesetzliche Pflicht zur Aufbewahrung besteht. Sicherungskopien werden im regulären Zyklus überschrieben.</p>
       </Section>
 
       <Section title="9. Nachweise und Kontrollen">
