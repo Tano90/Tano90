@@ -1,4 +1,25 @@
-# STATUS – Überarbeitung GLB AI Suite (Kundenablauf, Oktober 2026)
+# STATUS – Geräte-Runde GLB AI Suite (Desktop, Tablet, Handy · Oktober 2026)
+
+Stand: 22.10.2026 · Branch `claude/replica-skill-install-vzriug`
+
+## Pakete dieser Runde
+| Paket | Inhalt | Stand |
+| --- | --- | --- |
+| P1 | Detail-Links: Bar → Limonade → Lebenszyklus mit Outlet; Bestellhinweis betriebsweit gekennzeichnet; überfällige Aufgaben nach Outlet; „Zielpreis ansehen“ öffnet den Artikel | erledigt |
+| P2 | Zwei Preisziele (Ziel-Warenquote / kalkulatorische Untergrenze), Handy-Karten für die Tabelle | erledigt |
+| P4a | „−0,00 €“ → „0,00 €“; Forecast-Kachel „Rohwaren ohne Bestellvorschlag“ zählt, was sie aufschlüsselt | erledigt |
+| P3 | Handy: Filterpanel, Touch-Ziele, Safe Areas, Formulare, Inventur/Aufgaben, einklappbare Menügruppen | offen |
+| P4b | Rest „KI-Marktcheck“, zwei Einrichtungsphasen | offen |
+| P5 | Tarife: Karten, Rechner, CTAs, Tarifmatrix zur Freigabe | offen |
+| P6 | Abläufe A–D bei 360/390/430/768/1280/1440, Tastatur, Abschlussbericht | offen |
+
+Geänderte Dateien (P1/P2/P4a): `web/public/suite/src/{app.js, core.js, v04core.js, calm.css, v11/core.mjs}`, `web/suite-tests/tests/v13.test.cjs`, `web/e2e/suite-v14.spec.ts`, `web/e2e/suite-v13.spec.ts` (Kachelname).
+Tests nach P1/P2/P4a: Unit 160/160; e2e suite-v13 + suite-v14 17/17.
+
+---
+
+# Vorherige Runde (Kundenablauf)
+
 
 Stand: 22.10.2026 · Branch `claude/replica-skill-install-vzriug` · Ausgangsstand `2584595`
 

@@ -124,8 +124,10 @@ test.describe("S16 Übersicht und Zahlen", () => {
     await mutate(page, `S.inventoryCounts = S.inventoryCounts.filter((c) => c.ingredientId !== "ing-bun");
       S.inventoryCounts.filter((c) => c.ingredientId === "ing-cheese").forEach((c) => (c.baseQty = 0));`);
     await page.locator('#sidebar .glb08-nav-link[data-view="purchasing"]').click();
-    const card = page.locator(".v4-top-card, .v4-grid3 > *", { hasText: "Bedarf nicht berechenbar" }).first();
-    await expect(card).toContainText("1");
+    const card = page.locator(".v4-top-card, .v4-grid3 > *", { hasText: "Rohwaren ohne Bestellvorschlag" }).first();
+    // headline counts what the breakdown lists: missing stock + not in any recipe (stock 0 is computable)
+    await expect(card).not.toContainText("Bedarf nicht berechenbar");
+    await expect(card.locator("strong")).toHaveText("2");
     await expect(card).toContainText("1 ohne gezählten Bestand");
     await expect(card).toContainText("1 gezählt mit Bestand 0");
     await expect(card).toContainText("1 in keinem Rezept (kein Verbrauch ableitbar)");
@@ -135,7 +137,7 @@ test.describe("S16 Übersicht und Zahlen", () => {
     // the report counts the same
     await page.locator('#sidebar .glb08-nav-link[data-view="reports"]').click();
     await page.getByRole("tab", { name: "Lager & Einkauf" }).click();
-    await expect(page.locator(".v6-stat", { hasText: "Bedarf nicht berechenbar" })).toContainText("1 ohne gezählten Bestand");
+    await expect(page.locator(".v6-stat", { hasText: "Rohwaren ohne Bestellvorschlag" })).toContainText("1 ohne gezählten Bestand");
   });
 
   test("S16-5 Datenqualität und Hinweise widersprechen der Übersicht nicht; deutsches Zahlenformat", async ({ page }) => {

@@ -798,3 +798,127 @@ body {
   color: var(--calm-ink-soft);
   font-size: 12.5px;
 }
+
+/* two price goals (Oct 2026) */
+.price-goals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px 18px;
+  margin: 0 0 14px;
+  font-size: 13px;
+}
+.price-goals > div {
+  padding: 10px 12px;
+  border: 1px solid var(--calm-border);
+  border-radius: 10px;
+}
+.price-goals dt {
+  font-weight: 700;
+}
+.price-goals dd {
+  margin: 4px 0 0;
+  color: var(--calm-ink-soft);
+}
+.row-focus,
+.row-focus td {
+  background: var(--soft-teal);
+}
+.row-focus {
+  outline: 2px solid var(--teal);
+  outline-offset: -2px;
+}
+.v6-action-scope {
+  display: inline-block;
+  margin: 2px 0 0 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 1px solid var(--calm-border);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--calm-ink-soft);
+}
+
+/* phone: wide tables become cards, label from data-label (beats the sticky first column of mobile.css) */
+@media (max-width: 640px) {
+  .table-scroll:has(> .stack-table) {
+    overflow: visible;
+    background: none;
+  }
+  .table-scroll .stack-table,
+  .stack-table tbody,
+  .stack-table tr {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .stack-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .stack-table tr {
+    border: 1px solid var(--calm-border);
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+  }
+  .table-scroll .stack-table td,
+  .table-scroll .stack-table td:first-child {
+    position: static;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: baseline;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    box-sizing: border-box;
+    padding: 6px 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    white-space: normal;
+    text-align: right;
+  }
+  .stack-table td > * {
+    grid-column: 2;
+    justify-self: end;
+    min-width: 0;
+  }
+  .stack-table td::before {
+    content: attr(data-label);
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    font-weight: 600;
+    color: var(--calm-ink-soft);
+    text-align: left;
+  }
+  .table-scroll .stack-table td:first-child {
+    display: block;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+  }
+  .stack-table td:first-child::before,
+  .stack-table td[data-label=""]::before {
+    content: none;
+  }
+  .table-scroll .stack-table td[data-label=""] {
+    display: block;
+    text-align: left;
+    padding-top: 10px;
+  }
+  .stack-table .row-focus,
+  .stack-table tr.row-focus td {
+    background: var(--soft-teal);
+  }
+}
+@media (max-width: 640px) {
+  .stack-table td:first-child > * {
+    text-align: left;
+  }
+}

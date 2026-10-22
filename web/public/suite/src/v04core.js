@@ -403,6 +403,8 @@
       noDays,
       invalidUnit,
       notComputable: [...stockMissing, ...invalidUnit, ...noDays],
+      // every raw good the forecast can give no order quantity for, incl. those in no recipe (no usage basis)
+      noProposal: [...stockMissing, ...invalidUnit, ...noDays, ...by((r) => r.basis === "not-in-recipe")],
       missingRecipes: f.missingRecipes || [],
     };
   }

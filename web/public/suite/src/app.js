@@ -157,9 +157,14 @@
     LFROM = "",
     LTO = "",
     LSEARCH = "",
-    LC = null;
-  const euro = (n) =>
-    new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number.isFinite(Number(n)) ? Number(n) : 0);
+    LC = null,
+    LC_ORIGIN = "", // outlet text when the lifecycle was opened from an overview hint
+    COST_FOCUS = ""; // article opened from a hint: highlighted and scrolled into view on the target-price page
+  // rounded to cents first so tiny negative rests never show as "−0,00 €"
+  const euro = (n) => {
+    const c = Number.isFinite(Number(n)) ? Math.round(Number(n) * 100) / 100 : 0;
+    return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(c === 0 ? 0 : c);
+  };
   const number = (n) => new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(Number(n) || 0);
   const pct = (n) => new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(Number(n) || 0) + " %";
   const esc = (x) =>
@@ -694,6 +699,10 @@
     )}</select></div><div class="field"><label for="lc-to">Bis</label><select id="lc-to">${selectOptions([["", "Letzter Monat"], ...months.map((m) => [m, periodName(m)])], LTO)}</select></div>${
       LOUTLET !== "all" || LFROM || LTO || LSEARCH ? `<button type="button" class="btn btn-small lc-reset" data-action="lc-reset">Filter zurücksetzen</button>` : ""
     }</div>${
+      LC_ORIGIN
+        ? `<p class="notice lc-origin" role="status">Aus der Übersicht geöffnet mit Outlet <b>${esc(LC_ORIGIN)}</b>. Zeitraum: alle Monate, weil die Trendregel die letzten vier Monate vergleicht. <button type="button" class="btn btn-small" data-view="overview">← Zurück zur Übersicht</button></p>`
+        : ""
+    }${
       !product
         ? empty("Keine Produkte", "Lege einen Artikel an.")
         : `<p class="lc-axis-title">Verkaufte Menge je Monat · Einheit: <b>${esc(unit)}</b></p><div class="lc-chart" id="lc-chart" role="group" aria-label="Absatzverlauf ${esc(product.name)}, ${esc(scopeText)}. Datenpunkte mit Pfeiltasten wechseln."><div class="lc-svg"></div><div class="lc-tip" id="lc-tip" role="status" aria-live="polite" hidden></div></div><ul class="lc-legend"><li><i class="lc-key lc-key-data"></i>Monat mit Verkäufen</li><li><i class="lc-key lc-key-zero"></i>Echte Null: Betrieb hat verkauft, dieser Artikel nicht</li><li><i class="lc-key lc-key-gap"></i>Datenlücke: keine Verkaufsdaten, nicht 0</li><li><i class="lc-key lc-key-window"></i>Vergleichsfenster der Einordnung</li><li><i class="lc-key lc-key-avg"></i>Ø je zwei Monate</li></ul><div class="lc-explain"><span class="tag ${series.life.phase === "decline" ? "tag-red" : series.life.phase === "growth" ? "" : "tag-neutral"}">${esc(lifecycleLabel(series.life.phase))}</span><p>${lcExplain(series, unit)}</p>${
@@ -1455,6 +1464,13 @@
     const d = S.monthlyCosts[COST_MONTH] || { energy: 0, payroll: 0, overhead: 0, goods: 0, revenueOverrideNet: 0 };
     const m = activeMonthlyCosts();
     const list = S.items.map((p) => ({ p, ...C.targetPriceModel(p, m, S.profitTarget) }));
+    if (COST_FOCUS && typeof requestAnimationFrame === "function")
+      requestAnimationFrame(() => {
+        const row = document.querySelector("#cost-row-" + CSS.escape(COST_FOCUS));
+        row?.scrollIntoView({ block: "center" });
+        row?.focus({ preventScroll: true });
+        COST_FOCUS = "";
+      });
     const netMonthly = monthlyReport(COST_MONTH),
       actualGoodsPct = netMonthly.revenueNet ? (netMonthly.goodsNet / netMonthly.revenueNet) * 100 : null;
     return (
@@ -1498,7 +1514,25 @@
                 "",
               )}</div><p class="chart-note">Summe der erfassten Kostenblöcke: ${pct(m.totalRate * 100)} des Netto-Umsatzes. Der Wareneinsatz ist für den Abgleich, nicht für einen zweiten Abzug in der Artikel-Zielpreiskalkulation.</p>`
           : empty("Kostenquoten noch nicht berechenbar", "Monatskosten und dazugehörigen Umsatz hinterlegen.")
-      }</div>${m.fixedRate === null ? `<div class="notice">Für diesen Monat sind noch keine Fixkosten gespeichert oder der Umsatz fehlt. Bitte die Monatskosten hinterlegen und speichern, damit valide Zielpreise berechnet werden.</div>` : m.fixedRate + S.profitTarget / 100 >= 1 ? `<div class="notice">Zielpreiskalkulation derzeit nicht möglich: Fixkostenquote und Zielergebnis erreichen zusammen mindestens 100 %. Prüfe Kostenbasis, Umsatzabdeckung oder Zielmarge.</div>` : ""}<div class="panel">${panelHeader("Alle Produkte: aktueller Preis vs. Zielpreis", "Zielpreis = variable Netto-Stückkosten / (1 − Fixkostenquote − Zielgewinnquote) × (1 + USt)")}${list.length ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Artikel</th><th>Oberkategorie</th><th class="align-right">Warenkosten / Stk.</th><th class="align-right">DB I / Stk.</th><th class="align-right">DB II / Stk.</th><th class="align-right">Aktueller VK brutto</th><th class="align-right">Ziel-VK brutto</th><th class="align-right">Differenz brutto</th><th>Aktion</th></tr></thead><tbody>${list.map((x) => `<tr><td><strong>${esc(x.p.name)}</strong><div class="micro">${esc(x.p.category)}</div></td><td>${esc(groupOf(x.p))}</td><td class="align-right">${euro(C.costBreakdown(x.p).goodsNet)}</td><td class="align-right">${euro(x.db1Net)}</td><td class="align-right">${euro(x.db2Net)}</td><td class="align-right">${euro(x.gross)}</td><td class="align-right"><strong>${x.targetGross === null ? "—" : euro(x.targetGross)}</strong></td><td class="align-right ${x.deltaGross > 0 ? "negative" : ""}">${x.deltaGross === null ? "—" : (x.deltaGross > 0 ? "+" : "") + euro(x.deltaGross)}</td><td><button class="btn btn-small" data-edit="${esc(x.p.id)}">Produkt</button></td></tr>`).join("")}</tbody></table></div>` : empty("Keine Produkte", "Lege Produkte an, um alle Zielpreise zu sehen.")}<p class="chart-note">Die Übersicht ändert keine aktuellen Verkaufspreise automatisch. Eine 1:1-Zuordnung von Gemeinkosten zu Artikeln wäre Scheingenauigkeit; der Zuschlag dient zur Szenariokalkulation und nicht als tatsächlicher Stück-DB.</p></div><div class="panel" style="margin-top:18px">${panelHeader("Wareneinsatzprüfung", "Buchhaltungswert gegen kalkulierte Verkaufskosten")}${kpi("Wareneinsatz aus Produktkalkulation", euro(netMonthly.goodsNet), "calculator", "Aktuelle Rezeptkosten × verkaufte Mengen")}${kpi("Buchhalterischer Wareneinsatz", S.monthlyCosts[COST_MONTH] ? euro(m.goods) : "—", "calculator", "Manueller Monatswert")}${kpi("Abweichung", S.monthlyCosts[COST_MONTH] ? euro(m.goods - netMonthly.goodsNet) : "—", "alert", "Manuell minus kalkuliert")}${kpi("WE-Quote aus Verkäufen", actualGoodsPct === null ? "—" : pct(actualGoodsPct), "chart", "Produktspezifisch, netto")}</div>`
+      }</div>${m.fixedRate === null ? `<div class="notice">Für diesen Monat sind noch keine Fixkosten gespeichert oder der Umsatz fehlt. Bitte die Monatskosten hinterlegen und speichern, damit valide Zielpreise berechnet werden.</div>` : m.fixedRate + S.profitTarget / 100 >= 1 ? `<div class="notice">Zielpreiskalkulation derzeit nicht möglich: Fixkostenquote und Zielergebnis erreichen zusammen mindestens 100 %. Prüfe Kostenbasis, Umsatzabdeckung oder Zielmarge.</div>` : ""}<div class="panel" id="cost-targets">${panelHeader("Zwei Preisziele je Artikel", "Getrennt gerechnet, damit klar ist, welches Ziel ein Preis erreicht")}<dl class="price-goals"><div><dt>Preis für die Ziel-Warenquote</dt><dd>Wareneinsatz netto je Einheit ÷ ${targetSet() ? `deine Ziel-Warenquote (${pct(S.targetPct)})` : "Ziel-Warenquote (noch nicht festgelegt)"} × (1 + USt-Satz des Artikels). Nur Warenkosten, heutiger Kostenstand. Ab diesem Preis erreicht der Artikel dein Warenquotenziel.</dd></div><div><dt>Kalkulatorische Untergrenze</dt><dd>Alle variablen Kosten je Einheit ÷ (1 − Fixkostenquote ${m.fixedRate === null ? "(fehlt)" : pct(m.fixedRate * 100)} − Zielergebnis ${pct(S.profitTarget)}) × (1 + USt). Modell für einen konstanten Umsatzmix; keine Preisempfehlung. Liegt der heutige Preis darüber, folgt daraus keine Preissenkung.</dd></div></dl>${
+        list.length
+          ? `<div class="table-scroll"><table class="data-table stack-table"><thead><tr><th>Artikel</th><th class="align-right">Wareneinsatz / Stk.</th><th class="align-right">Aktueller VK brutto</th><th class="align-right">Warenquote heute</th><th class="align-right">Preis für Ziel-Warenquote</th><th class="align-right">Kalkulatorische Untergrenze</th><th class="align-right">DB II / Stk.</th><th>Einordnung</th><th><span class="sr-only">Aktion</span></th></tr></thead><tbody>${list
+              .map((x) => {
+                const t = C.priceTargets(x.p, { targetGoodsPct: targetSet() ? S.targetPct : null, monthlyModel: m, profitPct: S.profitTarget });
+                const verdict = {
+                  "no-cost": ["Wareneinsatz fehlt", "tag-neutral", "Ohne Kosten keine Preisziele."],
+                  "no-goal": ["Kein Ziel hinterlegt", "tag-neutral", "Ziel-Warenquote oder Fixkosten fehlen."],
+                  "below-both": ["Unter beiden Zielen", "tag-red", "Preis, Rezept und Portion prüfen."],
+                  "below-quota": ["Warenquote über Ziel", "tag-red", "Für dein Warenquotenziel bräuchte es den höheren Preis oder geringere Warenkosten. Die kalkulatorische Untergrenze ist erreicht."],
+                  "below-floor": ["Unter kalkulatorischer Untergrenze", "tag-red", "Warenquote im Ziel, aber Fixkosten und Ergebnisziel nicht gedeckt."],
+                  ok: ["Beide Ziele erreicht", "", "Kein Handlungsbedarf aus diesen Rechnungen; keine Senkung abgeleitet."],
+                }[t.status];
+                const gap = (v) => (v === null ? "" : `<div class="micro">${v > 0.005 ? "+" + euro(v) + " ggü. heute" : "erreicht"}</div>`);
+                return `<tr id="cost-row-${esc(x.p.id)}" class="${COST_FOCUS === x.p.id ? "row-focus" : ""}" tabindex="-1"><td data-label="Artikel"><strong>${esc(x.p.name)}</strong><div class="micro">${esc(x.p.category)} · USt ${t.vat} %</div></td><td data-label="Wareneinsatz / Stk." class="align-right">${t.goodsNet > 0 ? euro(t.goodsNet) : "fehlt"}</td><td data-label="Aktueller VK brutto" class="align-right">${euro(t.gross)}</td><td data-label="Warenquote heute" class="align-right">${t.quotaNow === null ? "—" : pct(t.quotaNow)}</td><td data-label="Preis für Ziel-Warenquote" class="align-right"><strong>${t.quotaGross === null ? "—" : euro(t.quotaGross)}</strong>${gap(t.quotaGap)}</td><td data-label="Kalkulatorische Untergrenze" class="align-right">${t.floorGross === null ? "—" : euro(t.floorGross)}${gap(t.floorGap)}</td><td data-label="DB II / Stk." class="align-right">${euro(x.db2Net)}</td><td data-label="Einordnung"><span class="tag ${verdict[1]}">${verdict[0]}</span><div class="micro">${verdict[2]}</div></td><td data-label=""><button class="btn btn-small" data-edit="${esc(x.p.id)}">Artikel bearbeiten</button></td></tr>`;
+              })
+              .join("")}</tbody></table></div>`
+          : empty("Keine Produkte", "Lege Produkte an, um alle Zielpreise zu sehen.")
+      }<p class="chart-note">Die Übersicht ändert keine Verkaufspreise. Eine 1:1-Zuordnung von Gemeinkosten zu Artikeln wäre Scheingenauigkeit; die Untergrenze dient zur Szenariokalkulation und nicht als tatsächlicher Stück-DB.</p></div><div class="panel" style="margin-top:18px">${panelHeader("Wareneinsatzprüfung", "Buchhaltungswert gegen kalkulierte Verkaufskosten")}${kpi("Wareneinsatz aus Produktkalkulation", euro(netMonthly.goodsNet), "calculator", "Aktuelle Rezeptkosten × verkaufte Mengen")}${kpi("Buchhalterischer Wareneinsatz", S.monthlyCosts[COST_MONTH] ? euro(m.goods) : "—", "calculator", "Manueller Monatswert")}${kpi("Abweichung", S.monthlyCosts[COST_MONTH] ? euro(m.goods - netMonthly.goodsNet) : "—", "alert", "Manuell minus kalkuliert")}${kpi("WE-Quote aus Verkäufen", actualGoodsPct === null ? "—" : pct(actualGoodsPct), "chart", "Produktspezifisch, netto")}</div>`
     );
   }
   // Comparison group, period and outlet for Renner-Penner. "all" keeps the comparison across the whole range.
@@ -2263,6 +2297,7 @@
         saveMonthCosts();
         break;
       case "lc-reset":
+        LC_ORIGIN = "";
         LOUTLET = "all";
         LFROM = "";
         LTO = "";
@@ -2438,7 +2473,21 @@
       navigate(nav.dataset.view);
       return;
     }
+    const cf = e.target.closest("[data-cost-focus]");
+    if (cf) {
+      COST_FOCUS = cf.dataset.costFocus;
+      navigate("costs");
+      return;
+    }
     const lc = e.target.closest("[data-lifecycle]");
+    // a link from the overview carries its outlet; the period stays complete (the trend rule needs four months)
+    if (lc && lc.dataset.lcOutlet) {
+      LOUTLET = lc.dataset.lcOutlet;
+      LC_ORIGIN = LOUTLET === "all" ? "alle Outlets" : outletName(LOUTLET);
+      LFROM = "";
+      LTO = "";
+      LSEARCH = "";
+    }
     if (lc) {
       LPRODUCT = lc.dataset.lifecycle;
       navigate("lifecycle");
@@ -2609,6 +2658,7 @@
       render();
     }
     if (["lc-outlet", "lc-from", "lc-to"].includes(e.target.id)) {
+      LC_ORIGIN = ""; // own choice from here on
       if (e.target.id === "lc-outlet") LOUTLET = e.target.value;
       if (e.target.id === "lc-from") LFROM = e.target.value;
       if (e.target.id === "lc-to") LTO = e.target.value;
@@ -3053,7 +3103,7 @@
       ) +
       demoNotice() +
       v4NavPills("forecast") +
-      `<div class="v4-grid3">${v4TopCard(qLabel, `${q.observedDays}/28 Tage`, q.reasons.length ? q.reasons.join(" · ") : "Tage, Rezepte und Bestände ausreichend erfasst", "chart")}${v4TopCard("Bestellwert netto", euro(total), "Nur ermittelbarer Bedarf mit gezähltem Bestand", "calculator")}${v4TopCard("Bedarf nicht berechenbar", String(fs.notComputable.length), v4StatusLine(fs), "info")}</div><section class="panel"><div class="v4-toolbar"><div><h3>Szenario einstellen</h3><p>Gewichteter Absatz: 65 % aus dem Durchschnitt der letzten 7 Tage + 35 % aus 28 Tagen.</p></div><span class="tag ${q.rating === "gut" ? "tag-good" : "tag-warn"}">${esc(qLabel)}</span></div><form id="v4-forecast-form" class="v4-assumptions"><div class="field"><label>Bedarfszeitraum (Tage)</label><input name="days" type="number" min="1" max="90" value="${esc(S.v04Forecast.days)}"></div><div class="field"><label>Vorlauf / Lieferzeit (Tage)</label><input name="leadDays" type="number" min="0" max="30" value="${esc(S.v04Forecast.leadDays)}"></div><div class="field"><label>Sicherheitszuschlag (%)</label><input name="safetyPct" type="number" min="0" max="100" value="${esc(S.v04Forecast.safetyPct)}"></div><button class="btn btn-primary" type="submit">Forecast berechnen</button></form><div class="v4-forecast-note"><strong>Datenbasis (letzte 28 Tage bis ${esc(v6DateDE(f.assumptions.referenceDate))}):</strong> ${q.observedDays} Tage mit Tagesabsatz${q.zeroDays ? `, davon ${q.zeroDays} ausdrücklich ohne Verkauf` : ""}; ${q.missingDays === 1 ? "1 Tag fehlt und zählt" : `${q.missingDays} Tage fehlen und zählen`} nicht als null. ${f.demandProducts} verkaufte Produkte, ${share(q.recipeShare)} der verkauften Einheiten mit Rezept, ${share(q.stockShare)} der benötigten Rohwaren mit gezähltem Bestand. ${
+      `<div class="v4-grid3">${v4TopCard(qLabel, `${q.observedDays}/28 Tage`, q.reasons.length ? q.reasons.join(" · ") : "Tage, Rezepte und Bestände ausreichend erfasst", "chart")}${v4TopCard("Bestellwert netto", euro(total), "Nur ermittelbarer Bedarf mit gezähltem Bestand", "calculator")}${v4TopCard("Rohwaren ohne Bestellvorschlag", String(fs.noProposal.length), v4StatusLine(fs), "info")}</div><section class="panel"><div class="v4-toolbar"><div><h3>Szenario einstellen</h3><p>Gewichteter Absatz: 65 % aus dem Durchschnitt der letzten 7 Tage + 35 % aus 28 Tagen.</p></div><span class="tag ${q.rating === "gut" ? "tag-good" : "tag-warn"}">${esc(qLabel)}</span></div><form id="v4-forecast-form" class="v4-assumptions"><div class="field"><label>Bedarfszeitraum (Tage)</label><input name="days" type="number" min="1" max="90" value="${esc(S.v04Forecast.days)}"></div><div class="field"><label>Vorlauf / Lieferzeit (Tage)</label><input name="leadDays" type="number" min="0" max="30" value="${esc(S.v04Forecast.leadDays)}"></div><div class="field"><label>Sicherheitszuschlag (%)</label><input name="safetyPct" type="number" min="0" max="100" value="${esc(S.v04Forecast.safetyPct)}"></div><button class="btn btn-primary" type="submit">Forecast berechnen</button></form><div class="v4-forecast-note"><strong>Datenbasis (letzte 28 Tage bis ${esc(v6DateDE(f.assumptions.referenceDate))}):</strong> ${q.observedDays} Tage mit Tagesabsatz${q.zeroDays ? `, davon ${q.zeroDays} ausdrücklich ohne Verkauf` : ""}; ${q.missingDays === 1 ? "1 Tag fehlt und zählt" : `${q.missingDays} Tage fehlen und zählen`} nicht als null. ${f.demandProducts} verkaufte Produkte, ${share(q.recipeShare)} der verkauften Einheiten mit Rezept, ${share(q.stockShare)} der benötigten Rohwaren mit gezähltem Bestand. ${
         f.missingRecipes.length
           ? `Ohne Rezept verkauft: ${esc(
               f.missingRecipes
@@ -4940,7 +4990,7 @@
           title: `${x.name}: Warenquote ${pct(x.q)} über deinem Ziel von ${pct(S.targetPct)}`,
           detail: `Wareneinsatz ${euro(x.goods)} ÷ Netto-Umsatz ${euro(x.revenue)}. Rezeptkosten, Portionierung und Verkaufspreis prüfen.`,
           action: "Zielpreis ansehen",
-          view: "costs",
+          costFocus: x.id,
         });
     } else
       hints.push({
@@ -4965,6 +5015,7 @@
         detail: `Ø ${periodName(life.period[2])}/${periodName(life.period[3])} gegenüber Ø ${periodName(life.period[0])}/${periodName(life.period[1])}, ${v6OutletName(V6_OUTLET)}. Verfügbarkeit, Preis, Platzierung und Saison prüfen.`,
         action: "Verlauf ansehen",
         lifecycle: p.id,
+        lcOutlet: V6_OUTLET,
       });
     // 4. current state, independent of the report filter
     try {
@@ -4974,7 +5025,9 @@
         hints.push({
           level: "todo",
           title: `${toOrder.length} ${toOrder.length === 1 ? "Rohware" : "Rohwaren"} laut Forecast bestellen`,
-          detail: `Aktueller Stand: Bedarf der nächsten Tage aus dem Tagesabsatz, abzüglich gezähltem Bestand und offener Bestellungen (${toOrder
+          // stock and the forecast have no outlet assignment: say so instead of pretending to filter
+          scope: V6_OUTLET === "all" && V6_CATEGORY === "all" ? "" : "Gesamter Betrieb – unabhängig vom Berichtsfilter",
+          detail: `Aktueller Stand: Bedarf der nächsten Tage aus dem Tagesabsatz aller Outlets, abzüglich gezähltem Bestand und offener Bestellungen (${toOrder
             .slice(0, 3)
             .map((x) => x.name)
             .join(", ")}${toOrder.length > 3 ? " …" : ""}).`,
@@ -4985,24 +5038,34 @@
       /* forecast needs complete master data; the data-quality page shows what is missing */
     }
     const day = new Date().toISOString().slice(0, 10),
-      late = (S.tasks || []).filter((t) => t.status !== "done" && /^\d{4}-\d{2}-\d{2}$/.test(t.due_on || "") && t.due_on < day);
+      // tasks carry an outlet: with an outlet filter only that outlet's tasks (general ones are counted separately)
+      lateAll = (S.tasks || []).filter((t) => t.status !== "done" && /^\d{4}-\d{2}-\d{2}$/.test(t.due_on || "") && t.due_on < day),
+      late = V6_OUTLET === "all" ? lateAll : lateAll.filter((t) => t.outlet_id === V6_OUTLET),
+      lateGeneral = V6_OUTLET === "all" ? 0 : lateAll.filter((t) => !t.outlet_id).length;
     if (late.length) {
       const names = [...new Set(late.map((t) => (t.outlet_id ? S.outlets.find((o) => o.id === t.outlet_id)?.name || "Outlet nicht mehr vorhanden" : "Allgemein")))];
       hints.push({
         level: "todo",
         title: `${late.length} ${late.length === 1 ? "Aufgabe" : "Aufgaben"} überfällig`,
-        detail: `Aktueller Stand · ${names.join(", ")}.`,
+        detail: `Aktueller Stand · ${names.join(", ")}${lateGeneral ? ` · zusätzlich ${lateGeneral} betriebsübergreifend` : ""}.`,
         action: "Aufgaben öffnen",
         view: "v11tasks",
       });
-    }
+    } else if (lateGeneral)
+      hints.push({
+        level: "todo",
+        title: `${lateGeneral} betriebsübergreifende ${lateGeneral === 1 ? "Aufgabe" : "Aufgaben"} überfällig`,
+        detail: "Aktueller Stand · keinem einzelnen Outlet zugeordnet.",
+        action: "Aufgaben öffnen",
+        view: "v11tasks",
+      });
     const mark = { warn: "Prüfen", todo: "Zu tun", info: "Hinweis" };
     return `<section class="v6-panel v6-actions" aria-labelledby="v6-actions-title"><div class="v6-panel-head"><div><span class="v6-overline">HANDLUNGSBEDARF</span><h2 id="v6-actions-title">Was du als Nächstes tun solltest</h2><p>Auswahl: ${esc(scope)} · Kostenbasis: ${esc(basis)}. Bestellungen und Aufgaben: aktueller Stand. Nur aus deinen Daten und deinen Zielen; ohne Ziel keine Bewertung, ohne Daten kein Hinweis.</p></div></div>${
       hints.length
         ? `<ol class="v6-action-list">${hints
             .map(
               (h) =>
-                `<li class="v6-action ${h.level}"><span class="v6-action-mark">${mark[h.level]}</span><div><b>${esc(h.title)}</b><p>${esc(h.detail)}</p></div><button type="button" class="btn btn-small" ${h.lifecycle ? `data-lifecycle="${esc(h.lifecycle)}"` : `data-view="${h.view}"`}>${esc(h.action)} →</button></li>`,
+                `<li class="v6-action ${h.level}"><span class="v6-action-mark">${mark[h.level]}</span><div><b>${esc(h.title)}</b>${h.scope ? `<span class="v6-action-scope">${esc(h.scope)}</span>` : ""}<p>${esc(h.detail)}</p></div><button type="button" class="btn btn-small" ${h.lifecycle ? `data-lifecycle="${esc(h.lifecycle)}" data-lc-outlet="${esc(h.lcOutlet || "all")}"` : h.costFocus ? `data-cost-focus="${esc(h.costFocus)}"` : `data-view="${h.view}"`}>${esc(h.action)} →</button></li>`,
             )
             .join("")}</ol>`
         : `<p class="v6-smallnote">In dieser Auswahl gibt es nichts, das aus den Daten heraus Handlungsbedarf zeigt.</p>`
@@ -5140,7 +5203,7 @@
     const f = v4Forecast(),
       items = (f.rows || []).filter((x) => x.packs !== null);
     const pending = V5.orderStats(S.purchaseOrders);
-    return `<div class="v6-modular-head"><span>BESTELL-REPORTING</span><button class="btn btn-small" data-view="orders">Bestellungen öffnen ↗</button></div><div class="v6-kpis">${v6Kpi("Prognosequalität", String(f.quality || "—"), "Abhängig von erfassten Tagesverkäufen")}${v6Kpi("Bestellwert netto", euro(items.reduce((a, b) => a + v6Safe(b.estimatedNet), 0)), "Vorläufig, aktuelle EK")}${v6Kpi("Bedarf nicht berechenbar", number(V4.forecastSummary(f).notComputable.length), v4StatusLine(V4.forecastSummary(f)))}${v6Kpi("Offenes Bestellvolumen", euro(pending.openTotal), "Entwurf + als bestellt markiert")}</div>${v6Panel(
+    return `<div class="v6-modular-head"><span>BESTELL-REPORTING</span><button class="btn btn-small" data-view="orders">Bestellungen öffnen ↗</button></div><div class="v6-kpis">${v6Kpi("Prognosequalität", String(f.quality || "—"), "Abhängig von erfassten Tagesverkäufen")}${v6Kpi("Bestellwert netto", euro(items.reduce((a, b) => a + v6Safe(b.estimatedNet), 0)), "Vorläufig, aktuelle EK")}${v6Kpi("Rohwaren ohne Bestellvorschlag", number(V4.forecastSummary(f).noProposal.length), v4StatusLine(V4.forecastSummary(f)))}${v6Kpi("Offenes Bestellvolumen", euro(pending.openTotal), "Entwurf + als bestellt markiert")}</div>${v6Panel(
       "BEDARFSRANKING",
       "Höchster prognostizierter Einkaufswert",
       "Voraussetzung: Rezepte, Tagesabsätze und Inventur.",

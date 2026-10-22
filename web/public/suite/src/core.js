@@ -551,6 +551,52 @@
       valid: targetGross !== null,
     };
   }
+  /** Two different price goals, kept apart (Oct 2026):
+   *  quota: the gross price at which this article's goods cost equals the business's target goods quota,
+   *         goods cost net per unit ÷ target quota × (1 + VAT rate of the article). Only goods cost, no other cost.
+   *  floor: the model price from targetPriceModel (all variable costs, monthly fixed-cost rate, profit target) –
+   *         a lower bound for a constant sales mix, not a recommendation to sell at that price.
+   *  status compares the current price with both; a price above a goal never turns into a "lower the price" advice. */
+  function priceTargets(product, { targetGoodsPct = null, monthlyModel = null, profitPct = 10 } = {}) {
+    const c = costBreakdown(product),
+      vat = [0, 7, 19].includes(Number(product.vat)) ? Number(product.vat) : 19,
+      gross = Math.max(0, finite(product.grossPrice)),
+      net = gross / (1 + vat / 100),
+      goodsNet = Math.max(0, c.goodsNet);
+    const target = Number(targetGoodsPct);
+    const quotaNow = net > 0 && goodsNet > 0 ? (goodsNet / net) * 100 : null;
+    const quotaGross = goodsNet > 0 && target > 0 && target < 100 ? (goodsNet / (target / 100)) * (1 + vat / 100) : null;
+    const model = targetPriceModel(product, monthlyModel, profitPct);
+    const floorGross = model.targetGross;
+    const below = (goal) => goal !== null && gross + 0.005 < goal;
+    const status = !(goodsNet > 0)
+      ? "no-cost"
+      : below(quotaGross) && below(floorGross)
+        ? "below-both"
+        : below(quotaGross)
+          ? "below-quota"
+          : below(floorGross)
+            ? "below-floor"
+            : quotaGross === null && floorGross === null
+              ? "no-goal"
+              : "ok";
+    return {
+      gross,
+      net,
+      vat,
+      goodsNet,
+      variableNet: c.variableNet,
+      quotaNow,
+      targetGoodsPct: target > 0 && target < 100 ? target : null,
+      quotaGross,
+      quotaGap: quotaGross === null ? null : quotaGross - gross,
+      floorGross,
+      floorGap: floorGross === null ? null : floorGross - gross,
+      fixedRate: model.fixedRate,
+      profitRate: model.targetRate,
+      status,
+    };
+  }
   function productActions(items) {
     const cl = classify(items);
     return cl.list
@@ -835,6 +881,7 @@
     addMonths,
     monthlyCostModel,
     targetPriceModel,
+    priceTargets,
     productActions,
     FUNNEL_STEPS,
     funnelSummary,

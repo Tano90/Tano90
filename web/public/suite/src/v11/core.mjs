@@ -31,7 +31,10 @@ export function numberInput(value) {
   const s = String(value ?? "").trim();
   return s === "" || !/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s) ? NaN : Number(s);
 }
-export const money = (n) => (Number(n) || 0).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+export const money = (n) => {
+  const c = Math.round((Number(n) || 0) * 100) / 100; // no "−0,00 €" for tiny negative rests
+  return (c === 0 ? 0 : c).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+};
 export const percent = (n) =>
   Number.isFinite(n) ? `${n.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %` : "—";
 export const norm = (s) =>
