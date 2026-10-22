@@ -27,7 +27,9 @@ Getestet durch Klicken: Startseite → „Live ausprobieren“ → Übersicht, a
 
 ## Tests (22.10.2026)
 - Logik/Server `npm run test:suite`: 156/156 · Original-ZIP 26/26 · SQL 8+8+8+7+5 · vitest 57 bestanden, 34 übersprungen (brauchen DB) · tsc und Lint ohne Fehler.
-- Browser: siehe Abschlussbericht (Gesamtlauf `npx playwright test`).
+- Browser, gesamtes Projekt (`npx playwright test`): 301/301 bestanden (13,3 min), darunter neu S15–S18 (Navigation, Handlungsbedarf, Kostenbasis, Forecast-Definitionen, Erste Schritte, eigene Daten, Wettbewerbspreise) und S14-0 (fiktive Demo-Beobachtungen).
+- Handybreite 390 px ohne horizontales Scrollen: Übersicht, Erste Schritte, Wettbewerbspreise, Bestell-Forecast, Berichte, Startseite.
+- Nicht geprüft: echte Vorschau-URL (vercel.app von hier gesperrt), echtes Supabase/Stripe, echte KI-Antwort, echte OpenStreetMap-Antworten (in Tests nachgebildet), echte Geräte.
 
 ## Offen / Entscheidungen (Tarife)
 1. Welche Leistungen unterscheiden Standard und Premium?
