@@ -1,0 +1,15 @@
+{
+  "name": "camperteil",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Website Camperteil (statisch, ohne Build-Schritt)",
+  "type": "module",
+  "scripts": {
+    "serve": "python3 -m http.server 4173",
+    "test": "node tests/flow.mjs",
+    "preview:single": "node scripts/build-single.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.56.1"
+  }
+}

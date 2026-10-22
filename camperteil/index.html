@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Camperteil</title>
+<meta name="description" content="Kleine Kunststoff-Ersatzteile für ältere Wohnmobile anfragen: mit Fotos, Fahrzeugdaten und Maßen. Ein Angebot von Mattias Segato Consulting.">
+<meta name="theme-color" content="#edefe8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1a17" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+<!--BODY-START-->
+<a class="skip" href="#inhalt">Zum Inhalt springen</a>
+
+<header class="site-header" id="kopf">
+  <div class="wrap header-row">
+    <a class="brand" href="#top" aria-label="Camperteil, zum Seitenanfang">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="2.4"/>
+        <circle cx="16" cy="16" r="3.6" fill="none" stroke="currentColor" stroke-width="2.4"/>
+        <path d="M16 1v8M16 23v8M1 16h8M23 16h8" stroke="currentColor" stroke-width="2.4" fill="none"/>
+      </svg>
+      <span class="brand-word">Camperteil</span>
+    </a>
+    <nav class="main-nav" aria-label="Hauptnavigation">
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-list">
+        <span class="nav-toggle-bars" aria-hidden="true"></span>
+        <span class="nav-toggle-label">Menü</span>
+      </button>
+      <ul id="nav-list" class="nav-list">
+        <li><a href="#teile">Teile</a></li>
+        <li><a href="#ablauf">Ablauf</a></li>
+        <li><a href="#messen">Messen &amp; Fotografieren</a></li>
+        <li><a href="#fragen">Fragen</a></li>
+        <li class="nav-cta-item"><a class="btn btn-primary btn-small" href="#anfrage">Ersatzteil anfragen</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="inhalt">
+
+  <!-- HERO -->
+  <section class="hero" id="top" aria-labelledby="hero-title">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Ersatzteile für ältere Wohnmobile</p>
+        <h1 id="hero-title" class="display">Das kleine Teil, das keiner mehr führt.</h1>
+        <p class="lead">Ein gebrochener Fensterriegel, eine fehlende Abdeckkappe, ein Staufachschloss ohne Rosette. Bei älteren Wohnmobilen fehlt oft ein Kunststoffteil, das der Hersteller nicht mehr liefert. Beschreiben Sie es bei Camperteil einmal genau: mit Fotos, Fahrzeugmodell, Baujahr und Maßen. Ein Fachbetrieb soll dann prüfen, ob es das Teil noch gibt oder ob es sich nachfertigen lässt.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#anfrage">Ersatzteil anfragen</a>
+          <a class="btn btn-quiet" href="#ablauf">So läuft es ab</a>
+        </div>
+      </div>
+
+      <figure class="sheet hero-sheet" aria-labelledby="hero-fig-cap">
+        <div class="sheet-zones" aria-hidden="true">
+          <span>A</span><span>B</span><span>C</span><span>D</span>
+        </div>
+        <svg class="drawing" viewBox="0 0 600 450" role="img" aria-labelledby="hero-svg-title hero-svg-desc">
+          <title id="hero-svg-title">Technische Zeichnung eines Fensterriegels (Beispiel)</title>
+          <desc id="hero-svg-desc">Draufsicht und Seitenansicht eines Kunststoff-Fensterriegels mit Maßen in Millimetern: Gesamtlänge 77,5, Lagerauge Durchmesser 19, Bohrung Durchmesser 5,5, Höhe 8,5, Hebelstärke 3,5. Eine typische Bruchstelle am Lagerauge ist markiert. Illustratives Beispiel.</desc>
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+              <path d="M0 1.5 L10 5 L0 8.5 Z" class="f-ink"/>
+            </marker>
+            <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="7" height="7" class="f-none"/>
+              <line x1="0" y1="0" x2="0" y2="7" class="s-hatch"/>
+            </pattern>
+          </defs>
+
+          <!-- Mittellinien -->
+          <g class="center-lines">
+            <line x1="70" y1="150" x2="420" y2="150" pathLength="1" class="draw"/>
+            <line x1="130" y1="96" x2="130" y2="204" pathLength="1" class="draw"/>
+            <line x1="130" y1="270" x2="130" y2="336" pathLength="1" class="draw"/>
+          </g>
+
+          <!-- Draufsicht -->
+          <g class="part">
+            <path class="body draw" pathLength="1" d="M130 112 A38 38 0 0 0 130 188 L390 162 A12 12 0 0 0 390 138 Z"/>
+            <circle class="hole draw" pathLength="1" cx="130" cy="150" r="11"/>
+            <path class="hidden-line" d="M182 140 L360 134 M182 160 L360 166"/>
+            <path class="grip" d="M300 141v18 M318 140v20 M336 139v22"/>
+          </g>
+
+          <!-- Typische Bruchstelle -->
+          <path class="crack" d="M141 146 L152 141 L149 135 L160 129 L157 122 L166 117"/>
+          <g class="balloon" transform="translate(212 86)">
+            <line x1="-40" y1="18" x2="-12" y2="5" class="leader"/>
+            <circle r="13" class="balloon-c"/>
+            <text y="4.5" text-anchor="middle" class="balloon-t">1</text>
+          </g>
+          <text x="232" y="91" class="note">Typische Bruchstelle am Lagerauge</text>
+
+          <!-- Seitenansicht -->
+          <g class="part">
+            <path class="body section draw" pathLength="1" d="M95 286 H165 L168 289 V306 H399 L402 309 V320 H92 V289 Z"/>
+            <path class="hidden-line" d="M119 286 V320 M141 286 V320"/>
+          </g>
+
+          <!-- Bemaßung -->
+          <g class="dims">
+            <line x1="92" y1="140" x2="92" y2="48" class="ext"/>
+            <line x1="402" y1="142" x2="402" y2="48" class="ext"/>
+            <line x1="92" y1="56" x2="402" y2="56" class="dim" marker-start="url(#arr)" marker-end="url(#arr)"/>
+            <text x="247" y="49" text-anchor="middle" class="dim-t">77,5</text>
+
+            <line x1="103" y1="177" x2="78" y2="226" class="leader"/>
+            <line x1="78" y1="226" x2="40" y2="226" class="leader"/>
+            <text x="40" y="220" class="dim-t">Ø19</text>
+
+            <line x1="137" y1="158" x2="172" y2="226" class="leader" marker-start="url(#arr)"/>
+            <line x1="172" y1="226" x2="214" y2="226" class="leader"/>
+            <text x="176" y="220" class="dim-t">Ø5,5</text>
+
+            <line x1="90" y1="286" x2="54" y2="286" class="ext"/>
+            <line x1="90" y1="320" x2="54" y2="320" class="ext"/>
+            <line x1="62" y1="286" x2="62" y2="320" class="dim" marker-start="url(#arr)" marker-end="url(#arr)"/>
+            <text x="54" y="307" text-anchor="end" class="dim-t">8,5</text>
+
+            <line x1="404" y1="306" x2="446" y2="306" class="ext"/>
+            <line x1="404" y1="320" x2="446" y2="320" class="ext"/>
+            <line x1="438" y1="282" x2="438" y2="306" class="dim" marker-end="url(#arr)"/>
+            <line x1="438" y1="344" x2="438" y2="320" class="dim" marker-end="url(#arr)"/>
+            <text x="446" y="298" class="dim-t">3,5</text>
+          </g>
+
+          <text x="92" y="258" class="view-t">DRAUFSICHT</text>
+          <text x="92" y="354" class="view-t">SEITENANSICHT</text>
+
+          <!-- Schriftfeld -->
+          <g class="title-block" transform="translate(328 368)">
+            <rect width="256" height="68" class="tb-frame"/>
+            <line x1="0" y1="24" x2="256" y2="24" class="tb-rule"/>
+            <line x1="0" y1="46" x2="256" y2="46" class="tb-rule"/>
+            <line x1="150" y1="24" x2="150" y2="68" class="tb-rule"/>
+            <text x="8" y="16" class="tb-big">FENSTERRIEGEL · BEISPIEL</text>
+            <text x="8" y="39" class="tb-small">Werkstoff: unbekannt</text>
+            <text x="158" y="39" class="tb-small">Maßstab 2:1</text>
+            <text x="8" y="61" class="tb-small">Maße in mm</text>
+            <text x="158" y="61" class="tb-small">Blatt 1/1</text>
+          </g>
+        </svg>
+        <figcaption id="hero-fig-cap" class="sheet-cap">
+          <span class="tag">Beispiel</span>
+          Illustration eines typischen Teils. Kein Angebot, kein reales Bauteil aus dem Sortiment.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- STAND -->
+  <section class="status" aria-labelledby="status-title">
+    <div class="wrap status-row">
+      <h2 id="status-title" class="status-label">Stand Oktober 2026</h2>
+      <p>Camperteil startet gerade. Wir haben zwei mögliche Partnerbetriebe angeschrieben, eine Zusammenarbeit ist noch nicht bestätigt. Sie können Ihre Anfrage schon vollständig vorbereiten. Der Versand über diese Website ist noch nicht eingerichtet.</p>
+    </div>
+  </section>
+
+  <!-- TEILE -->
+  <section class="section" id="teile" aria-labelledby="teile-title">
+    <div class="wrap">
+      <header class="section-head">
+        <p class="eyebrow">Worum es geht</p>
+        <h2 id="teile-title" class="h2">Kleine Kunststoffteile, ohne die nichts schließt, hält oder dicht ist.</h2>
+        <p class="section-intro">Gemeint sind Teile aus Möbelbau, Fenstern, Klappen und Außenhaut, die nach 20 oder 30 Jahren spröde werden. Die Zeichnung zeigt typische Beispiele. Sie stehen für Arten von Anfragen, nicht für ein Sortiment.</p>
+      </header>
+
+      <div class="board" data-board>
+        <figure class="sheet board-sheet">
+          <svg class="drawing parts" viewBox="0 0 720 440" role="img" aria-labelledby="parts-title">
+            <title id="parts-title">Sechs Beispielteile mit Positionsnummern</title>
+
+            <!-- Pos 1: Staufachschloss-Rosette -->
+            <g class="pos" data-pos="1" transform="translate(30 20)">
+              <rect x="40" y="40" width="130" height="130" rx="26" class="body"/>
+              <circle cx="105" cy="105" r="34" class="body"/>
+              <path d="M105 82 v26 M98 112 h14" class="detail"/>
+              <circle cx="58" cy="58" r="5" class="hole"/><circle cx="152" cy="152" r="5" class="hole"/>
+              <g transform="translate(22 22)"><circle r="13" class="balloon-c"/><text y="4.5" text-anchor="middle" class="balloon-t">1</text></g>
+            </g>
+
+            <!-- Pos 2: Lüftungsgitter-Ecke -->
+            <g class="pos" data-pos="2" transform="translate(260 20)">
+              <path d="M30 50 H200 V170 H30 Z" class="body"/>
+              <path d="M50 74 H180 M50 96 H180 M50 118 H180 M50 140 H180" class="detail thick"/>
+              <circle cx="40" cy="60" r="4" class="hole"/><circle cx="190" cy="160" r="4" class="hole"/>
+              <g transform="translate(22 22)"><circle r="13" class="balloon-c"/><text y="4.5" text-anchor="middle" class="balloon-t">2</text></g>
+            </g>
+
+            <!-- Pos 3: Endkappe Kederleiste -->
+            <g class="pos" data-pos="3" transform="translate(490 20)">
+              <path d="M70 60 H150 Q170 60 170 80 V150 Q170 168 152 168 H96 L70 140 Z" class="body"/>
+              <path d="M70 60 L70 140" class="detail"/>
+              <path d="M96 168 L96 150 Q96 140 106 140 H170" class="hidden-line"/>
+              <circle cx="124" cy="100" r="6" class="hole"/>
+              <g transform="translate(40 22)"><circle r="13" class="balloon-c"/><text y="4.5" text-anchor="middle" class="balloon-t">3</text></g>
+            </g>
+
+            <!-- Pos 4: Druckknopf Möbelschloss -->
+            <g class="pos" data-pos="4" transform="translate(30 230)">
+              <circle cx="105" cy="100" r="58" class="body"/>
+              <circle cx="105" cy="100" r="40" class="body"/>
+              <circle cx="105" cy="100" r="14" class="detail"/>
+              <g transform="translate(22 12)"><circle r="13" class="balloon-c"/><text y="4.5" text-anchor="middle" class="balloon-t">4</text></g>
+            </g>
+
+            <!-- Pos 5: Kurbelgriff Dachhaube -->
+            <g class="pos" data-pos="5" transform="translate(260 230)">
+              <path d="M44 70 A26 26 0 1 1 70 96 L186 140 A16 16 0 1 1 176 164 L58 118 A26 26 0 0 1 44 70 Z" class="body"/>
+              <circle cx="70" cy="70" r="11" class="hole"/>
+              <path d="M64 64 h12 v12 h-12 Z" class="detail"/>
+              <circle cx="186" cy="152" r="5" class="hole"/>
+              <g transform="translate(22 12)"><circle r="13" class="balloon-c"/><text y="4.5" text-anchor="middle" class="balloon-t">5</text></g>
+            </g>
+
+            <!-- Pos 6: Schalterblende -->
+            <g class="pos" data-pos="6" transform="translate(490 230)">
+              <rect x="40" y="36" width="150" height="128" rx="10" class="body"/>
+              <rect x="68" y="62" width="94" height="76" rx="3" class="detail"/>
+              <path d="M115 62 V138" class="hidden-line"/>
+              <g transform="translate(22 12)"><circle r="13" class="balloon-c"/><text y="4.5" text-anchor="middle" class="balloon-t">6</text></g>
+            </g>
+          </svg>
+          <figcaption class="sheet-cap"><span class="tag">Beispiele</span> Zeichnungen illustrativ, ohne Maßstab. Keine Produkte im Angebot.</figcaption>
+        </figure>
+
+        <div class="parts-list-wrap">
+          <table class="parts-list">
+            <caption>Stückliste der Beispiele</caption>
+            <thead>
+              <tr><th scope="col">Pos.</th><th scope="col">Benennung</th><th scope="col">Typischer Defekt</th></tr>
+            </thead>
+            <tbody>
+              <tr data-pos="1" tabindex="0"><td class="num">1</td><th scope="row">Rosette Staufachschloss</th><td>Rissig, Schließzylinder sitzt lose</td></tr>
+              <tr data-pos="2" tabindex="0"><td class="num">2</td><th scope="row">Lüftungsgitter Kühlschrank</th><td>Lamellen gebrochen, durch UV ausgeblichen</td></tr>
+              <tr data-pos="3" tabindex="0"><td class="num">3</td><th scope="row">Endkappe Kederleiste</th><td>Verloren, Wasser zieht ein</td></tr>
+              <tr data-pos="4" tabindex="0"><td class="num">4</td><th scope="row">Druckknopf Möbelschloss</th><td>Feder hält nicht, Knopf klemmt</td></tr>
+              <tr data-pos="5" tabindex="0"><td class="num">5</td><th scope="row">Kurbelgriff Dachhaube</th><td>Vierkant rundgedreht</td></tr>
+              <tr data-pos="6" tabindex="0"><td class="num">6</td><th scope="row">Schalterblende</th><td>Rahmen gebrochen, Farbton nicht mehr erhältlich</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABLAUF -->
+  <section class="section night" id="ablauf" aria-labelledby="ablauf-title">
+    <canvas class="contours" aria-hidden="true"></canvas>
+    <div class="wrap night-inner">
+      <header class="section-head">
+        <p class="eyebrow">Ablauf</p>
+        <h2 id="ablauf-title" class="h2">Vom gebrochenen Teil zur ehrlichen Einschätzung.</h2>
+      </header>
+      <ol class="steps">
+        <li>
+          <span class="step-no" aria-hidden="true">1</span>
+          <h3>Sie beschreiben das Teil</h3>
+          <p>Fotos, Fahrzeugmodell, Baujahr, Maße und eine kurze Beschreibung. Das Formular führt Schritt für Schritt durch alle Angaben.</p>
+        </li>
+        <li>
+          <span class="step-no" aria-hidden="true">2</span>
+          <h3>Camperteil sichtet die Angaben</h3>
+          <p>Fehlt ein Maß oder ein Foto aus einem bestimmten Winkel, fragen wir nach, bevor die Anfrage weitergeht.</p>
+        </li>
+        <li>
+          <span class="step-no" aria-hidden="true">3</span>
+          <h3>Ein Fachbetrieb prüft</h3>
+          <p>Gibt es das Teil noch als Restbestand oder Nachfolger? Oder lässt es sich nachfertigen? Welcher Betrieb prüft, nennen wir hier, sobald eine Zusammenarbeit bestätigt ist.</p>
+        </li>
+        <li>
+          <span class="step-no" aria-hidden="true">4</span>
+          <h3>Sie erhalten eine Rückmeldung</h3>
+          <p>Mit der Einschätzung des Betriebs. Ob und zu welchem Preis ein Teil möglich ist, steht erst nach dieser Prüfung fest. Über diese Website wird nichts gekauft.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- MESSEN -->
+  <section class="section" id="messen" aria-labelledby="messen-title">
+    <div class="wrap measure-grid">
+      <header class="section-head measure-head">
+        <p class="eyebrow">Messen &amp; Fotografieren</p>
+        <h2 id="messen-title" class="h2">Gute Angaben sparen Rückfragen.</h2>
+        <p class="section-intro">Für eine Prüfung braucht der Betrieb das Teil nicht in der Hand, aber genaue Maße und klare Fotos. So geht es am schnellsten:</p>
+      </header>
+
+      <figure class="sheet caliper-sheet">
+        <svg class="drawing" viewBox="0 0 420 200" role="img" aria-labelledby="cal-title">
+          <title id="cal-title">Schema: Messschieber misst die Breite eines Teils</title>
+          <path d="M20 60 H400 V84 H20 Z" class="body"/>
+          <path d="M40 84 V160 L64 160 L64 84" class="body"/>
+          <path d="M150 50 H250 V96 H150 Z" class="body"/>
+          <path d="M150 96 V160 L126 160 L126 96" class="body"/>
+          <g class="scale">
+            <path d="M70 60 v-8 M90 60 v-5 M110 60 v-8 M130 60 v-5 M270 60 v-8 M290 60 v-5 M310 60 v-8 M330 60 v-5 M350 60 v-8 M370 60 v-5"/>
+          </g>
+          <rect x="64" y="122" width="62" height="38" class="part-meas"/>
+          <text x="95" y="186" text-anchor="middle" class="dim-t">Teil</text>
+          <text x="200" y="78" text-anchor="middle" class="dim-t">23,5</text>
+        </svg>
+        <figcaption class="sheet-cap"><span class="tag">Schema</span> Messschieber, Angabe in Millimetern.</figcaption>
+      </figure>
+
+      <dl class="tips">
+        <div>
+          <dt>Von allen Seiten fotografieren</dt>
+          <dd>Vorderseite, Rückseite, seitlich und wenn möglich im eingebauten Zustand. Tageslicht, ohne Blitz.</dd>
+        </div>
+        <div>
+          <dt>Maßstab ins Bild legen</dt>
+          <dd>Ein Lineal oder Zollstock neben dem Teil zeigt die Größe auch auf dem Foto.</dd>
+        </div>
+        <div>
+          <dt>In Millimetern messen</dt>
+          <dd>Länge, Breite und Höhe, dazu Lochabstände und Bohrungen. Ein Messschieber ist genauer als ein Lineal. Geschätzte Werte bitte kennzeichnen.</dd>
+        </div>
+        <div>
+          <dt>Prägungen notieren</dt>
+          <dd>Auf der Rückseite stehen oft Teilenummern oder ein Werkstoffzeichen wie <span class="mono">&gt;ABS&lt;</span> oder <span class="mono">&gt;PP&lt;</span>. Das hilft bei der Nachfertigung.</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ANFRAGE -->
+  <section class="section request" id="anfrage" aria-labelledby="anfrage-title">
+    <div class="wrap">
+      <header class="section-head request-head">
+        <p class="eyebrow">Anfrage</p>
+        <h2 id="anfrage-title" class="h2">Ersatzteil anfragen</h2>
+        <p class="section-intro">Fünf kurze Schritte. Ihre Eingaben bleiben erhalten, wenn Sie zurückgehen. Textangaben werden zusätzlich als Entwurf in diesem Browser gespeichert.</p>
+      </header>
+
+      <div class="limit-note" role="note">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v6M12 16.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
+        <p><strong>Versand noch nicht eingerichtet.</strong> Sie können die Anfrage vollständig ausfüllen und am Ende als Text kopieren oder speichern. Übertragen wird noch nichts.</p>
+      </div>
+
+      <form class="wizard" id="wizard" novalidate>
+        <ol class="progress" aria-label="Schritte der Anfrage">
+          <li data-step-link="1"><button type="button" data-goto="1"><span class="p-no">1</span><span class="p-label">Fotos</span></button></li>
+          <li data-step-link="2"><button type="button" data-goto="2"><span class="p-no">2</span><span class="p-label">Fahrzeug</span></button></li>
+          <li data-step-link="3"><button type="button" data-goto="3"><span class="p-no">3</span><span class="p-label">Teil &amp; Maße</span></button></li>
+          <li data-step-link="4"><button type="button" data-goto="4"><span class="p-no">4</span><span class="p-label">Kontakt</span></button></li>
+          <li data-step-link="5"><button type="button" data-goto="5"><span class="p-no">5</span><span class="p-label">Übersicht</span></button></li>
+        </ol>
+        <p class="progress-mobile" aria-hidden="true"><span data-progress-text>Schritt 1 von 5</span><span class="bar"><span data-progress-bar></span></span></p>
+
+        <div class="error-summary" id="error-summary" tabindex="-1" hidden>
+          <h3>Bitte prüfen Sie diese Angaben:</h3>
+          <ul></ul>
+        </div>
+
+        <!-- Schritt 1 -->
+        <fieldset class="step" data-step="1">
+          <legend class="step-title"><span class="step-kicker">Schritt 1 von 5</span>Fotos des Teils</legend>
+          <p class="hint">Mindestens ein Foto, höchstens 8. Formate JPG, PNG, WebP oder HEIC, je Datei bis 15&nbsp;MB.</p>
+
+          <div class="drop" id="drop">
+            <input type="file" id="photos" name="photos" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple class="visually-hidden" aria-describedby="photos-error photos-count">
+            <label for="photos" class="drop-label">
+              <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect x="5" y="12" width="38" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M17 12l3-5h8l3 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><circle cx="24" cy="26" r="7.5" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>
+              <span class="drop-main">Fotos auswählen</span>
+              <span class="drop-sub">oder hierher ziehen. Auf dem Handy auch direkt mit der Kamera.</span>
+            </label>
+          </div>
+          <p class="field-error" id="photos-error" hidden></p>
+          <p class="photo-count" id="photos-count" aria-live="polite"></p>
+          <ul class="thumbs" id="thumbs" aria-label="Ausgewählte Fotos"></ul>
+        </fieldset>
+
+        <!-- Schritt 2 -->
+        <fieldset class="step" data-step="2" hidden>
+          <legend class="step-title"><span class="step-kicker">Schritt 2 von 5</span>Fahrzeug</legend>
+          <div class="fields">
+            <div class="field">
+              <label for="make">Hersteller <span class="req">Pflicht</span></label>
+              <input id="make" name="make" type="text" list="makes" autocomplete="off" aria-describedby="make-error" maxlength="60">
+              <datalist id="makes">
+                <option value="Adria"></option><option value="Bürstner"></option><option value="Carthago"></option><option value="Dethleffs"></option><option value="Eura Mobil"></option><option value="Fendt"></option><option value="Frankia"></option><option value="Hobby"></option><option value="Hymer"></option><option value="Karmann"></option><option value="Knaus"></option><option value="Laika"></option><option value="LMC"></option><option value="Niesmann + Bischoff"></option><option value="Rapido"></option><option value="Tabbert"></option><option value="Weinsberg"></option><option value="Westfalia"></option>
+              </datalist>
+              <p class="field-error" id="make-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="model">Modell oder Baureihe <span class="req">Pflicht</span></label>
+              <input id="model" name="model" type="text" autocomplete="off" aria-describedby="model-hint model-error" maxlength="80">
+              <p class="hint" id="model-hint">Zum Beispiel wie im Fahrzeugschein oder am Typenschild.</p>
+              <p class="field-error" id="model-error" hidden></p>
+            </div>
+            <div class="field field-short">
+              <label for="year">Baujahr <span class="req">Pflicht</span></label>
+              <input id="year" name="year" type="text" inputmode="numeric" autocomplete="off" maxlength="4" aria-describedby="year-hint year-error">
+              <p class="hint" id="year-hint">Vierstellig, z.&nbsp;B. 1992.</p>
+              <p class="field-error" id="year-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="chassis">Basisfahrzeug <span class="opt">optional</span></label>
+              <input id="chassis" name="chassis" type="text" autocomplete="off" maxlength="80" aria-describedby="chassis-hint">
+              <p class="hint" id="chassis-hint">Zum Beispiel Fiat Ducato, Mercedes T1, VW T3.</p>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Schritt 3 -->
+        <fieldset class="step" data-step="3" hidden>
+          <legend class="step-title"><span class="step-kicker">Schritt 3 von 5</span>Teil und Maße</legend>
+          <div class="fields">
+            <div class="field">
+              <label for="partName">Bezeichnung des Teils <span class="req">Pflicht</span></label>
+              <input id="partName" name="partName" type="text" autocomplete="off" maxlength="100" aria-describedby="partName-hint partName-error">
+              <p class="hint" id="partName-hint">So, wie Sie es nennen würden. Etwa „Riegel Ausstellfenster links“.</p>
+              <p class="field-error" id="partName-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="location">Einbauort <span class="req">Pflicht</span></label>
+              <select id="location" name="location" aria-describedby="location-error">
+                <option value="">Bitte wählen</option>
+                <option>Fenster und Dachhauben</option>
+                <option>Türen, Klappen und Schlösser</option>
+                <option>Küche</option>
+                <option>Bad und Toilette</option>
+                <option>Möbel und Stauraum</option>
+                <option>Außenhaut und Leisten</option>
+                <option>Elektrik und Schalter</option>
+                <option>Sonstiges</option>
+              </select>
+              <p class="field-error" id="location-error" hidden></p>
+            </div>
+
+            <div class="field field-wide" role="group" aria-labelledby="dims-label" aria-describedby="dims-hint dims-error">
+              <span class="label" id="dims-label">Maße in Millimetern <span class="req">mindestens zwei</span></span>
+              <div class="dims-row">
+                <div class="dim-field">
+                  <label for="dimL">Länge</label>
+                  <div class="unit-input"><input id="dimL" name="dimL" type="text" inputmode="decimal" autocomplete="off" maxlength="7"><span aria-hidden="true">mm</span></div>
+                </div>
+                <div class="dim-field">
+                  <label for="dimB">Breite</label>
+                  <div class="unit-input"><input id="dimB" name="dimB" type="text" inputmode="decimal" autocomplete="off" maxlength="7"><span aria-hidden="true">mm</span></div>
+                </div>
+                <div class="dim-field">
+                  <label for="dimH">Höhe / Stärke</label>
+                  <div class="unit-input"><input id="dimH" name="dimH" type="text" inputmode="decimal" autocomplete="off" maxlength="7"><span aria-hidden="true">mm</span></div>
+                </div>
+              </div>
+              <p class="hint" id="dims-hint">Komma oder Punkt sind möglich, z.&nbsp;B. 23,5.</p>
+              <label class="check"><input type="checkbox" id="dimsEstimated" name="dimsEstimated"><span>Maße sind geschätzt, nicht gemessen</span></label>
+              <p class="field-error" id="dims-error" hidden></p>
+            </div>
+
+            <div class="field">
+              <label for="marking">Teilenummer oder Prägung <span class="opt">optional</span></label>
+              <input id="marking" name="marking" type="text" autocomplete="off" maxlength="80" aria-describedby="marking-hint">
+              <p class="hint" id="marking-hint">Steht oft auf der Rückseite, z.&nbsp;B. &gt;ABS&lt;.</p>
+            </div>
+            <div class="field">
+              <label for="color">Farbe <span class="opt">optional</span></label>
+              <input id="color" name="color" type="text" autocomplete="off" maxlength="60">
+            </div>
+            <div class="field field-short">
+              <label for="qty">Stückzahl <span class="req">Pflicht</span></label>
+              <input id="qty" name="qty" type="text" inputmode="numeric" autocomplete="off" maxlength="2" value="1" aria-describedby="qty-error">
+              <p class="field-error" id="qty-error" hidden></p>
+            </div>
+            <div class="field field-wide">
+              <label for="desc">Beschreibung <span class="req">Pflicht</span></label>
+              <textarea id="desc" name="desc" rows="5" maxlength="2000" aria-describedby="desc-hint desc-count desc-error"></textarea>
+              <p class="hint" id="desc-hint">Was ist kaputt oder fehlt? Wie ist das Teil befestigt? Gibt es ein Gegenstück?</p>
+              <p class="char-count" id="desc-count" aria-live="polite"></p>
+              <p class="field-error" id="desc-error" hidden></p>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Schritt 4 -->
+        <fieldset class="step" data-step="4" hidden>
+          <legend class="step-title"><span class="step-kicker">Schritt 4 von 5</span>Kontakt</legend>
+          <div class="fields">
+            <div class="field">
+              <label for="name">Name <span class="req">Pflicht</span></label>
+              <input id="name" name="name" type="text" autocomplete="name" maxlength="80" aria-describedby="name-error">
+              <p class="field-error" id="name-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="email">E-Mail <span class="req">Pflicht</span></label>
+              <input id="email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="120" aria-describedby="email-error">
+              <p class="field-error" id="email-error" hidden></p>
+            </div>
+            <div class="field">
+              <label for="phone">Telefon <span class="opt">optional</span></label>
+              <input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="40" aria-describedby="phone-error">
+              <p class="field-error" id="phone-error" hidden></p>
+            </div>
+            <div class="field field-wide">
+              <label class="check"><input type="checkbox" id="consent" name="consent" aria-describedby="consent-error"><span>Ich bin einverstanden, dass Camperteil meine Angaben und Fotos zur Prüfung der Anfrage verwendet und dafür an einen Fachbetrieb weitergibt. Details stehen in der <a href="datenschutz.html">Datenschutzerklärung</a>.</span></label>
+              <p class="field-error" id="consent-error" hidden></p>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Schritt 5 -->
+        <fieldset class="step" data-step="5" hidden>
+          <legend class="step-title"><span class="step-kicker">Schritt 5 von 5</span>Übersicht</legend>
+          <p class="hint">Prüfen Sie Ihre Angaben. Mit „Ändern“ springen Sie zum passenden Schritt, alles andere bleibt erhalten.</p>
+          <div class="summary" id="summary"></div>
+
+          <div class="send-box" id="send-box">
+            <h3>Wie geht es weiter?</h3>
+            <p data-send-off>Der Versand über diese Website ist noch nicht eingerichtet. Ihre Anfrage wurde <strong>nicht</strong> übertragen. Sie können die Angaben als Text kopieren oder als Datei speichern. Die Fotos sind darin nicht enthalten.</p>
+            <p data-send-on hidden>Mit „Anfrage senden“ werden Ihre Angaben und Fotos an Camperteil übertragen.</p>
+            <div class="send-actions">
+              <button type="submit" class="btn btn-primary" data-send-on hidden>Anfrage senden</button>
+              <button type="button" class="btn btn-primary" id="copy-btn" data-send-off>Angaben kopieren</button>
+              <button type="button" class="btn btn-quiet" id="save-btn">Als Textdatei speichern</button>
+            </div>
+            <p class="action-status" id="action-status" role="status" aria-live="polite"></p>
+            <label class="copy-fallback" for="copy-text" hidden>Text zum manuellen Kopieren
+              <textarea id="copy-text" rows="8" readonly></textarea>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="wizard-nav">
+          <button type="button" class="btn btn-quiet" data-prev hidden>Zurück</button>
+          <button type="button" class="btn btn-primary" data-next>Weiter</button>
+        </div>
+        <p class="draft-line"><span id="draft-state">Entwurf: noch nichts gespeichert.</span> <button type="button" class="link-btn" id="reset-btn">Alle Eingaben löschen</button></p>
+        <div class="confirm-reset" id="confirm-reset" hidden>
+          <p>Alle Eingaben und Fotos löschen?</p>
+          <button type="button" class="btn btn-danger btn-small" id="reset-yes">Ja, löschen</button>
+          <button type="button" class="btn btn-quiet btn-small" id="reset-no">Abbrechen</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- FRAGEN -->
+  <section class="section" id="fragen" aria-labelledby="fragen-title">
+    <div class="wrap faq-grid">
+      <header class="section-head">
+        <p class="eyebrow">Fragen</p>
+        <h2 id="fragen-title" class="h2">Was Sie vorher wissen sollten.</h2>
+      </header>
+      <div class="faq">
+        <details>
+          <summary>Was kostet eine Anfrage?</summary>
+          <p>Preise stehen noch nicht fest. Camperteil nennt auf dieser Website bewusst keine Preise, Lieferzeiten oder Pauschalen. Was ein Teil kosten würde, hängt vom Ergebnis der Prüfung ab.</p>
+        </details>
+        <details>
+          <summary>Passt das Teil dann sicher?</summary>
+          <p>Eine Passgarantie geben wir nicht. Je genauer Maße und Fotos sind, desto besser kann der Betrieb einschätzen, ob ein Teil passt. Das Ergebnis der Prüfung teilen wir Ihnen mit, bevor irgendetwas bestellt wird.</p>
+        </details>
+        <details>
+          <summary>Wer prüft meine Anfrage?</summary>
+          <p>Ein Fachbetrieb für Kunststoffteile. Wir haben zwei mögliche Partner angeschrieben. Eine Zusammenarbeit ist noch nicht bestätigt. Sobald sie steht, nennen wir den Betrieb hier.</p>
+        </details>
+        <details>
+          <summary>Welche Teile kommen infrage?</summary>
+          <p>Kleine Kunststoffteile aus älteren Wohnmobilen: Riegel, Griffe, Abdeckkappen, Blenden, Gitter, Rosetten, Endstücke. Große Karosserieteile, Fenster- oder Dachhaubenscheiben und Teile mit Elektronik gehören nicht dazu.</p>
+        </details>
+        <details>
+          <summary>Was passiert mit meinen Fotos?</summary>
+          <p>Derzeit nichts, denn der Versand ist noch nicht eingerichtet. Fotos verlassen Ihr Gerät nicht. Sie bleiben nur so lange in der Vorschau, wie diese Seite geöffnet ist.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<a class="mobile-cta btn btn-primary" href="#anfrage" data-mobile-cta>Ersatzteil anfragen</a>
+
+<footer class="site-footer">
+  <div class="wrap footer-row">
+    <div>
+      <p class="brand-word footer-word">Camperteil</p>
+      <p>Ein Angebot von Mattias Segato Consulting.</p>
+    </div>
+    <ul class="footer-links">
+      <li><a href="impressum.html">Impressum</a></li>
+      <li><a href="datenschutz.html">Datenschutz</a></li>
+    </ul>
+  </div>
+</footer>
+<!--BODY-END-->
+<script src="assets/js/app.js" defer></script>
+</body>
+</html>
