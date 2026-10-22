@@ -245,6 +245,7 @@
     if (!Number.isFinite(anchorValue)) throw Error("Ungültiger Stichtag");
     const byProduct = new Map();
     const uniqueDates = new Set();
+    const dayTotals = new Map(); // date -> units, to tell days recorded with zero sales from missing days
     for (const sale of dailySales) {
       const d = dayVal(sale.date);
       if (!Number.isFinite(d) || d > anchorValue || d <= anchorValue - 28 * 86400000) continue;
@@ -252,6 +253,7 @@
         qty = N(sale.quantity);
       if (!Number.isFinite(qty) || qty < 0) continue;
       uniqueDates.add(sale.date);
+      dayTotals.set(sale.date, (dayTotals.get(sale.date) || 0) + qty);
       const v = byProduct.get(sale.productId) || { w7: 0, w28: 0 };
       v.w28 += qty;
       if (age < 7) v.w7 += qty;
@@ -259,10 +261,16 @@
     }
     const recipeByProduct = new Map(recipes.filter((x) => (x.lines || []).length).map((x) => [x.productId, x]));
     const demand = new Map();
+    const invalidUnit = new Set(); // ingredient ids whose recipe quantity cannot be converted to the pack unit
+    const inRecipe = new Set(recipes.flatMap((r) => (r.lines || []).map((l) => l.ingredientId)));
     let missingRecipes = [],
-      missingCosts = [];
+      missingCosts = [],
+      unitsTotal = 0,
+      unitsWithRecipe = 0;
     for (const [productId, x] of byProduct) {
       const rec = recipeByProduct.get(productId);
+      unitsTotal += x.w28;
+      if (rec) unitsWithRecipe += x.w28;
       if (!rec) {
         missingRecipes.push(productId);
         continue;
@@ -280,6 +288,7 @@
         const loss = N(l.wastePct === "" || l.wastePct == null ? ing.wastePct : l.wastePct) || 0;
         if (qty === null || loss < 0 || loss >= 100) {
           missingCosts.push(ing.id);
+          invalidUnit.add(ing.id);
           continue;
         }
         const total = (servings * qty) / (1 - loss / 100);
@@ -294,13 +303,25 @@
     }
     const hasStock = new Set([...snapshots.values()].map((x) => x.ingredientId));
     const rows = [];
+    const noDays = uniqueDates.size === 0;
     for (const ing of ingredients) {
+      // Why the usage is what it is: computed, a real zero, or not determinable (then no order quantity).
+      const basis = demand.has(ing.id)
+        ? "computed"
+        : invalidUnit.has(ing.id)
+          ? "invalid-unit"
+          : !inRecipe.has(ing.id)
+            ? "not-in-recipe"
+            : noDays
+              ? "no-data"
+              : "no-sales";
+      const determinable = basis === "computed" || basis === "no-sales";
       const unit = baseUnit(ing.packUnit),
         usage = demand.get(ing.id) || 0,
         withSafety = usage * (1 + Math.max(0, N(wasteSafetyPct)) / 100),
         known = hasStock.has(ing.id),
         available = known ? stock.get(ing.id) : null,
-        need = known ? Math.max(0, withSafety - available) : null,
+        need = known && determinable ? Math.max(0, withSafety - available) : null,
         packBase = baseQuantity(ing.packQty, ing.packUnit),
         packs = need !== null && packBase > 0 ? Math.ceil(Math.max(0, need - 1e-8) / packBase) : null;
       rows.push({
@@ -315,13 +336,44 @@
         orderBase: packs === null ? null : R(packs * packBase),
         estimatedNet: packs === null ? null : R(packs * (N(ing.packCostNet) || 0)),
         validPrice: ingredientBaseCost(ing) !== null,
+        basis,
+        determinable,
       });
     }
+    // Data quality from several sources, not only the number of days: days, recipe coverage of the units sold,
+    // counted stock for the ingredients that are needed, and convertible units.
+    const needed = rows.filter((r) => r.basis === "computed");
+    const zeroDays = [...dayTotals.values()].filter((v) => v === 0).length;
+    const recipeShare = unitsTotal > 0 ? unitsWithRecipe / unitsTotal : null;
+    const stockShare = needed.length ? needed.filter((r) => r.stockBase !== null).length / needed.length : null;
+    const reasons = [];
+    if (uniqueDates.size < 21) reasons.push(`${28 - uniqueDates.size} von 28 Tagen ohne Tagesabsatz`);
+    if (recipeShare !== null && recipeShare < 0.9)
+      reasons.push(`nur ${Math.round(recipeShare * 100)} % der verkauften Einheiten mit Rezept`);
+    if (stockShare !== null && stockShare < 0.9)
+      reasons.push(`für ${needed.filter((r) => r.stockBase === null).length} benötigte Rohwaren kein gezählter Bestand`);
+    if (invalidUnit.size) reasons.push(`${invalidUnit.size} Rohwaren mit nicht umrechenbarer Einheit`);
+    const dataQuality = {
+      rating:
+        uniqueDates.size >= 21 && (recipeShare ?? 0) >= 0.9 && (stockShare ?? 0) >= 0.9 && !invalidUnit.size
+          ? "gut"
+          : uniqueDates.size >= 7 && (recipeShare ?? 0) >= 0.5
+            ? "eingeschränkt"
+            : "unzureichend",
+      observedDays: uniqueDates.size,
+      zeroDays,
+      missingDays: 28 - uniqueDates.size,
+      recipeShare,
+      stockShare,
+      reasons,
+    };
     return {
       rows,
       uniqueObservedDates: uniqueDates.size,
       dataDays: 28,
+      // Day coverage only (kept for compatibility); the overall rating is dataQuality.rating.
       quality: uniqueDates.size >= 21 ? "gut" : uniqueDates.size >= 7 ? "eingeschränkt" : "unzureichend",
+      dataQuality,
       missingRecipes: [...new Set(missingRecipes)],
       missingCosts: [...new Set(missingCosts)],
       demandProducts: byProduct.size,

@@ -2498,10 +2498,14 @@
   }
   function v4ForecastView() {
     const f = v4Forecast();
-    const rows = f.rows.filter((r) => r.requiredBase > 0 || r.stockBase !== null),
+    const rows = f.rows.filter((r) => r.requiredBase > 0 || r.stockBase !== null || r.determinable === false),
       real = rows.filter((r) => r.packs !== null),
       total = real.reduce((s, x) => s + x.estimatedNet, 0);
-    const unknown = rows.filter((x) => x.stockBase === null).length;
+    const unknown = rows.filter((x) => x.stockBase === null && x.determinable !== false).length,
+      notDeterminable = rows.filter((x) => x.determinable === false).length;
+    const q = f.dataQuality,
+      qLabel = { gut: "Datenbasis gut", eingeschränkt: "Datenbasis eingeschränkt", unzureichend: "Datenbasis unzureichend" }[q.rating];
+    const share = (x) => (x === null ? "–" : Math.round(x * 100) + " %");
     return (
       pageHeader(
         "PURCHASING INTELLIGENCE",
@@ -2511,17 +2515,26 @@
       ) +
       demoNotice() +
       v4NavPills("forecast") +
-      `<div class="v4-grid3">${v4TopCard("Geprüfte Tage", `${f.uniqueObservedDates}/28`, f.quality === "gut" ? "Gute Datenabdeckung" : "Unvollständige Daten – Prognose unsicher", "chart")}${v4TopCard("Bestellwert netto", euro(total), "Nur Rohwaren mit erfasstem Bestand", "calculator")}${v4TopCard("Bestand unbekannt", String(unknown), "Bestellmenge noch nicht berechenbar", "info")}</div><section class="panel"><div class="v4-toolbar"><div><h3>Szenario einstellen</h3><p>Gewichteter Absatz: 65 % aus dem Durchschnitt der letzten 7 Tage + 35 % aus 28 Tagen.</p></div><span class="tag tag-neutral">${esc(f.quality)}</span></div><form id="v4-forecast-form" class="v4-assumptions"><div class="field"><label>Bedarfszeitraum (Tage)</label><input name="days" type="number" min="1" max="90" value="${esc(S.v04Forecast.days)}"></div><div class="field"><label>Vorlauf / Lieferzeit (Tage)</label><input name="leadDays" type="number" min="0" max="30" value="${esc(S.v04Forecast.leadDays)}"></div><div class="field"><label>Sicherheitszuschlag (%)</label><input name="safetyPct" type="number" min="0" max="100" value="${esc(S.v04Forecast.safetyPct)}"></div><button class="btn btn-primary" type="submit">Forecast berechnen</button></form><div class="v4-forecast-note"><strong>Basis:</strong> ${f.demandProducts} Produkte mit Tagesabsatz, ${S.recipes.length} Rezepturen, ${S.ingredients.length} Rohwaren. ${f.missingRecipes.length ? `${f.missingRecipes.length} verkaufte Produkte ohne Rezept – deren Bedarf fehlt.` : "Alle erfassten Tagesverkäufe mit zugeordneten Rezepten."}</div></section><section class="panel"><div class="v4-toolbar"><h3>Bestellvorschlag je Rohware</h3><button class="btn" data-v4="export-order">${I("download")} CSV exportieren</button></div>${
+      `<div class="v4-grid3">${v4TopCard(qLabel, `${q.observedDays}/28 Tage`, q.reasons.length ? q.reasons.join(" · ") : "Tage, Rezepte und Bestände ausreichend erfasst", "chart")}${v4TopCard("Bestellwert netto", euro(total), "Nur ermittelbarer Bedarf mit gezähltem Bestand", "calculator")}${v4TopCard("Nicht berechenbar", String(unknown + notDeterminable), `${notDeterminable} ohne Verbrauchsgrundlage · ${unknown} ohne Bestand`, "info")}</div><section class="panel"><div class="v4-toolbar"><div><h3>Szenario einstellen</h3><p>Gewichteter Absatz: 65 % aus dem Durchschnitt der letzten 7 Tage + 35 % aus 28 Tagen.</p></div><span class="tag ${q.rating === "gut" ? "tag-good" : "tag-warn"}">${esc(qLabel)}</span></div><form id="v4-forecast-form" class="v4-assumptions"><div class="field"><label>Bedarfszeitraum (Tage)</label><input name="days" type="number" min="1" max="90" value="${esc(S.v04Forecast.days)}"></div><div class="field"><label>Vorlauf / Lieferzeit (Tage)</label><input name="leadDays" type="number" min="0" max="30" value="${esc(S.v04Forecast.leadDays)}"></div><div class="field"><label>Sicherheitszuschlag (%)</label><input name="safetyPct" type="number" min="0" max="100" value="${esc(S.v04Forecast.safetyPct)}"></div><button class="btn btn-primary" type="submit">Forecast berechnen</button></form><div class="v4-forecast-note"><strong>Datenbasis (letzte 28 Tage bis ${esc(v6DateDE(f.assumptions.referenceDate))}):</strong> ${q.observedDays} Tage mit Tagesabsatz${q.zeroDays ? `, davon ${q.zeroDays} ausdrücklich ohne Verkauf` : ""}; ${q.missingDays === 1 ? "1 Tag fehlt und zählt" : `${q.missingDays} Tage fehlen und zählen`} nicht als null. ${f.demandProducts} verkaufte Produkte, ${share(q.recipeShare)} der verkauften Einheiten mit Rezept, ${share(q.stockShare)} der benötigten Rohwaren mit gezähltem Bestand. ${
+        f.missingRecipes.length
+          ? `Ohne Rezept verkauft: ${esc(
+              f.missingRecipes
+                .map((id) => S.items.find((p) => p.id === id)?.name || id)
+                .slice(0, 6)
+                .join(", "),
+            )}${f.missingRecipes.length > 6 ? " …" : ""} – deren Rohwarenverbrauch fehlt.`
+          : ""
+      }</div></section><section class="panel"><div class="v4-toolbar"><h3>Bestellvorschlag je Rohware</h3><button class="btn" data-v4="export-order">${I("download")} CSV exportieren</button></div>${
         rows.length
-          ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Rohware</th><th class="align-right">Prognosebedarf inkl. Sicherheit</th><th class="align-right">Bestand</th><th class="align-right">Bestellgebinde</th><th class="align-right">Einkaufswert netto</th><th>Hinweis</th></tr></thead><tbody>${rows
+          ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Rohware</th><th class="align-right">Prognosebedarf inkl. Sicherheit</th><th class="align-right">Bestand</th><th class="align-right">Bereits bestellt</th><th class="align-right">Bestellgebinde</th><th class="align-right">Einkaufswert netto</th><th>Hinweis</th></tr></thead><tbody>${rows
               .sort((a, b) => (b.estimatedNet || 0) - (a.estimatedNet || 0))
               .map(
                 (x) =>
-                  `<tr><td><strong>${esc(x.name)}</strong><small style="display:block;color:var(--muted)">Gebinde ${esc(String(v4Ing(x.id)?.packQty || ""))} ${esc(v4Ing(x.id)?.packUnit || "")}</small></td><td class="align-right">${v4Qty(x.requiredWithSafety, x.unit)}</td><td class="align-right">${x.stockBase === null ? "Unbekannt" : v4Qty(x.stockBase, x.unit)}</td><td class="align-right"><strong>${x.packs === null ? "—" : x.packs}</strong></td><td class="align-right">${x.estimatedNet === null ? "—" : euro(x.estimatedNet)}</td><td>${x.packs === null ? '<span class="tag tag-warn">Inventur fehlt</span>' : x.packs === 0 ? '<span class="tag tag-good">Bedarf gedeckt</span>' : '<span class="tag tag-neutral">Prüfen</span>'}</td></tr>`,
+                  `<tr><td><strong>${esc(x.name)}</strong><small style="display:block;color:var(--muted)">Gebinde ${esc(String(v4Ing(x.id)?.packQty || ""))} ${esc(v4Ing(x.id)?.packUnit || "")}</small></td><td class="align-right">${x.determinable === false ? "nicht ermittelbar" : v4Qty(x.requiredWithSafety, x.unit)}</td><td class="align-right">${x.stockBase === null ? "Unbekannt" : v4Qty(x.stockBase, x.unit)}</td><td class="align-right">${x.reservedPacks ? `${x.reservedPacks} Gebinde` : "—"}</td><td class="align-right"><strong>${x.packs === null ? "—" : x.packs}</strong></td><td class="align-right">${x.estimatedNet === null ? "—" : euro(x.estimatedNet)}</td><td>${((st) => `<span class="tag tag-${st.tone}">${esc(st.text)}</span>`)(v4RowStatus(x))}</td></tr>`,
               )
               .join("")}</tbody></table></div>`
           : v4TableEmpty("Noch kein Rohwarenbedarf", "Importiere Tagesumsätze und erfasse Rezepturen.")
-      }<div class="v4-footnote">Der Vorschlag berücksichtigt keine Wareneingänge, Reservierungen, Verderb-/MHD-Verläufe, Mindestbestellwerte, Saisonalität oder Bestellungen in Transit. Unvollständige Daten können zu falschen Mengen führen; vor einer Bestellung immer manuell prüfen.</div></section><section class="panel">${panelHeader("Tagesabsatz ergänzen", "Für belastbarere 7-/28-Tage-Verläufe")}<div class="v4-two"><div><button class="btn btn-primary" data-v4="daily-modal">${I("plus")} Tagesverkauf erfassen</button><p class="v4-p">Bestehende Monatsumsätze reichen für Tagesprognosen nicht aus. Tagesverkauf getrennt importieren, idealerweise aus der Kasse mit Produkt und Datum.</p></div><div class="v4-list v4-scroll">${
+      }<div class="v4-footnote"><strong>Berücksichtigt:</strong> letzte Inventur je Lager plus seither gebuchte Warenbewegungen (Wareneingänge, Transfers, Schwund) und den Rezeptverbrauch aus Tagesabsätzen; Bestellungen mit Status „Bestellt“ werden vom Bedarf abgezogen. <strong>Nicht berücksichtigt:</strong> Entwürfe, Verderb/MHD, Mindestbestellwerte, Saisonalität, Aktionen. Vor einer Bestellung Mengen prüfen.</div></section><section class="panel">${panelHeader("Tagesabsatz ergänzen", "Für belastbarere 7-/28-Tage-Verläufe")}<div class="v4-two"><div><button class="btn btn-primary" data-v4="daily-modal">${I("plus")} Tagesverkauf erfassen</button><p class="v4-p">Bestehende Monatsumsätze reichen für Tagesprognosen nicht aus. Tagesverkauf getrennt importieren, idealerweise aus der Kasse mit Produkt und Datum.</p></div><div class="v4-list v4-scroll">${
         [...S.dailySales]
           .sort((a, b) => b.date.localeCompare(a.date))
           .slice(0, 12)
@@ -3025,20 +3038,51 @@
     toast(`${ing.name}: ${v4Qty(baseQty, V4.baseUnit(ing.packUnit))} gezählt.`);
   }
   const v4Csv = (v) => String(v ?? "").replace(/"/g, '""');
+  // One status per forecast row, used by the table and the CSV: a value that cannot be determined is never "covered".
+  const V4_BASIS = {
+    "not-in-recipe": "Verbrauch nicht ermittelbar: in keinem Rezept verwendet",
+    "invalid-unit": "Verbrauch nicht ermittelbar: Rezeptmenge passt nicht zur Gebindeeinheit",
+    "no-data": "Verbrauch nicht ermittelbar: keine Tagesabsätze",
+  };
+  function v4RowStatus(r) {
+    if (V4_BASIS[r.basis]) return { text: V4_BASIS[r.basis], tone: "warn" };
+    if (r.stockBase === null) return { text: "Bestand unbekannt: Inventur fehlt", tone: "warn" };
+    if (r.packs === 0 && r.reservedPacks > 0) return { text: "Durch offene Bestellung gedeckt", tone: "good" };
+    if (r.packs === 0) return { text: r.basis === "no-sales" ? "Kein Verbrauch im Zeitraum" : "Bedarf gedeckt", tone: "good" };
+    return { text: "Bestellen: Menge prüfen", tone: "neutral" };
+  }
   function v4ExportOrder() {
     const f = v4Forecast(),
-      head = ["Rohware", "Einheit", "Bedarf mit Sicherheit", "Bestand", "Bestellgebinde", "Einkaufswert Netto", "Status"];
+      head = [
+        "Rohware",
+        "Einheit",
+        "Bedarf mit Sicherheit",
+        "Bestand",
+        "Bestellgebinde",
+        "Einkaufswert Netto",
+        "Status",
+        "Bereits bestellt (Gebinde)",
+        "Grundlage",
+      ];
     const lines = [
       head.join(";"),
       ...f.rows.map((r) =>
         [
           r.name,
           r.unit,
-          r.requiredWithSafety,
+          r.determinable === false ? "nicht ermittelbar" : r.requiredWithSafety,
           r.stockBase === null ? "unbekannt" : r.stockBase,
           r.packs === null ? "nicht berechenbar" : r.packs,
           r.estimatedNet === null ? "" : r.estimatedNet,
-          r.stockBase === null ? "Bestand fehlt" : "Prüfen",
+          v4RowStatus(r).text,
+          r.reservedPacks || 0,
+          {
+            computed: "aus Absatz und Rezepten",
+            "no-sales": "kein Absatz im Zeitraum",
+            "not-in-recipe": "nicht ermittelbar",
+            "invalid-unit": "nicht ermittelbar",
+            "no-data": "nicht ermittelbar",
+          }[r.basis] || "",
         ]
           .map((x) => '"' + v4Csv(x) + '"')
           .join(";"),
@@ -3341,11 +3385,39 @@
   Object.assign(labels, { operations: "Mission Control", orders: "Bestellungen", stockledger: "Warenbewegungen", setup: "Einrichtung" });
   v5Nav();
   function v5Toolbar() {
-    return `<div class="v5-ribbon"><span class="v5-dot"></span> ${S.mode === "own" ? "MEIN BETRIEB" : "DEMO-MODUS"} <span class="v5-ribbon-sep">/</span> ${esc(S.business)} <span class="v5-ribbon-sep">/</span> Daten nur lokal <button class="v5-plain" data-action="export-json">Backup sichern ↗</button></div>`;
+    return `<div class="v5-ribbon"><span class="v5-dot"></span> ${S.mode === "own" ? "MEIN BETRIEB" : "BEISPIELDATEN"} <span class="v5-ribbon-sep">/</span> ${esc(S.business)} <span class="v5-ribbon-sep">/</span> ${window.GLB_CLOUD_ENABLED ? "Cloud-Arbeitsbereich" : "Daten nur in diesem Browser"} <button class="v5-plain" data-action="export-json">Backup sichern ↗</button></div>`;
   }
   function v5Readiness() {
     const ready = V5.readiness(S);
     return `<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">SETUP-CHECKLISTE</div><h2>In 6 Schritten zu nutzbaren Auswertungen</h2><p>Die Prognosen werden erst mit deinen eigenen, vollständigen Daten belastbar.</p></div>${v5Tag(`${ready.filter((x) => x.ready).length} / 6 erledigt`, "blue")}</div><div class="v5-checkgrid">${ready.map((x) => `<button data-view="${x.view}" class="v5-checkrow"><span class="v5-check-icon ${x.ready ? "done" : ""}">${x.ready ? I("check") : I("chevron")}</span><span><b>${esc(x.title)}</b><small>${esc(x.hint)}</small></span><span class="v5-arr">↗</span></button>`).join("")}</div></section>`;
+  }
+  // Data completeness, separate from the setup steps: which articles can be calculated and why not.
+  function v5Completeness() {
+    const c = V5.completeness(S),
+      pctOf = (a, b) => (b ? Math.round((100 * a) / b) : 0);
+    const line = (ok, title, detail, view) =>
+      `<button data-view="${view}" class="v5-checkrow"><span class="v5-check-icon ${ok ? "done" : ""}">${ok ? I("check") : I("alert")}</span><span><b>${esc(title)}</b><small>${esc(detail)}</small></span><span class="v5-arr">↗</span></button>`;
+    return `<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">DATENVOLLSTÄNDIGKEIT</div><h2>Wie belastbar sind die Zahlen?</h2><p>Unabhängig davon, ob jeder Einrichtungsschritt einmal erledigt wurde.</p></div>${v5Tag(`${c.calculable} / ${c.items} Artikel kalkulierbar`, c.calculable === c.items ? "green" : "amber")}</div><div class="v5-progress" role="img" aria-label="${pctOf(c.calculable, c.items)} Prozent der Artikel kalkulierbar"><i style="width:${pctOf(c.calculable, c.items)}%"></i></div><div class="v5-checkgrid">${line(c.calculable === c.items, `${c.recipe} mit Rezept, ${c.direct} mit direktem Einkaufspreis`, "Direktverkauf (z. B. Flaschengetränke) braucht kein Rezept, nur einen Einkaufspreis.", "products")}${line(
+      !c.withoutCost.length,
+      c.withoutCost.length ? `${c.withoutCost.length} Artikel ohne verwertbare Kosten` : "Alle Artikel mit Kosten",
+      c.withoutCost.length
+        ? `${c.soldWithoutCost.length} davon verkauft: ${c.withoutCost
+            .slice(0, 4)
+            .map((x) => x.name)
+            .join(", ")}${c.withoutCost.length > 4 ? " …" : ""}`
+        : "DB I und DB II sind für alle Artikel berechenbar.",
+      "recipes",
+    )}${line(!c.recipeIncomplete, c.recipeIncomplete ? `${c.recipeIncomplete} Rezepte unvollständig` : "Rezepte vollständig", "Zutat ohne Preis, unbekannte Zutat oder Einheit nicht umrechenbar.", "recipes")}${line(
+      !c.ingredientsWithoutPrice.length,
+      c.ingredientsWithoutPrice.length
+        ? `${c.ingredientsWithoutPrice.length} von ${c.ingredients} Rohwaren ohne gültigen Preis`
+        : "Alle Rohwaren mit Preis",
+      c.ingredientsWithoutPrice
+        .slice(0, 4)
+        .map((x) => x.name)
+        .join(", ") || "Gebindepreis und Gebindegröße hinterlegt.",
+      "recipes",
+    )}</div></section>`;
   }
   function v5Snapshot() {
     const st = v5State(),
@@ -3389,7 +3461,7 @@
       ) +
       demoNotice() +
       v5Toolbar() +
-      `<div class="v5-metrics"><div><small>SETUP-FORTSCHRITT</small><b>${good}/6</b><span>Arbeitsschritte erledigt</span></div><div><small>BESTELLUNGEN OFFEN</small><b>${orders.draft + orders.ordered}</b><span>${v5Price(orders.openTotal)} geplantes Volumen</span></div><div><small>MINDESTBESTAND</small><b>${danger.length}</b><span>Unterschreitungen nach Schätzung</span></div><div><small>BESTAND UNBEKANNT</small><b>${notCounted}</b><span>Rohwaren ohne Inventur</span></div></div><div class="v5-ops-columns"><div>${v5Readiness()}<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">ARBEITSABLÄUFE</div><h2>Was steht heute an?</h2></div></div><div class="v5-actions-grid">${v5CommandLinks()}</div></section></div><div><section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">INTELLIGENCE / HINWEISE</div><h2>Handlungsbedarf</h2></div></div><div class="v5-alerts">${notCounted ? `<button data-view="inventory" class="v5-alert">${I("alert")} <span><b>${notCounted} Rohwaren ohne Zählung</b><small>Vor der Bestellung Bestand prüfen.</small></span>→</button>` : ""}${danger.length ? `<button data-view="stockledger" class="v5-alert">${I("alert")}<span><b>${danger.length} Bestände unter Minimum</b><small>Prognose und Buchungen abgleichen.</small></span>→</button>` : ""}${errors ? `<button data-view="stockledger" class="v5-alert">${I("alert")}<span><b>${errors} Verbrauchszuordnungen offen</b><small>Lagerzuordnung für Rohwaren prüfen.</small></span>→</button>` : ""}${f.quality !== "gut" ? `<button data-view="purchasing" class="v5-alert">${I("info")}<span><b>Absatzhistorie: ${esc(f.quality)}</b><small>28 Tage vollständig importieren.</small></span>→</button>` : ""}${!danger.length && !notCounted && !errors && f.quality === "gut" ? '<p class="v5-empty-line">Keine automatischen Hinweise aus den vorhandenen Daten.</p>' : ""}</div></section><section class="v5-panel v5-note"><div class="v5-eyebrow">DATENSICHERHEIT</div><h2>Lokal ist nicht automatisch synchron.</h2><p>Regelmäßig JSON-Backups sichern. Auf einem anderen PC oder in einer anderen Browseradresse liegen die Daten nicht automatisch vor.</p><button class="btn" data-action="export-json">JSON-Backup herunterladen</button></section></div></div>`
+      `<div class="v5-metrics"><div><small>EINRICHTUNG</small><b>${good}/6</b><span>Schritte mindestens einmal erledigt</span></div><div><small>KALKULIERBARE ARTIKEL</small><b>${V5.completeness(S).calculable}/${S.items.length}</b><span>mit Rezept oder Einkaufspreis</span></div><div><small>BESTELLUNGEN OFFEN</small><b>${orders.draft + orders.ordered}</b><span>${v5Price(orders.openTotal)} geplantes Volumen</span></div><div><small>MINDESTBESTAND</small><b>${danger.length}</b><span>Unterschreitungen nach Schätzung</span></div><div><small>BESTAND UNBEKANNT</small><b>${notCounted}</b><span>Rohwaren ohne Inventur</span></div></div><div class="v5-ops-columns"><div>${v5Readiness()}${v5Completeness()}<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">ARBEITSABLÄUFE</div><h2>Was steht heute an?</h2></div></div><div class="v5-actions-grid">${v5CommandLinks()}</div></section></div><div><section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">INTELLIGENCE / HINWEISE</div><h2>Handlungsbedarf</h2></div></div><div class="v5-alerts">${notCounted ? `<button data-view="inventory" class="v5-alert">${I("alert")} <span><b>${notCounted} Rohwaren ohne Zählung</b><small>Vor der Bestellung Bestand prüfen.</small></span>→</button>` : ""}${danger.length ? `<button data-view="stockledger" class="v5-alert">${I("alert")}<span><b>${danger.length} Bestände unter Minimum</b><small>Prognose und Buchungen abgleichen.</small></span>→</button>` : ""}${errors ? `<button data-view="stockledger" class="v5-alert">${I("alert")}<span><b>${errors} Verbrauchszuordnungen offen</b><small>Lagerzuordnung für Rohwaren prüfen.</small></span>→</button>` : ""}${f.quality !== "gut" ? `<button data-view="purchasing" class="v5-alert">${I("info")}<span><b>Absatzhistorie: ${esc(f.quality)}</b><small>28 Tage vollständig importieren.</small></span>→</button>` : ""}${!danger.length && !notCounted && !errors && f.quality === "gut" ? '<p class="v5-empty-line">Keine automatischen Hinweise aus den vorhandenen Daten.</p>' : ""}</div></section><section class="v5-panel v5-note"><div class="v5-eyebrow">DATENSICHERHEIT</div><h2>Lokal ist nicht automatisch synchron.</h2><p>Regelmäßig JSON-Backups sichern. Auf einem anderen PC oder in einer anderen Browseradresse liegen die Daten nicht automatisch vor.</p><button class="btn" data-action="export-json">JSON-Backup herunterladen</button></section></div></div>`
     );
   }
   function v5StockOverview() {
@@ -3642,6 +3714,17 @@
     });
     if (lines.some((l) => !l.warehouseId))
       return toast("Mindestens eine Rohware hat mehrere Lager. Bitte bei Warenbewegungen das Standardlager festlegen.", "error");
+    // Drafts are not deducted from the forecast: a second draft for the same raw goods would order them twice.
+    const drafts = S.purchaseOrders.filter(
+      (o) => o.status === "draft" && (o.lines || []).some((l) => lines.some((x) => x.ingredientId === l.ingredientId)),
+    );
+    if (
+      drafts.length &&
+      !confirm(
+        `Für ${lines.filter((x) => drafts.some((o) => o.lines.some((l) => l.ingredientId === x.ingredientId))).length} dieser Rohwaren gibt es schon einen offenen Entwurf (${drafts.map((o) => o.code).join(", ")}). Entwürfe werden nicht vom Bedarf abgezogen.\n\nTrotzdem einen weiteren Entwurf anlegen?`,
+      )
+    )
+      return navigate("orders");
     v5MakeOrder(lines);
   }
   function v5ManualOrder() {
@@ -3715,6 +3798,8 @@
   function v5Receive(id) {
     const order = S.purchaseOrders.find((o) => o.id === id);
     if (!order || order.status !== "ordered") return toast("Bestellung nicht offen.", "error");
+    if (S.stockMovements.some((m) => m.orderId === order.id && m.type === "receipt"))
+      return toast(`Wareneingang für ${order.code} ist bereits gebucht. Keine zweite Buchung.`, "error");
     const items = order.lines.map((l) => `${v4Ing(l.ingredientId)?.name || "?"}: ${l.packs} Gebinde`).join("\n");
     if (
       !confirm(

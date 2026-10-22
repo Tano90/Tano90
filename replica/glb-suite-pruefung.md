@@ -62,3 +62,16 @@ Legende: **bestätigt** = am Code bzw. im Test nachgestellt; **behoben** = Ursac
 | 12 | Anmelden, Neuladen, Abmelden, zwei Sitzungen, Offline, Rollen in der Oberfläche | geprüft | Cloud-Modus im Browser gegen einen Test-Server mit denselben Regeln wie SQL 002 | SC-1 bis SC-5 |
 
 **Nicht prüfbar in dieser Umgebung:** echtes Supabase-Projekt (Netzwerk gesperrt, keine Zugangsdaten), E-Mail-Bestätigung und Passwort-Zurücksetzen über Supabase, Verhalten der produktiven Datenbank. Die SQL-Dateien sind unverändert die aus der Übergabe.
+
+### Forecast, Datenqualität, Einkauf
+
+| # | Befund | Status | Ursache / Änderung | Test |
+| --- | --- | --- | --- | --- |
+| 13 | Kaffeebohnen ohne Rezept: 0 g, „Bedarf gedeckt“ | bestätigt, behoben | Rohwaren ohne Rezeptverwendung bekamen Verbrauch 0. Jetzt Grundlage je Rohware: berechnet / kein Absatz im Zeitraum (echte Null) / nicht ermittelbar (in keinem Rezept, Einheit nicht umrechenbar, keine Tagesabsätze) mit Grund; nicht ermittelbare Positionen ohne Bestellmenge, alle anderen werden weiter berechnet | v09.test, SF-1 |
+| 14 | „Gute Datenabdeckung“ nur aus Tagen | bestätigt, behoben | Bewertung aus Tagen, Rezeptanteil der verkauften Einheiten, gezähltem Bestand der benötigten Rohwaren, umrechenbaren Einheiten; Gründe werden genannt. Fehlende Tage vs. Tage mit 0 Verkäufen getrennt ausgewiesen | v09.test |
+| 15 | Mission Control „6/6 erledigt“ bei 4 von 12 Rezepten | bestätigt, behoben | Einrichtung (Schritt einmal erledigt) und Datenvollständigkeit getrennt: kalkulierbare Artikel (Rezept oder direkter Einkaufspreis für Direktverkauf), unvollständige Rezepte, Rohwaren ohne Preis | v09.test |
+| 16 | Veralteter Hinweis „berücksichtigt keine Wareneingänge“ | bestätigt, behoben | Text nennt jetzt, was eingeht (Inventur + Bewegungen + offene Bestellungen) und was nicht (Entwürfe, MHD, Mindestmengen) | SF-1 |
+| 17 | Doppelte Bestellung desselben Bedarfs | teilweise bestätigt, behoben | „Bestellt“ wurde schon abgezogen; Entwürfe nicht. Neuer Entwurf für Rohwaren mit offenem Entwurf fragt nach; Spalte „Bereits bestellt“ | SF-1 |
+| 18 | Doppelter Wareneingang | geprüft, abgesichert | Status verhinderte die zweite Buchung bereits; zusätzlich Sperre, wenn für die Bestellung schon Eingangsbewegungen existieren (z. B. nach Wiederherstellung) | SF-1 |
+| 19 | „Daten nur lokal“ in Mission Control auch im Cloud-Betrieb | bestätigt, behoben | Text nach tatsächlichem Speicherort | – |
+| 20 | Einkaufsablauf | geprüft, funktioniert | Forecast 641,20 € → Entwurf → bestellt (nur Status, kein Versand) → Wareneingang → Bewegung → Bestand 22 + 4 × 20 = 102 Stk → Forecast 0 € | SF-1 |

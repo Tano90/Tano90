@@ -170,7 +170,13 @@
         view: "recipes",
         hint: `${ingredients.length} Rohwaren`,
       },
-      { id: "recipes", title: "Rezepturen verknüpfen", ready: links.length > 0, view: "recipes", hint: `${links.length} Rezepte` },
+      {
+        id: "recipes",
+        title: "Rezepturen verknüpfen",
+        ready: links.length > 0,
+        view: "recipes",
+        hint: `${new Set(links.map((r) => r.productId)).size} von ${items.length} Artikeln mit Rezept`,
+      },
       { id: "warehouses", title: "Lager einrichten", ready: warehouses.length > 0, view: "inventory", hint: `${warehouses.length} Lager` },
       { id: "counts", title: "Erste Inventur durchführen", ready: inv > 0, view: "inventory", hint: `${inv} Zählungen` },
       {
@@ -182,5 +188,35 @@
       },
     ];
   }
-  return { inventoryState, orderStats, receiveOrder, readiness, validDate, round };
+  // How complete the business data is, apart from whether each setup step was done once. A article counts as
+  // calculable with a recipe or with a directly entered purchase price (drinks, bought-in desserts).
+  function completeness({ items = [], ingredients = [], recipes = [], sales = [] }) {
+    const withRecipe = new Set(recipes.filter((r) => (r.lines || []).length).map((r) => r.productId));
+    const recipeCost = (id) => {
+      const r = recipes.find((x) => x.productId === id && (x.lines || []).length);
+      return r ? V4.recipeCalculation(r, ingredients) : null;
+    };
+    const rows = items.map((p) => {
+      const calc = recipeCost(p.id);
+      const kind = calc ? (calc.valid ? "recipe" : "recipe-incomplete") : Number(p.costNet) > 0 ? "direct" : "none";
+      return { id: p.id, name: p.name, kind };
+    });
+    const sold = new Set(sales.filter((x) => Number(x.quantity) > 0).map((x) => x.productId));
+    const count = (k) => rows.filter((r) => r.kind === k).length;
+    const ingredientsWithoutPrice = ingredients.filter((i) => V4.ingredientBaseCost(i) === null);
+    return {
+      items: items.length,
+      withRecipe: withRecipe.size,
+      recipe: count("recipe"),
+      recipeIncomplete: count("recipe-incomplete"),
+      direct: count("direct"),
+      none: count("none"),
+      calculable: count("recipe") + count("direct"),
+      soldWithoutCost: rows.filter((r) => (r.kind === "none" || r.kind === "recipe-incomplete") && sold.has(r.id)),
+      withoutCost: rows.filter((r) => r.kind === "none" || r.kind === "recipe-incomplete"),
+      ingredients: ingredients.length,
+      ingredientsWithoutPrice,
+    };
+  }
+  return { inventoryState, orderStats, receiveOrder, readiness, completeness, validDate, round };
 });
