@@ -135,3 +135,122 @@ Lebenszyklen, Mein Markt, Speisekartenimport, Rezepte & Rohwaren, Deckungsbeitr�
 Inventur & Lager (mehrere Lager), Warenbewegungen, Bestell-Forecast, Bestellungen (Entwurf → Wareneingang),
 Report Studio, GLB Intelligence, Datenimport, Einrichtung, Einstellungen (Backup, Rollen, Einladungen).
 Nachweis: bestehende 92 Unit-, 8 SQL- und 53 Browser-Tests laufen weiter.
+
+## 4. Ergebnis je Funktion (Stand nach Integration)
+
+Legende: **übernommen** = Funktion der ZIP in der integrierten App vorhanden und per Test belegt; **verbessert** = zusätzlich
+Fehler behoben oder erweitert (Abschnitt 5); **angepasst** = technisch anders umgesetzt, Funktion gleichwertig.
+
+| Bereich | Funktion | Status | Ort in der Suite | Test |
+| --- | --- | --- | --- | --- |
+| Cockpit | Brutto/Netto, DB I, WE-Quote, Outlet-/Monatsfilter, Monatsdiagramm, Hinweise, Schnellzugriffe, Demo-Kennzeichnung, fehlende Kosten | übernommen | Management-Cockpit | zip-core, SV-2, SC-7 |
+| Monatsimport | CSV mit Vorschau/Diagnose, Zuordnung Artikel/Outlet, Monat/Menge/Bruttopreis | übernommen | Verkauf & Monatsimport | zip-core, SV-3 |
+| | Steuer- und Kostensnapshot je Zeile | übernommen, auch im bisherigen Datenimport | Verkauf & Monatsimport, Datenimport | SV-3 |
+| | Wiederholungsprüfung Dateiinhalt + Zeile | übernommen | Verkauf & Monatsimport | SV-3 |
+| | Vorlage, CSV-Export | verbessert: Auswahl oder alles | Verkauf & Monatsimport | SV-3 |
+| | WE bewusst nachtragen, Snapshots unverändert | verbessert (Formularfehler RC1) | Menu Engineering | SV-4 |
+| Menu Engineering | Star/Renner/Puzzle/Penner, Suche, Filter, Empfehlungen, „WE fehlt“, Methodik | übernommen | Menu Engineering | zip-core, SV-4 |
+| Inventur | Positionen, Einheit, Ist/Mindest/Ziel, Lieferant, Korrektur, Vorschlag Ziel − Ist, Export | übernommen | Mindestbestände | SV-7 |
+| | Versionskonflikt | angepasst: Version je Position + Revisionsprüfung des Arbeitsbereichs | Mindestbestände | SV-7, SC-2, SQL |
+| Team | Aufgaben, Priorität, Fälligkeit, Status, rollenabhängig, Schulung aus Funnel | übernommen | Team & Aufgaben | SV-5, SV-8, SC-7, SQL |
+| Tagesfunnel | Bonpositionen, Tag-/Outletfilter, eindeutige Bons, Gäste nur bei vollständiger Basis, Brutto/Netto/DB I, Themenzuordnung, Zielquoten, Potenziale, Szenarien, sechs Themen | übernommen | Tagesfunnel (Kassenbons) | zip-intelligence, fixes, SV-5, SC-6 |
+| | Leerzustand, Gästekonflikte, Storno/Korrektur, Überschneidungen zur Prüfung, Zuordnung ohne Groß-/Kleinschreibung | verbessert | Tagesfunnel | fixes, SV-5, SQL |
+| | Cloud 90 Tage sichtbar, längere Zeiträume serverseitig | verbessert | Tagesfunnel | SC-6, SQL |
+| Funnel Quest | 6 Missionen, Hinweise, Fragen, Antworten, Feedback, 100 XP, Punkte, Stufe, Fortschritt, Tageslimit, Schutz eigener Ergebnisse, Verknüpfung mit Potenzial | übernommen | Funnel Quest | zip-intelligence, SV-6, SC-6, SQL |
+| | Bewertung auf dem Server | verbessert | RPC `glb_submit_training` | SQL, SC-6 |
+| KI-Marktcheck | Beobachtungen mit Quelle/Prüfdatum, eigenes vs. Konkurrenzprodukt, Abweichung, OSM-Umfeld mit Radius 1/2/5 km, optionale KI, Kennzeichnung ungeprüfter Eingaben | übernommen | KI-Marktcheck | zip-intelligence, SV-9, api |
+| | Zeitlimits, Tageslimit, Klartextfehler, fehlender Schlüssel ≠ Ergebnis; Umfeldsuche auch in der Demo | verbessert | Server-Routen | api |
+| Weitere | Anmeldung/Sitzung | angepasst: Anmeldung der Suite, Konfiguration aus der Server-Umgebung statt Eingabe im Browser | Konto | SC-1, SC-8 |
+| | Mandantentrennung, Rollen | übernommen (006) | SQL | rls, rls-v11 |
+| | Audit | angepasst: Speicherungen, Kassenpositionen, Training | `glb_audit_events` | rls-v11 |
+| | JSON-Backup, Demo-Modus, Demo-Reset | übernommen, Reset korrigiert | Einstellungen | SV-10 |
+| | PWA, Offline-Demo | übernommen (gemeinsamer Service Worker) | – | pwa |
+| | Lesende Legacy-Brücke | angepasst: Strukturcheck des Arbeitsbereichs (die alten Module sind in derselben App) | Strukturcheck | SV-11 |
+| | Signierter POS-Webhook | verbessert | `/api/suite/pos/ingest` | api, rls-v11 |
+| | Tests, Beispieldateien | übernommen | `suite-tests/v11`, `suite-v11-original` | – |
+
+Alle bisherigen Module bleiben unverändert verfügbar (Liste in Abschnitt 3). Der verbrauchsbasierte Bestell-Forecast,
+Lager, Warenbewegungen, Bestellungen, Renner-Penner (DB II) und Mein Markt (20 km) stehen neben den neuen Modulen;
+die neuen Ansichten verlinken jeweils dorthin.
+
+## 5. Behobene Fehler und Verbesserungen
+
+| # | Fehler in RC1 bzw. Lücke | Ursache | Korrektur | Test |
+| --- | --- | --- | --- | --- |
+| V1 | „Bestand ändern“ und „WE nachtragen“ speichern nie, Meldung „form.id.startsWith is not a function“ (im Browser am Original nachgestellt) | Formularfeld `name="id"` überdeckt `form.id` | Formular-ID per `getAttribute("id")` | SV-4, SV-7 |
+| V2 | `numberDE("0.001")` = 1 | Tausender-Muster ohne Prüfung der ersten Gruppe | Gruppe darf nicht mit 0 beginnen; eigener Parser `numberInput` für Zahlenfelder (Punkt), `numberDE` für deutsche Texte/CSV | fixes |
+| V3 | Leerer Tagesfunnel: `guestComplete: true`, DB 0 | `every()` auf leerer Liste; `costMissing === 0` | Leerzustand (`empty`, `guestStatus`), DB `null` ohne Daten; echte Null bleibt 0 % | fixes |
+| V4 | Demo zurücksetzen lässt Tagesfunnel/Training leer bis zum Neuladen | `resetLocal()` ohne `initializeIntelligence` | Initialisierung bei jedem Laden/Zurücksetzen über den gemeinsamen Ensure-Hook | SV-10 |
+| V5 | Zuordnung Artikel→Thema: Demo ohne, Cloud mit Groß-/Kleinschreibung | Cloud patchte per exaktem Namen | eine Funktion `applyStageMappings` für beide Wege; SQL vergleicht `lower(trim())` | fixes, rls-v11 |
+| V6 | Quizpunkte vom Browser gesendet | Insert mit `correct/points` aus dem Client | RPC bewertet mit Lösungsschlüssel, keine Insert-Rechte, Schlüssel nicht lesbar | rls-v11, SC-6 |
+| V7 | Monatsexport ignoriert Filter | Export auf `state.data.sales` | zwei Schaltflächen: Auswahl / alles, Dateiname nennt die Auswahl | SV-3 |
+| V8 | Mobile Navigation: vier Module heißen „Team“ | Fallback-Beschriftung | gemeinsame Navigation der Suite, Beschriftungen eindeutig (Prüfung beim Registrieren) | SV-1, SV-M1 |
+| V9 | Widersprüchliche Gästezahlen aus verschiedenen Quellen unbemerkt | nur innerhalb einer Datei geprüft | Konflikt je Bon erkannt, Gäste dann „unbekannt“ | fixes |
+| V10 | Überschneidung CSV/Webhook bzw. geänderte Dateien doppelt | Schlüssel nur Datei+Zeile | Positions-ID sicher; gleicher Inhalt aus anderer Quelle → zur Prüfung, zählt bis zur Entscheidung nicht | fixes, SV-5, rls-v11 |
+| V11 | Stornos/Korrekturen nicht vorgesehen | negative Mengen abgelehnt | Typ Storno/Korrektur mit Bezug, netto je Thema | fixes, SV-5, api, rls-v11 |
+| V12 | Worker ohne Zeitlimits, ohne Ratenbegrenzung, Fehlercodes ohne Erklärung | – | Zeitlimits, Tageslimit je Betrieb, deutsche Meldungen, Feldliste bei Webhook-Fehlern | api |
+| V13 | `005` nicht wiederholbar | `create policy` ohne `drop … if exists` | `006` wiederholbar, auch nach 003/005 | rls-v11 + manuell |
+| V14 | CSV-Export ohne Formelschutz | – | Text mit `= + - @` am Anfang wird entschärft, Zahlen bleiben Zahlen | fixes |
+| V15 | (aus der eigenen früheren Überarbeitung) Kostenstände und Kosten-Snapshots gingen an eingeschränkte Rollen | `glb_read_workspace` kannte `costHistory`/`unitCostNet` nicht | entfernt; beim eingeschränkten Speichern bleiben Snapshots erhalten | rls-v11 |
+
+Berechnungsdefinitionen unverändert: Netto = Brutto ÷ (1 + USt), DB I = Netto − Wareneinsatz, Kaufquote = Bons mit
+mindestens einem Artikel des Themas ÷ alle berücksichtigten Bons, Szenario = zusätzliche Bons × beobachteter
+Netto-Stückpreis bzw. DB je Einheit, Menu-Engineering-Schwellen = Median.
+
+## 6. Tests (22.10.2026)
+
+| Prüfung | Befehl | Bestanden | Fehlgeschlagen |
+| --- | --- | --- | --- |
+| ZIP-Original unverändert | `cd web/suite-v11-original && node --test tests/*.test.mjs` | 26 | 0 |
+| Rechenlogik bisherige Suite | `npm run test:suite` (Teil `suite-tests/tests`) | 92 | 0 |
+| v1.1-Logik: 20 ZIP-Tests portiert, 12 Fehlerbehebungen, 12 Server (5 RC1-Worker-Tests portiert), 2 PWA | `npm run test:suite` (Teil `suite-tests/v11`) | 46 | 0 |
+| SQL 001+002 | `npm run test:suite-sql` | 8 | 0 |
+| SQL 001+002 nach 006 | dto. | 8 | 0 |
+| SQL 006, zwei Betriebe, Konten je Rolle | dto. | 7 | 0 |
+| Browser: Suite, Cloud (Test-Server), v1.1-Module, Barrierefreiheit, Website, Rechtstexte | `npx playwright test e2e/suite*.spec.ts e2e/landing.spec.ts e2e/legal.spec.ts` | 70 | 0 |
+| Layout | `scripts/suite-audit.mjs` bei 320, 390, 768, 1024 px | 0 Überläufe | – |
+
+Der RC1-Rendering-Test (`tests/render.test.mjs`, simuliertes DOM) ist durch echte Browsertests ersetzt (SV-1: jedes Modul
+öffnet sich mit Überschrift, keine Konsolenfehler). Der Python-Smoke-Test der ZIP war nie lauffähig und ist durch die
+Playwright-Tests abgedeckt.
+
+**Nicht geprüft (in dieser Umgebung nicht möglich):** echtes Supabase-Projekt (Migration 006 im Staging, Anmeldung,
+Sitzungserneuerung, PostgREST-Antworten), echte OpenAI-Antworten und Abrechnung, echte Overpass-Erreichbarkeit
+(nachgestellt), echte Kassen-/ETL-Strecke für den Webhook, Service-Worker-Aktualisierung auf HTTPS (Code geprüft, im Test
+nur unter http), echte Geräte und Bildschirmleser, die Vercel-Vorschau-URL selbst (vercel.app ist von hier aus nicht
+erreichbar; der Build für jeden Commit meldet „Deployment has completed“).
+
+## 7. Migration und Konfiguration (vom Betreiber auszuführen)
+
+1. **Staging**: Supabase-Projekt als Kopie der Produktion (oder neues Projekt mit 001 + 002), Backup.
+2. `web/suite-sql/006_glb_v11_integrated.sql` im SQL-Editor ausführen. Wiederholbar.
+3. Mit zwei Testbetrieben und je einem Konto pro Rolle prüfen (Ablauf wie `suite-tests/rls-v11.test.mjs`).
+4. Vercel-Umgebungsvariablen (Production und Preview):
+   - Pflicht für die Cloud: `GLB_SUPABASE_URL`, `GLB_SUPABASE_PUBLISHABLE_KEY` (bereits vorgesehen).
+   - Optional KI-Marktcheck: `OPENAI_API_KEY` (kostenpflichtig bei OpenAI, nur nach deiner Entscheidung),
+     `OPENAI_MODEL` (Standard `gpt-4.1-mini`), `GLB_AI_DAILY_LIMIT` (Standard 20 je Betrieb und Tag),
+     `GLB_AI_MAX_OUTPUT_TOKENS` (Standard 1000), `GLB_DISCOVER_DAILY_LIMIT` (Standard 60).
+   - Optional Kassen-Webhook: `POS_INGEST_SECRET` (mind. 32 Zeichen), `POS_INGEST_ORG` (UUID des Betriebs),
+     `GLB_SUPABASE_SERVICE_ROLE_KEY` (nur Server). Endpunkt `POST /api/suite/pos/ingest`, Vertrag wie
+     `suite-v11-original/docs/WEBHOOK.md`, zusätzlich `line_type` (`sale`/`void`/`correction`) und
+     `corrects_external_line_id`; `outlet_id` ist die Outlet-ID der Suite (z. B. `restaurant`).
+5. Ohne diese Variablen läuft die Suite als Demo im Browser; KI und Webhook melden dann „nicht eingerichtet“.
+6. Erst nach erfolgreichem Staging-Test 006 auf Produktion ausführen.
+
+## 8. Öffnen und prüfen
+
+- Vorschau: der Vercel-Build dieses Branches (Vercel → Deployments → neuester Eintrag für
+  `claude/replica-skill-install-vzriug` → Visit), Pfad `/suite`.
+- Lokal: `cd web && npm install && npm run build && ALLOW_DEMO=1 npx next start -p 3300` → `http://localhost:3300/suite`.
+- Neue Module in der Navigation: Management-Cockpit, Team & Aufgaben, Funnel Quest (Arbeitsplatz), Verkauf &
+  Monatsimport, Menu Engineering, Tagesfunnel (Kassenbons), KI-Marktcheck (Verkauf & Analyse), Mindestbestände
+  (Warenwirtschaft), Strukturcheck (Management). Beispieldatei für den Tagesfunnel: Vorlage-Knopf im Modul.
+
+## 9. Quellpaket und Rückweg
+
+- Quellpaket: `git archive` des Commits am Ende dieser Arbeit (dem Nutzer als ZIP übergeben); enthält die ZIP unverändert
+  unter `web/suite-v11-original/`.
+- Rückweg: Ausgangsstand ist Commit `ad9037c` (lokaler Tag `baseline-v11-integration`). Zurück mit
+  `git revert --no-edit ad9037c..HEAD` auf einem eigenen Branch (behält die Historie) oder Deployment des Commits
+  `ad9037c` in Vercel („Promote to Production“). Die Datenbank bleibt kompatibel: 006 ist additiv; die ersetzten Funktionen
+  `glb_read_workspace`/`glb_save_limited` lassen sich durch erneutes Ausführen der Funktionsteile aus `002` zurücksetzen.
