@@ -176,6 +176,13 @@ function fakeServer() {
         }
         return { data: { inserted, duplicates, review }, error: null };
       }
+      case "glb_pos_summary": {
+        if (role(org) !== "owner") return err("ROLE_NOT_PERMITTED");
+        const inRange = pos.filter((l) => l.organization_id === org && !l.review_status && String(l.service_date) >= String(a.p_from) && String(l.service_date) <= String(a.p_to));
+        const checks = new Set(inRange.map((l) => `${l.service_date}|${l.check_id}`));
+        const coffee = new Set(inRange.filter((l) => l.stage === "coffee").map((l) => `${l.service_date}|${l.check_id}`));
+        return { data: { from: a.p_from, to: a.p_to, lines: inRange.length, checks: checks.size, guests_complete: false, covers: null, stages: { coffee: coffee.size } }, error: null };
+      }
       case "glb_submit_training": {
         const r = role(org);
         if (!r || r === ("viewer" as Role)) return err("ROLE_NOT_PERMITTED");
@@ -646,6 +653,13 @@ test.describe("SC Suite im Cloud-Betrieb (Test-Server)", () => {
     await expect(
       page.locator(".v11-funnel-line", { hasText: "Kaffee" }),
     ).toContainText("100,0 %");
+    // a longer period is counted by the server (lines older than the loaded 90 days stay in the database)
+    server.pos.push({ id: "old", organization_id: "org-1", service_date: "2025-01-15", check_id: "OLD", outlet_id: "restaurant", product_name: "Espresso", quantity: 1, unit_price_gross: 2.9, vat_percent: 19, stage: "coffee" });
+    await page.locator("#v11-sum-from").fill("2025-01-01");
+    await page.locator("#v11-sum-to").fill(today);
+    await page.getByRole("button", { name: "Auswerten" }).click();
+    await expect(page.locator("#main caption")).toContainText("2 Bons");
+    await expect(page.locator("#main tr", { hasText: "Kaffee" }).last()).toContainText("100,0 %");
     // training: the browser sends the answer, never points; the server decides
     await page.evaluate(() =>
       (
