@@ -268,3 +268,15 @@ body {
 .side-footer {
   color: #a9bac2;
 }
+/* the hidden attribute always wins over display rules of .field and friends */
+[hidden] {
+  display: none !important;
+}
+.v5-move-summary {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  background: var(--soft-teal);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--ink);
+}

@@ -106,4 +106,73 @@ test.describe("SB Bedienung", () => {
       "sind die Zahlen belastbar",
     );
   });
+
+  test("SB-3 Inventur: Einheit am Feld, Gebinde und lose Menge getrennt, Summe vor dem Buchen", async ({
+    page,
+  }) => {
+    await page.evaluate(() =>
+      (
+        document.querySelector(
+          '#sidebar [data-view="inventory"]',
+        ) as HTMLElement
+      ).click(),
+    );
+    const form = page.locator("#v4-count-form");
+    const ing = await page.evaluate(() =>
+      (window as any).GLBAppSync.snapshot().ingredients.find(
+        (x: { packUnit: string }) => x.packUnit === "kg",
+      ),
+    );
+    await form.getByLabel("Welche Rohware?").selectOption(ing.id);
+    await expect(
+      form.getByText(`je ${String(ing.packQty).replace(".", ",")} kg`),
+    ).toBeVisible();
+    await expect(form.locator("[data-count-unit]")).toHaveText("in g");
+    await form.getByLabel(/Volle Gebinde/).fill("2");
+    await form.getByLabel(/Lose Menge/).fill("250");
+    const total = 2 * ing.packQty * 1000 + 250;
+    await expect(form.locator("[data-count-total]")).toContainText(
+      `${total.toLocaleString("de-DE")} g gesamt`,
+    );
+    await form.getByRole("button", { name: /Bestand buchen/ }).click();
+    const last = await page.evaluate(() =>
+      (window as any).GLBAppSync.snapshot().inventoryCounts.at(-1),
+    );
+    expect(last.ingredientId).toBe(ing.id);
+    expect(last.baseQty).toBe(total);
+  });
+
+  test("SB-4 Warenbewegung: Formular folgt der Art, Schwund mit Grund, Klartext vor dem Buchen", async ({
+    page,
+  }) => {
+    await page.evaluate(() =>
+      (
+        document.querySelector(
+          '#sidebar [data-view="stockledger"]',
+        ) as HTMLElement
+      ).click(),
+    );
+    await page.locator('[data-v5="movement-new"]').first().click();
+    const dlg = page.getByRole("dialog", { name: "Warenbewegung buchen" });
+    await expect(dlg.getByLabel("Eingang in Lager")).toBeVisible();
+    await expect(dlg.getByLabel("Von Lager")).toBeHidden();
+    await expect(dlg.getByLabel("Grund")).toBeHidden();
+    await dlg.getByLabel("Vorgang").selectOption("transfer");
+    await expect(dlg.getByLabel("Von Lager")).toBeVisible();
+    await expect(dlg.getByLabel("Nach Lager")).toBeVisible();
+    await dlg.getByLabel("Vorgang").selectOption("waste");
+    await expect(dlg.getByLabel("Aus Lager")).toBeVisible();
+    await expect(dlg.getByLabel("Nach Lager")).toBeHidden();
+    await dlg.getByLabel("Grund").selectOption("Bruch / beschädigt");
+    await dlg.getByLabel(/Menge/).fill("3");
+    await expect(dlg.locator("[data-move-summary]")).toContainText(
+      "als Abgang aus",
+    );
+    await expect(dlg.locator("[data-move-summary]")).toContainText(
+      "Bruch / beschädigt",
+    );
+    await expect(
+      dlg.getByRole("button", { name: "Fenster schließen" }),
+    ).toBeVisible();
+  });
 });

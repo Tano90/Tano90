@@ -1522,12 +1522,25 @@
       S.marketLastScan = new Date().toLocaleString("de-DE");
       persist();
       render();
-      toast(`${S.marketDiscovered.length} Betriebe entdeckt – keine Preisangaben.`);
+      toast(
+        S.marketDiscovered.length
+          ? `${S.marketDiscovered.length} Betriebe entdeckt – keine Preisangaben.`
+          : "Im Umkreis von 20 km sind keine Gastronomiebetriebe mit Namen in OpenStreetMap eingetragen. Standort prüfen.",
+      );
     } catch (e) {
-      status.textContent =
-        "Live-Abfrage nicht verfügbar (" +
-        e.message +
-        "). Bitte Internetverbindung prüfen oder später erneut versuchen. Die manuelle Preisverwaltung bleibt nutzbar.";
+      // name the reason in plain words; "nicht verfügbar" keeps the retry button of market-plus.js working
+      const http = /HTTP (\d+)/.exec(e.message || "")?.[1];
+      const reason =
+        e.name === "TimeoutError" || e.name === "AbortError"
+          ? "Der Kartendienst hat nicht innerhalb von 40 Sekunden geantwortet"
+          : http === "429"
+            ? "Der Kartendienst ist gerade überlastet"
+            : http
+              ? `Der Kartendienst meldet einen Fehler (HTTP ${http})`
+              : navigator.onLine === false
+                ? "Dieses Gerät ist offline"
+                : "Keine Verbindung zum Kartendienst";
+      status.textContent = `Umkreissuche nicht verfügbar: ${reason}. In ein paar Minuten erneut versuchen. Gespeicherte Treffer und die manuelle Preisverwaltung bleiben nutzbar.`;
       toast("Umkreissuche aktuell nicht verfügbar.", "error");
     }
   }
@@ -2647,6 +2660,37 @@
       }</div>`
     );
   }
+  // Pack count and loose quantity, each with its unit at the field; the total is shown before booking.
+  function v4CountUnits(ing) {
+    const unit = ing ? V4.baseUnit(ing.packUnit) || ing.packUnit : "",
+      pack = ing ? `${v4Num(ing.packQty)} ${ing.packUnit}` : "";
+    return { unit, pack, packBase: ing ? V4.baseQuantity(ing.packQty, ing.packUnit) : 0 };
+  }
+  function v4CountQuantityFields(ing) {
+    const u = v4CountUnits(ing);
+    return `<div class="v4-quantity-fields"><div class="field"><label for="v4-count-packs">Volle Gebinde <span class="v4-unit-tag" data-count-pack>${u.pack ? `je ${esc(u.pack)}` : ""}</span></label><input id="v4-count-packs" type="number" inputmode="decimal" name="packs" value="0" min="0" step="0.01" required></div><div class="field"><label for="v4-count-loose">Lose Menge <span class="v4-unit-tag" data-count-unit>${u.unit ? `in ${esc(u.unit)}` : ""}</span></label><input id="v4-count-loose" type="number" inputmode="decimal" name="loose" value="0" min="0" step="0.01" required></div></div><p class="v4-hint" data-count-total aria-live="polite">Angebrochene Packungen als lose Menge zählen, nicht als Bruchteil eines Gebindes.</p>`;
+  }
+  function v4UpdateCountTotal(form) {
+    const ing = v4Ing(form.querySelector('[name="ingredientId"]')?.value),
+      u = v4CountUnits(ing),
+      packs = V4.N(form.querySelector('[name="packs"]')?.value) || 0,
+      loose = V4.N(form.querySelector('[name="loose"]')?.value) || 0;
+    form.querySelector("[data-count-pack]").textContent = u.pack ? `je ${u.pack}` : "";
+    form.querySelector("[data-count-unit]").textContent = u.unit ? `in ${u.unit}` : "";
+    const total = packs * u.packBase + loose;
+    form.querySelector("[data-count-total]").textContent =
+      packs || loose
+        ? `Gezählt: ${v4Num(packs)} × ${u.pack} + ${v4Num(loose)} ${u.unit} lose = ${v4Num(total)} ${u.unit} gesamt.`
+        : "Angebrochene Packungen als lose Menge zählen, nicht als Bruchteil eines Gebindes.";
+  }
+  document.addEventListener("input", (e) => {
+    const form = e.target.closest?.("#v4-count-form");
+    if (form) v4UpdateCountTotal(form);
+  });
+  document.addEventListener("change", (e) => {
+    const form = e.target.closest?.("#v4-count-form");
+    if (form) v4UpdateCountTotal(form);
+  });
   function v4QuickCountForm(prefIng = "", prefWh = "") {
     const ing = V4_PRODUCT !== "all" ? V4_PRODUCT : prefIng || S.ingredients[0]?.id || "";
     const wh = prefWh || (V4_WAREHOUSE !== "all" ? V4_WAREHOUSE : S.warehouses[0]?.id) || "";
@@ -2656,7 +2700,7 @@
     )}</select></div><div class="field"><label>Welche Rohware?</label><select name="ingredientId" required>${selectOptions(
       S.ingredients.map((x) => [x.id, x.name]),
       ing,
-    )}</select></div><div class="field"><label>Zähldatum</label><input type="date" name="date" value="${V4_TODAY()}" max="${V4_TODAY()}" required></div><div class="v4-quantity-fields"><div class="field"><label>Volle Gebinde</label><input type="number" name="packs" value="0" min="0" step="0.01" required></div><div class="field"><label>Lose Menge (Gebinde-Einheit)</label><input type="number" name="loose" value="0" min="0" step="0.01" required></div></div><p class="v4-hint">Beispiel: 2 Packungen à 1 kg + 250 g lose → 2 volle Gebinde und 250 g lose. Lose Menge bitte in der Grund-Einheit (g/ml/Stück) eingeben.</p><button type="submit" class="btn btn-primary v4-wide">Bestand buchen · Zählwert ersetzen</button><p class="calc-note">Pro Lager und Rohware wird der neueste vollständige Zählwert genutzt. Eine Zählung addiert nicht auf den alten Bestand.</p></form>`;
+    )}</select></div><div class="field"><label>Zähldatum</label><input type="date" name="date" value="${V4_TODAY()}" max="${V4_TODAY()}" required></div>${v4CountQuantityFields(v4Ing(ing))}<button type="submit" class="btn btn-primary v4-wide">Bestand buchen · Zählwert ersetzen</button><p class="calc-note">Pro Lager und Rohware wird der neueste vollständige Zählwert genutzt. Eine Zählung addiert nicht auf den alten Bestand.</p></form>`;
   }
   function v4Forecast() {
     const days = Number(S.v04Forecast?.days) || 7,
@@ -2735,7 +2779,7 @@
   }
   function v4Modal(title, inner, onSubmit, wide = false) {
     document.querySelector("#modal-layer").innerHTML =
-      `<div class="modal ${wide ? "v4-modal-large" : ""}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-header"><h2>${esc(title)}</h2><button class="close-btn" data-v4="close">×</button></div><form id="v4-modal-form">${inner}<div class="modal-footer"><button type="button" class="btn" data-v4="close">Abbrechen</button><button class="btn btn-primary" type="submit">${I("check")} Speichern</button></div></form></div>`;
+      `<div class="modal ${wide ? "v4-modal-large" : ""}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-header"><h2>${esc(title)}</h2><button type="button" class="close-btn" data-v4="close" aria-label="Fenster schließen">×</button></div><form id="v4-modal-form">${inner}<div class="modal-footer"><button type="button" class="btn" data-v4="close">Abbrechen</button><button class="btn btn-primary" type="submit">${I("check")} Speichern</button></div></form></div>`;
     document.querySelector("#v4-modal-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       try {
@@ -3802,20 +3846,61 @@
     v5StockOverview() +
     v5Ledger() +
     v5StockRules();
+  const V5_WASTE_REASONS = [
+    "Verdorben / MHD abgelaufen",
+    "Bruch / beschädigt",
+    "Zubereitungsfehler",
+    "Personalverzehr",
+    "Unklar / Differenz",
+  ];
+  // The movement form shows only what the chosen type needs and says in words what will be booked.
+  function v5MoveUpdate(form) {
+    const type = form.querySelector('[name="type"]').value,
+      ing = v4Ing(form.querySelector('[name="ingredientId"]').value),
+      unit = ing ? V4.baseUnit(ing.packUnit) || ing.packUnit : "",
+      qty = V4.N(form.querySelector('[name="qtyBase"]').value),
+      wh = (n) => S.warehouses.find((w) => w.id === form.querySelector(`[name="${n}"]`).value)?.name || "";
+    for (const el of form.querySelectorAll("[data-move-for]")) el.hidden = !el.dataset.moveFor.split(" ").includes(type);
+    form.querySelector("[data-move-unit]").textContent = unit ? `in ${unit}` : "";
+    form.querySelector("[data-move-from-label]").textContent = type === "waste" ? "Aus Lager" : "Von Lager";
+    form.querySelector("[data-move-to-label]").textContent = type === "receipt" ? "Eingang in Lager" : "Nach Lager";
+    form.querySelector("[data-move-note-label]").textContent =
+      type === "receipt" ? "Lieferschein / Beleg (optional)" : type === "waste" ? "Bemerkung (optional)" : "Bemerkung (optional)";
+    const amount = qty > 0 ? `${v4Num(qty)} ${unit} ${ing?.name || ""}` : `${ing?.name || "Rohware"} (Menge fehlt)`;
+    form.querySelector("[data-move-summary]").textContent =
+      type === "receipt"
+        ? `Bucht: ${amount} als Zugang in ${wh("toWarehouseId")}.`
+        : type === "transfer"
+          ? wh("fromWarehouseId") === wh("toWarehouseId")
+            ? "Von- und Nach-Lager sind gleich: bitte zwei verschiedene Lager wählen."
+            : `Bucht: ${amount} von ${wh("fromWarehouseId")} nach ${wh("toWarehouseId")}.`
+          : `Bucht: ${amount} als Abgang aus ${wh("fromWarehouseId")} (${form.querySelector('[name="reason"]').value}).`;
+  }
+  document.addEventListener("input", (e) => {
+    const form = e.target.closest?.("form");
+    if (form?.querySelector("#v5-move-type")) v5MoveUpdate(form);
+  });
+  document.addEventListener("change", (e) => {
+    const form = e.target.closest?.("form");
+    if (form?.querySelector("#v5-move-type")) v5MoveUpdate(form);
+  });
   function v5MoveModal() {
     if (!S.ingredients.length || !S.warehouses.length) return toast("Rohwaren und Lager zuerst anlegen.", "error");
     v4Modal(
       "Warenbewegung buchen",
-      `<div class="field-grid"><div class="field"><label>Vorgang</label><select name="type" id="v5-move-type"><option value="receipt">Wareneingang (manuell)</option><option value="transfer">Lagertransfer</option><option value="waste">Schwund / Bruch</option></select></div><div class="field"><label>Datum</label><input name="date" type="date" max="${v5Today()}" value="${v5Today()}" required></div><div class="field"><label>Rohware</label><select name="ingredientId">${selectOptions(
+      `<div class="field-grid"><div class="field"><label for="v5-move-type">Vorgang</label><select name="type" id="v5-move-type"><option value="receipt">Wareneingang (ohne Bestellung)</option><option value="transfer">Lagertransfer</option><option value="waste">Schwund / Bruch</option></select></div><div class="field"><label for="v5-move-date">Datum</label><input id="v5-move-date" name="date" type="date" max="${v5Today()}" value="${v5Today()}" required></div><div class="field"><label for="v5-move-ing">Rohware</label><select id="v5-move-ing" name="ingredientId">${selectOptions(
         S.ingredients.map((i) => [i.id, i.name]),
         S.ingredients[0].id,
-      )}</select></div><div class="field"><label>Menge (Basiseinheit, g/ml/Stück)</label><input name="qtyBase" type="number" min="0.0001" step="any" required></div><div class="field"><label>Von Lager (bei Schwund/Transfer)</label><select name="fromWarehouseId">${selectOptions(
+      )}</select></div><div class="field"><label for="v5-move-qty">Menge <span class="v4-unit-tag" data-move-unit></span></label><input id="v5-move-qty" name="qtyBase" type="number" inputmode="decimal" min="0.0001" step="any" required></div><div class="field" data-move-for="transfer waste"><label for="v5-move-from" data-move-from-label>Von Lager</label><select id="v5-move-from" name="fromWarehouseId">${selectOptions(
         S.warehouses.map((w) => [w.id, w.name]),
         S.warehouses[0].id,
-      )}</select></div><div class="field"><label>In Lager (bei Zugang/Transfer)</label><select name="toWarehouseId">${selectOptions(
+      )}</select></div><div class="field" data-move-for="receipt transfer"><label for="v5-move-to" data-move-to-label>In Lager</label><select id="v5-move-to" name="toWarehouseId">${selectOptions(
         S.warehouses.map((w) => [w.id, w.name]),
-        S.warehouses[0].id,
-      )}</select></div></div><div class="field"><label>Bemerkung / Beleg</label><input name="note" maxlength="120" placeholder="Optional: Lieferschein, Schwundgrund …"></div><p class="calc-note">Eine Buchung korrigiert die letzte vollständige Inventur. Vor erstmaligem Buchen die Rohware im Lager zählen. Ein gebuchter Wareneingang ist nicht automatisch ein Einkauf aus der Bestellliste.</p>`,
+        (S.warehouses[1] || S.warehouses[0]).id,
+      )}</select></div><div class="field" data-move-for="waste"><label for="v5-move-reason">Grund</label><select id="v5-move-reason" name="reason">${selectOptions(
+        V5_WASTE_REASONS.map((x) => [x, x]),
+        V5_WASTE_REASONS[0],
+      )}</select></div></div><div class="field"><label for="v5-move-note" data-move-note-label>Lieferschein / Beleg (optional)</label><input id="v5-move-note" name="note" maxlength="120"></div><p class="v5-move-summary" data-move-summary aria-live="polite"></p><p class="calc-note">Eine Buchung korrigiert die letzte vollständige Inventur. Vor erstmaligem Buchen die Rohware im Lager zählen. Ein gebuchter Wareneingang ist nicht automatisch ein Einkauf aus der Bestellliste.</p>`,
       (f) => {
         const type = String(f.get("type")),
           ingId = String(f.get("ingredientId")),
@@ -3848,7 +3933,7 @@
           fromWarehouseId: src,
           toWarehouseId: dest,
           qtyBase,
-          note: String(f.get("note") || "").trim(),
+          note: [type === "waste" ? String(f.get("reason") || "") : "", String(f.get("note") || "").trim()].filter(Boolean).join(": "),
         });
         markEdited();
         persist();
@@ -3858,6 +3943,8 @@
       },
       true,
     );
+    const form = document.querySelector("#v5-move-type")?.closest("form");
+    if (form) v5MoveUpdate(form);
   }
   function v5AssignedWarehouse(id) {
     const explicit = S.ingredientWarehouses[id];

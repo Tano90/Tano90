@@ -86,6 +86,28 @@ test.describe("SU Mein Markt", () => {
     problems.splice(0, problems.length, ...problems.filter((p) => !p.includes("503 (Service Unavailable)") && !p.includes("overpass.private.coffee")));
   });
 
+  test("SU-MK3 Umkreissuche: Ladezustand, verständlicher Fehler, erneuter Versuch klappt", async ({ page, problems }) => {
+    let fail = true;
+    await page.route("https://overpass.private.coffee/**", (r) => r.fulfill({ status: 429, body: "rate limited" }));
+    await page.route("https://overpass-api.de/**", (r) =>
+      fail
+        ? r.fulfill({ status: 429, body: "rate limited" })
+        : r.fulfill({ json: { elements: [{ type: "node", id: 3, lat: 50.805, lon: 6.483, tags: { name: "Bistro Probe", amenity: "restaurant" } }] } }),
+    );
+    await page.goto("/suite#market");
+    await page.evaluate(() => (document.querySelector('#sidebar [data-view="market"]') as HTMLElement).click());
+    await page.locator("#market-lat").fill("50.8037");
+    await page.locator("#market-lon").fill("6.4820");
+    await page.getByRole("button", { name: "Umkreis jetzt durchsuchen (20 km)" }).click();
+    await expect(page.locator("#market-scan-status")).toContainText("Der Kartendienst ist gerade überlastet");
+    const retry = page.getByRole("button", { name: "Erneut versuchen" });
+    await expect(retry).toBeEnabled();
+    fail = false;
+    await retry.click();
+    await expect(page.getByText("Bistro Probe")).toBeVisible();
+    problems.splice(0, problems.length, ...problems.filter((p) => !p.includes("429") && !p.includes("overpass")));
+  });
+
   test("SU-MK2 Ortssuche nicht erreichbar: Hinweis, Koordinaten bleiben nutzbar", async ({ page, problems }) => {
     await page.route("https://nominatim.openstreetmap.org/**", (r) => r.abort());
     await page.goto("/suite#market");

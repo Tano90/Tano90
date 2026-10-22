@@ -652,3 +652,8 @@
 .v4-cost-diff.warn::before {
   content: "⚠ ";
 }
+.v4-unit-tag {
+  font-weight: 600;
+  color: var(--teal-dark);
+  margin-left: 4px;
+}
