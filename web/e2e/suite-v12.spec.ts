@@ -223,8 +223,26 @@ test.describe("S14 KI-Marktcheck: zwei Ansichten", () => {
     await f.getByRole("button", { name: "Beobachtung speichern" }).click();
   };
 
+  test("S14-0 Demo: fiktive Beobachtungen klar gekennzeichnet, ohne echte Quelle, nie an die KI", async ({ page }) => {
+    await open(page, "v11market");
+    const rows = page.locator(".v11-cmp tbody tr");
+    await expect(rows).toHaveCount(4);
+    for (let i = 0; i < 4; i++) {
+      await expect(rows.nth(i)).toContainText("Fiktives Beispiel");
+      await expect(rows.nth(i)).toContainText("(fiktiv)");
+      await expect(rows.nth(i).locator("a[href*='example.com']")).toHaveCount(0);
+    }
+    await expect(rows.filter({ hasText: "Bistro am Markt" })).toContainText("+8,5 %");
+    await expect(rows.filter({ hasText: "Steakhaus Nord" })).toContainText("Nicht vergleichbar");
+    await expect(rows.filter({ hasText: "Café Linde" })).toContainText("Umgerechnet");
+    await expect(rows.filter({ hasText: "Gasthaus Brücke" })).toContainText("Zu prüfen");
+    await expect(page.locator("main, #main").first()).toContainText("In der Demo aus");
+  });
+
   test("S14-1 Speisen und Getränke filtern, Warengruppen, Vergleichbarkeit, Prüfliste, Mein Markt bleibt erhalten", async ({ page }) => {
     await open(page, "v11market");
+    // this test works with its own observations only (the demo's fictitious examples are checked in S14-0)
+    await mutate(page, `S.intelligence.markets = [];`);
     await expect(page.getByRole("tab", { name: /Speisen- und Getränkevergleich/ })).toHaveAttribute("aria-selected", "true");
     await add(page, { article: "Classic Cheeseburger (Burger)", comp: "Bistro A", prod: "Cheeseburger", portion: "Portion", scope: "Vergleichbar", price: "16" });
     await add(page, { article: "Signature Cocktail (Getränke)", comp: "Bar B", prod: "Hauscocktail", portion: "Glas", scope: "Unterschiedlich", price: "11" });

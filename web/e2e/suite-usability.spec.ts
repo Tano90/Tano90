@@ -92,9 +92,9 @@ test.describe("SB Bedienung", () => {
       ).click(),
     );
     await expect(
-      page.getByRole("heading", { name: "Wie läuft das Geschäft?" }),
+      page.getByRole("heading", { name: "Wie läuft der Betrieb?" }),
     ).toBeVisible();
-    await expect(page.locator(".topbar")).toContainText("Dashboard");
+    await expect(page.locator(".topbar")).toContainText("Übersicht");
     await page.evaluate(() =>
       (
         document.querySelector(

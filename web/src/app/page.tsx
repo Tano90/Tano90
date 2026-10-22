@@ -1,112 +1,89 @@
-import { ArrowRight, BarChart3, Boxes, Calculator, Check, ChefHat, Download, Filter, Gauge, GraduationCap, LineChart, ListChecks, MapPin, PackageSearch, Plus, Receipt, ScanLine, ShieldCheck, ShoppingCart, Smartphone, Sparkles, Store, Upload, Users } from "lucide-react";
+import { ArrowRight, BarChart3, Calculator, Check, Download, Filter, PackageSearch, Plus, ShieldCheck, ShoppingCart, Smartphone, Sparkles, Store, Users } from "lucide-react";
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { LeadForm, ViewBeacon } from "@/components/landing/lead-form";
-import { CountUp, Reveal } from "@/components/landing/motion";
+import { Reveal } from "@/components/landing/motion";
 import { SiteFooter } from "@/components/landing/site-chrome";
 import { APP_NAME } from "@/lib/brand";
-import { formatCents } from "@/lib/format";
-import { PRICE_TAX_NOTE } from "@/lib/legal";
-import { PRICING } from "@/lib/pricing";
+import { INDIVIDUAL, PLANS, PLANS_PRELIMINARY_NOTE } from "@/lib/pricing";
 import shotCosts from "../../public/landing/suite-costs.png";
 import shotFunnel from "../../public/landing/suite-funnel.png";
-import shotInsights from "../../public/landing/suite-insights.png";
-import shotInventory from "../../public/landing/suite-inventory.png";
 import shotLifecycle from "../../public/landing/suite-lifecycle.png";
-import shotMarket from "../../public/landing/suite-market.png";
-import shotMenuImport from "../../public/landing/suite-menuimport.png";
 import shotMobile from "../../public/landing/suite-mobile.png";
 import shotOverview from "../../public/landing/suite-overview.png";
-import shotPortfolio from "../../public/landing/suite-portfolio.png";
 import shotPurchasing from "../../public/landing/suite-purchasing.png";
-import shotRecipes from "../../public/landing/suite-recipes.png";
 import shotReports from "../../public/landing/suite-reports.png";
 import shotV11Cockpit from "../../public/landing/suite-v11cockpit.png";
-import shotV11Funnel from "../../public/landing/suite-v11funnel.png";
 import shotV11Market from "../../public/landing/suite-v11market.png";
-import shotV11Menu from "../../public/landing/suite-v11menu.png";
 import shotV11Tasks from "../../public/landing/suite-v11tasks.png";
-import shotV11Training from "../../public/landing/suite-v11training.png";
 
 // Public landing page. Static: no session lookup, so it is fast and cacheable.
-// Only what the GLB AI Suite (public/suite, v0.8 modules plus v1.1 Intelligence Center) does today.
-// Every screenshot shows its built-in example data.
-// No testimonials, logos or user counts until there are real ones.
+// Only what the GLB AI Suite (public/suite) does today; every screenshot shows its built-in example data.
+// No testimonials, logos, user counts, savings or time promises the product cannot back.
 
 const SUITE = "/suite";
 // Calm, solid buttons: green for the main action, an outlined one beside it. No glow, no lift.
 const cta = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-pill bg-accent px-6 text-base font-bold text-on-accent transition-colors duration-fast hover:bg-accent-hover";
 const ctaLight = cta;
 const ctaQuiet = "inline-flex h-(--size-control-lg) items-center rounded-pill border border-border-input bg-transparent px-6 text-base font-semibold hover:bg-row-hover";
-const eur = (cents: number) => formatCents(cents).replace(",00", "");
+// Exact cents, German format: 89,00 € / 109,99 € / 2,99 €
+const eur = (cents: number) => (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+
+// The questions a buyer asks first, answered before any feature list (Oct 2026).
+const ANSWERS = [
+  { q: "Welche Entscheidung erleichtert die Suite?", a: "Preise, Sortiment und Einkauf: welcher Artikel über deinem Ziel für die Warenquote liegt, welcher nachlässt und was du nachbestellen musst." },
+  { q: "Wie kommen meine Daten hinein?", a: "Speisekarte als CSV, kopierter Text oder PDF mit Text; Verkäufe als CSV-Export aus der Kasse. Vor dem Speichern zeigt eine Vorschau jede fehlerhafte Zeile." },
+  { q: "Wie viel laufende Arbeit entsteht?", a: "Einmal im Monat den Verkaufsexport importieren und geänderte Einkaufspreise nachtragen. Für den Bestell-Forecast zusätzlich Tagesabsätze und Inventur." },
+  { q: "Was kostet das?", a: `Ab ${eur(PLANS[0].baseMonthly)} im Monat plus ${eur(PLANS[0].perUserMonthly)} je Nutzer. Die Preise sind vorläufig, siehe unten.` },
+  { q: "Wie teste ich mit eigenen Daten?", a: "Zuerst die Demo ohne Anmeldung. Dann in der Suite „Eigene Daten starten“: Betrieb anlegen, Speisekarte und einen Monat Verkäufe importieren." },
+];
 
 type Spotlight = { icon: typeof BarChart3; kicker: string; title: string; body: string; points: string[]; shot: StaticImageData; alt: string };
-// The big modules, each with a screenshot.
+// Four everyday workflows, each with a screenshot.
 const SPOTLIGHTS: Spotlight[] = [
   {
-    icon: BarChart3, kicker: "Management Reporting", title: "GLB Report Studio",
-    body: "Alle betriebswirtschaftlichen Kennzahlen an einem Ort: Performance, Sortiment und Rezepte, Service und Conversion, Lager und Einkauf.",
-    points: ["Filter nach Zeitraum, Outlet und Warengruppe", "ABC-Analyse, Outlet-, Artikel-, Funnel-, Kosten- und Lagerberichte", "Ansichten speichern, Export als CSV oder Excel mit Zeitraum, Einheiten und Rechengrundlage, Drucken oder als PDF"],
-    shot: shotReports, alt: "GLB Report Studio mit Berichtsfilter, Reitern Performance, Sortiment und Rezepte, Service und Conversion, Lager und Einkauf sowie Kacheln für Netto-Umsatz, DB II, Wareneinsatzquote und Absatz.",
+    icon: BarChart3, kicker: "Berichte & Export", title: "Report Studio",
+    body: "Umsatz, Deckungsbeitrag, Sortiment, Service sowie Lager und Einkauf mit einem gemeinsamen Filter für Zeitraum, Outlet und Warengruppe.",
+    points: ["Kostenbasis wählbar: Kosten des Verkaufsmonats oder heutige Kosten als Szenario", "ABC-Analyse, Outlet-, Artikel-, Funnel- und Lagerberichte", "Export als CSV oder Excel mit Zeitraum und Rechengrundlage, Drucken als PDF"],
+    shot: shotReports, alt: "Report Studio mit Berichtsfilter, Reitern und Kacheln für Netto-Umsatz, DB II, Wareneinsatzquote und Absatz.",
   },
   {
-    icon: Filter, kicker: "Service & Verkauf", title: "Service Funnel & Sales Forecast",
-    body: "Taggenau erfassen, wie oft der Service Aperitif, Wasser, Upgrades, Beilagen, Desserts und Kaffee verkauft, und sehen, was eine höhere Quote bringt.",
-    points: ["Zielquote je 100 Gäste für jede Stufe", "Schieberegler für Conversion und Gästeentwicklung", "Hochrechnung auf den Monat für Umsatz und DB II, getrennt vom echten Umsatz"],
-    shot: shotFunnel, alt: "Service Funnel mit Schiebereglern je Stufe und Kacheln für Gäste, Szenario-Umsatzveränderung und DB-II-Veränderung.",
-  },
-  {
-    icon: Calculator, kicker: "Profit Engineering", title: "Deckungsbeiträge & Zielpreise",
+    icon: Calculator, kicker: "Verkauf & Preise", title: "Deckungsbeiträge & Zielpreise",
     body: "Monatskosten einmal erfassen, und die Kalkulation zeigt für jeden Artikel den aktuellen und den erforderlichen Verkaufspreis nebeneinander.",
-    points: ["DB I und DB II je Artikel", "Monatliche Kosten und Zielbetriebsergebnis", "Kostenstände mit Datum: vergangene Monate mit den damals gültigen Kosten"],
+    points: ["DB I und DB II je Artikel", "Monatliche Fixkosten und Zielbetriebsergebnis", "Kostenstände mit Datum: vergangene Monate mit den damals gültigen Kosten"],
     shot: shotCosts, alt: "Deckungsbeiträge und Zielpreise mit Eingabe der Monatskosten und Kacheln für Nettoumsatz, Fixkostenquote und Zielpreis.",
   },
   {
-    icon: LineChart, kicker: "Menu Engineering", title: "Renner-Penner & Aktionsplan",
-    body: "Jedes Produkt in der Matrix aus Absatz und Deckungsbeitrag, mit priorisierten Schritten, was du im Betrieb als Nächstes testen kannst.",
-    points: ["Vergleich innerhalb des Sortiments, einer Warengruppe oder Oberkategorie", "Konkrete Maßnahmen je Artikel", "Preis-Szenarien für ausgewählte Artikel"],
-    shot: shotPortfolio, alt: "Renner-Penner-Matrix mit Produkten als Punkte in vier Feldern und daneben eine Liste priorisierter Schritte.",
+    icon: ShoppingCart, kicker: "Einkauf & Lager", title: "Bestell-Forecast",
+    body: "Aus dem Absatz der letzten 7 und 28 Tage über die Rezepte zum Rohwarenbedarf, abzüglich gezähltem Bestand und offener Bestellungen.",
+    points: ["Bestellgebinde und Einkaufswert je Rohware", "Fehlender Bestand, fehlendes Rezept und fehlender Verbrauch werden getrennt ausgewiesen", "Mit einem Klick als interner Bestellentwurf"],
+    shot: shotPurchasing, alt: "Bestell-Forecast mit Datenbasis, Bestellwert und Bestellvorschlag je Rohware in kg und Stück.",
   },
   {
-    icon: Receipt, kicker: "Kassenbons", title: "Tagesfunnel aus Kassendaten",
-    body: "Aus einzelnen Bonpositionen: Wie viele Bons enthalten einen Aperitif, Wasser, ein Upgrade, ein Dessert, Kaffee oder einen After-Glow-Abschluss?",
-    points: ["Kaufquote je Bon für sechs unabhängige Themen, Gäste nur bei vollständiger Angabe", "Zielquoten und vorsichtige Szenarien, ohne garantierte Gewinne", "Import per CSV mit Positions-ID, Storno und Erkennung von Überschneidungen"],
-    shot: shotV11Funnel, alt: "Tagesfunnel mit Kacheln für Bons, Gäste, Bruttoverkauf und Deckungsbeitrag I sowie Balken je Thema mit Zielmarke.",
-  },
-  {
-    icon: GraduationCap, kicker: "Team", title: "Funnel Quest – Training",
-    body: "Kurze Verkaufstrainings zu den sechs Themen: Lernhinweis, Frage, Rückmeldung und Punkte. Die Schulungspriorität kommt aus den Kassenbons.",
-    points: ["100 Punkte je richtiger Antwort, ein Versuch je Thema und Tag", "Ergebnisse sieht nur die Person selbst, kein Ranking, keine Bewertung", "Schulung direkt als Aufgabe für das Team anlegen"],
-    shot: shotV11Training, alt: "Funnel Quest mit Punkten, Stufe, sechs Missionen und einer Frage mit drei Antworten.",
+    icon: Filter, kicker: "Service & Team", title: "Service Funnel",
+    body: "Wie oft der Service Aperitif, Wasser, Upgrades, Beilagen, Desserts und Kaffee verkauft, und was eine höhere Quote als Szenario bedeuten würde.",
+    points: ["Zielquote je 100 Gäste für jede Stufe", "Szenario-Werte getrennt vom echten Umsatz", "Kaufquoten je Bon zusätzlich aus Kassendaten (Tagesfunnel)"],
+    shot: shotFunnel, alt: "Service Funnel mit Schiebereglern je Stufe und Kacheln für Gäste und Szenario-Werte.",
   },
 ];
 
-// Further modules: a smaller card each, also with a screenshot.
-const MODULES: { icon: typeof BarChart3; title: string; body: string; shot: StaticImageData; alt: string }[] = [
-  { icon: Gauge, title: "Arbeitsplatz, Mission Control & Dashboard", body: "Aufgaben aus deinen Daten im Arbeitsplatz, Einrichtung und Datenqualität in Mission Control, Netto-Umsatz, DB II und Wareneinsatz im Dashboard.", shot: shotOverview, alt: "Dashboard mit Berichtsfilter, Netto-Umsatz, DB II, Wareneinsatzquote und Absatz." },
-  { icon: Sparkles, title: "Produktlebenszyklen", body: "Einführung, Wachstum, Reife oder Rückgang je Artikel, ab vier zusammenhängenden Monaten.", shot: shotLifecycle, alt: "Produktlebenszyklus mit Phasen und Einzelanalyse eines Artikels." },
-  { icon: MapPin, title: "Mein Markt", body: "Wettbewerber im Umkreis über OpenStreetMap finden und Preise von Hand vergleichen.", shot: shotMarket, alt: "Mein Markt mit Standortangaben und Suche nach Betrieben im Radius." },
-  { icon: ShoppingCart, title: "Bestell-Forecast", body: "Aus dem Absatz der letzten 7 oder 28 Tage über die Rezepte zum Rohwarenbedarf und zu Bestellgebinden.", shot: shotPurchasing, alt: "Bestell-Forecast mit Kacheln für Tage, Bestellwert und Szenario-Einstellungen." },
-  { icon: Boxes, title: "Inventur & Lager", body: "Mehrere Lager, mobile Zählmaske, Warenbewegungen, Transfer, Schwund und Wareneingang.", shot: shotInventory, alt: "Inventur und Lagerverwaltung mit Beständen je Rohware." },
-  { icon: ChefHat, title: "Rezepte & Rohwaren", body: "Zutaten, Gebinde und Einheiten, Kosten je Portion, Import von Rezepten und Rohwaren per CSV.", shot: shotRecipes, alt: "Rezepturen und Rohwaren mit Kosten je Rezept und Rohwarenstamm." },
-  { icon: Upload, title: "Speisekarten-Import", body: "CSV, Text oder textbasierte PDF einlesen; Steuersatz nach Speisen und Getränken vorbelegt, unsichere Positionen markiert, vor dem Speichern korrigierbar.", shot: shotMenuImport, alt: "Speisekarten-Import mit Upload-Feld, Texteingabe und Vorschau." },
-  { icon: Gauge, title: "Management-Cockpit", body: "Brutto- und Nettoumsatz, Deckungsbeitrag I und Wareneinsatzquote nach Outlet und Monat; fehlende Kosten werden als unvollständig gezeigt, nicht geschätzt.", shot: shotV11Cockpit, alt: "Management-Cockpit mit vier Kennzahlen, Monatsdiagramm und regelbasierten Hinweisen." },
-  { icon: LineChart, title: "Menu Engineering", body: "Stars, Renner, Puzzle und Penner nach Absatz und DB I je Einheit; fehlender Wareneinsatz lässt sich bewusst nachtragen.", shot: shotV11Menu, alt: "Menu Engineering mit Klassen je Artikel, Empfehlungen und Berechnungsgrundlage." },
-  { icon: ListChecks, title: "Team & Aufgaben, Mindestbestände", body: "Maßnahmen mit Priorität und Fälligkeit für alle Rollen; einfache Mindestbestandsliste mit Bestellvorschlag Ziel minus Ist, neben dem Forecast.", shot: shotV11Tasks, alt: "Team und Aufgaben mit Aufgabenliste und Formular für neue Aufgaben." },
-  { icon: MapPin, title: "KI-Marktcheck", body: "Preise der Konkurrenz mit Quelle und Prüfdatum vergleichen, Umfeld per OpenStreetMap finden. Die KI-Einordnung ist optional und braucht einen eigenen Schlüssel auf dem Server.", shot: shotV11Market, alt: "KI-Marktcheck mit Formular für Preisbeobachtungen, Umfeldsuche und Preisvergleich." },
-  { icon: ScanLine, title: "GLB Intelligence", body: "Regelbasierte Hinweise und Handlungsempfehlungen. Vorschläge, keine Automatik: du entscheidest.", shot: shotInsights, alt: "GLB Intelligence mit Handlungsempfehlungen und Analysegrundlage." },
+// Every area of the suite as a short index (the same five areas as the navigation inside the app).
+const AREAS: [string, string][] = [
+  ["Übersicht", "Kennzahlen und Handlungsbedarf, Aufgaben für heute, Monatsabschluss, Berichte & Export, Hinweise"],
+  ["Verkauf & Preise", "Artikel & Umsätze, Outlets, Deckungsbeiträge & Zielpreise, Preiskalkulation, Renner-Penner, Menu Engineering, Lebenszyklen, Wettbewerbspreise, Mein Markt"],
+  ["Einkauf & Lager", "Bestell-Forecast, Bestellungen, Inventur & Lager, Warenbewegungen, Mindestbestände, Rezepte & Rohwaren"],
+  ["Service & Team", "Team & Aufgaben je Outlet, Service Funnel, Tagesfunnel aus Kassenbons, Funnel Quest (Training)"],
+  ["Einrichtung & Daten", "Erste Schritte, Datenqualität, Speisekarten- und Verkaufsimport, Warengruppen, Einstellungen, Backup"],
 ];
 
 // Situations from day-to-day work, each with the screen that answers it (example data of the suite).
 const USE_CASES: { when: string; question: string; answer: string; shot: StaticImageData; alt: string }[] = [
-  { when: "Bürotag am Monatsanfang", question: "Wie lief der Monat, und wo fehlen noch Kosten?", answer: "Das Management-Cockpit zeigt Brutto, Netto, DB I und Wareneinsatzquote je Outlet und Monat. Fehlender Wareneinsatz steht als unvollständig da, statt geschätzt zu werden.", shot: shotV11Cockpit, alt: "Management-Cockpit mit Kennzahlen je Outlet und Monat." },
+  { when: "Bürotag am Monatsanfang", question: "Wie lief der Monat, und wo fehlen noch Kosten?", answer: "Der Monatsabschluss zeigt Brutto, Netto, DB I und Wareneinsatzquote je Outlet und Monat. Fehlender Wareneinsatz steht als unvollständig da, statt geschätzt zu werden.", shot: shotV11Cockpit, alt: "Monatsabschluss mit Kennzahlen je Outlet und Monat." },
   { when: "Vor der neuen Karte", question: "Welcher Artikel wächst, welcher verliert?", answer: "Der Lebenszyklus zeigt die echten Monatswerte je Artikel, Outlet und Zeitraum als Verlauf. Fehlende Monate bleiben Lücken; die Einordnung wird am Graphen erklärt.", shot: shotLifecycle, alt: "Absatzverlauf eines Artikels mit Monatspunkten, Vergleichsfenster und Erklärung der Einordnung." },
-  { when: "Preise prüfen", question: "Was verlangen andere für Vergleichbares?", answer: "Der Marktcheck trennt Speisen und Getränke vom Umfeld in der Nähe. Abweichungen gibt es nur bei vergleichbarer Menge und Leistung, jede Zahl mit Quelle und Prüfdatum.", shot: shotV11Market, alt: "KI-Marktcheck mit den Reitern Speisen- und Getränkevergleich sowie Restaurants und Locations in der Nähe." },
+  { when: "Preise prüfen", question: "Was verlangen andere für Vergleichbares?", answer: "Die Wettbewerbspreise trennen den Preisvergleich vom Umfeld in der Nähe. Preise trägst du mit Quelle ein; Abweichungen gibt es nur bei vergleichbarer Menge und Leistung.", shot: shotV11Market, alt: "Wettbewerbspreise mit den Reitern Speisen- und Getränkevergleich sowie Restaurants und Locations in der Nähe." },
   { when: "Schichtbriefing", question: "Was ist in welchem Outlet offen?", answer: "Team & Aufgaben zeigt offene und überfällige Aufgaben je Outlet. Betriebsübergreifendes steht getrennt; Schulungen aus dem Tagesfunnel landen beim gewählten Outlet.", shot: shotV11Tasks, alt: "Team und Aufgaben mit offenen und überfälligen Aufgaben je Outlet und gruppierter Aufgabenliste." },
 ];
-
-const TICKER = ["Management-Cockpit", "Tagesfunnel", "Funnel Quest", "Menu Engineering", "KI-Marktcheck", "Report Studio", "Mission Control", "Service Funnel", "Deckungsbeiträge", "Zielpreise", "Renner-Penner", "Lebenszyklen", "Mein Markt", "Speisekarten-Import", "Rezepte & Rohwaren", "Inventur & Lager", "Bestell-Forecast", "7 Rollen", "App fürs Handy"];
 
 // From the suite's access model (v0.8): what each role works with.
 const ROLES = [
@@ -123,19 +100,20 @@ const FACTS = [
   { icon: ShieldCheck, title: "Rechte auch in der Datenbank", body: "Was eine Rolle nicht sehen darf, prüft nicht nur die Oberfläche, sondern auch die Datenbank." },
   { icon: Smartphone, title: "Als App installierbar", body: "Auf Handy und Tablet zum Startbildschirm hinzufügen, mit eigenen mobilen Ansichten." },
   { icon: Download, title: "Backup jederzeit", body: "Alle Daten deines Betriebs mit einem Klick als Datei sichern." },
-  { icon: PackageSearch, title: "Beispieldaten klar markiert", body: "Zum Ausprobieren gibt es Beispieldaten, die überall als solche gekennzeichnet sind." },
-  { icon: Sparkles, title: "Vorschläge statt Automatik", body: "Empfehlungen und Szenarien helfen beim Entscheiden. Übernommen wird nur, was du bestätigst." },
+  { icon: PackageSearch, title: "Beispieldaten klar markiert", body: "Zum Ausprobieren gibt es Beispieldaten, die überall als solche gekennzeichnet sind. Eigene Daten werden nie mit Beispielwerten ergänzt." },
+  { icon: Sparkles, title: "Vorschläge statt Automatik", body: "Hinweise nennen Artikel, Zeitraum und Grundlage. Bewertet wird nur an Zielen, die du selbst festlegst." },
   { icon: Store, title: "Mehrere Outlets", body: "Restaurant, Bar, Bankett oder Terrasse getrennt auswerten oder zusammen betrachten." },
 ];
 
 const FAQ = [
-  { q: "Wie kommen meine Daten hinein?", a: "Über den Datenimport: Speisekarten als CSV, Text oder textbasierte PDF, Rezepte, Rohwaren und Tagesabsätze als CSV. Vorlagen für jede Datei liegen in der Suite. Vor dem Übernehmen siehst du eine Vorschau und kannst korrigieren. Dieselbe Datei wird wiedererkannt und nicht doppelt gezählt." },
+  { q: "Wie kommen meine Daten hinein?", a: "Über den Import: Speisekarten als CSV, Text oder PDF mit Textebene, Monatsverkäufe, Rezepte, Rohwaren und Tagesabsätze als CSV. Vorlagen für jede Datei liegen in der Suite unter „Erste Schritte“. Vor dem Übernehmen siehst du eine Vorschau und kannst korrigieren. Dieselbe Datei wird wiedererkannt und nicht doppelt gezählt. Fotos und gescannte PDFs ohne Text werden nicht gelesen." },
   { q: `Ist ${APP_NAME} mit meiner Kasse verbunden?`, a: "Es gibt keine fertige Anbindung an ein bestimmtes Kassensystem. Monatsverkäufe und einzelne Bonpositionen kommen per CSV-Export aus der Kasse. Für eine automatische Übertragung gibt es eine signierte Schnittstelle, an die ein Kassen- oder ETL-Dienst Positionen senden kann; das muss für deine Kasse eingerichtet werden." },
+  { q: "Was kostet die Suite?", a: `Standard ${eur(PLANS[0].baseMonthly)} und Premium ${eur(PLANS[1].baseMonthly)} im Monat, jeweils zuzüglich ${eur(PLANS[0].perUserMonthly)} je Nutzer und Monat; individuelle Lösungen mit vereinbarter Entwicklungsgebühr zuzüglich ${eur(INDIVIDUAL.serviceMonthly)} im Monat. ${PLANS_PRELIMINARY_NOTE}` },
   { q: "Wer sieht welche Zahlen?", a: "Es gibt sieben Rollen von Geschäftsführung bis Mitarbeiter Küche. Service und Sales sehen keine Einkaufspreise und keine Fixkosten, die Küche keine Finanzberichte. Die Rechte prüft auch die Datenbank." },
   { q: "Funktioniert das auf dem Handy?", a: `Ja. ${APP_NAME} läuft im Browser und lässt sich als App installieren. Für Service und Küche gibt es eigene mobile Ansichten, etwa für die Tageszahlen im Funnel und die Inventur.` },
-  { q: "Rechnet die KI für mich?", a: "Kennzahlen, Hinweise und Szenarien entstehen aus nachvollziehbaren Regeln auf deinen Zahlen. Nur der KI-Marktcheck kann optional eine KI um eine Einordnung bitten: Sie bekommt ausschließlich die von dir eingetragenen Preise mit Quelle, prüft keine Webseiten und ändert nichts. Dafür muss auf dem Server ein eigener API-Schlüssel eingerichtet sein." },
-  { q: "Kann ich vorher ausprobieren?", a: `Ja. Über „Live ausprobieren“ öffnest du die Suite mit Beispieldaten. Für deinen eigenen Betrieb legst du in der Suite ein Konto an.` },
-  { q: "Wo liegen meine Daten?", a: "In der Cloud-Datenbank von Supabase, getrennt pro Betrieb. Zusätzlich kannst du jederzeit ein Backup herunterladen." },
+  { q: "Rechnet die KI für mich?", a: "Kennzahlen, Hinweise und Szenarien entstehen aus nachvollziehbaren Regeln auf deinen Zahlen. Nur bei den Wettbewerbspreisen kann optional eine KI die von dir erfassten Preise einordnen; sie prüft keine Webseiten und ändert nichts. Die KI richtet der Betreiber auf dem Server ein, du verwaltest keine Schlüssel. Ob sie in einem Tarif enthalten ist, wird mit den Tarifdetails festgelegt." },
+  { q: "Kann ich vorher ausprobieren?", a: "Ja. Über „Live ausprobieren“ öffnest du die Suite mit Beispieldaten, ohne Anmeldung. Mit „Eigene Daten starten“ legst du in der Suite deinen Betrieb an." },
+  { q: "Wo liegen meine Daten?", a: "Mit Anmeldung in der Cloud-Datenbank von Supabase, getrennt pro Betrieb. Ohne Anmeldung nur in deinem Browser. Zusätzlich kannst du jederzeit ein Backup herunterladen." },
 ];
 
 export default function LandingPage() {
@@ -152,6 +130,7 @@ export default function LandingPage() {
             <a href="#funktionen" className="hidden font-semibold text-text-muted hover:text-text md:inline">Funktionen</a>
             <a href="#rollen" className="hidden font-semibold text-text-muted hover:text-text lg:inline">Rollen</a>
             <a href="#preise" className="hidden font-semibold text-text-muted hover:text-text md:inline">Preise</a>
+            <a href="#anfrage" className="hidden font-semibold text-text-muted hover:text-text md:inline">Vorführung</a>
             <Link href={SUITE} className="font-semibold hover:underline">Anmelden</Link>
             <Link href={SUITE} className="hidden h-(--size-control-md) items-center rounded-pill bg-accent px-4 font-bold text-on-accent hover:bg-accent-hover sm:inline-flex">Kostenlos starten</Link>
           </nav>
@@ -167,15 +146,15 @@ export default function LandingPage() {
               Gastro führen mit <span className="text-accent">echten Zahlen.</span>
             </h1>
             <p className="mt-6 max-w-xl text-base text-text-muted lg:text-lg lg:font-normal">
-              Das Gastro Leadership Board: Umsatz, Deckungsbeitrag, Service Funnel, Rezepte, Lager und Einkauf in einer Suite.
-              Mit Reports für die Leitung und mobilen Ansichten für Service und Küche.
+              Für Inhaber und Betriebsleitungen in der Gastronomie: sieh jeden Monat, welche Artikel Geld bringen, wo die
+              Warenquote über deinem Ziel liegt und was nachbestellt werden muss. Aus deinen Kassen- und Einkaufsdaten.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href={SUITE} className={ctaLight}>Live ausprobieren <ArrowRight aria-hidden className="size-4" /></Link>
-              <a href="#rundgang" className={ctaQuiet}>Rundgang ansehen</a>
+              <a href="#anfrage" className={ctaQuiet}>Vorführung anfragen</a>
             </div>
             <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-text-muted">
-              {["Mit Beispieldaten sofort testen", "Ohne Kreditkarte", "Im Browser und als App"].map((x) => (
+              {["Demo ohne Anmeldung", "Beispieldaten klar markiert", "Im Browser und als App"].map((x) => (
                 <li key={x} className="flex items-center gap-1.5"><Check aria-hidden className="size-4 text-accent" />{x}</li>
               ))}
             </ul>
@@ -191,12 +170,20 @@ export default function LandingPage() {
         </section>
       </div>
 
-      {/* the module names as a quiet line instead of a moving ticker */}
-      <div className="border-b border-border bg-surface">
-        <p className="mx-auto max-w-(--size-content-max) px-4 py-5 text-sm text-text-muted lg:px-8">
-          <span className="font-semibold text-text">Enthalten: </span>{TICKER.join(" · ")}
-        </p>
-      </div>
+      {/* the first questions of a buyer, answered before any feature list */}
+      <section aria-labelledby="answers" className="border-b border-border bg-surface">
+        <div className="mx-auto max-w-(--size-content-max) px-4 py-14 lg:px-8">
+          <h2 id="answers" className="font-display text-[1.75rem] leading-tight lg:text-[2.25rem]">Kurz beantwortet</h2>
+          <dl className="mt-8 grid gap-x-10 gap-y-6 md:grid-cols-2 lg:grid-cols-5">
+            {ANSWERS.map((x) => (
+              <div key={x.q} className="border-t-2 border-accent pt-4">
+                <dt className="font-semibold">{x.q}</dt>
+                <dd className="mt-2 text-sm text-text-muted">{x.a}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
 
       <main>
         {/* ------------------------------------------------ use cases */}
@@ -283,37 +270,17 @@ export default function LandingPage() {
                 <p className="text-sm font-bold uppercase tracking-wide text-accent">Alles drin</p>
                 <h2 id="modules" className="font-display mt-3 max-w-2xl text-[2rem] leading-tight lg:text-[2.75rem]">Ein Board statt zehn Listen</h2>
               </div>
-              <p className="max-w-sm text-text-muted">Jeder Eintrag ist ein Modul der {APP_NAME}, so wie es heute aussieht.</p>
+              <p className="max-w-sm text-text-muted">Alle Bereiche der {APP_NAME}, gegliedert wie das Menü in der App.</p>
             </div>
-            <ul className="mt-12 grid gap-x-12 lg:grid-cols-2">
-              {MODULES.map(({ icon: Icon, title, body, shot, alt }) => (
-                <li key={title} className="grid grid-cols-[7rem_1fr] items-start gap-5 border-t border-border py-6 sm:grid-cols-[10rem_1fr]">
-                  <Image src={shot} alt={alt} placeholder="blur" className="h-auto w-full rounded-sm border border-border" sizes="160px" />
-                  <div className="min-w-0">
-                    <h3 className="flex items-center gap-2 text-lg"><Icon aria-hidden className="size-4 shrink-0 text-accent" />{title}</h3>
-                    <p className="mt-1 text-sm text-text-muted">{body}</p>
-                  </div>
-                </li>
+            <dl className="mt-10 flex flex-col divide-y divide-border border-y border-border">
+              {AREAS.map(([area, pages]) => (
+                <div key={area} className="grid gap-1 py-4 sm:grid-cols-[14rem_1fr] sm:gap-6">
+                  <dt className="font-semibold">{area}</dt>
+                  <dd className="text-text-muted">{pages}</dd>
+                </div>
               ))}
-            </ul>
+            </dl>
           </div>
-        </section>
-
-        {/* ------------------------------------------------ numbers, all true of the product today */}
-        <section aria-label="In Zahlen">
-          <dl className="mx-auto grid max-w-(--size-content-max) grid-cols-2 gap-8 px-4 py-16 lg:grid-cols-4 lg:px-8">
-            {[
-              { value: SPOTLIGHTS.length + MODULES.length, suffix: "", label: "Module in einer Oberfläche" },
-              { value: ROLES.length, suffix: "", label: "Rollen vom Service bis zur Geschäftsführung" },
-              { value: 6, suffix: "", label: "Stufen im Service Funnel" },
-              { value: 28, suffix: " Tage", label: "Absatz als Grundlage für den Bestell-Forecast" },
-            ].map((x) => (
-              <div key={x.label} className="flex flex-col-reverse justify-end gap-1 border-l-2 border-accent pl-4">
-                <dt className="text-sm text-text-muted">{x.label}</dt>
-                <dd className="num font-display text-[2.5rem] leading-none text-text"><CountUp value={x.value} suffix={x.suffix} /></dd>
-              </div>
-            ))}
-          </dl>
         </section>
 
         {/* ------------------------------------------------ roles */}
@@ -364,32 +331,24 @@ export default function LandingPage() {
         <section id="preise" aria-labelledby="pricing">
           <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
             <h2 id="pricing" className="font-display text-[2rem] leading-tight lg:text-[2.75rem]">Preise</h2>
-            <p className="mt-2 text-text-muted">Alle Module in jedem Tarif. {PRICE_TAX_NOTE}</p>
-            <div className="mt-10 grid gap-6 md:grid-cols-2">
-              <div className="rounded-md border border-border bg-surface-raised p-8">
-                <h3 className="text-lg">Ein Betrieb</h3>
-                <p className="mt-1 text-text-muted">Für das Restaurant, die Bar, das Café.</p>
-                <p className="num font-display mt-6 text-[2.5rem] leading-none">{eur(PRICING.firstOutletMonthly)} <span className="font-sans text-sm font-normal text-text-muted">pro Monat</span></p>
-                <p className="mt-2 text-xs font-normal text-text-muted">oder {eur(PRICING.firstOutletYearly)} pro Jahr (2 Monate geschenkt)</p>
-                <ul className="mt-6 flex flex-col gap-2">
-                  {["Report Studio und Mission Control", "Service Funnel, Deckungsbeiträge, Renner-Penner", "Rezepte, Inventur, Bestell-Forecast", "Alle 7 Rollen"].map((x) => (
-                    <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />{x}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="relative rounded-md border border-border border-t-4 border-t-accent bg-surface-raised p-8">
-                <span className="absolute -top-3.5 right-6 rounded-pill bg-accent px-3 py-1 text-xs font-bold text-on-accent">für Gruppen</span>
-                <h3 className="text-lg">Weitere Standorte</h3>
-                <p className="mt-1 text-text-muted">Für Gruppen und Betriebe mit mehreren Häusern.</p>
-                <p className="num font-display mt-6 text-[2.5rem] leading-none">+ {eur(PRICING.extraOutletMonthly)} <span className="font-sans text-sm font-normal text-text-muted">pro weiterem Standort und Monat</span></p>
-                <p className="mt-2 text-xs font-normal text-text-muted">oder {eur(PRICING.extraOutletYearly)} pro Jahr und Standort</p>
-                <ul className="mt-6 flex flex-col gap-2">
-                  {["Outlets einzeln und gesamt auswerten", "Mehrere Lager mit Transfer", "Rollen je Mitarbeiter"].map((x) => (
-                    <li key={x} className="flex gap-2"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />{x}</li>
-                  ))}
-                </ul>
+            <p className="mt-3 max-w-3xl rounded-md border border-border bg-surface px-4 py-3 text-sm text-text-muted" role="note">{PLANS_PRELIMINARY_NOTE}</p>
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {PLANS.map((p) => (
+                <div key={p.id} className="rounded-md border border-border bg-surface-raised p-8">
+                  <h3 className="text-lg">{p.name}</h3>
+                  <p className="num font-display mt-6 text-[2.5rem] leading-none">{eur(p.baseMonthly)}</p>
+                  <p className="mt-2 text-sm text-text-muted">pro Kunde und Monat</p>
+                  <p className="mt-4 flex gap-2 text-sm"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />zuzüglich {eur(p.perUserMonthly)} pro Nutzer und Monat</p>
+                </div>
+              ))}
+              <div className="rounded-md border border-border border-t-4 border-t-accent bg-surface-raised p-8">
+                <h3 className="text-lg">Individuelle Lösungen</h3>
+                <p className="font-display mt-6 text-[1.75rem] leading-tight">Entwicklungsgebühr nach Vereinbarung</p>
+                <p className="mt-4 flex gap-2 text-sm"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />zuzüglich {eur(INDIVIDUAL.serviceMonthly)} pro Monat</p>
+                <a href="#anfrage" className="mt-6 inline-flex font-semibold text-accent underline">Im Gespräch klären →</a>
               </div>
             </div>
+            <p className="mt-6 text-sm text-text-muted">Welche Leistungen Standard und Premium unterscheiden, zeigen wir in der Vorführung. Die Demo ist kostenlos und ohne Anmeldung.</p>
           </div>
         </section>
 
@@ -400,11 +359,11 @@ export default function LandingPage() {
               <p className="text-sm font-bold uppercase tracking-wide text-accent">Vorführung</p>
               <h2 id="lead" className="font-display mt-3 text-[2rem] leading-tight lg:text-[2.75rem]">Deine Zahlen im Board</h2>
               <p className="mt-4 text-text-muted">
-                In einer halben Stunde importieren wir zusammen deine Speisekarte und einen Monat Verkäufe, und du siehst Renner,
-                Penner und Deckungsbeiträge deines Betriebs.
+                Gemeinsam importieren wir deine Speisekarte und einen Monat Verkäufe, und du siehst Renner, Penner,
+                Deckungsbeiträge und den Handlungsbedarf deines eigenen Betriebs.
               </p>
               <ul className="mt-6 flex flex-col gap-2 text-sm">
-                {["30 Minuten, per Video oder bei euch", "Mit deiner echten Speisekarte", "Kostenlos und unverbindlich"].map((x) => (
+                {["Per Video oder bei euch im Betrieb", "Mit deiner echten Speisekarte", "Kostenlos und unverbindlich"].map((x) => (
                   <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />{x}</li>
                 ))}
               </ul>

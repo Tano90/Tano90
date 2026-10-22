@@ -1,5 +1,6 @@
 "use server";
 
+import { plansFinal } from "@/lib/pricing";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
@@ -253,6 +254,7 @@ export async function startCheckout(interval: "month" | "year" = "month"): Promi
   return run(async (s) => {
     if (!canManageBilling(s.role)) throw new Error("Nur Inhaber können das Abo verwalten.");
     if (!billingConfigured()) throw new Error("Die Abrechnung ist noch nicht eingerichtet.");
+    if (!plansFinal()) throw new Error("Die Tarife werden gerade neu festgelegt; ein Abo lässt sich noch nicht abschließen.");
     const billing = await repo.getBilling(s);
     return createCheckout({ libraryId: s.libraryId, email: s.email, outletCount: (await repo.listOutlets(s)).length, customerId: billing.stripeCustomerId, interval: z.enum(["month", "year"]).parse(interval) });
   }, [], { readOnlyOk: true });

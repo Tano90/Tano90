@@ -1,13 +1,10 @@
 import Link from "next/link";
 import { LegalPage, Op, Section } from "@/components/legal/legal-page";
 import { APP_NAME } from "@/lib/brand";
-import { formatCents } from "@/lib/format";
-import { SMALL_BUSINESS } from "@/lib/legal";
 import { PRICING } from "@/lib/pricing";
 
 export const metadata = { title: "Nutzungsbedingungen" };
 
-const eur = (cents: number) => formatCents(cents).replace(",00", "");
 
 export default function TermsPage() {
   return (
@@ -28,8 +25,8 @@ export default function TermsPage() {
       </Section>
 
       <Section title="4. Preise und Zahlung">
-        <p>Es gelten die Preise auf unserer Website zum Zeitpunkt des Abschlusses, derzeit {eur(PRICING.firstOutletMonthly)} im Monat für den ersten Standort und {eur(PRICING.extraOutletMonthly)} für jeden weiteren, bei jährlicher Zahlung {eur(PRICING.firstOutletYearly)} und {eur(PRICING.extraOutletYearly)} im Jahr. {SMALL_BUSINESS ? "Als Kleinunternehmer nach § 19 UStG berechnen wir keine Umsatzsteuer; die Preise sind Endpreise." : "Alle Preise zuzüglich Umsatzsteuer."} Alle Funktionen sind enthalten; die Zahl der Nutzer ist nicht begrenzt.</p>
-        <p>Abgerechnet wird die Zahl der angelegten Standorte. Legt der Kunde einen weiteren Standort an, erhöht sich die Menge, und der Unterschied wird anteilig für den laufenden Zeitraum berechnet. Archiviert er einen Standort, verringert sich die Menge, und der Unterschied wird anteilig mit der nächsten Rechnung verrechnet. Die Zahlung läuft im Voraus über unseren Zahlungsdienstleister Stripe.</p>
+        <p>Es gelten die Preise und Tarifbedingungen, die bei Abschluss auf unserer Website und im Bestellvorgang genannt sind. Die Tarife werden derzeit neu festgelegt (Standard, Premium, individuelle Lösungen). Bis Leistungsumfang, Abrechnungseinheit und Umsatzsteuer-Ausweis verbindlich veröffentlicht sind, kann kein kostenpflichtiges Abo online abgeschlossen werden; die Testphase bleibt davon unberührt.</p>
+        <p>Die Zahlung läuft im Voraus über unseren Zahlungsdienstleister Stripe.</p>
         <p>Preisänderungen kündigen wir mindestens sechs Wochen vor Beginn des Abrechnungszeitraums an, ab dem sie gelten. Der Kunde kann bis dahin zum Ende des laufenden Zeitraums kündigen.</p>
       </Section>
 

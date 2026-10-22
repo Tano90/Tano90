@@ -42,10 +42,15 @@ test.describe("L02 Rechtsseiten", () => {
 
   test("L02-E3 Preise in den Bedingungen kommen aus derselben Quelle wie die Preisseite", async ({ page }) => {
     await page.goto("/legal/terms");
-    await expect(page.getByText(/derzeit 49\s€ im Monat für den ersten Standort und 39\s€ für jeden weiteren/)).toBeVisible();
-    await expect(page.locator("main")).toContainText("Als Kleinunternehmer nach § 19 UStG berechnen wir keine Umsatzsteuer");
+    // Oct 2026: new plans, still preliminary – the terms name no outdated amounts and no tax status of their own
+    const terms = page.locator("main");
+    await expect(terms).toContainText("Die Tarife werden derzeit neu festgelegt");
+    await expect(terms).toContainText("kann kein kostenpflichtiges Abo online abgeschlossen werden");
+    for (const old of ["49 €", "39 €", "490 €", "§ 19 UStG"]) await expect(terms).not.toContainText(old);
     await page.goto("/#preise");
-    await expect(page.getByRole("region", { name: "Preise" })).toContainText("Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.");
-    await expect(page.getByRole("region", { name: "Preise" })).not.toContainText("MwSt");
+    const prices = page.getByRole("region", { name: "Preise" });
+    await expect(prices).toContainText("Vorläufige Preise");
+    await expect(prices).not.toContainText("§ 19");
+    await expect(prices).not.toContainText("MwSt");
   });
 });

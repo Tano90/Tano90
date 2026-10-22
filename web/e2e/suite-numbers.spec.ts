@@ -115,16 +115,16 @@ test.describe("SN Zahlen und Filter", () => {
     );
   });
 
-  test("SN-4 Dashboard: Summe und Monatsvergleich klar getrennt beschriftet", async ({
+  test("SN-4 Übersicht: Summe und Monatsvergleich klar getrennt beschriftet", async ({
     page,
   }) => {
     await open(page, "overview");
     const tile = page.locator(".v6-stat", {
       has: page.locator("small", { hasText: /^Netto-Umsatz · alle Monate$/ }),
     });
-    await expect(tile).toContainText(
-      /September 2026 ggü\. August 2026: [+-]?\d/,
-    );
+    // the total of all months names its range and shows no single-month comparison (Oct 2026)
+    await expect(tile).toContainText("Summe April 2026 bis September 2026 (6 Monate)");
+    await expect(tile).not.toContainText("ggü.");
     await page.locator("#v6-filter-month").selectOption("2026-09");
     await expect(
       page.locator(".v6-stat", {

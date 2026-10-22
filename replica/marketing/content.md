@@ -149,7 +149,7 @@ Nur an Leute, die dich kennen. Persönlich anpassen, nicht als Rundmail.
 2. Was fehlt, damit ihr umsteigen würdet?
 3. Womit arbeitet ihr heute, und was kostet das (Geld und Zeit)?
 4. Wie viele Standorte, wie viele Leute würden es nutzen?
-5. Bei 49 € im Monat für den ersten Standort und 39 € für jeden weiteren: Würdet ihr starten, wenn es losgeht?
+5. Bei 89 € pro Kunde und Monat zzgl. 2,99 € pro Nutzer (vorläufig): Würdet ihr starten, wenn es losgeht?
 
 ## Flyer (A6, mit QR-Code)
 
@@ -177,7 +177,7 @@ Rückseite: Name und Anschrift des Anbieters (für Druckwerke nach den Landespre
 
 **Anzeige B**
 - Titel: Software für Gastro-Küchen · Rezepte, Lager und Einkauf · 30 Minuten Vorführung
-- Beschreibung 1: Für einen oder viele Standorte. Pro Standort bezahlt, beliebig viele Nutzer.
+- Beschreibung 1: Für einen oder viele Standorte. Preise vorläufig: ab 89 € pro Kunde und Monat zzgl. 2,99 € je Nutzer.
 - Beschreibung 2: Inventur auf dem Handy, auch ohne Netz. Zeig uns dein teuerstes Gericht.
 
 Längen geprüft: Titel höchstens 30 Zeichen, Beschreibungen höchstens 90 Zeichen (Google-Grenzen).

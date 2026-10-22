@@ -85,13 +85,12 @@ selbst. Die Werte gehen nur von deiner Tastatur zu Vercel. Danach auf vercel.com
 | **Stripe** | Testmodus | Live-Modus freischalten (Firmendaten, Bankkonto) | nur Gebühren pro Zahlung, keine Grundgebühr |
 | **Domain** | nicht nötig | ca. 10–20 €/Jahr | für E-Mails an Kunden und Vertrauen |
 
-**Laufende Kosten mit zahlenden Kunden: rund 45 $ im Monat plus Domain.** Ein einziger Kunde mit einem Standort (49 €)
+**Laufende Kosten mit zahlenden Kunden: rund 45 $ im Monat plus Domain.** Ein einziger Kunde im STANDARD-Tarif (89 € pro Kunde und Monat, vorläufig, zzgl. 2,99 € pro Nutzer)
 deckt das. Stripe behält pro Zahlung eine Gebühr ein; die aktuellen Sätze siehst du im Stripe-Dashboard.
 
 Reihenfolge beim Umschalten:
 1. Domain kaufen, in Vercel verbinden, bei Resend verifizieren (DNS-Einträge stehen in `deploy.md`).
 2. Vercel und Supabase auf Pro.
-3. Stripe Live: Produkt und die zwei gestaffelten Preise anlegen, dazu die Add-ons Housekeeping und F&B-Controlling (je 29 €/Monat und 290 €/Jahr, `launch/pricing.md`), Rechnungs-Fußzeile
-   „Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.“, Firmenanschrift, Webhook. Variablen `STRIPE_*` in Vercel.
+3. Stripe Live: Produkt und Preise erst anlegen, wenn die offenen Punkte in `launch/pricing.md` entschieden sind (Basispreis pro Kunde plus Menge pro Nutzer), dazu die Add-ons Housekeeping und F&B-Controlling (je 29 €/Monat und 290 €/Jahr, `launch/pricing.md`). Umsatzsteuer-Hinweis auf Rechnungen: offen, Anbieterstatus klären. Firmenanschrift, Webhook. Variablen `STRIPE_*` in Vercel.
 4. `NEXT_PUBLIC_LAUNCH_MODE=open`, `APP_URL` und Supabase-URLs auf die Domain umstellen, neu deployen.
 5. Einen echten Kauf machen und erstatten.

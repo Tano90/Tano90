@@ -75,6 +75,6 @@ test("SF-1 Forecast → Entwurf → bestellt → Wareneingang → Bestand → Fo
   const after = forecastRow(page, "Rindfleisch Burger Patty");
   await expect(after.locator("td").nth(2)).not.toHaveText(stockBefore);
   // 22 + 4 × 20 = 102 stk
-  await expect(after.locator("td").nth(2)).toHaveText("102 stk");
+  await expect(after.locator("td").nth(2)).toHaveText("102 Stk."); // forecast shows whole pieces as "Stk." (Oct 2026)
   expect(euroValue(await page.locator(".v4-grid3 > *").nth(1).locator("b, strong").first().innerText())).toBe(0);
 });

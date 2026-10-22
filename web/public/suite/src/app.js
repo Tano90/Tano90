@@ -4052,7 +4052,7 @@
       .join("");
   }
   function v5Hero() {
-    return `<section class="v5-hero"><div><span class="v5-hero-label">GLB / OPERATIONS INTELLIGENCE</span><h2>Alles im Griff.<br><em>Jeden Tag.</em></h2><p>Vom Artikel über den Wareneinsatz bis zur Bestellung. Ein Arbeitsbereich für dein Gastro-Controlling.</p><div class="v5-hero-actions"><button class="v5-button-primary" data-view="operations">Mission Control öffnen →</button><button class="v5-button-ghost" data-view="setup">Einrichtung prüfen</button></div></div><div class="v5-hero-art" aria-hidden="true"><div class="v5-glow"></div><div class="v5-dashboard-tile"><span>OPERATIVE DATEN</span><div class="v5-mini-bars"><i style="height:42%"></i><i style="height:64%"></i><i style="height:55%"></i><i style="height:80%"></i><i style="height:72%"></i><i style="height:100%"></i><i style="height:86%"></i></div><b>One connected suite.</b></div></div></section>`;
+    return `<section class="v5-hero"><div><span class="v5-hero-label">GLB / OPERATIONS INTELLIGENCE</span><h2>Alles im Griff.<br><em>Jeden Tag.</em></h2><p>Vom Artikel über den Wareneinsatz bis zur Bestellung. Ein Arbeitsbereich für dein Gastro-Controlling.</p><div class="v5-hero-actions"><button class="v5-button-primary" data-view="operations">Datenqualität öffnen →</button><button class="v5-button-ghost" data-view="setup">Einrichtung prüfen</button></div></div><div class="v5-hero-art" aria-hidden="true"><div class="v5-glow"></div><div class="v5-dashboard-tile"><span>OPERATIVE DATEN</span><div class="v5-mini-bars"><i style="height:42%"></i><i style="height:64%"></i><i style="height:55%"></i><i style="height:80%"></i><i style="height:72%"></i><i style="height:100%"></i><i style="height:86%"></i></div><b>One connected suite.</b></div></div></section>`;
   }
   const v5OldOverview = handlers.overview;
   handlers.overview = () => v5Hero() + v5Toolbar() + v5OldOverview();
@@ -4063,8 +4063,8 @@
       errors = st.errors.length;
     return (
       pageHeader(
-        "CONTROL CENTER",
-        "Mission Control",
+        "MISSION CONTROL",
+        "Datenqualität",
         "Ist die Suite richtig eingerichtet und sind die Zahlen belastbar? Einrichtung, Datenvollständigkeit, Lager und Bestellungen auf einen Blick.",
         `<button class="btn" data-action="export-json">${I("download")} Backup</button><button class="btn btn-primary" data-view="purchasing">${I("cart")} Bestell-Forecast</button>`,
       ) +
@@ -5253,7 +5253,7 @@
     )}</div>${v6Panel("DETAILS", "Artikel-Performance-Tabelle", "Sortieren, durchsuchen und exportieren.", v6ReportTable(r))}`;
   }
   function v6ReportsView() {
-    return `<div class="v6-print-shell">${pageHeader("ANALYTICS / MANAGEMENT REPORTS", "GLB Report Studio", "Alle betriebswirtschaftlichen Kennzahlen an einem Ort. Filter, gespeicherte Ansichten, Export und Druck – ohne Cloudkosten.", `<button class="btn" data-view="operations">${I("bolt")} Mission Control</button>`)}${demoNotice()}${v6PrintSummary()}${v6ReportHeader("Management Reporting", "Die Module verwenden dieselbe betriebliche Datengrundlage.")}${v6ReportFilters(V6_APPLIES[V6_TAB] || [], V6_NOT_APPLIED[V6_TAB] || "")}<div class="v6-tabbar" role="tablist">${[
+    return `<div class="v6-print-shell">${pageHeader("REPORT STUDIO", "Berichte & Export", "Alle betriebswirtschaftlichen Kennzahlen an einem Ort. Filter, gespeicherte Ansichten, Export und Druck – ohne Cloudkosten.", `<button class="btn" data-view="operations">${I("bolt")} Datenqualität</button>`)}${demoNotice()}${v6PrintSummary()}${v6ReportHeader("Management Reporting", "Die Module verwenden dieselbe betriebliche Datengrundlage.")}${v6ReportFilters(V6_APPLIES[V6_TAB] || [], V6_NOT_APPLIED[V6_TAB] || "")}<div class="v6-tabbar" role="tablist">${[
       ["performance", "Performance"],
       ["sortiment", "Sortiment & Rezepte"],
       ["service", "Service & Conversion"],
@@ -5269,7 +5269,7 @@
             .map(([id, l]) => `<button data-v6-metric="${id}" class="${V6_METRIC === id ? "active" : ""}">${l}</button>`)
             .join("")}</div>`
         : ""
-    }<div id="v6-report-content">${v6ReportContent()}</div>${S.v06Pinned.length ? `<section class="v6-saved"><h3>Gespeicherte Ansichten</h3><div>${S.v06Pinned.map((p, i) => `<div class="v6-saved-view"><button data-v6="apply-view" data-index="${i}">${I("chart")} ${esc(p.name)}</button><button aria-label="Gespeicherte Ansicht löschen" data-v6="delete-view" data-index="${i}">×</button></div>`).join("")}</div></section>` : ""}<div class="v6-report-fineprint">GLB AI Suite ist ein lokales Steuerungstool. Kein DATEV-/Kassenabschluss, keine Buchhaltung, kein revisionssicheres Archiv und keine verifizierte Gewinnprognose. DB II berücksichtigt aktuelle variable Produktkosten; Monatsfixkosten werden gesondert dargestellt.</div></div>`;
+    }<div id="v6-report-content">${v6ReportContent()}</div>${S.v06Pinned.length ? `<section class="v6-saved"><h3>Gespeicherte Ansichten</h3><div>${S.v06Pinned.map((p, i) => `<div class="v6-saved-view"><button data-v6="apply-view" data-index="${i}">${I("chart")} ${esc(p.name)}</button><button aria-label="Gespeicherte Ansicht löschen" data-v6="delete-view" data-index="${i}">×</button></div>`).join("")}</div></section>` : ""}<div class="v6-report-fineprint">GLB AI Suite ist ein lokales Steuerungstool. Kein DATEV-/Kassenabschluss, keine Buchhaltung, kein revisionssicheres Archiv und keine verifizierte Gewinnprognose. DB II = DB I minus weitere variable Kosten, bewertet nach der gewählten Kostenbasis (${V6_COSTBASIS === "current" ? "Szenario: heutige Produktkosten" : "Kostenstand im Verkaufsmonat"}); Monatsfixkosten werden gesondert dargestellt.</div></div>`;
   }
   handlers.reports = v6ReportsView;
   Object.assign(labels, { reports: "Report Studio" });
@@ -5342,7 +5342,8 @@
     v6MainOverview() +
     `<details class="v6-legacy-details"><summary>${I("layers")} Weitere operative Kennzahlen und die bisherige Detailansicht öffnen <span>+</span></summary><div class="v6-legacy-section">${v6OldOverview()}</div></details>`;
   const v6OldOperations = handlers.operations;
-  handlers.operations = () => v6OldOperations() + `<section class="v6-module-report">${v6MainOverview()}</section>`;
+  // Datenqualität shows data and set-up state; the figures have their own page (Übersicht), not a copy below (Oct 2026)
+  handlers.operations = () => v6OldOperations();
   // One description per report tab; CSV keeps its original columns, Excel adds units and the basis of the numbers.
   function v6ExportSpec() {
     const r = v6Report(),
@@ -5688,7 +5689,7 @@
     const row = (t) =>
       `<button type="button" class="v08-task" data-view="${t.view}"><span class="v08-task-mark ${t.tone}" aria-hidden="true"></span><span><b>${esc(t.title)}</b><small>${esc(t.detail)}</small></span><span class="v08-task-go" aria-hidden="true">→</span></button>`;
     return (
-      `<div class="v08-today"><div><div class="v08-overline">MEIN ARBEITSPLATZ · ${esc(today.toUpperCase())}</div><h1>Was heute ansteht</h1><p>${esc(S.business)} · ${esc(window.GLBAccess?.label(window.GLBAccess.role) || "GLB-Team")}${S.mode === "own" ? "" : " · Beispieldaten"}</p></div><p class="v08-today-scope">Aufgaben aus deinen Daten. Kennzahlen stehen im <a href="#" data-view="overview">Dashboard</a>, Einrichtung und Datenqualität in <a href="#" data-view="operations">Mission Control</a>.</p></div>` +
+      `<div class="v08-today"><div><div class="v08-overline">MEIN ARBEITSPLATZ · ${esc(today.toUpperCase())}</div><h1>Was heute ansteht</h1><p>${esc(S.business)} · ${esc(window.GLBAccess?.label(window.GLBAccess.role) || "GLB-Team")}${S.mode === "own" ? "" : " · Beispieldaten"}</p></div><p class="v08-today-scope">Aufgaben aus deinen Daten. Kennzahlen stehen im <a href="#" data-view="overview">Dashboard</a>, Einrichtung und Datenqualität in <a href="#" data-view="operations">Datenqualität</a>.</p></div>` +
       `<div class="v08-today-grid"><section class="panel">${panelHeader("Zu erledigen", todo.length ? `${todo.length} offene${todo.length === 1 ? "r Punkt" : " Punkte"}` : "")}${
         todo.length
           ? `<div class="v08-tasks">${todo.map(row).join("")}</div>`

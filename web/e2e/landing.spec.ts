@@ -13,8 +13,10 @@ test.describe("L01 Landingpage", () => {
   test("L01-E1 Preise stimmen mit den Tarifen überein", async ({ page }) => {
     await page.goto("/#preise");
     const pricing = page.getByRole("region", { name: "Preise" });
-    await expect(pricing).toContainText("49 €");
-    await expect(pricing).toContainText("+ 39 €");
+    // Oct 2026 plan model, published as preliminary until the plan details are decided
+    for (const x of ["Standard", "89,00 €", "Premium", "109,99 €", "zuzüglich 2,99 € pro Nutzer und Monat", "Individuelle Lösungen", "29,99 €", "Vorläufige Preise"])
+      await expect(pricing).toContainText(x);
+    for (const old of ["49 €", "39 €", "490 €", "2 Monate geschenkt", "§ 19"]) await expect(pricing).not.toContainText(old);
   });
 
   test("L01-E2 Handybreite, FAQ per Tastatur", async ({ page }) => {
@@ -27,14 +29,19 @@ test.describe("L01 Landingpage", () => {
     await expect(page.getByText(/Es gibt sieben Rollen/)).toBeVisible();
   });
 
-  test("L01-E3 nur Module von v0.8, jedes mit Bild; Video mit Untertiteln", async ({ page }) => {
+  test("L01-E3 kurze Antworten zuerst, vier Abläufe mit Bild, Bereiche als kurzer Index; Video mit Untertiteln", async ({ page }) => {
     await page.goto("/");
+    const answers = page.getByRole("region", { name: "Kurz beantwortet" });
+    for (const q of ["Welche Entscheidung erleichtert die Suite?", "Wie kommen meine Daten hinein?", "Wie viel laufende Arbeit entsteht?", "Was kostet das?", "Wie teste ich mit eigenen Daten?"])
+      await expect(answers.getByText(q)).toBeVisible();
     const features = page.getByRole("region", { name: "Vom Service bis zum Ergebnis." });
-    for (const h of ["GLB Report Studio", "Service Funnel & Sales Forecast", "Deckungsbeiträge & Zielpreise", "Renner-Penner & Aktionsplan", "Tagesfunnel aus Kassendaten", "Funnel Quest – Training"]) await expect(features.getByRole("heading", { name: h })).toBeVisible();
-    await expect(features.getByRole("img")).toHaveCount(6);
+    for (const h of ["Report Studio", "Deckungsbeiträge & Zielpreise", "Bestell-Forecast", "Service Funnel"]) await expect(features.getByRole("heading", { name: h })).toBeVisible();
+    await expect(features.getByRole("img")).toHaveCount(4);
     const board = page.getByRole("region", { name: "Ein Board statt zehn Listen" });
-    for (const h of ["Management-Cockpit", "Menu Engineering", "Team & Aufgaben, Mindestbestände", "KI-Marktcheck"]) await expect(board.getByRole("heading", { name: h })).toBeVisible();
-    await expect(board.getByRole("img")).toHaveCount(12);
+    for (const a of ["Übersicht", "Verkauf & Preise", "Einkauf & Lager", "Service & Team", "Einrichtung & Daten"]) await expect(board.getByText(a, { exact: true })).toBeVisible();
+    await expect(board.getByRole("img")).toHaveCount(0);
+    // the demo appointment stays visible: header and hero lead to it
+    await expect(page.getByRole("link", { name: "Vorführung anfragen" })).toHaveAttribute("href", "#anfrage");
     const video = page.locator("video");
     await expect(video).toHaveAttribute("poster", "/landing/suite-reports.png");
     await expect(video.locator("track[kind=captions]")).toHaveAttribute("src", "/landing/suite-rundgang.vtt");

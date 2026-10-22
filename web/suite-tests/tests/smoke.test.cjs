@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const C=require('../src/core.js');
 const V4=require('../src/v04core.js'),V5=require('../src/v05core.js'),V6=require('../src/v06core.js');
 const app=fs.readFileSync(require('node:path').join(__dirname,'../src/app.js'),'utf8');
-for (const [view,expected] of Object.entries({overview:'Performance Cockpit',products:'Artikel &amp; Umsätze',calculator:'Preiskalkulation',portfolio:'Renner &amp; Penner',insights:'Dein digitaler Analyse-Assistent',import:'CSV-Datei importieren',settings:'Datensicherung',roadmap:'GLB Workforce'})) {
+for (const [view,expected] of Object.entries({overview:'Wie läuft der Betrieb?',products:'Artikel &amp; Umsätze',calculator:'Preiskalkulation',portfolio:'Renner &amp; Penner',insights:'Dein digitaler Analyse-Assistent',import:'CSV-Datei importieren',settings:'Datensicherung',roadmap:'GLB Workforce'})) {
  test('Der Bildschirm '+view+' wird ohne JavaScript-Fehler gerendert',()=>{
   const nodes={};const el=(id)=>nodes[id]??(nodes[id]={innerHTML:'',textContent:'',addEventListener(){},classList:{add(){},remove(){},toggle(){}}});
   const document={querySelector:el,querySelectorAll:()=>[],addEventListener(){}};
