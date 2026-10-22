@@ -3891,6 +3891,62 @@
   function v6Report() {
     return V6.performance(S, { month: V6_MONTH, outlet: V6_OUTLET, category: V6_CATEGORY });
   }
+  // One definition of what the report filters mean, used by figures, charts, tables and exports alike.
+  const v6DateDE = (d) => d.split("-").reverse().join(".");
+  const v6MonthEnd = (m) => new Date(Date.UTC(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0)).toISOString().slice(0, 10);
+  const v6OutletName = (id) => (id === "all" ? "alle Outlets" : S.outlets.find((o) => o.id === id)?.name || "unbekanntes Outlet");
+  // Which filters a report part can honour: the funnel has no product groups, stock is a current state.
+  const V6_APPLIES = {
+    performance: ["month", "outlet", "category"],
+    sortiment: ["month", "outlet", "category"],
+    service: ["month", "outlet"],
+    inventory: [],
+  };
+  const V6_NOT_APPLIED = {
+    service: "Warengruppe wirkt nicht auf Service-Kennzahlen: Funnel-Erfassungen haben keine Warengruppe.",
+    inventory:
+      "Lager und Einkauf zeigen den aktuellen Bestand und den Forecast aus den letzten Tagesabsätzen. Zeitraum, Outlet und Warengruppe wirken hier nicht.",
+  };
+  function v6ScopeLabel(applies = ["month", "outlet", "category"]) {
+    const parts = [];
+    if (applies.includes("month")) parts.push(V6_MONTH === "all" ? "alle Monate" : periodName(V6_MONTH));
+    if (applies.includes("outlet")) parts.push(v6OutletName(V6_OUTLET));
+    if (applies.includes("category")) parts.push(V6_CATEGORY === "all" ? "alle Warengruppen" : V6_CATEGORY);
+    return parts.join(" · ");
+  }
+  // A selection without a single sales line is missing data, not zero revenue.
+  const v6NoSales = () =>
+    v6Empty(
+      "Keine Verkaufszeilen in dieser Auswahl",
+      `Für ${v6ScopeLabel()} sind keine Verkäufe erfasst. Andere Filter wählen oder Verkäufe importieren.`,
+    );
+  function v6ReportFunnelScope() {
+    const m = V6_MONTH;
+    return {
+      outlet: V6_OUTLET,
+      from: m === "all" ? "" : m + "-01",
+      to: m === "all" ? "" : v6MonthEnd(m),
+      label: v6ScopeLabel(["month", "outlet"]),
+    };
+  }
+  function v6ModuleFunnelScope() {
+    const range = FSTART || FEND ? `${FSTART ? v6DateDE(FSTART) : "Beginn"} bis ${FEND ? v6DateDE(FEND) : "heute"}` : "alle erfassten Tage";
+    return { outlet: FOUTLET, from: FSTART, to: FEND, label: `${range} · ${v6OutletName(FOUTLET)}` };
+  }
+  // Last month with sales compared with the calendar month before it, for the same outlet and product group.
+  function v6MonthCompare() {
+    const months = V6.performance(S, { month: "all", outlet: V6_OUTLET, category: V6_CATEGORY }).months.filter((x) =>
+      /^\d{4}-\d{2}$/.test(x.id),
+    );
+    const target = V6_MONTH === "all" ? months.at(-1)?.id : V6_MONTH;
+    if (!target) return null;
+    const d = new Date(Date.UTC(Number(target.slice(0, 4)), Number(target.slice(5, 7)) - 2, 1)),
+      prevId = d.toISOString().slice(0, 7);
+    const cur = months.find((x) => x.id === target),
+      prev = months.find((x) => x.id === prevId);
+    if (!cur || !prev || !prev.revenue) return { target, prevId, change: null };
+    return { target, prevId, change: (100 * (cur.revenue - prev.revenue)) / prev.revenue };
+  }
   function v6Empty(title = "Noch keine Datengrundlage", detail = "Daten erfassen oder andere Filter wählen.") {
     return `<div class="v6-empty">${I("chart")}<b>${esc(title)}</b><span>${esc(detail)}</span></div>`;
   }
@@ -3948,20 +4004,21 @@
       .join("");
     return `<div class="v6-donut-wrap"><svg class="v6-donut" viewBox="0 0 160 160" role="img" aria-label="Anteile nach Umsatz">${arcs}<text x="80" y="77" text-anchor="middle" font-size="11" fill="#70858a">Gesamt</text><text x="80" y="96" text-anchor="middle" font-weight="750" font-size="16" fill="#15333b">${Math.round(total).toLocaleString("de-DE")}</text></svg><div class="v6-legend">${top.map((r, i) => `<div><i style="background:${v6Colors[i % v6Colors.length]}"></i><span>${esc(r.name)}</span><b>${((100 * v6Safe(r[metric])) / total).toFixed(1).replace(".", ",")} %</b></div>`).join("")}</div></div>`;
   }
-  function v6ReportFilters() {
+  function v6ReportFilters(applies = ["month", "outlet", "category"], note = "") {
+    const off = (k) => (applies.includes(k) ? "" : ' disabled aria-describedby="v6-filter-note"');
     const months = [...new Set((S.sales || []).map((x) => x.month).filter((x) => /^\d{4}-\d{2}$/.test(x)))].sort().reverse();
     const cats = [...new Set(S.items.map((p) => p.category))].sort();
-    return `<div class="v6-filter-ribbon"><div class="v6-filter-info">${I("settings")} <span>Berichtsfilter</span></div><label>Zeitraum<select id="v6-filter-month" class="select">${selectOptions([["all", "Alle Monate"], ...months.map((x) => [x, periodName(x)])], V6_MONTH)}</select></label><label>Outlet<select id="v6-filter-outlet" class="select">${selectOptions([["all", "Alle Outlets"], ...S.outlets.map((o) => [o.id, o.name])], V6_OUTLET)}</select></label><label>Warengruppe<select id="v6-filter-category" class="select">${selectOptions([["all", "Alle Warengruppen"], ...cats.map((x) => [x, x])], V6_CATEGORY)}</select></label><button class="v6-text-button" data-v6="reset">Zurücksetzen</button></div>`;
+    return `<div class="v6-filter-ribbon"><div class="v6-filter-info">${I("settings")} <span>Berichtsfilter</span></div><label>Zeitraum<select id="v6-filter-month" class="select"${off("month")}>${selectOptions([["all", "Alle Monate"], ...months.map((x) => [x, periodName(x)])], V6_MONTH)}</select></label><label>Outlet<select id="v6-filter-outlet" class="select"${off("outlet")}>${selectOptions([["all", "Alle Outlets"], ...S.outlets.map((o) => [o.id, o.name])], V6_OUTLET)}</select></label><label>Warengruppe<select id="v6-filter-category" class="select"${off("category")}>${selectOptions([["all", "Alle Warengruppen"], ...cats.map((x) => [x, x])], V6_CATEGORY)}</select></label><button class="v6-text-button" data-v6="reset">Zurücksetzen</button>${note ? `<p class="v6-filter-note" id="v6-filter-note">${esc(note)}</p>` : ""}</div>`;
   }
   function v6ReportHeader(title, desc) {
     return `<div class="v6-heading"><div><div class="v6-overline">GLB INSIGHTS / REPORTING</div><h2>${esc(title)}</h2><p>${esc(desc)}</p></div><div class="v6-report-actions"><button class="btn" data-v6="save-view">${I("plus")} Ansicht speichern</button><button class="btn" data-v6="csv">${I("download")} CSV-Report</button><button class="btn btn-primary" data-v6="print">${I("file")} Drucken / PDF</button></div></div>`;
   }
   function v6Exec() {
     const t = v6Report();
-    const latest = V6.monthlyChange(t.months),
+    const cmp = v6MonthCompare(),
       top = t.products[0],
       rev = t.totals.revenue;
-    return `<section class="v6-executive"><div class="v6-executive-copy"><span class="v6-overline">OPERATIVE STEUERUNG / PERFORMANCE</span><h2>Dein Betrieb.<br><em>Alle Zahlen im Blick.</em></h2><p>Umsatz, Rohwaren, Deckungsbeitrag und Verkaufstrends – aus deinen erfassten Verkaufszeilen.</p><div class="v6-hero-links"><button class="v6-hero-btn" data-view="reports">Reporting öffnen →</button><button class="v6-hero-ghost" data-view="funnel">Service-Funnel analysieren</button></div></div><div class="v6-hero-card"><span>NETTO-UMSATZ / AKTUELLE AUSWAHL</span><strong>${euro(rev)}</strong><div class="v6-hero-mini">${v6MiniBars(t.months)}</div><small>${latest === null ? "Kein belastbarer Vormonatsvergleich" : `${latest >= 0 ? "+" : ""}${pct(latest)} gegenüber dem unmittelbar vorherigen Monat`}</small></div></section>`;
+    return `<section class="v6-executive"><div class="v6-executive-copy"><span class="v6-overline">OPERATIVE STEUERUNG / PERFORMANCE</span><h2>Dein Betrieb.<br><em>Alle Zahlen im Blick.</em></h2><p>Umsatz, Rohwaren, Deckungsbeitrag und Verkaufstrends – aus deinen erfassten Verkaufszeilen.</p><div class="v6-hero-links"><button class="v6-hero-btn" data-view="reports">Reporting öffnen →</button><button class="v6-hero-ghost" data-view="funnel">Service-Funnel analysieren</button></div></div><div class="v6-hero-card"><span>NETTO-UMSATZ · ${esc(v6ScopeLabel().toUpperCase())}</span><strong>${euro(rev)}</strong><div class="v6-hero-mini">${v6MiniBars(t.months)}</div><small>${!cmp ? "Noch keine Verkäufe erfasst" : cmp.change === null ? `Kein Vergleich: für ${periodName(cmp.prevId)} sind keine Verkäufe erfasst` : `${periodName(cmp.target)} ggü. ${periodName(cmp.prevId)}: ${cmp.change >= 0 ? "+" : ""}${pct(cmp.change)} (Monatsumsatz, nicht die Summe oben)`}</small></div></section>`;
   }
   function v6MiniBars(months) {
     const rows = months.slice(-8),
@@ -3973,8 +4030,9 @@
   function v6MainOverview() {
     const r = v6Report(),
       t = r.totals,
-      change = V6.monthlyChange(r.months);
-    return `<div class="v6-page-top">${v6Exec()}${v6ReportFilters()}</div><div class="v6-kpis">${v6Kpi("Netto-Umsatz", euro(t.revenue), change === null ? "Keine lückenlose Monatsveränderung" : `${change >= 0 ? "+" : ""}${pct(change)} zum Vormonat`)}${v6Kpi("DB II", euro(t.db2), "Vor Fixkosten", "mint")}${v6Kpi("Wareneinsatzquote", v6Percent(t.goodsPct), "Warenkosten / Netto-Umsatz")}${v6Kpi("Verkaufte Einheiten", number(t.quantity), "Aus erfassten Verkaufszeilen")}</div><div class="v6-split"><div>${v6Panel("PERFORMANCE", "Umsatz und DB im Zeitverlauf", "Monatlicher Netto-Umsatz. Alle Filter wirken auf die Grafik.", v6LineChart(r.months, "revenue"))}</div><div>${v6Panel("SORTIMENT", "Umsatz nach Warengruppe", "Anteil der Produktkategorien am Netto-Umsatz.", v6Donut(r.categories))}</div></div><div class="v6-split"><div>${v6Panel("OUTLETS", "Umsatz nach Outlet", "Klick auf ein Outlet filtert alle Reports.", v6BarChart(r.outlets, "revenue", { click: "outlet" }))}</div><div>${v6Tips(
+      cmp = v6MonthCompare();
+    if (!r.products.length) return `<div class="v6-page-top">${v6Exec()}${v6ReportFilters()}</div>${v6NoSales()}`;
+    return `<div class="v6-page-top">${v6Exec()}${v6ReportFilters()}</div><div class="v6-kpis">${v6Kpi(`Netto-Umsatz · ${V6_MONTH === "all" ? "alle Monate" : periodName(V6_MONTH)}`, euro(t.revenue), !cmp ? "Kein Monat mit Verkäufen" : cmp.change === null ? `${periodName(cmp.target)}: kein Vormonat (${periodName(cmp.prevId)}) erfasst` : `${periodName(cmp.target)} ggü. ${periodName(cmp.prevId)}: ${cmp.change >= 0 ? "+" : ""}${pct(cmp.change)}`)}${v6Kpi("DB II", euro(t.db2), "Vor Fixkosten", "mint")}${v6Kpi("Wareneinsatzquote", v6Percent(t.goodsPct), "Warenkosten / Netto-Umsatz")}${v6Kpi("Verkaufte Einheiten", number(t.quantity), "Aus erfassten Verkaufszeilen")}</div><div class="v6-split"><div>${v6Panel("PERFORMANCE", "Umsatz und DB im Zeitverlauf", "Monatlicher Netto-Umsatz. Alle Filter wirken auf die Grafik.", v6LineChart(r.months, "revenue"))}</div><div>${v6Panel("SORTIMENT", "Umsatz nach Warengruppe", "Anteil der Produktkategorien am Netto-Umsatz.", v6Donut(r.categories))}</div></div><div class="v6-split"><div>${v6Panel("OUTLETS", "Umsatz nach Outlet", "Klick auf ein Outlet filtert alle Reports.", v6BarChart(r.outlets, "revenue", { click: "outlet" }))}</div><div>${v6Tips(
       "Was du als Nächstes prüfen solltest",
       [
         {
@@ -4012,14 +4070,17 @@
   function v6Products() {
     const r = v6Report(),
       sort = r.products.slice().sort((a, b) => b.quantity - a.quantity);
+    if (!r.products.length) return `<div class="v6-modular-head"><span>ARTIKEL-REPORTING</span></div>${v6NoSales()}`;
     return `<div class="v6-modular-head"><span>ARTIKEL-REPORTING</span><button class="btn btn-small" data-view="reports">Alle Reports ↗</button></div><div class="v6-kpis">${v6Kpi("Aktive Verkaufsartikel", number(r.products.length), "Mit Umsatz in der Auswahl")}${v6Kpi("Top-Seller", r.products[0]?.name || "—", "Nach Nettoumsatz")}${v6Kpi("DB-II-Marge", v6Percent(r.totals.marginPct), "Auf die Verkaufsauswahl bezogen")}${v6Kpi("Verkäufe", number(r.totals.quantity), "Verkaufte Einheiten")}</div><div class="v6-split">${v6Panel("ARTIKELMIX", "Umsatzstärkste Artikel", "Netto-Umsatz nach Produkt.", v6BarChart(r.products, "revenue", { limit: 8 }))}${v6Panel("POPULARITÄT", "Meistverkaufte Artikel", "Verkaufte Stück, unabhängig vom Preis.", v6BarChart(sort, "quantity", { money: false, limit: 8 }))}</div>${v6Panel("ABC-ANALYSE", "Welche Artikel tragen den Umsatz?", "A/B/C-Klassifizierung des Nettoumsatzes.", v6ABC(r))}`;
   }
   function v6Outlet() {
     const r = v6Report();
+    if (!r.products.length) return `<div class="v6-modular-head"><span>OUTLET PERFORMANCE</span></div>${v6NoSales()}`;
     return `<div class="v6-modular-head"><span>OUTLET PERFORMANCE</span><button class="btn btn-small" data-view="reports">Detailreport ↗</button></div><div class="v6-kpis">${v6Kpi("Netto-Umsatz", euro(r.totals.revenue), "Aktuelle Berichtsfilter")}${v6Kpi("Deckungsbeitrag II", euro(r.totals.db2), "Kalkulatorisch vor Fixkosten")}${v6Kpi("Ø Netto pro Artikel", r.totals.quantity ? euro(r.totals.revenue / r.totals.quantity) : "—", "Kein Umsatz pro Gast")}${v6Kpi("Aktive Outlets", String(r.outlets.length), "Mit Verkaufszeilen")}</div><div class="v6-split">${v6Panel("UMSATZVERTEILUNG", "Umsatz nach Outlet", "Für ein Outlet anklicken.", v6BarChart(r.outlets, "revenue", { click: "outlet" }))}${v6Panel("DECKUNGSBEITRAG", "DB II nach Outlet", "Keine fixe Personalkostenverteilung.", v6BarChart(r.outlets, "db2"))}</div>`;
   }
   function v6Cost() {
-    const r = v6Report(),
+    // Same month as the cost form above, all outlets and groups, so both blocks describe the same period.
+    const r = V6.performance(S, { month: COST_MONTH, outlet: "all", category: "all" }),
       existing = Object.entries(S.monthlyCosts || {}).filter(([month]) => /^\d{4}-\d{2}$/.test(month));
     const rows = existing
       .map(([id, x]) => ({
@@ -4033,7 +4094,7 @@
       .sort((a, b) => a.id.localeCompare(b.id));
     const selected = (S.monthlyCosts || {})[COST_MONTH];
     const fixed = selected ? v6Safe(selected.energy) + v6Safe(selected.payroll) + v6Safe(selected.overhead) : null;
-    return `<div class="v6-modular-head"><span>ERTRAGSREPORT</span><button class="btn btn-small" data-view="reports">Detailreport ↗</button></div><div class="v6-kpis">${v6Kpi("DB I", euro(r.totals.db1), "Vor sonstigen variablen Kosten")}${v6Kpi("DB II", euro(r.totals.db2), "Vor Monatsfixkosten")}${v6Kpi("Kostenquote Waren", v6Percent(r.totals.goodsPct), "Kalkulatorisch aus Produktkosten")}${v6Kpi("Fixkosten · " + COST_MONTH, fixed === null ? "Nicht erfasst" : euro(fixed), "Nicht mit DB doppelt verrechnen")}</div><div class="v6-split">${v6Panel(
+    return `<div class="v6-modular-head"><span>ERTRAGSREPORT</span><button class="btn btn-small" data-view="reports">Detailreport ↗</button></div><div class="v6-kpis">${v6Kpi("DB I · " + periodName(COST_MONTH), euro(r.totals.db1), "Netto-Umsatz minus Warenkosten")}${v6Kpi("DB II · " + periodName(COST_MONTH), euro(r.totals.db2), "DB I minus variable Kosten, vor Fixkosten")}${v6Kpi("Kostenquote Waren", v6Percent(r.totals.goodsPct), "Kalkulatorisch aus Produktkosten")}${v6Kpi("Fixkosten · " + periodName(COST_MONTH), fixed === null ? "Nicht erfasst" : euro(fixed), "Energie, fester Payroll, Sachkosten")}</div><div class="v6-split">${v6Panel(
       "KOSTENSTRUKTUR",
       "Erfasste Fixkosten nach Monat",
       "Energie, fixer Payroll und Sachkosten. Kein gebuchter Ist-Aufwand.",
@@ -4046,10 +4107,20 @@
         : v6Empty("Keine Monatskosten", "Im Deckungsbeitragsreiter Monatswerte hinterlegen."),
     )}${v6Panel("WARENEINSATZ", "Warenkosten nach Warengruppe", "Variable Produktkosten aus Verkaufszeilen.", v6BarChart(r.categories, "goods"))}</div>`;
   }
-  function v6Funnel() {
-    const f = V6.funnel(S),
+  function v6Funnel(scope = v6ModuleFunnelScope()) {
+    const f = V6.funnel(S, { outlet: scope.outlet, from: scope.from, to: scope.to }),
       names = { aperitif: "Aperitifs", water: "Wasser", upgrades: "Upgrades", sides: "Beilagen", desserts: "Desserts", coffee: "Kaffee" };
-    return `<div class="v6-modular-head"><span>SERVICE FUNNEL / ZUSATZVERKAUF</span><button class="btn btn-small" data-view="reports">Funnel-Report ↗</button></div><div class="v6-kpis">${v6Kpi("Erfasste Gäste", number(f.covers), `${f.days} Tage mit Angaben`)}${v6Kpi("Zusatzartikel", number(f.extras), "Summe aller Service-Schritte")}${v6Kpi("Kalk. Zusatzumsatz netto", euro(f.revenue), "Auf Basis hinterlegter Artikelpreise")}${v6Kpi("Kalk. Zusatz-DB", euro(f.db), "Ohne Fixkosten")}</div><div class="v6-split">${v6Panel("TAGESVERLAUF", "Zusatzumsatz pro Erfassungstag", "Netto, nur Service-Funnel-Artikel – nicht zum regulären Umsatz addieren.", v6LineChart(f.daily, "revenue"))}${v6Panel(
+    const head = `<div class="v6-modular-head"><span>SERVICE FUNNEL / ZUSATZVERKAUF</span><button class="btn btn-small" data-view="reports">Funnel-Report ↗</button></div><p class="v6-scope">Auswahl: ${esc(scope.label)}</p>`;
+    // No recorded service day in the selection is no data, not zero sales.
+    if (!f.rows.length)
+      return (
+        head +
+        v6Empty(
+          "Keine Serviceerfassungen in dieser Auswahl",
+          `Für ${scope.label} ist kein Servicetag erfasst. Nicht erfasste Tage zählen nicht als null Verkäufe.`,
+        )
+      );
+    return `${head}<div class="v6-kpis">${v6Kpi("Erfasste Gäste", number(f.covers), `${f.days} Tage mit Angaben`)}${v6Kpi("Zusatzartikel", number(f.extras), "Summe aller Service-Schritte")}${v6Kpi("Kalk. Zusatzumsatz netto", euro(f.revenue), "Auf Basis hinterlegter Artikelpreise")}${v6Kpi("Kalk. Zusatz-DB", euro(f.db), "Ohne Fixkosten")}</div><div class="v6-split">${v6Panel("TAGESVERLAUF", "Zusatzumsatz pro Erfassungstag", "Netto, nur Service-Funnel-Artikel – nicht zum regulären Umsatz addieren.", v6LineChart(f.daily, "revenue"))}${v6Panel(
       "CONVERSION",
       "Quote je Service-Schritt",
       "Absatz / Covers; Quoten über 100 % bei Mehrfachkäufen möglich.",
@@ -4131,6 +4202,7 @@
   }
   function v6Portfolio() {
     const r = v6Report();
+    if (!r.products.length) return v6NoSales();
     const sorted = C.classify(
       r.products.map((x) => {
         const p = S.items.find((p) => p.id === x.id);
@@ -4217,10 +4289,11 @@
   function v6ReportContent() {
     const r = v6Report(),
       metric = V6_METRIC,
-      ff = V6.funnel(S, { outlet: V6_OUTLET });
-    if (V6_TAB === "service") return v6Funnel();
+      ff = null;
+    if (V6_TAB === "service") return v6Funnel(v6ReportFunnelScope());
     if (V6_TAB === "inventory") return v6Inventory() + v6Purchasing();
     if (V6_TAB === "sortiment") return v6Products() + v6Recipes();
+    if (!r.products.length) return v6NoSales();
     return `<div class="v6-kpis">${v6Kpi("Netto-Umsatz", euro(r.totals.revenue), "Aktuelle Filter")}${v6Kpi("DB II", euro(r.totals.db2), "Kalkulatorisch vor Fixkosten")}${v6Kpi("Wareneinsatzquote", v6Percent(r.totals.goodsPct), "Aktuelle Produktkosten")}${v6Kpi("Absatz", number(r.totals.quantity), "Verkaufte Artikel")}</div><div class="v6-split">${v6Panel("TREND", "Monatsentwicklung", "Umsatz, DB II oder Absatz über den Zeitverlauf.", v6LineChart(r.months, metric, metric !== "quantity"))}${v6Panel("BREAKDOWN", "Warengruppenverteilung", "Anteile des aktuellen Sortiments.", v6Donut(r.categories, metric))}</div><div class="v6-split">${v6Panel("OUTLET REPORT", "Outlets im Vergleich", "Klick filtert die gesamte Ansicht.", v6BarChart(r.outlets, metric, { money: metric !== "quantity", click: "outlet" }))}${v6Panel(
       "TOP 9",
       "Stärkste Produkte",
@@ -4233,7 +4306,7 @@
     )}</div>${v6Panel("DETAILS", "Artikel-Performance-Tabelle", "Sortieren, durchsuchen und exportieren.", v6ReportTable(r))}`;
   }
   function v6ReportsView() {
-    return `<div class="v6-print-shell">${pageHeader("ANALYTICS / MANAGEMENT REPORTS", "GLB Report Studio", "Alle betriebswirtschaftlichen Kennzahlen an einem Ort. Filter, gespeicherte Ansichten, Export und Druck – ohne Cloudkosten.", `<button class="btn" data-view="operations">${I("bolt")} Mission Control</button>`)}${demoNotice()}${v6PrintSummary()}${v6ReportHeader("Management Reporting", "Die Module verwenden dieselbe betriebliche Datengrundlage.")}${v6ReportFilters()}<div class="v6-tabbar" role="tablist">${[
+    return `<div class="v6-print-shell">${pageHeader("ANALYTICS / MANAGEMENT REPORTS", "GLB Report Studio", "Alle betriebswirtschaftlichen Kennzahlen an einem Ort. Filter, gespeicherte Ansichten, Export und Druck – ohne Cloudkosten.", `<button class="btn" data-view="operations">${I("bolt")} Mission Control</button>`)}${demoNotice()}${v6PrintSummary()}${v6ReportHeader("Management Reporting", "Die Module verwenden dieselbe betriebliche Datengrundlage.")}${v6ReportFilters(V6_APPLIES[V6_TAB] || [], V6_NOT_APPLIED[V6_TAB] || "")}<div class="v6-tabbar" role="tablist">${[
       ["performance", "Performance"],
       ["sortiment", "Sortiment & Rezepte"],
       ["service", "Service & Conversion"],
@@ -4312,7 +4385,10 @@
         console.warn("Report " + name, e);
         supplement = `<p class="v6-report-error">Bericht für dieses Modul derzeit nicht berechenbar: ${esc(e.message)}</p>`;
       }
-      return html + `<section class="v6-module-report">${supplement}</section>`;
+      const shared = ["products", "outlets", "groups", "portfolio"].includes(name)
+        ? `<div class="v6-scope-bar">${v6ReportFilters()}<p class="v6-scope">Dieser Bericht nutzt den gemeinsamen Berichtsfilter (wie Dashboard und Report Studio): ${esc(v6ScopeLabel())}.</p></div>`
+        : "";
+      return html + `<section class="v6-module-report">${shared}${supplement}</section>`;
     };
   }
   const v6OldOverview = v5OldOverview;
@@ -4336,8 +4412,9 @@
         { label: "Warnpositionen", value: "risk" },
       ];
     } else if (V6_TAB === "service") {
-      rows = V6.funnel(S, { outlet: V6_OUTLET }).steps;
-      name = "Service_Funnel";
+      const sc = v6ReportFunnelScope();
+      rows = V6.funnel(S, { outlet: sc.outlet, from: sc.from, to: sc.to }).steps;
+      name = "Service_Funnel_" + sc.label;
       cols = [
         { label: "Service Schritt", value: "id" },
         { label: "Anzahl", value: "count" },
@@ -4357,7 +4434,7 @@
       ];
     } else {
       rows = r.products;
-      name = "Artikelperformance";
+      name = "Artikelperformance_" + v6ScopeLabel();
       cols = [
         { label: "Artikel", value: "name" },
         { label: "Absatz", value: "quantity" },
@@ -4368,7 +4445,11 @@
         { label: "DB II Marge %", value: "marginPct" },
       ];
     }
-    downloadFile(V6.safeCSV(rows, cols), `GLB_${name}_${new Date().toISOString().slice(0, 10)}.csv`, "text/csv;charset=utf-8");
+    const fileName = String(name)
+      .replace(/[^A-Za-z0-9ÄÖÜäöüß_-]+/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/_$/, "");
+    downloadFile(V6.safeCSV(rows, cols), `GLB_${fileName}_${new Date().toISOString().slice(0, 10)}.csv`, "text/csv;charset=utf-8");
     toast("CSV-Report exportiert.");
   }
   function v6ReportAction(el) {
