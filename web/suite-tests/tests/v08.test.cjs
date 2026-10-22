@@ -1,0 +1,12 @@
+const {test}=require('node:test'); const assert=require('node:assert/strict');
+const M=require('../src/v08menu.js'),R=require('../src/v08roles.js');
+test('Menu text prices, categories, and wrapped price lines',()=>{const res=M.parseText('BURGER\nClassic Burger ........ 17,90 €\nVeggie Burger 16,50 €\nGRILL\nRinderfilet\n39,90 €');assert.equal(res.rows.length,3);assert.equal(res.rows[2].grossPrice,39.9);assert.equal(res.rows[2].category,'GRILL');});
+test('Menu CSV German decimal and VAT imported',()=>{const x=M.parseCSV('\ufeffProdukt;Kategorie;Bruttopreis;USt;Einheit\nBurger;Grill;17,90;7;Portion\nEspresso;Kaffee;3,40;19;Stück');assert.equal(x.rows.length,2);assert.equal(x.rows[0].vat,7);assert.equal(x.rows[1].grossPrice,3.4);});
+test('Menu CSV header validation is actionable',()=>assert.throws(()=>M.parseCSV('Name;Menge\nBurger;12'),/Preis/));
+test('Menu text does not fabricate article from heading',()=>{assert.deepEqual(M.parseText('BURGER\nHallo willkommen bei uns').rows,[]);});
+test('Restricted service role cannot see financial views',()=>{R.setRole('service_staff'); assert.equal(R.canView('funnel'),true);assert.equal(R.canView('costs'),false);assert.equal(R.canView('reports'),false);assert.deepEqual(R.writableKeys(),['funnel']);});
+test('Kitchen staff can inventory but not financial modules',()=>{R.setRole('kitchen_staff');assert.equal(R.canView('inventory'),true);assert.equal(R.canView('costs'),false);assert.deepEqual(R.writableKeys(),['inventoryCounts']);});
+test('Kitchen lead manages recipe and stock but not HR/finance',()=>{R.setRole('kitchen_lead');assert.equal(R.canView('recipes'),true);assert.equal(R.canView('stockledger'),true);assert.equal(R.canView('reports'),false);});
+test('Only owner and general manager manage users',()=>{R.setRole('owner');assert(R.canManageUsers());R.setRole('general_manager');assert(R.canManageUsers());R.setRole('restaurant_manager');assert.equal(R.canManageUsers(),false);});
+test('Seven requested employee roles exist',()=>{for(const k of ['service_staff','kitchen_staff','sales','service_lead','kitchen_lead','restaurant_manager','general_manager'])assert(R.roles[k]);});
+test('Legacy roles remain accepted for existing accounts',()=>{assert(R.roles.editor);assert(R.roles.viewer);R.setRole(null);assert.equal(R.enabled,false);});
