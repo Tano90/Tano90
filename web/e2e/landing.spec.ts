@@ -4,7 +4,7 @@ test.describe("L01 Landingpage", () => {
   test("L01-H1 erreichbar ohne Anmeldung, barrierefrei, führt in die Suite", async ({ page, axe }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Gastro führen mit echten Zahlen.");
-    await expect(page.getByRole("img", { name: /Übersicht der GLB AI Suite/ })).toBeVisible();
+    await expect(page.getByRole("img", { name: /Dashboard der GLB AI Suite/ })).toBeVisible();
     await axe();
     await expect(page.getByRole("link", { name: /Live ausprobieren/ }).first()).toHaveAttribute("href", "/suite");
     await expect(page.getByRole("link", { name: "Anmelden" })).toHaveAttribute("href", "/suite");

@@ -315,3 +315,12 @@ body {
 .panel-collapsible[open] > summary {
   margin-bottom: 14px;
 }
+.v6-executive p.v6-exec-scope {
+  margin-top: 6px;
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .v6-executive p.v6-exec-scope {
+    display: none;
+  }
+}

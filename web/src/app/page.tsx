@@ -38,7 +38,7 @@ const SPOTLIGHTS: Spotlight[] = [
   {
     icon: BarChart3, kicker: "Management Reporting", title: "GLB Report Studio",
     body: "Alle betriebswirtschaftlichen Kennzahlen an einem Ort: Performance, Sortiment und Rezepte, Service und Conversion, Lager und Einkauf.",
-    points: ["Filter nach Zeitraum, Outlet und Warengruppe", "ABC-Analyse, Outlet-, Artikel-, Funnel-, Kosten- und Lagerberichte", "Ansichten speichern, CSV-Export, Drucken oder als PDF sichern"],
+    points: ["Filter nach Zeitraum, Outlet und Warengruppe", "ABC-Analyse, Outlet-, Artikel-, Funnel-, Kosten- und Lagerberichte", "Ansichten speichern, Export als CSV oder Excel mit Zeitraum, Einheiten und Rechengrundlage, Drucken oder als PDF"],
     shot: shotReports, alt: "GLB Report Studio mit Berichtsfilter, Reitern Performance, Sortiment und Rezepte, Service und Conversion, Lager und Einkauf sowie Kacheln für Netto-Umsatz, DB II, Wareneinsatzquote und Absatz.",
   },
   {
@@ -50,26 +50,26 @@ const SPOTLIGHTS: Spotlight[] = [
   {
     icon: Calculator, kicker: "Profit Engineering", title: "Deckungsbeiträge & Zielpreise",
     body: "Monatskosten einmal erfassen, und die Kalkulation zeigt für jeden Artikel den aktuellen und den erforderlichen Verkaufspreis nebeneinander.",
-    points: ["DB I und DB II je Artikel", "Monatliche Kosten und Zielbetriebsergebnis", "Rechnerischer Zielpreis, dazu die Preiskalkulation für einzelne Rezepte"],
+    points: ["DB I und DB II je Artikel", "Monatliche Kosten und Zielbetriebsergebnis", "Kostenstände mit Datum: vergangene Monate mit den damals gültigen Kosten"],
     shot: shotCosts, alt: "Deckungsbeiträge und Zielpreise mit Eingabe der Monatskosten und Kacheln für Nettoumsatz, Fixkostenquote und Zielpreis.",
   },
   {
     icon: LineChart, kicker: "Menu Engineering", title: "Renner-Penner & Aktionsplan",
     body: "Jedes Produkt in der Matrix aus Absatz und Deckungsbeitrag, mit priorisierten Schritten, was du im Betrieb als Nächstes testen kannst.",
-    points: ["Renner, Penner, Schläfer und Stars auf einen Blick", "Konkrete Maßnahmen je Artikel", "Preis-Szenarien für ausgewählte Artikel"],
+    points: ["Vergleich innerhalb des Sortiments, einer Warengruppe oder Oberkategorie", "Konkrete Maßnahmen je Artikel", "Preis-Szenarien für ausgewählte Artikel"],
     shot: shotPortfolio, alt: "Renner-Penner-Matrix mit Produkten als Punkte in vier Feldern und daneben eine Liste priorisierter Schritte.",
   },
 ];
 
 // Further modules: a smaller card each, also with a screenshot.
 const MODULES: { icon: typeof BarChart3; title: string; body: string; shot: StaticImageData; alt: string }[] = [
-  { icon: Gauge, title: "Übersicht & Mission Control", body: "Netto-Umsatz, DB II, Wareneinsatzquote und Absatz, dazu offene Aufgaben und Hinweise für heute.", shot: shotOverview, alt: "Übersicht mit Netto-Umsatz, DB II, Wareneinsatzquote und Umsatz nach Warengruppe." },
+  { icon: Gauge, title: "Arbeitsplatz, Mission Control & Dashboard", body: "Aufgaben aus deinen Daten im Arbeitsplatz, Einrichtung und Datenqualität in Mission Control, Netto-Umsatz, DB II und Wareneinsatz im Dashboard.", shot: shotOverview, alt: "Dashboard mit Berichtsfilter, Netto-Umsatz, DB II, Wareneinsatzquote und Absatz." },
   { icon: Sparkles, title: "Produktlebenszyklen", body: "Einführung, Wachstum, Reife oder Rückgang je Artikel, ab vier zusammenhängenden Monaten.", shot: shotLifecycle, alt: "Produktlebenszyklus mit Phasen und Einzelanalyse eines Artikels." },
   { icon: MapPin, title: "Mein Markt", body: "Wettbewerber im Umkreis über OpenStreetMap finden und Preise von Hand vergleichen.", shot: shotMarket, alt: "Mein Markt mit Standortangaben und Suche nach Betrieben im Radius." },
   { icon: ShoppingCart, title: "Bestell-Forecast", body: "Aus dem Absatz der letzten 7 oder 28 Tage über die Rezepte zum Rohwarenbedarf und zu Bestellgebinden.", shot: shotPurchasing, alt: "Bestell-Forecast mit Kacheln für Tage, Bestellwert und Szenario-Einstellungen." },
   { icon: Boxes, title: "Inventur & Lager", body: "Mehrere Lager, mobile Zählmaske, Warenbewegungen, Transfer, Schwund und Wareneingang.", shot: shotInventory, alt: "Inventur und Lagerverwaltung mit Beständen je Rohware." },
   { icon: ChefHat, title: "Rezepte & Rohwaren", body: "Zutaten, Gebinde und Einheiten, Kosten je Portion, Import von Rezepten und Rohwaren per CSV.", shot: shotRecipes, alt: "Rezepturen und Rohwaren mit Kosten je Rezept und Rohwarenstamm." },
-  { icon: Upload, title: "Speisekarten-Import", body: "CSV, Text oder textbasierte PDF einlesen, Vorschau prüfen, korrigieren, Dubletten erkennen.", shot: shotMenuImport, alt: "Speisekarten-Import mit Upload-Feld, Texteingabe und Vorschau." },
+  { icon: Upload, title: "Speisekarten-Import", body: "CSV, Text oder textbasierte PDF einlesen; Steuersatz nach Speisen und Getränken vorbelegt, unsichere Positionen markiert, vor dem Speichern korrigierbar.", shot: shotMenuImport, alt: "Speisekarten-Import mit Upload-Feld, Texteingabe und Vorschau." },
   { icon: ScanLine, title: "GLB Intelligence", body: "Regelbasierte Hinweise und Handlungsempfehlungen. Vorschläge, keine Automatik: du entscheidest.", shot: shotInsights, alt: "GLB Intelligence mit Handlungsempfehlungen und Analysegrundlage." },
 ];
 
@@ -96,7 +96,7 @@ const FACTS = [
 ];
 
 const FAQ = [
-  { q: "Wie kommen meine Daten hinein?", a: "Über den Datenimport: Speisekarten als CSV, Text oder textbasierte PDF, Rezepte, Rohwaren und Tagesabsätze als CSV. Vorlagen für jede Datei liegen in der Suite. Vor dem Übernehmen siehst du eine Vorschau und kannst korrigieren." },
+  { q: "Wie kommen meine Daten hinein?", a: "Über den Datenimport: Speisekarten als CSV, Text oder textbasierte PDF, Rezepte, Rohwaren und Tagesabsätze als CSV. Vorlagen für jede Datei liegen in der Suite. Vor dem Übernehmen siehst du eine Vorschau und kannst korrigieren. Dieselbe Datei wird wiedererkannt und nicht doppelt gezählt." },
   { q: `Ist ${APP_NAME} mit meiner Kasse verbunden?`, a: "Noch nicht automatisch. Verkaufszahlen kommen per CSV-Export aus der Kasse. Eine direkte Kassenanbindung ist in Planung." },
   { q: "Wer sieht welche Zahlen?", a: "Es gibt sieben Rollen von Geschäftsführung bis Mitarbeiter Küche. Service und Sales sehen keine Einkaufspreise und keine Fixkosten, die Küche keine Finanzberichte. Die Rechte prüft auch die Datenbank." },
   { q: "Funktioniert das auf dem Handy?", a: `Ja. ${APP_NAME} läuft im Browser und lässt sich als App installieren. Für Service und Küche gibt es eigene mobile Ansichten, etwa für die Tageszahlen im Funnel und die Inventur.` },
@@ -151,7 +151,7 @@ export default function LandingPage() {
           </div>
           <div className="relative animate-rise [animation-delay:150ms]">
             <figure className="overflow-hidden rounded-lg border border-border bg-surface shadow-pop">
-              <Image src={shotOverview} alt="Übersicht der GLB AI Suite: Netto-Umsatz 22.766 Euro, DB II, Wareneinsatzquote und verkaufte Einheiten, mit Beispieldaten." placeholder="blur" priority className="h-auto w-full" sizes="(min-width: 1024px) 760px, 100vw" />
+              <Image src={shotOverview} alt="Dashboard der GLB AI Suite: Netto-Umsatz 22.766 Euro, DB II, Wareneinsatzquote und verkaufte Einheiten, mit Beispieldaten." placeholder="blur" priority className="h-auto w-full" sizes="(min-width: 1024px) 760px, 100vw" />
             </figure>
             <figure className="absolute -bottom-10 -left-6 hidden w-36 overflow-hidden rounded-lg border-4 border-ink shadow-pop sm:block lg:w-44">
               <Image src={shotMobile} alt="Die Suite auf dem Handy." placeholder="blur" className="h-auto w-full" sizes="176px" />

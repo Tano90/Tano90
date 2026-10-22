@@ -1216,12 +1216,12 @@
         `<button class="btn" data-view="calculator">${I("calculator")} Einzelrezept</button><button class="btn btn-primary" data-action="save-month-costs">${I("check")} Monatskosten speichern</button>`,
       ) +
       demoNotice() +
-      `<div class="notice">${I("info")}<span><strong>Methodik:</strong> DB I/II berücksichtigen nur variable Produktkosten. Monatliche Energie, festes Payroll und Sachkosten werden für eine <strong>kalkulatorische Zielpreisquote</strong> ins Verhältnis zum Netto-Umsatz gesetzt. Der separat eingegebene Monats-Wareneinsatz wird nicht noch einmal von den Artikel-DBs abgezogen.</span></div><div class="panel"><div class="toolbar"><div class="toolbar-left"><label for="cost-month">Abrechnungsmonat</label><select class="select" id="cost-month">${selectOptions(
+      `<div class="notice">${I("info")}<span><strong>Methodik:</strong> DB I/II berücksichtigen nur variable Produktkosten. Monatliche Energie, festes Personalkosten und Sachkosten werden für eine <strong>kalkulatorische Zielpreisquote</strong> ins Verhältnis zum Netto-Umsatz gesetzt. Der separat eingegebene Monats-Wareneinsatz wird nicht noch einmal von den Artikel-DBs abgezogen.</span></div><div class="panel"><div class="toolbar"><div class="toolbar-left"><label for="cost-month">Abrechnungsmonat</label><select class="select" id="cost-month">${selectOptions(
         months.map((x) => [x, periodName(x)]),
         COST_MONTH,
       )}</select></div><span class="micro">Netto-Basis aus erfassten Verkäufen; ggf. manuell überschreiben.</span></div><div class="field-grid glb-cost-grid">${[
         ["energy", "Energie € / Monat"],
-        ["payroll", "Payroll fix € / Monat"],
+        ["payroll", "Personalkosten fix € / Monat"],
         ["overhead", "Sach- und übrige Fixkosten € / Monat"],
         ["goods", "Monatlicher Wareneinsatz € (Abgleich)"],
         ["revenueOverrideNet", "Netto-Gesamtumsatz € (optional)"],
@@ -1233,11 +1233,11 @@
         )
         .join(
           "",
-        )}</div><p class="chart-note">Achtung: Payroll hier nur, soweit nicht bereits als direkte variable Arbeitszeit pro Portion eingerechnet. Gesamtkosten aus eigener Buchhaltung und Netto-Umsatz müssen denselben Monat und dieselben Outlets abdecken. Preise gelten modellhaft für einen konstanten Umsatzmix.</p></div><section class="kpi-grid">${kpi("Netto-Umsatzbasis", euro(m.turnover), "chart", d.revenueOverrideNet > 0 ? "Manuell hinterlegt" : "Aus Verkaufszeilen")}${kpi("Fixkosten gesamt", euro(m.fixed), "calculator", "Energie + Payroll + Sachkosten")}${kpi("Fixkostenquote", m.fixedRate === null ? "—" : pct(100 * m.fixedRate), "trending", "Fixkosten / Netto-Umsatz")}${kpi("Betrieblicher Zielgewinn", pct(S.profitTarget), "target", "Netto-Umsatz-Basis")}</section><div class="panel" style="margin-bottom:18px">${panelHeader("Kostenstruktur des Monats", "Kosten je Kostenblock als Anteil am Netto-Umsatz")}${
+        )}</div><p class="chart-note">Achtung: Personalkosten hier nur, soweit nicht bereits als direkte variable Arbeitszeit pro Portion eingerechnet. Gesamtkosten aus eigener Buchhaltung und Netto-Umsatz müssen denselben Monat und dieselben Outlets abdecken. Preise gelten modellhaft für einen konstanten Umsatzmix.</p></div><section class="kpi-grid">${kpi("Netto-Umsatzbasis", euro(m.turnover), "chart", d.revenueOverrideNet > 0 ? "Manuell hinterlegt" : "Aus Verkaufszeilen")}${kpi("Fixkosten gesamt", euro(m.fixed), "calculator", "Energie + Personalkosten + Sachkosten")}${kpi("Fixkostenquote", m.fixedRate === null ? "—" : pct(100 * m.fixedRate), "trending", "Fixkosten / Netto-Umsatz")}${kpi("Betrieblicher Zielgewinn", pct(S.profitTarget), "target", "Netto-Umsatz-Basis")}</section><div class="panel" style="margin-bottom:18px">${panelHeader("Kostenstruktur des Monats", "Kosten je Kostenblock als Anteil am Netto-Umsatz")}${
         S.monthlyCosts[COST_MONTH] && m.turnover > 0
           ? `<div class="glb-bars">${[
               ["Energie", m.energy],
-              ["Payroll fix", m.payroll],
+              ["Personalkosten fix", m.payroll],
               ["Sachkosten", m.overhead],
               ["Wareneinsatz Buchhaltung", m.goods],
             ]
@@ -2655,7 +2655,7 @@
               })
               .join("")}</div>`
           : v4TableEmpty("Keine Inventurwerte", "Starte eine Zählung. Die Menge wird je Rohware und Lager separat gespeichert.")
-      }</div><div class="v4-two"><section class="panel">${panelHeader("Schnellerfassung · Smartphone", "Kamera oder Bestand per Hand")}${v4QuickCountForm()}</section><section class="panel">${panelHeader("Foto & KI-Erkennung", "Lokale Vision-Anbindung als Zusatzfunktion")}<p class="v4-p">Foto machen oder hochladen. Die Suite kann eine lokale Ollama-KI ansprechen, wenn du den mitgelieferten lokalen Server startest und ein Vision-Modell installiert hast. Ohne diese Einrichtung bleibt die manuelle Erfassung voll nutzbar.</p><div class="v4-vision-stage" id="v4-image-stage">${V4_CAPTURE_IMG ? `<img src="${v4SafeImage(V4_CAPTURE_IMG)}" alt="Inventurfoto">` : `${I("upload")}<span>Foto der Ware oder des Lagerregals hinzufügen</span>`}</div><input type="file" accept="image/*" capture="environment" id="v4-photo-file" hidden><div class="v4-vision-controls"><button class="btn" data-v4="pick-photo">${I("upload")} Foto aufnehmen</button><button class="btn btn-primary" data-v4="recognize-photo">${I("sparkles")} Mit lokaler KI prüfen</button></div><div id="v4-vision-results">${v4VisionResults()}</div><p class="calc-note">Wichtig: KI kann Etiketten, Verpackungen und Mengen falsch erkennen. Nichts wird automatisch gebucht. Jede Übernahme benötigt eine manuelle Kontrolle. Fotos werden nur beim Speichern der Inventurzeile lokal verkleinert abgelegt.</p></section></div><div class="panel"><h3>Inventurprotokoll</h3>${
+      }</div><div class="v4-two"><section class="panel">${panelHeader("Schnellerfassung · Smartphone", "Kamera oder Bestand per Hand")}${v4QuickCountForm()}</section><section class="panel">${panelHeader("Foto & KI-Erkennung", "Lokale Vision-Anbindung als Zusatzfunktion")}<p class="v4-p">Zusatzfunktion für die lokale Installation: Mit dem GLB-Server auf dem eigenen Rechner und einem installierten Vision-Modell (Ollama) macht die Suite ungeprüfte Vorschläge zu Ware auf dem Foto. In der Web-Version ist keine Bilderkennung angeschlossen; das Foto bleibt nur in diesem Browser. Gezählt wird immer links von Hand.</p><div class="v4-vision-stage" id="v4-image-stage">${V4_CAPTURE_IMG ? `<img src="${v4SafeImage(V4_CAPTURE_IMG)}" alt="Inventurfoto">` : `${I("upload")}<span>Foto der Ware oder des Lagerregals hinzufügen</span>`}</div><input type="file" accept="image/*" capture="environment" id="v4-photo-file" hidden><div class="v4-vision-controls"><button class="btn" data-v4="pick-photo">${I("upload")} Foto aufnehmen</button><button class="btn btn-primary" data-v4="recognize-photo">${I("sparkles")} Mit lokaler KI prüfen</button></div><div id="v4-vision-results">${v4VisionResults()}</div><p class="calc-note">Wichtig: KI kann Etiketten, Verpackungen und Mengen falsch erkennen. Nichts wird automatisch gebucht. Jede Übernahme benötigt eine manuelle Kontrolle. Fotos werden nur beim Speichern der Inventurzeile lokal verkleinert abgelegt.</p></section></div><div class="panel"><h3>Inventurprotokoll</h3>${
         S.inventoryCounts.length
           ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Datum</th><th>Lager</th><th>Rohware</th><th>Gezählte Menge</th><th>Foto</th><th></th></tr></thead><tbody>${[
               ...S.inventoryCounts,
@@ -3218,7 +3218,9 @@
   }
   async function v4AnalyzePhoto() {
     if (!V4_CAPTURE_IMG) return toast("Bitte zuerst ein Foto aufnehmen.", "error");
-    if (location.protocol === "file:") return toast("Lokale KI braucht den mitgelieferten Server. START_HIER lesen.", "error");
+    const noVision =
+      "Keine Bilderkennung angeschlossen. Sie läuft nur mit dem lokalen GLB-Server und einem Vision-Modell. Bitte Bestand links von Hand zählen.";
+    if (location.protocol === "file:") return toast(noVision, "error");
     try {
       const controller = new AbortController(),
         timer = setTimeout(() => controller.abort(), 90000);
@@ -3229,13 +3231,20 @@
         signal: controller.signal,
       });
       clearTimeout(timer);
+      // the website has no /api/vision: answer in words instead of a JSON parse error
+      if (res.status === 404 || !/json/.test(res.headers.get("content-type") || "")) return toast(noVision, "error");
       const data = await res.json();
-      if (!res.ok) throw Error(data.error || "KI nicht erreichbar");
+      if (!res.ok) throw Error(data.error || "Bilderkennung nicht erreichbar");
       V4_VISION = Array.isArray(data.suggestions) ? data.suggestions : [];
       render();
       toast(V4_VISION.length ? "Ungeprüfte KI-Vorschläge verfügbar." : "Kein sicherer Vorschlag erkannt.");
     } catch (e) {
-      toast("KI-Analyse nicht verfügbar: " + e.message, "error");
+      toast(
+        e.name === "AbortError"
+          ? "Die Bilderkennung hat nicht innerhalb von 90 Sekunden geantwortet."
+          : "Bilderkennung nicht verfügbar: " + e.message,
+        "error",
+      );
     }
   }
   function v4AdoptVision(index) {
@@ -4196,7 +4205,7 @@
     demoNotice() +
     v5Toolbar() +
     v5Readiness() +
-    `<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">WEITERENTWICKLUNG</div><h2>Was die lokale Suite kann – und was nicht</h2></div></div><div class="v5-info-grid"><div><b>Bereits funktional</b><p>Produkt-, Rezept-, Rohwaren- und Lagerverwaltung; CSV-Import; DB-Rechnung; Forecast; interne Bestellentwürfe; Wareneingang; manuelle Buchungen; Backup.</p></div><div><b>Noch nicht produktionsreif</b><p>Mehrbenutzer-Synchronisierung, revisionssichere Buchungen, echte Bestellung an Lieferanten, OCR auf Scans, automatische KI-Preise und abgesicherte Online-Anmeldung.</p></div></div></section>`;
+    `<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">WEITERENTWICKLUNG</div><h2>Was die Suite kann – und was nicht</h2></div></div><div class="v5-info-grid"><div><b>Funktioniert</b><p>Artikel, Rezepte, Rohwaren und Lager; Importe mit Vorschau; Deckungsbeiträge mit Kostenständen; Bestell-Forecast; Bestellentwürfe und Wareneingang; Warenbewegungen; Report Studio mit CSV und Excel; Backup. Mit Cloud-Projekt zusätzlich Anmeldung, Rollen und gemeinsamer Arbeitsbereich mit Revisionsprüfung.</p></div><div><b>Gibt es nicht</b><p>Bestellungen werden nicht an Lieferanten gesendet. Keine Kassenanbindung, keine Texterkennung für Scans oder Fotos, keine automatisch recherchierten Wettbewerbspreise. Buchungen sind nicht revisionssicher im Sinne der GoBD. Hinweise sind regelbasiert, keine KI.</p></div></div></section>`;
   // Search words per view, so people find a module by what they want to do, not only by its exact name.
   const COMMAND_WORDS = {
     myday: "start heute aufgaben arbeitsplatz",
@@ -4508,7 +4517,7 @@
   function v6Exec() {
     const t = v6Report();
     const cmp = v6MonthCompare();
-    return `<section class="v6-executive"><div class="v6-executive-copy"><span class="v6-overline">DASHBOARD · KENNZAHLEN</span><h2>Wie läuft das Geschäft?</h2><p>Umsatz, Deckungsbeitrag und Verkaufstrends aus deinen Verkaufszeilen, für die Auswahl im Berichtsfilter. Tagesaufgaben stehen in Mein Arbeitsplatz, Einrichtung und Datenqualität in Mission Control.</p><div class="v6-hero-links"><button class="v6-hero-btn" data-view="reports">Report Studio öffnen →</button><button class="v6-hero-ghost" data-view="funnel">Service Funnel</button></div></div><div class="v6-hero-card"><span>Monatsumsatz netto · letzte ${Math.min(8, t.months.length)} Monate</span><div class="v6-hero-mini" role="img" aria-label="Verlauf des Monatsumsatzes">${v6MiniBars(t.months)}</div><small>${!cmp ? "Noch keine Verkäufe erfasst" : cmp.change === null ? `Kein Vergleich: für ${periodName(cmp.prevId)} sind keine Verkäufe erfasst` : `${periodName(cmp.target)} ggü. ${periodName(cmp.prevId)}: ${cmp.change >= 0 ? "+" : ""}${pct(cmp.change)}`}</small></div></section>`;
+    return `<section class="v6-executive"><div class="v6-executive-copy"><span class="v6-overline">DASHBOARD · KENNZAHLEN</span><h2>Wie läuft das Geschäft?</h2><p>Umsatz, Deckungsbeitrag und Trends aus deinen Verkaufszeilen, für die Auswahl im Berichtsfilter.</p><p class="v6-exec-scope">Tagesaufgaben: Mein Arbeitsplatz · Einrichtung und Datenqualität: Mission Control</p><div class="v6-hero-links"><button class="v6-hero-btn" data-view="reports">Report Studio öffnen →</button><button class="v6-hero-ghost" data-view="funnel">Service Funnel</button></div></div><div class="v6-hero-card"><span>Monatsumsatz netto · letzte ${Math.min(8, t.months.length)} Monate</span><div class="v6-hero-mini" role="img" aria-label="Verlauf des Monatsumsatzes">${v6MiniBars(t.months)}</div><small>${!cmp ? "Noch keine Verkäufe erfasst" : cmp.change === null ? `Kein Vergleich: für ${periodName(cmp.prevId)} sind keine Verkäufe erfasst` : `${periodName(cmp.target)} ggü. ${periodName(cmp.prevId)}: ${cmp.change >= 0 ? "+" : ""}${pct(cmp.change)}`}</small></div></section>`;
   }
   function v6MiniBars(months) {
     const rows = months.slice(-8),
@@ -4584,10 +4593,10 @@
       .sort((a, b) => a.id.localeCompare(b.id));
     const selected = (S.monthlyCosts || {})[COST_MONTH];
     const fixed = selected ? v6Safe(selected.energy) + v6Safe(selected.payroll) + v6Safe(selected.overhead) : null;
-    return `<div class="v6-modular-head"><span>ERTRAGSREPORT</span><button class="btn btn-small" data-view="reports">Detailreport ↗</button></div><div class="v6-kpis">${v6Kpi("DB I · " + periodName(COST_MONTH), euro(r.totals.db1), "Netto-Umsatz minus Warenkosten")}${v6Kpi("DB II · " + periodName(COST_MONTH), euro(r.totals.db2), "DB I minus variable Kosten, vor Fixkosten")}${v6Kpi("Kostenquote Waren", v6Percent(r.totals.goodsPct), "Kalkulatorisch aus Produktkosten")}${v6Kpi("Fixkosten · " + periodName(COST_MONTH), fixed === null ? "Nicht erfasst" : euro(fixed), "Energie, fester Payroll, Sachkosten")}</div><div class="v6-split">${v6Panel(
+    return `<div class="v6-modular-head"><span>ERTRAGSREPORT</span><button class="btn btn-small" data-view="reports">Detailreport ↗</button></div><div class="v6-kpis">${v6Kpi("DB I · " + periodName(COST_MONTH), euro(r.totals.db1), "Netto-Umsatz minus Warenkosten")}${v6Kpi("DB II · " + periodName(COST_MONTH), euro(r.totals.db2), "DB I minus variable Kosten, vor Fixkosten")}${v6Kpi("Kostenquote Waren", v6Percent(r.totals.goodsPct), "Kalkulatorisch aus Produktkosten")}${v6Kpi("Fixkosten · " + periodName(COST_MONTH), fixed === null ? "Nicht erfasst" : euro(fixed), "Energie, fester Personalkosten, Sachkosten")}</div><div class="v6-split">${v6Panel(
       "KOSTENSTRUKTUR",
       "Erfasste Fixkosten nach Monat",
-      "Energie, fixer Payroll und Sachkosten. Kein gebuchter Ist-Aufwand.",
+      "Energie, fixe Personalkosten und Sachkosten. Kein gebuchter Ist-Aufwand.",
       rows.length
         ? v6BarChart(
             rows.map((x) => ({ ...x, revenue: x.energy + x.payroll + x.overhead })),

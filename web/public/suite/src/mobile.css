@@ -514,6 +514,10 @@
     padding-top: env(safe-area-inset-top);
     box-shadow: 18px 0 40px rgba(9, 28, 38, 0.3);
   }
+  /* the shadow belongs to the open menu only; closed it bled into the left page edge */
+  .sidebar:not(.is-open) {
+    box-shadow: none;
+  }
   .mobile-overlay.is-open {
     z-index: 2050 !important;
   }
