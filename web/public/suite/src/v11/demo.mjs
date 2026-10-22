@@ -45,6 +45,16 @@ const TASKS = [
   ["Wochenreport prüfen", "medium", "done", "2026-10-21", null],
 ];
 
+// Clearly fictitious competitor observations for the demo price comparison (Oct 2026): invented businesses,
+// "example.com" as a reserved non-source, the note says so, and the UI shows "Fiktives Beispiel" instead of a source.
+// [competitor, own article, own portion, competitor product, competitor portion, scope, competitor price]
+const MARKETS = [
+  ["Bistro am Markt (fiktiv)", "Classic Cheeseburger", "Portion", "Cheeseburger mit Pommes", "Portion", "same", 16.5],
+  ["Steakhaus Nord (fiktiv)", "Rumpsteak 250 g", "250 g", "Rumpsteak mit zwei Beilagen", "300 g", "different", 32.0],
+  ["Café Linde (fiktiv)", "Hausgemachte Limonade", "0,4 l", "Hauslimonade", "0,3 l", "same", 4.5],
+  ["Gasthaus Brücke (fiktiv)", "Apfelstrudel", "Portion", "Apfelstrudel mit Eis", "Portion", "unknown", 8.9],
+];
+
 /** Adds the v1.1 areas to a data object without touching existing keys. Seeds example data once in demo mode.
  *  `data.products`/`data.items` and `data.outlets` are used to link example lines to existing master data. */
 export function initializeIntelligence(data, mode = "demo") {
@@ -80,6 +90,27 @@ export function initializeIntelligence(data, mode = "demo") {
         line_type: "sale",
       }),
     );
+  if (!data.intelligence.markets.length)
+    data.intelligence.markets = MARKETS.map(([competitor_name, own, own_portion, competitor_product, competitor_portion, scope, price], i) => {
+      const p = byName.get(norm(own));
+      return {
+        id: `demo-market-${i}`,
+        competitor_name,
+        own_product: own,
+        own_product_id: p?.id ?? null,
+        own_portion,
+        competitor_product,
+        competitor_portion,
+        scope,
+        competitor_price_gross: price,
+        our_price_gross: Number(p?.grossPrice) || null,
+        source_url: "https://example.com/fiktive-beispielkarte",
+        checked_on: "2026-10-15",
+        note: "Fiktives Beispiel der Demo – keine echte Quelle, kein echter Betrieb.",
+        example: true,
+        created_at: "2026-10-15T08:00:00.000Z",
+      };
+    });
   if (!data.parStock.length)
     data.parStock = STOCK.map(([name, unit, stock, reorder_point, par_level, supplier], i) => ({
       id: `demo-stock-${i}`,

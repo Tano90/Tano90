@@ -212,7 +212,8 @@
       t = totals(items),
       ranked = classification.list;
     const suggestions = [];
-    const add = (level, title, detail, why) => suggestions.push({ level, title, detail, why });
+    const add = (level, title, detail, why, kind = "") => suggestions.push({ level, title, detail, why, kind });
+    const de = (n, d = 1) => Number(n).toLocaleString("de-DE", { minimumFractionDigits: d, maximumFractionDigits: d });
     if (!ranked.length)
       return [
         {
@@ -226,8 +227,9 @@
       add(
         "critical",
         "Wareneinsatz oberhalb des Zielwerts",
-        `Aktueller gewichteter Wareneinsatz: ${round(t.foodCostPct, 1)} %. Dein Richtwert: ${round(targetPct, 1)} %. Prüfe zunächst die umsatzstärksten Artikel.`,
+        `Aktueller gewichteter Wareneinsatz: ${de(t.foodCostPct)} %. Dein Richtwert: ${de(targetPct)} %. Prüfe zunächst die umsatzstärksten Artikel.`,
         "Gesamte Netto-Warenkosten geteilt durch gesamten Netto-Umsatz, gewichtet nach Mengen.",
+        "target",
       );
     }
     const losers = ranked.filter((x) => x.quadrant === "loser").sort((a, b) => a.contribution - b.contribution);
@@ -249,7 +251,7 @@
       add(
         "warning",
         `${x.name}: hoher Absatz, niedriger Stück-DB`,
-        `Bei ${x.quantity} Verkäufen beträgt der Stück-DB ${round(x.contributionUnit)} €. Kalkulation und Upsells prüfen.`,
+        `Bei ${de(x.quantity, 0)} Verkäufen beträgt der Stück-DB ${de(x.contributionUnit, 2)} €. Kalkulation und Upsells prüfen.`,
         "Menge mindestens Median, Stück-DB unter Median.",
       );
     }
@@ -258,7 +260,7 @@
       add(
         "opportunity",
         `Verkaufspotenzial bei ${sleepers[0].name}`,
-        `Stück-DB: ${round(sleepers[0].contributionUnit)} €. Sichtbarkeit auf Karte und Empfehlung im Service testen.`,
+        `Stück-DB: ${de(sleepers[0].contributionUnit, 2)} €. Sichtbarkeit auf Karte und Empfehlung im Service testen.`,
         "Stück-DB mindestens Median, Menge unter Median.",
       );
     }

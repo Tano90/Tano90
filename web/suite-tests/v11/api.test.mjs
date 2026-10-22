@@ -483,6 +483,14 @@ test("Umfeldsuche: Kategorien, Entfernung als Luftlinie, nächste zuerst, unvoll
   assert.equal(none.status, 400);
   assert.match((await none.json()).message, /Kategorie/);
 });
+test("Status der Betreiber-Konfiguration: nur ja/nein, nie ein Schlüssel", async () => {
+  const req = () => new Request("https://glb.example/api/suite/market/status", { method: "GET" });
+  let j = await (await handleSuiteApi(req(), { OPENAI_API_KEY: "sk-geheim-123" })).json();
+  assert.deepEqual(j, { ai_configured: true, discover: "OpenStreetMap, ohne Kosten", price_lookup: false });
+  assert.ok(!JSON.stringify(j).includes("sk-"));
+  j = await (await handleSuiteApi(req(), {})).json();
+  assert.equal(j.ai_configured, false);
+});
 test("Positionsprüfung nennt die Felder", () => {
   assert.deepEqual(validateLine(line()), []);
   assert.match(

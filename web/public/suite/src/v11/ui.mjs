@@ -765,16 +765,38 @@ function marketTabs() {
     `<button type="button" role="tab" id="v11-mtab-${id}" class="v11-tab ${V.marketTab === id ? "active" : ""}" aria-selected="${V.marketTab === id}" aria-controls="v11-mpanel-${id}" tabindex="${V.marketTab === id ? 0 : -1}" data-v11="market-tab" data-tab="${id}"><b>${label}</b><small>${sub}</small></button>`;
   return `<div class="v11-tabs" role="tablist" aria-label="Bereiche des Marktchecks">${tab("products", "A · Speisen- und Getränkevergleich", "Konkrete Produkte, dokumentierte Preise")}${tab("places", "B · Restaurants und Locations in der Nähe", "Wettbewerbsumfeld, ohne Preise")}</div>`;
 }
+// operator-side status of the optional AI step (yes/no from the server; nothing to configure for customers)
+async function loadAiStatus() {
+  try {
+    const r = await fetch("/api/suite/market/status", { signal: AbortSignal.timeout(8000) });
+    V.aiStatus = r.ok ? ((await r.json()).ai_configured ? "on" : "off") : "unknown";
+  } catch {
+    V.aiStatus = "unknown";
+  }
+  if (document.querySelector("#v11-mpanel-products, #v11-mpanel-places")) G.render();
+}
+function aiStatusText() {
+  if (!isCloud()) return ["In der Demo aus", "Keine Kosten, keine Übertragung an einen KI-Dienst"];
+  if (V.aiStatus === "on") return ["Verfügbar", "Vom Betreiber eingerichtet, auf Anfrage"];
+  if (V.aiStatus === "off") return ["Nicht eingerichtet", "Der Betreiber hat die KI-Einordnung nicht aktiviert"];
+  return ["Status unbekannt", "Server nicht erreichbar"];
+}
 function marketView() {
+  if (!V.aiStatus) {
+    V.aiStatus = "loading";
+    void loadAiStatus();
+  }
   const rows = marketRows();
+  const step = (n, title, how, text) => `<li><span class="v11-step-no">${n}</span><div><b>${title}</b> ${tag(how, how === "automatisch" ? "neutral" : how === "manuell" ? "orange" : "blue")}<p>${text}</p></div></li>`;
   return (
     pageHeader(
-      "KI-MARKTCHECK",
-      "KI-Marktcheck",
-      "Zwei getrennte Fragen: Was kosten vergleichbare Speisen und Getränke bei anderen? Und wer ist überhaupt in der Nähe? Mein Markt (Umkreis 20 km) bleibt daneben bestehen.",
-      `<button type="button" class="btn" data-view="market">Mein Markt öffnen</button>`,
+      "WETTBEWERBSPREISVERGLEICH MIT OPTIONALER KI-EINORDNUNG",
+      "Wettbewerbspreise",
+      "Was kosten vergleichbare Speisen und Getränke bei anderen, und wer ist in der Nähe? Preise kommen aus Quellen, die du selbst einträgst.",
+      `<button type="button" class="btn" data-view="market">Mein Markt (20 km)</button>`,
     ) +
     demoNotice() +
+    `<ol class="v11-steps" aria-label="So funktioniert der Preisvergleich">${step(1, "Umfeld finden", "automatisch", "Restaurants, Cafés, Bars und Veranstaltungsorte im Umkreis aus OpenStreetMap (Tab B). Ohne Preise.")}${step(2, "Preise erfassen", "manuell", "Preis, Menge, Leistungsumfang, Quelle und Prüfdatum je Konkurrenzprodukt (Tab A). Es gibt keinen automatischen Speisekartenabruf.")}${step(3, "Vergleichen", "automatisch", "Abweichung absolut und in %, nur bei vergleichbarer Menge und Leistung; sonst sichtbar als nicht vergleichbar.")}${step(4, "Einordnen lassen", "optional", "KI-Einordnung der erfassten Beobachtungen. Status: " + aiStatusText()[0] + ".")}</ol>` +
     marketTabs() +
     (V.marketTab === "places" ? placesPanel() : productsPanel(rows))
   );
@@ -797,7 +819,7 @@ function productsPanel(rows) {
   const count = (sec) => MK.filterRows(rows, { section: sec, category: "all" }).length;
   return `<div id="v11-mpanel-products" role="tabpanel" aria-labelledby="v11-mtab-products">
   <div class="notice">${I("info")}<span><b>Nur dokumentierte Preise.</b> Es gibt keinen automatischen Speisekartenabruf: Preise trägst du aus einer Quelle ein (Speisekarte vor Ort, Website, Lieferdienst), mit Link und Prüfdatum. Eine Umgebungssuche (Tab B) liefert keine Preise. Abweichungen werden nur berechnet, wenn Menge und Leistungsumfang vergleichbar sind.</span></div>
-  <section class="v6-kpis">${kpi("Beobachtungen", String(shown.length), "In der aktuellen Auswahl")}${kpi("Vergleichbar", String(counted.length), "Gleiche Menge oder umgerechnet")}${kpi("Zur Prüfung", String(review.length), "Zuordnung oder Vergleichbarkeit offen", review.length ? "warn" : "")}${kpi("KI-Einordnung", isCloud() ? "Auf Anfrage" : "Nur mit Cloud", "Server mit eigenem API-Schlüssel")}</section>
+  <section class="v6-kpis">${kpi("Beobachtungen", String(shown.length), "In der aktuellen Auswahl")}${kpi("Vergleichbar", String(counted.length), "Gleiche Menge oder umgerechnet")}${kpi("Zur Prüfung", String(review.length), "Zuordnung oder Vergleichbarkeit offen", review.length ? "warn" : "")}${kpi("KI-Einordnung", aiStatusText()[0], aiStatusText()[1])}</section>
   <section class="panel">${panelHeader("Auswahl", "Erst Speisen oder Getränke, dann die Warengruppe")}<div class="v11-segs" role="group" aria-label="Speisen oder Getränke">${seg("all", "Alle", rows.length)}${seg("food", "Speisen", count("food"))}${seg("drink", "Getränke", count("drink"))}${
     count("open") || openCats.length ? seg("open", "Nicht zugeordnet", count("open")) : ""
   }</div><div class="v11-filters"><label class="field"><span>Warengruppe</span><select data-v11-filter="mCategory">${G.ui.selectOptions(
@@ -809,7 +831,7 @@ function productsPanel(rows) {
       .map((r) => {
         const t = CMP_TAG[r.cmp.level];
         return `<tr><td><b>${esc(r.ownName)}</b><div class="micro">${esc(r.category || "Warengruppe unbekannt")}${r.section ? " · " + MK.SECTIONS[r.section] : ""}</div></td><td><b>${esc(r.competitor)}</b><div class="micro">${esc(r.competitorProduct)}${r.placeUrl ? ` · <a href="${esc(r.placeUrl)}" target="_blank" rel="noopener noreferrer">Ort ↗</a>` : ""}</div></td><td>${esc(r.ownPortion || "—")} / ${esc(r.competitorPortion || "—")}</td><td class="align-right">${Number.isFinite(r.ownPrice) && r.ownPrice > 0 ? money(r.ownPrice) : "—"}</td><td class="align-right">${money(r.competitorPrice)}</td><td class="align-right">${deviationCell(r)}</td><td>${tag(t[0], t[1])}<div class="micro">${esc(r.cmp.reason)}</div></td><td>${
-          r.source ? `<a href="${esc(r.source)}" target="_blank" rel="noopener noreferrer">${esc(r.checked ? dateDE(r.checked) : "Quelle")} ↗</a>` : esc(r.checked ? dateDE(r.checked) : "ohne Datum")
+          r.example ? `${tag("Fiktives Beispiel", "orange")}<div class="micro">keine echte Quelle</div>` : r.source ? `<a href="${esc(r.source)}" target="_blank" rel="noopener noreferrer">${esc(r.checked ? dateDE(r.checked) : "Quelle")} ↗</a>` : esc(r.checked ? dateDE(r.checked) : "ohne Datum")
         }<div class="micro">${r.origin === "meinMarkt" ? "aus Mein Markt" : "KI-Marktcheck"}${r.note ? " · " + esc(r.note) : ""}</div></td><td>${
           r.origin === "v11"
             ? `<button type="button" class="btn btn-small" data-v11="market-check" data-id="${esc(r.id)}" aria-label="Vergleich ${esc(r.ownName)} / ${esc(r.competitor)} prüfen">Prüfen</button>`
@@ -818,7 +840,7 @@ function productsPanel(rows) {
       })
       .join("") || `<tr><td colspan="9">${rows.length ? "Keine Beobachtung in dieser Auswahl." : "Noch keine dokumentierten Marktpreise."}</td></tr>`
   }</tbody></table></div><p class="calc-note">Abweichung = unser Preis minus Konkurrenzpreis (absolut und in % des Konkurrenzpreises). Bei unterschiedlicher Menge in g oder ml wird je 100 g bzw. 100 ml umgerechnet. „Nicht vergleichbar“ und „Zu prüfen“ zeigen beide Preise, aber keine Abweichung.</p>
-  <div class="actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-v11="market-ai" ${!isCloud() || !shown.length ? "disabled" : ""}>KI-Einordnung für diese Auswahl</button>${!isCloud() ? `<span class="calc-note">Nur mit angemeldetem Cloud-Arbeitsbereich und eingerichtetem Server-Schlüssel.</span>` : ""}</div><p class="calc-note">Die KI erhält nur die Beobachtungen dieser Auswahl mit https-Quelle, samt Menge und Vergleichbarkeit. Sie öffnet die Links nicht und prüft keine Quellen; nicht vergleichbare Paare soll sie nicht für Preisabweichungen nutzen und Unsicherheiten benennen. Ohne eingerichteten Schlüssel gibt es keine Auswertung, sondern eine Fehlermeldung.</p>${
+  <div class="actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-v11="market-ai" ${!isCloud() || !shown.length || V.aiStatus === "off" ? "disabled" : ""}>KI-Einordnung für diese Auswahl</button><span class="calc-note">${esc(aiStatusText()[0])}: ${esc(aiStatusText()[1])}.</span></div><p class="calc-note">Die KI erhält nur die Beobachtungen dieser Auswahl mit https-Quelle, samt Menge und Vergleichbarkeit. Sie öffnet die Links nicht und prüft keine Quellen; nicht vergleichbare Paare soll sie nicht für Preisabweichungen nutzen und Unsicherheiten benennen. Fiktive Beispielzeilen der Demo werden nie übergeben. Die KI läuft über den Server des Betreibers; Kundinnen und Kunden verwalten keine Schlüssel.</p>${
     V.ai ? `<div class="v11-ai" role="region" aria-label="KI-Einordnung"><b>KI-Einordnung – vor Preisänderungen selbst prüfen</b>${V.aiMeta ? `<small>${esc(V.aiMeta)}</small>` : ""}<div>${esc(V.ai)}</div></div>` : ""
   }</section>
   <div class="content-grid" style="margin-top:18px"><section class="panel" id="v11-market-entry">${panelHeader("Marktpreis mit Quelle erfassen", pre.competitor ? `Aus der Umgebungssuche: ${esc(pre.competitor)}` : "Keine Schätzpreise")}${
@@ -1065,7 +1087,8 @@ async function discoverDirect(lat, lon, radius, cats = ["restaurant", "cafe", "b
 async function marketAI() {
   if (!isCloud()) throw Error("Die KI-Einordnung braucht die Anmeldung in der Cloud.");
   const shown = MK.filterRows(marketRows(), { section: V.mSection, category: V.mCategory });
-  const usable = shown.filter((r) => /^https:\/\//.test(r.source || "") && r.ownPrice > 0 && r.competitorPrice > 0);
+  // fictitious demo rows never go to the AI
+  const usable = shown.filter((r) => !r.example && /^https:\/\//.test(r.source || "") && r.ownPrice > 0 && r.competitorPrice > 0);
   if (!usable.length) throw Error("In dieser Auswahl gibt es keine Beobachtung mit https-Quelle und beiden Preisen.");
   const label = { comparable: "vergleichbar", normalized: "umgerechnet", not: "nicht vergleichbar", unchecked: "nicht geprüft" };
   const r = await cloud.protectedApi("/api/suite/market/analyze", {
@@ -1237,6 +1260,7 @@ for (const [id, label, fn] of VIEWS) G.registerView(id, label, fn);
 const groups = {};
 for (const [id, label, , group, icon] of VIEWS) (groups[group] ||= []).push([id, label, icon]);
 for (const [group, links] of Object.entries(groups)) window.GLB08UI?.addLinks(group, links);
+G.extensionsReady?.();
 
 // ---------- events ----------
 const ACTIONS = {

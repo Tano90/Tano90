@@ -78,7 +78,8 @@
       return role === null || CONFIG[role].views.includes(v);
     },
     defaultView() {
-      return role && ["owner", "general_manager", "restaurant_manager", "editor"].includes(role) ? "operations" : "myday";
+      // without a role (browser demo) and for management: the overview; staff roles start with today's tasks
+      return !role || ["owner", "general_manager", "restaurant_manager", "editor"].includes(role) ? "overview" : "myday";
     },
     canManageUsers() {
       return ["owner", "general_manager"].includes(role);

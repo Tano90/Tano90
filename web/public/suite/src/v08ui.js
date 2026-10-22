@@ -3,57 +3,71 @@
   "use strict";
   const esc = (s) =>
     String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  // Five areas a restaurant manager recognises (Oct 2026). Every page of the suite keeps its own entry; the v1.1 views
+  // (ids v11…) are placed here too, so v11/ui.mjs only registers them. Labels are also the page names in the top bar.
   const NAV = [
     {
-      title: "DEIN ARBEITSPLATZ",
+      title: "ÜBERSICHT",
       links: [
-        ["myday", "Mein Arbeitsplatz", "⌂"],
-        ["operations", "Mission Control", "◈"],
-        ["overview", "Dashboard", "▦"],
+        ["overview", "Übersicht", "▦"],
+        ["myday", "Heute zu tun", "⌂"],
+        ["v11cockpit", "Monatsabschluss", "◩"],
+        ["reports", "Berichte & Export", "▥"],
+        ["insights", "Hinweise", "✧"],
       ],
     },
     {
-      title: "VERKAUF & ANALYSE",
+      title: "VERKAUF & PREISE",
       links: [
-        ["funnel", "Service Funnel", "↗"],
         ["products", "Artikel & Umsätze", "◫"],
         ["outlets", "Outlets", "▥"],
-        ["portfolio", "Renner-Penner", "◉"],
-        ["lifecycle", "Lebenszyklen", "◴"],
-        ["market", "Mein Markt", "◎"],
-      ],
-    },
-    {
-      title: "SORTIMENT",
-      links: [
-        ["menuimport", "Speisekartenimport", "⇧"],
-        ["recipes", "Rezepte & Rohwaren", "▤"],
-        ["costs", "Deckungsbeiträge", "€"],
+        ["costs", "Deckungsbeiträge & Zielpreise", "€"],
         ["calculator", "Preiskalkulation", "◩"],
-        ["groups", "Oberkategorien", "▧"],
+        ["portfolio", "Renner-Penner", "◉"],
+        ["v11menu", "Menu Engineering", "◆"],
+        ["lifecycle", "Lebenszyklen", "◴"],
+        ["v11market", "Wettbewerbspreise", "⌁"],
+        ["market", "Mein Markt (20 km)", "◎"],
       ],
     },
     {
-      title: "WARENWIRTSCHAFT",
+      title: "EINKAUF & LAGER",
       links: [
-        ["inventory", "Inventur & Lager", "▱"],
-        ["stockledger", "Warenbewegungen", "↭"],
         ["purchasing", "Bestell-Forecast", "◷"],
         ["orders", "Bestellungen", "▣"],
+        ["inventory", "Inventur & Lager", "▱"],
+        ["stockledger", "Warenbewegungen", "↭"],
+        ["v11stock", "Mindestbestände", "▤"],
+        ["recipes", "Rezepte & Rohwaren", "▤"],
       ],
     },
     {
-      title: "MANAGEMENT",
+      title: "SERVICE & TEAM",
       links: [
-        ["reports", "Report Studio", "▥"],
-        ["insights", "GLB Intelligence", "✧"],
-        ["import", "Datenimport", "⇩"],
-        ["setup", "Einrichtung", "☑"],
+        ["v11tasks", "Team & Aufgaben", "☑"],
+        ["funnel", "Service Funnel", "↗"],
+        ["v11funnel", "Tagesfunnel (Kassenbons)", "◷"],
+        ["v11training", "Funnel Quest", "★"],
+      ],
+    },
+    {
+      title: "EINRICHTUNG & DATEN",
+      links: [
+        ["setup", "Erste Schritte", "☑"],
+        ["operations", "Datenqualität", "◈"],
+        ["menuimport", "Speisekarte importieren", "⇧"],
+        ["v11sales", "Monatsverkäufe", "⇪"],
+        ["import", "Artikel- & Datenimport", "⇩"],
+        ["groups", "Warengruppen", "▧"],
+        ["v11legacy", "Strukturcheck", "▧"],
         ["settings", "Einstellungen", "⚙"],
       ],
     },
   ];
-  const mobilePriorities = ["myday", "funnel", "inventory", "orders", "reports", "menuimport"];
+  /** Page name shown in the top bar: the navigation label, so route, heading area and menu always agree. */
+  const labelOf = (view) => NAV.flatMap((g) => g.links).find((x) => x[0] === view)?.[1];
+  // first four the role may open: management starts with the overview, staff with today's tasks
+  const mobilePriorities = ["overview", "myday", "v11tasks", "funnel", "inventory", "purchasing", "orders", "reports", "menuimport"];
   let deferredPrompt = null;
   function renderNav() {
     const holder = document.querySelector('.nav[aria-label="Hauptnavigation"]');
@@ -87,7 +101,8 @@
     updateActive();
   }
   function updateActive() {
-    const current = decodeURIComponent(location.hash.slice(1) || "myday");
+    // the view the app really shows (it may have fallen back from an unknown or forbidden address)
+    const current = window.GLBAppSync?.view?.() || decodeURIComponent(location.hash.slice(1) || "overview");
     document.querySelectorAll(".glb08-nav-link,.glb08-bottom-button[data-view]").forEach((el) => {
       el.classList.toggle("active", el.dataset.view === current);
       if (el.dataset.view === current) el.setAttribute("aria-current", "page");
@@ -108,7 +123,7 @@
       NAV.splice(
         Math.max(
           0,
-          NAV.findIndex((g) => g.title === "MANAGEMENT"),
+          NAV.findIndex((g) => g.title === "EINRICHTUNG & DATEN"),
         ),
         0,
         group,
@@ -123,6 +138,7 @@
     renderNav();
   }
   window.GLB08UI = {
+    labelOf,
     activate,
     renderNav,
     updateActive,

@@ -144,6 +144,7 @@
 
   // Extensions (v1.1 modules, src/v11/ui.mjs) register a hook that runs after every data load or reset.
   const EXT_ENSURE = [];
+  let EXT_READY = false; // set by v11/ui.mjs once its views are registered
   let S = load(),
     VIEW = (location.hash || "#overview").slice(1),
     FILTER = "",
@@ -350,8 +351,8 @@
     const goodsPct = t.revenueNet > 0 ? (t.goodsNet / t.revenueNet) * 100 : 0;
     return (
       pageHeader(
-        "Performance Cockpit",
-        "Guten Tag. Hier ist dein Überblick.",
+        "Detailansicht",
+        "Alle erfassten Verkäufe im Überblick",
         "Netto-Umsatz und DB aus erfassten Verkäufen, einschließlich Outlet- und Zeitraumzuordnung.",
         `<button class="btn" data-view="outlets">${I("chart")} Outlets auswerten</button><button class="btn btn-primary" data-action="new-sale">${I("plus")} Verkauf erfassen</button>`,
       ) +
@@ -470,7 +471,8 @@
     );
   }
   function insightsView() {
-    const list = C.insights(reportItems(), S.targetPct);
+    // without a target of its own the business gets no "above target" judgement (Oct 2026)
+    const list = C.insights(reportItems(), S.targetPct).filter((x) => targetSet() || x.kind !== "target");
     return (
       pageHeader(
         "GLB Intelligence",
@@ -479,7 +481,7 @@
         `<button class="btn" data-view="settings">${I("target")} Zielwert einstellen</button>`,
       ) +
       demoNotice() +
-      `<div class="ai-banner">${I("sparkles")}<div><h2>Dein digitaler Analyse-Assistent</h2><p>Diese Version nutzt transparente Geschäftsregeln – noch kein Sprachmodell und keine echte KI-API. Die Ergebnisse sind direkt aus deinen Zahlen berechnet. Eine sichere KI-Anbindung kommt in einer späteren Version.</p></div><span class="tag">Regelbasiert</span></div><div class="content-grid"><div class="panel">${panelHeader("Handlungsempfehlungen", `${list.length} automatisch erkannte Hinweise`)}<div class="insights-list">${list.map((x, idx) => `<div class="insight-card"><div class="insight-symbol ${esc(x.level)}">${I(x.level === "critical" ? "alert" : x.level === "opportunity" ? "bolt" : x.level === "good" ? "check" : "target")}</div><div class="insight-content"><span class="micro">HINWEIS 0${idx + 1}</span><h3>${esc(x.title)}</h3><p>${esc(x.detail)}</p><div class="insight-explain">Warum? ${esc(x.why)}</div></div></div>`).join("")}</div></div><div><div class="panel" style="margin-bottom:18px">${panelHeader("Analysegrundlage", "Nur deine hinterlegten Produktdaten")}<div class="format-guide">${I("database")} &nbsp; ${S.items.length} Artikel im Datensatz<br>${I("target")} &nbsp; Ziel-Wareneinsatz: ${pct(S.targetPct)}<br>${I("scatter")} &nbsp; Medianvergleich von Menge und Stück-DB<br>${I("shield")} &nbsp; Keine Datenübertragung an externe Dienste</div></div><div class="panel">${panelHeader("Was als Nächstes folgt")}<div class="steps"><div class="step"><span class="step-number">1</span><div><strong>KI mit Serveranbindung</strong><p>Fragen zu Zahlen stellen, ohne API-Schlüssel im Browser.</p></div></div><div class="step"><span class="step-number">2</span><div><strong>Zeitraum-Vergleiche</strong><p>Wochentrends, Monate und echtes Reporting nach Datum.</p></div></div><div class="step"><span class="step-number">3</span><div><strong>Automatisierte Empfehlungen</strong><p>Auf Wunsch mit Freigabe und Protokollierung.</p></div></div></div></div></div></div>`
+      `<div class="ai-banner">${I("sparkles")}<div><h2>Dein digitaler Analyse-Assistent</h2><p>Diese Hinweise entstehen aus festen, nachvollziehbaren Regeln auf deinen Zahlen – ohne Sprachmodell. Bewertet wird mit heutigen Produktkosten über alle erfassten Verkäufe. Eine Bewertung der Warenquote gibt es nur mit einem eigenen Ziel.</p></div><span class="tag">Regelbasiert</span></div><div class="content-grid"><div class="panel">${panelHeader("Handlungsempfehlungen", `${list.length} automatisch erkannte Hinweise`)}<div class="insights-list">${list.map((x, idx) => `<div class="insight-card"><div class="insight-symbol ${esc(x.level)}">${I(x.level === "critical" ? "alert" : x.level === "opportunity" ? "bolt" : x.level === "good" ? "check" : "target")}</div><div class="insight-content"><span class="micro">HINWEIS 0${idx + 1}</span><h3>${esc(x.title)}</h3><p>${esc(x.detail)}</p><div class="insight-explain">Warum? ${esc(x.why)}</div></div></div>`).join("")}</div></div><div><div class="panel" style="margin-bottom:18px">${panelHeader("Analysegrundlage", "Nur deine hinterlegten Produktdaten")}<div class="format-guide">${I("database")} &nbsp; ${S.items.length} Artikel im Datensatz<br>${I("target")} &nbsp; Ziel-Wareneinsatz: ${pct(S.targetPct)}<br>${I("scatter")} &nbsp; Medianvergleich von Menge und Stück-DB<br>${I("shield")} &nbsp; Keine Datenübertragung an externe Dienste</div></div><div class="panel">${panelHeader("Was als Nächstes folgt")}<div class="steps"><div class="step"><span class="step-number">1</span><div><strong>KI mit Serveranbindung</strong><p>Fragen zu Zahlen stellen, ohne API-Schlüssel im Browser.</p></div></div><div class="step"><span class="step-number">2</span><div><strong>Zeitraum-Vergleiche</strong><p>Wochentrends, Monate und echtes Reporting nach Datum.</p></div></div><div class="step"><span class="step-number">3</span><div><strong>Automatisierte Empfehlungen</strong><p>Auf Wunsch mit Freigabe und Protokollierung.</p></div></div></div></div></div></div>`
     );
   }
   function importView() {
@@ -498,7 +500,7 @@
     return (
       pageHeader("System", "Einstellungen", "Verwalte deinen lokalen Arbeitsbereich und sichere die Daten.") +
       demoNotice() +
-      `<div class="panel form-card">${panelHeader("Betrieb & Kennzahlen")}<div class="settings-row"><strong>Bezeichnung deines Betriebs</strong><p>Wird in der Navigation, in Berichten und im Backup angezeigt.</p><div class="field"><input id="settings-business" maxlength="80" value="${esc(S.business)}"></div></div><div class="settings-row"><strong>Ziel-Wareneinsatz (%)</strong><p>Dieser Richtwert steuert die Warnungen in GLB Intelligence. Er ist keine automatische Branchenvorgabe.</p><div class="field"><input id="settings-target" type="text" inputmode="decimal" value="${fmt(S.targetPct)}"></div></div><div class="settings-row"><strong>Umsatzsteuer-Voreinstellung für Importe</strong><p>Wird beim Speisekartenimport vorbelegt, wenn die Datei keinen Steuersatz enthält. Getränke erkennt die Suite an Überschriften oder Warengruppen wie „Getränke“, „Weine“, „Kaffee“. Jede Position bleibt vor dem Speichern änderbar. Den richtigen Satz für deinen Betrieb mit der Steuerberatung klären.</p><div class="form-grid"><div class="field"><label for="settings-vat-food">Speisen</label><select id="settings-vat-food" class="select">${selectOptions(VAT_CHOICES, vatPresets().vatFood)}</select></div><div class="field"><label for="settings-vat-drinks">Getränke</label><select id="settings-vat-drinks" class="select">${selectOptions(VAT_CHOICES, vatPresets().vatDrinks)}</select></div></div></div><button class="btn btn-primary" data-action="save-settings">${I("check")} Einstellungen speichern</button><hr class="split-divider"><div class="settings-row"><strong>Datensicherung</strong><p>${window.GLB_CLOUD_ENABLED ? "Die Daten liegen im Cloud-Arbeitsbereich deines Betriebs. Ein JSON-Backup ist eine zusätzliche Kopie, z. B. vor größeren Importen." : "Die Daten liegen nur in diesem Browser. Löschen von Browserdaten oder ein anderes Gerät bedeutet: Daten weg. Nutze regelmäßig Backups."}</p><div class="actions"><button class="btn" data-action="export-json">${I("download")} JSON-Backup herunterladen</button><button class="btn" data-action="pick-json">${I("upload")} Backup wiederherstellen</button><input type="file" id="json-file" hidden accept=".json,application/json"></div></div><div class="settings-row"><strong>Lokale Daten zurücksetzen</strong><p>Alle Änderungen werden verworfen. Anschließend kannst du mit einem leeren Betrieb oder den Beispieldaten neu starten.</p><div class="actions"><button class="btn btn-danger" data-action="start-blank">${I("trash")} Mit leerem Betrieb starten</button><button class="btn" data-action="reset-demo">${I("refresh")} Beispieldaten laden</button></div></div></div>`
+      `<div class="panel form-card">${panelHeader("Betrieb & Kennzahlen")}<div class="settings-row"><strong>Bezeichnung deines Betriebs</strong><p>Wird in der Navigation, in Berichten und im Backup angezeigt.</p><div class="field"><input id="settings-business" maxlength="80" value="${esc(S.business)}"></div></div><div class="settings-row"><strong>Ziel-Wareneinsatz (%)</strong><p>Dein eigener Richtwert. Erst nach dem Speichern bewerten Übersicht und Hinweise die Warenquote einzelner Artikel daran. Er ist keine Branchenvorgabe.${S.mode !== "demo" && !S.targetSet ? " <b>Noch nicht festgelegt.</b>" : ""}</p><div class="field"><input id="settings-target" type="text" inputmode="decimal" value="${fmt(S.targetPct)}"></div></div><div class="settings-row"><strong>Umsatzsteuer-Voreinstellung für Importe</strong><p>Wird beim Speisekartenimport vorbelegt, wenn die Datei keinen Steuersatz enthält. Getränke erkennt die Suite an Überschriften oder Warengruppen wie „Getränke“, „Weine“, „Kaffee“. Jede Position bleibt vor dem Speichern änderbar. Den richtigen Satz für deinen Betrieb mit der Steuerberatung klären.</p><div class="form-grid"><div class="field"><label for="settings-vat-food">Speisen</label><select id="settings-vat-food" class="select">${selectOptions(VAT_CHOICES, vatPresets().vatFood)}</select></div><div class="field"><label for="settings-vat-drinks">Getränke</label><select id="settings-vat-drinks" class="select">${selectOptions(VAT_CHOICES, vatPresets().vatDrinks)}</select></div></div></div><button class="btn btn-primary" data-action="save-settings">${I("check")} Einstellungen speichern</button><hr class="split-divider"><div class="settings-row"><strong>Datensicherung</strong><p>${window.GLB_CLOUD_ENABLED ? "Die Daten liegen im Cloud-Arbeitsbereich deines Betriebs. Ein JSON-Backup ist eine zusätzliche Kopie, z. B. vor größeren Importen." : "Die Daten liegen nur in diesem Browser. Löschen von Browserdaten oder ein anderes Gerät bedeutet: Daten weg. Nutze regelmäßig Backups."}</p><div class="actions"><button class="btn" data-action="export-json">${I("download")} JSON-Backup herunterladen</button><button class="btn" data-action="pick-json">${I("upload")} Backup wiederherstellen</button><input type="file" id="json-file" hidden accept=".json,application/json"></div></div><div class="settings-row"><strong>Lokale Daten zurücksetzen</strong><p>Alle Änderungen werden verworfen. Anschließend kannst du mit einem leeren Betrieb oder den Beispieldaten neu starten.</p><div class="actions"><button class="btn btn-danger" data-action="start-blank">${I("trash")} Mit leerem Betrieb starten</button><button class="btn" data-action="reset-demo">${I("refresh")} Beispieldaten laden</button></div></div></div>`
     );
   }
   function roadmapView() {
@@ -1291,7 +1293,9 @@
     S.funnelGoals ||= { aperitif: 25, water: 40, upgrades: 35, sides: 40, desserts: 28, coffee: 45 };
     S.funnelTrafficLift ??= 0;
     S.funnelProjectedDays ??= 26;
-    S.marketLocation ||= { label: "Düren (Beispiel-Standort)", lat: 50.804, lon: 6.485 };
+    // the example location only for the demo; an own business starts without location (no demo values in own data)
+    if (S.mode === "demo") S.marketLocation ||= { label: "Düren (Beispiel-Standort)", lat: 50.804, lon: 6.485 };
+    else S.marketLocation ||= null;
     S.marketDiscovered ||= [];
     S.marketLastScan ||= "";
     S.profitTarget ??= 10;
@@ -1306,6 +1310,18 @@
         Upgrades: "Zusatzverkauf",
       });
     }
+    // Demo: monthly fixed costs in the scale of the example sales, so target prices can be calculated. The goods value
+    // is the goods cost of that month's example sales (no second, contradicting number). Own data never gets these.
+    if (S.mode === "demo" && !Object.keys(S.monthlyCosts).length)
+      for (const m of [...new Set(S.sales.map((x) => x.month))].filter((x) => /^\d{4}-\d{2}$/.test(x)))
+        S.monthlyCosts[m] = {
+          energy: 280,
+          payroll: 1150,
+          overhead: 420,
+          goods: Math.round(C.reportSales(S.sales, S.items, { month: m }).goodsNet * 100) / 100,
+          revenueOverrideNet: 0,
+          example: true,
+        };
   }
   ensureV03();
   function monthlyReport(month) {
@@ -1416,7 +1432,7 @@
           ["name", "Artikel A–Z"],
         ],
         PRODUCT_SORT,
-      )}</select></div></div><section class="kpi-grid">${kpi("Netto-Umsatz", euro(rev), "chart", "Artikel- und Outletfilter")}${kpi("Absatz", number(qty), "layers", "Verkaufte Einheiten")}${kpi("Deckungsbeitrag II", euro(rows.reduce((a, p) => a + p.db2, 0)), "trending", "Ohne Monatsfixkosten")}${kpi("Produkte", number(rows.length), "layers", "Gefiltertes Sortiment")}</section><section class="content-grid"><div class="panel">${panelHeader("Top-Artikel nach Nettoumsatz", "Mit aktueller Filterauswahl")}${monthlyBarChart(best.map((p) => ({ label: p.name.slice(0, 22), value: p.revenueNet })))}</div><div class="panel">${panelHeader("Monatstrend", "Umsätze aller aktuell ausgewählten Outlets")}${chartForSales(selectedSales)}</div></section><div class="panel table-shell" style="margin-top:20px">${panelHeader("Detaillierte Artikelliste", `Sortierung: ${PRODUCT_SORT === "quantity" ? "Verkäufe" : "Wert"} · ${rows.length} Artikel`)}${rows.length ? productDetailedRows(rows) : empty("Keine Artikel", "Filter zurücksetzen oder Verkäufe erfassen.")}</div><p class="chart-note">Historische Verkäufe verwenden derzeit die aktuellen Produktkosten, nicht historisierte Rezeptpreise. Summen nach Warengruppe sind daher kalkulatorisch.</p>`
+      )}</select></div></div><section class="kpi-grid">${kpi("Netto-Umsatz", euro(rev), "chart", "Artikel- und Outletfilter")}${kpi("Absatz", number(qty), "layers", "Verkaufte Einheiten")}${kpi("Deckungsbeitrag II", euro(rows.reduce((a, p) => a + p.db2, 0)), "trending", "Vor Fixkosten · heutige Produktkosten")}${kpi("Produkte", number(rows.length), "layers", "Gefiltertes Sortiment")}</section><section class="content-grid"><div class="panel">${panelHeader("Top-Artikel nach Nettoumsatz", "Mit aktueller Filterauswahl")}${monthlyBarChart(best.map((p) => ({ label: p.name.slice(0, 22), value: p.revenueNet })))}</div><div class="panel">${panelHeader("Monatstrend", "Umsätze aller aktuell ausgewählten Outlets")}${chartForSales(selectedSales)}</div></section><div class="panel table-shell" style="margin-top:20px">${panelHeader("Detaillierte Artikelliste", `Sortierung: ${PRODUCT_SORT === "quantity" ? "Verkäufe" : "Wert"} · ${rows.length} Artikel`)}${rows.length ? productDetailedRows(rows) : empty("Keine Artikel", "Filter zurücksetzen oder Verkäufe erfassen.")}</div><p class="chart-note">Historische Verkäufe verwenden derzeit die aktuellen Produktkosten, nicht historisierte Rezeptpreise. Summen nach Warengruppe sind daher kalkulatorisch.</p>`
     );
   }
   function groupsView() {
@@ -1449,10 +1465,10 @@
         `<button class="btn" data-view="calculator">${I("calculator")} Einzelrezept</button><button class="btn btn-primary" data-action="save-month-costs">${I("check")} Monatskosten speichern</button>`,
       ) +
       demoNotice() +
-      `<div class="notice">${I("info")}<span><strong>Methodik:</strong> DB I/II berücksichtigen nur variable Produktkosten. Monatliche Energie, festes Personalkosten und Sachkosten werden für eine <strong>kalkulatorische Zielpreisquote</strong> ins Verhältnis zum Netto-Umsatz gesetzt. Der separat eingegebene Monats-Wareneinsatz wird nicht noch einmal von den Artikel-DBs abgezogen.</span></div><div class="panel"><div class="toolbar"><div class="toolbar-left"><label for="cost-month">Abrechnungsmonat</label><select class="select" id="cost-month">${selectOptions(
+      `<div class="notice">${I("info")}<span><strong>Methodik:</strong> DB I/II berücksichtigen nur variable Produktkosten. Monatliche Energie, feste Personalkosten und Sachkosten werden für eine <strong>kalkulatorische Zielpreisquote</strong> ins Verhältnis zum Netto-Umsatz gesetzt. Der separat eingegebene Monats-Wareneinsatz wird nicht noch einmal von den Artikel-DBs abgezogen.</span></div><div class="panel"><div class="toolbar"><div class="toolbar-left"><label for="cost-month">Abrechnungsmonat</label><select class="select" id="cost-month">${selectOptions(
         months.map((x) => [x, periodName(x)]),
         COST_MONTH,
-      )}</select></div><span class="micro">Netto-Basis aus erfassten Verkäufen; ggf. manuell überschreiben.</span></div><div class="field-grid glb-cost-grid">${[
+      )}</select></div><span class="micro">Netto-Basis aus erfassten Verkäufen; ggf. manuell überschreiben.${S.monthlyCosts?.[COST_MONTH]?.example ? " <b>Fixkosten: fiktive Beispielwerte der Demo.</b>" : ""}</span></div><div class="field-grid glb-cost-grid">${[
         ["energy", "Energie € / Monat"],
         ["payroll", "Personalkosten fix € / Monat"],
         ["overhead", "Sach- und übrige Fixkosten € / Monat"],
@@ -1696,7 +1712,7 @@
         `<button class="btn" data-action="scan-market">${I("target")} 20 km durchsuchen</button><button class="btn btn-primary" data-action="new-competitor">${I("plus")} Preisvergleich hinzufügen</button>`,
       ) +
       demoNotice() +
-      `<div class="notice">${I("info")}<span><strong>Beta, online erforderlich:</strong> Die Umkreissuche kann über OpenStreetMap/Overpass reale Gastronomiebetriebe entdecken. Sie liest <strong>keine Speisekarten und keine Preise automatisch</strong>. Für KI-basierte Menü- und Preisvergleiche benötigen wir später einen eigenen Server und eine zulässige Recherchequelle. Kein Preis wird erfunden.</span></div><div class="panel"><div class="field-grid"><div class="field"><label>Standort-Bezeichnung</label><input id="market-label" value="${esc(loc.label)}" placeholder="Mein Betrieb"></div><div class="field"><label>Breitengrad</label><input id="market-lat" value="${esc(loc.lat)}" inputmode="decimal"></div><div class="field"><label>Längengrad</label><input id="market-lon" value="${esc(loc.lon)}" inputmode="decimal"></div></div><p class="chart-note">Voreinstellung Düren ist nur ein beispielhafter Stadtmittelpunkt, <strong>nicht</strong> automatisch dein Standort. Mit den Koordinaten deines Betriebs wird der 20-km-Radius korrekt. © OpenStreetMap-Mitwirkende, Daten unter ODbL.</p><div id="market-scan-status" aria-live="polite"></div></div><div class="panel" style="margin-top:20px">${panelHeader("Entdeckte Betriebe · Radius 20 km", S.marketLastScan ? `Letzte manuelle Suche ${S.marketLastScan} · ${S.marketDiscovered.length} Treffer` : "Noch kein Umkreisscan durchgeführt")}${
+      `<div class="notice">${I("info")}<span><strong>Beta, online erforderlich:</strong> Die Umkreissuche kann über OpenStreetMap/Overpass reale Gastronomiebetriebe entdecken. Sie liest <strong>keine Speisekarten und keine Preise automatisch</strong>. Preise erfasst du selbst mit Quelle; den Vergleich nach Menge und Leistung und die optionale KI-Einordnung gibt es unter „Wettbewerbspreise“. Kein Preis wird erfunden.</span></div><div class="panel"><div class="field-grid"><div class="field"><label>Standort-Bezeichnung</label><input id="market-label" value="${esc(loc?.label ?? "")}" placeholder="Mein Betrieb"></div><div class="field"><label>Breitengrad</label><input id="market-lat" value="${esc(loc?.lat ?? "")}" inputmode="decimal"></div><div class="field"><label>Längengrad</label><input id="market-lon" value="${esc(loc?.lon ?? "")}" inputmode="decimal"></div></div><p class="chart-note">${S.mode === "demo" ? "Die Demo nutzt Düren als beispielhaften Stadtmittelpunkt, <strong>nicht</strong> deinen Standort." : loc ? "Gespeicherter Standort deines Betriebs." : "Noch kein Standort gespeichert: Adresse suchen oder Koordinaten eintragen."} Mit den Koordinaten deines Betriebs wird der 20-km-Radius korrekt. © OpenStreetMap-Mitwirkende, Daten unter ODbL.</p><div id="market-scan-status" aria-live="polite"></div></div><div class="panel" style="margin-top:20px">${panelHeader("Entdeckte Betriebe · Radius 20 km", S.marketLastScan ? `Letzte manuelle Suche ${S.marketLastScan} · ${S.marketDiscovered.length} Treffer` : "Noch kein Umkreisscan durchgeführt")}${
         S.marketDiscovered.length
           ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Wettbewerber</th><th>Typ</th><th class="align-right">Entfernung</th><th>Öffentliche Quelle</th><th>Vergleichen</th></tr></thead><tbody>${S.marketDiscovered
               .slice(0, 80)
@@ -1926,14 +1942,20 @@
     roadmap: "Roadmap",
   };
   function render() {
+    const asked = location.hash.slice(1);
     if (!handlers[VIEW] || (window.GLBAccess?.enabled && !window.GLBAccess.canView(VIEW)))
       VIEW = window.GLBAccess?.defaultView() || "overview";
+    // The address names the page that is shown (first visit, forbidden page); no new history entry. An address of a
+    // module that registers later (v11/ui.mjs is loaded as a module) is kept, so that page opens once it is there.
+    const pending = !EXT_READY && asked && !handlers[asked] && !(window.GLBAccess?.enabled && !window.GLBAccess.canView(asked));
+    if (asked !== VIEW && !pending) history.replaceState(null, "", "#" + VIEW);
     document.querySelector("#main").innerHTML = handlers[VIEW]();
-    document.querySelector("#breadcrumb-current").textContent = labels[VIEW];
+    document.querySelector("#breadcrumb-current").textContent = window.GLB08UI?.labelOf(VIEW) || labels[VIEW];
     document
       .querySelectorAll(".nav-item")
       .forEach((x) => x.classList.toggle("active", x.dataset.view === VIEW && (VIEW !== "roadmap" || x.textContent.includes("Workforce"))));
     document.querySelector("#workspace-name").textContent = S.business;
+    window.GLB08UI?.updateActive();
   }
   function navigate(view) {
     if (window.GLBAccess?.enabled && !window.GLBAccess.canView(view)) {
@@ -2331,6 +2353,7 @@
           return toast("Bitte Betriebsname und gültigen Zielwert (0–100 %) eingeben.", "error");
         S.business = business;
         S.targetPct = target;
+        S.targetSet = true; // from now on the overview may judge goods quotas against this target
         const vatFood = Number(document.querySelector("#settings-vat-food")?.value),
           vatDrinks = Number(document.querySelector("#settings-vat-drinks")?.value);
         if ([0, 7, 19].includes(vatFood)) S.vatFood = vatFood;
@@ -2683,6 +2706,25 @@
   const v4Ing = (id) => S.ingredients.find((x) => x.id === id);
   const v4Rec = (id) => S.recipes.find((x) => x.productId === id);
   const v4Qty = (n, unit) => `${v4Num(n)} ${unit}`;
+  // forecast figures: kg/l and whole pieces instead of 12.616,07 g (displayQuantity in v04core.js)
+  const v4QtyF = (n, unit) => {
+    const d = V4.displayQuantity(n, unit);
+    return d.value === null ? "–" : `${d.value.toLocaleString("de-DE")} ${d.unit}`;
+  };
+  /** The same status words wherever the forecast is summarised. */
+  function v4StatusLine(fs) {
+    const parts = [
+      `${fs.stockMissing.length} ohne gezählten Bestand`,
+      fs.invalidUnit.length ? `${fs.invalidUnit.length} Einheit nicht umrechenbar` : "",
+      fs.noDays.length ? `${fs.noDays.length} ohne Tagesabsatz` : "",
+    ].filter(Boolean);
+    const info = [
+      fs.stockZero.length ? `${fs.stockZero.length} gezählt mit Bestand 0` : "",
+      fs.noUsage.length ? `${fs.noUsage.length} in keinem Rezept (kein Verbrauch ableitbar)` : "",
+      fs.missingRecipes.length ? `${fs.missingRecipes.length} verkaufte Artikel ohne Rezept` : "",
+    ].filter(Boolean);
+    return parts.join(" · ") + (info.length ? ". Außerdem: " + info.join(" · ") : "");
+  }
   function v4Demo() {
     const I = [
       {
@@ -2998,8 +3040,7 @@
     const rows = f.rows.filter((r) => r.requiredBase > 0 || r.stockBase !== null || r.determinable === false),
       real = rows.filter((r) => r.packs !== null),
       total = real.reduce((s, x) => s + x.estimatedNet, 0);
-    const unknown = rows.filter((x) => x.stockBase === null && x.determinable !== false).length,
-      notDeterminable = rows.filter((x) => x.determinable === false).length;
+    const fs = V4.forecastSummary(f);
     const q = f.dataQuality,
       qLabel = { gut: "Datenbasis gut", eingeschränkt: "Datenbasis eingeschränkt", unzureichend: "Datenbasis unzureichend" }[q.rating];
     const share = (x) => (x === null ? "–" : Math.round(x * 100) + " %");
@@ -3012,7 +3053,7 @@
       ) +
       demoNotice() +
       v4NavPills("forecast") +
-      `<div class="v4-grid3">${v4TopCard(qLabel, `${q.observedDays}/28 Tage`, q.reasons.length ? q.reasons.join(" · ") : "Tage, Rezepte und Bestände ausreichend erfasst", "chart")}${v4TopCard("Bestellwert netto", euro(total), "Nur ermittelbarer Bedarf mit gezähltem Bestand", "calculator")}${v4TopCard("Nicht berechenbar", String(unknown + notDeterminable), `${notDeterminable} ohne Verbrauchsgrundlage · ${unknown} ohne Bestand`, "info")}</div><section class="panel"><div class="v4-toolbar"><div><h3>Szenario einstellen</h3><p>Gewichteter Absatz: 65 % aus dem Durchschnitt der letzten 7 Tage + 35 % aus 28 Tagen.</p></div><span class="tag ${q.rating === "gut" ? "tag-good" : "tag-warn"}">${esc(qLabel)}</span></div><form id="v4-forecast-form" class="v4-assumptions"><div class="field"><label>Bedarfszeitraum (Tage)</label><input name="days" type="number" min="1" max="90" value="${esc(S.v04Forecast.days)}"></div><div class="field"><label>Vorlauf / Lieferzeit (Tage)</label><input name="leadDays" type="number" min="0" max="30" value="${esc(S.v04Forecast.leadDays)}"></div><div class="field"><label>Sicherheitszuschlag (%)</label><input name="safetyPct" type="number" min="0" max="100" value="${esc(S.v04Forecast.safetyPct)}"></div><button class="btn btn-primary" type="submit">Forecast berechnen</button></form><div class="v4-forecast-note"><strong>Datenbasis (letzte 28 Tage bis ${esc(v6DateDE(f.assumptions.referenceDate))}):</strong> ${q.observedDays} Tage mit Tagesabsatz${q.zeroDays ? `, davon ${q.zeroDays} ausdrücklich ohne Verkauf` : ""}; ${q.missingDays === 1 ? "1 Tag fehlt und zählt" : `${q.missingDays} Tage fehlen und zählen`} nicht als null. ${f.demandProducts} verkaufte Produkte, ${share(q.recipeShare)} der verkauften Einheiten mit Rezept, ${share(q.stockShare)} der benötigten Rohwaren mit gezähltem Bestand. ${
+      `<div class="v4-grid3">${v4TopCard(qLabel, `${q.observedDays}/28 Tage`, q.reasons.length ? q.reasons.join(" · ") : "Tage, Rezepte und Bestände ausreichend erfasst", "chart")}${v4TopCard("Bestellwert netto", euro(total), "Nur ermittelbarer Bedarf mit gezähltem Bestand", "calculator")}${v4TopCard("Bedarf nicht berechenbar", String(fs.notComputable.length), v4StatusLine(fs), "info")}</div><section class="panel"><div class="v4-toolbar"><div><h3>Szenario einstellen</h3><p>Gewichteter Absatz: 65 % aus dem Durchschnitt der letzten 7 Tage + 35 % aus 28 Tagen.</p></div><span class="tag ${q.rating === "gut" ? "tag-good" : "tag-warn"}">${esc(qLabel)}</span></div><form id="v4-forecast-form" class="v4-assumptions"><div class="field"><label>Bedarfszeitraum (Tage)</label><input name="days" type="number" min="1" max="90" value="${esc(S.v04Forecast.days)}"></div><div class="field"><label>Vorlauf / Lieferzeit (Tage)</label><input name="leadDays" type="number" min="0" max="30" value="${esc(S.v04Forecast.leadDays)}"></div><div class="field"><label>Sicherheitszuschlag (%)</label><input name="safetyPct" type="number" min="0" max="100" value="${esc(S.v04Forecast.safetyPct)}"></div><button class="btn btn-primary" type="submit">Forecast berechnen</button></form><div class="v4-forecast-note"><strong>Datenbasis (letzte 28 Tage bis ${esc(v6DateDE(f.assumptions.referenceDate))}):</strong> ${q.observedDays} Tage mit Tagesabsatz${q.zeroDays ? `, davon ${q.zeroDays} ausdrücklich ohne Verkauf` : ""}; ${q.missingDays === 1 ? "1 Tag fehlt und zählt" : `${q.missingDays} Tage fehlen und zählen`} nicht als null. ${f.demandProducts} verkaufte Produkte, ${share(q.recipeShare)} der verkauften Einheiten mit Rezept, ${share(q.stockShare)} der benötigten Rohwaren mit gezähltem Bestand. ${
         f.missingRecipes.length
           ? `Ohne Rezept verkauft: ${esc(
               f.missingRecipes
@@ -3027,7 +3068,7 @@
               .sort((a, b) => (b.estimatedNet || 0) - (a.estimatedNet || 0))
               .map(
                 (x) =>
-                  `<tr><td><strong>${esc(x.name)}</strong><small style="display:block;color:var(--muted)">Gebinde ${esc(String(v4Ing(x.id)?.packQty || ""))} ${esc(v4Ing(x.id)?.packUnit || "")}</small></td><td class="align-right">${x.determinable === false ? "nicht ermittelbar" : v4Qty(x.requiredWithSafety, x.unit)}</td><td class="align-right">${x.stockBase === null ? "Unbekannt" : v4Qty(x.stockBase, x.unit)}</td><td class="align-right">${x.reservedPacks ? `${x.reservedPacks} Gebinde` : "—"}</td><td class="align-right"><strong>${x.packs === null ? "—" : x.packs}</strong></td><td class="align-right">${x.estimatedNet === null ? "—" : euro(x.estimatedNet)}</td><td>${((st) => `<span class="tag tag-${st.tone}">${esc(st.text)}</span>`)(v4RowStatus(x))}</td></tr>`,
+                  `<tr><td><strong>${esc(x.name)}</strong><small style="display:block;color:var(--muted)">Gebinde ${esc(String(v4Ing(x.id)?.packQty || ""))} ${esc(v4Ing(x.id)?.packUnit || "")}</small></td><td class="align-right">${x.determinable === false ? "nicht ermittelbar" : v4QtyF(x.requiredWithSafety, x.unit)}</td><td class="align-right">${x.stockBase === null ? "Unbekannt" : v4QtyF(x.stockBase, x.unit)}</td><td class="align-right">${x.reservedPacks ? `${x.reservedPacks} Gebinde` : "—"}</td><td class="align-right"><strong>${x.packs === null ? "—" : x.packs}</strong></td><td class="align-right">${x.estimatedNet === null ? "—" : euro(x.estimatedNet)}</td><td>${((st) => `<span class="tag tag-${st.tone}">${esc(st.text)}</span>`)(v4RowStatus(x))}</td></tr>`,
               )
               .join("")}</tbody></table></div>`
           : v4TableEmpty("Noch kein Rohwarenbedarf", "Importiere Tagesumsätze und erfasse Rezepturen.")
@@ -4029,7 +4070,7 @@
       ) +
       demoNotice() +
       v5Toolbar() +
-      `<div class="v5-metrics"><div><small>EINRICHTUNG</small><b>${good}/6</b><span>Schritte mindestens einmal erledigt</span></div><div><small>KALKULIERBARE ARTIKEL</small><b>${V5.completeness(S).calculable}/${S.items.length}</b><span>mit Rezept oder Einkaufspreis</span></div><div><small>BESTELLUNGEN OFFEN</small><b>${orders.draft + orders.ordered}</b><span>${v5Price(orders.openTotal)} geplantes Volumen</span></div><div><small>MINDESTBESTAND</small><b>${danger.length}</b><span>Unterschreitungen nach Schätzung</span></div><div><small>BESTAND UNBEKANNT</small><b>${notCounted}</b><span>Rohwaren ohne Inventur</span></div></div><div class="v5-ops-columns"><div>${v5Readiness()}${v5Completeness()}<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">ARBEITSABLÄUFE</div><h2>Häufige Abläufe</h2></div></div><div class="v5-actions-grid">${v5CommandLinks()}</div></section></div><div><section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">INTELLIGENCE / HINWEISE</div><h2>Handlungsbedarf</h2></div></div><div class="v5-alerts">${notCounted ? `<button data-view="inventory" class="v5-alert">${I("alert")} <span><b>${notCounted} Rohwaren ohne Zählung</b><small>Vor der Bestellung Bestand prüfen.</small></span>→</button>` : ""}${danger.length ? `<button data-view="stockledger" class="v5-alert">${I("alert")}<span><b>${danger.length} Bestände unter Minimum</b><small>Prognose und Buchungen abgleichen.</small></span>→</button>` : ""}${errors ? `<button data-view="stockledger" class="v5-alert">${I("alert")}<span><b>${errors} Verbrauchszuordnungen offen</b><small>Lagerzuordnung für Rohwaren prüfen.</small></span>→</button>` : ""}${f.quality !== "gut" ? `<button data-view="purchasing" class="v5-alert">${I("info")}<span><b>Absatzhistorie: ${esc(f.quality)}</b><small>28 Tage vollständig importieren.</small></span>→</button>` : ""}${!danger.length && !notCounted && !errors && f.quality === "gut" ? '<p class="v5-empty-line">Keine automatischen Hinweise aus den vorhandenen Daten.</p>' : ""}</div></section><section class="v5-panel v5-note"><div class="v5-eyebrow">DATENSICHERHEIT</div>${window.GLB_CLOUD_ENABLED ? "<h2>Cloud-Arbeitsbereich mit Revisionsprüfung.</h2><p>Ein JSON-Backup ist eine zusätzliche Kopie, etwa vor großen Importen.</p>" : "<h2>Nur in diesem Browser gespeichert.</h2><p>Regelmäßig JSON-Backups sichern. Auf einem anderen Gerät oder in einem anderen Browser liegen die Daten nicht vor.</p>"}<button class="btn" data-action="export-json">JSON-Backup herunterladen</button></section></div></div>`
+      `<div class="v5-metrics"><div><small>EINRICHTUNG</small><b>${good}/6</b><span>Schritte mindestens einmal erledigt</span></div><div><small>KALKULIERBARE ARTIKEL</small><b>${V5.completeness(S).calculable}/${S.items.length}</b><span>mit Rezept oder Einkaufspreis</span></div><div><small>BESTELLUNGEN OFFEN</small><b>${orders.draft + orders.ordered}</b><span>${v5Price(orders.openTotal)} geplantes Volumen</span></div><div><small>ROHWAREN UNTER MINIMUM</small><b>${danger.length}</b><span>Lagerbestand nach Schätzung (Liste „Mindestbestände“ separat)</span></div><div><small>BESTAND UNBEKANNT</small><b>${notCounted}</b><span>Rohwaren ohne Inventur</span></div></div><div class="v5-ops-columns"><div>${v5Readiness()}${v5Completeness()}<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">ARBEITSABLÄUFE</div><h2>Häufige Abläufe</h2></div></div><div class="v5-actions-grid">${v5CommandLinks()}</div></section></div><div><section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">DATEN & LAGER</div><h2>Offene Daten- und Lagerprobleme</h2></div></div><div class="v5-alerts">${notCounted ? `<button data-view="inventory" class="v5-alert">${I("alert")} <span><b>${notCounted} Rohwaren ohne Zählung</b><small>Vor der Bestellung Bestand prüfen.</small></span>→</button>` : ""}${danger.length ? `<button data-view="stockledger" class="v5-alert">${I("alert")}<span><b>${danger.length} Bestände unter Minimum</b><small>Prognose und Buchungen abgleichen.</small></span>→</button>` : ""}${errors ? `<button data-view="stockledger" class="v5-alert">${I("alert")}<span><b>${errors} Verbrauchszuordnungen offen</b><small>Lagerzuordnung für Rohwaren prüfen.</small></span>→</button>` : ""}${f.quality !== "gut" ? `<button data-view="purchasing" class="v5-alert">${I("info")}<span><b>Absatzhistorie: ${esc(f.quality)}</b><small>28 Tage vollständig importieren.</small></span>→</button>` : ""}${!danger.length && !notCounted && !errors && f.quality === "gut" ? '<p class="v5-empty-line">Keine offenen Daten- oder Lagerprobleme. Kaufmännische Hinweise (Warenquote, Absatzrückgang) stehen in der Übersicht unter „Handlungsbedarf“.</p>' : ""}</div></section><section class="v5-panel v5-note"><div class="v5-eyebrow">DATENSICHERHEIT</div>${window.GLB_CLOUD_ENABLED ? "<h2>Cloud-Arbeitsbereich mit Revisionsprüfung.</h2><p>Ein JSON-Backup ist eine zusätzliche Kopie, etwa vor großen Importen.</p>" : "<h2>Nur in diesem Browser gespeichert.</h2><p>Regelmäßig JSON-Backups sichern. Auf einem anderen Gerät oder in einem anderen Browser liegen die Daten nicht vor.</p>"}<button class="btn" data-action="export-json">JSON-Backup herunterladen</button></section></div></div>`
     );
   }
   function v5StockOverview() {
@@ -4460,14 +4501,75 @@
     v5OldPurchasing();
   handlers.orders = v5Orders;
   handlers.operations = v5Ops;
+  /** Guided start (Oct 2026): business → menu → sales → costs → first evaluation, each step with what is needed,
+   *  file formats, template, where errors show up and what becomes available. Status comes from the data. */
+  function v12Onboarding() {
+    const outlets = S.outlets.filter((o) => o.id !== "unassigned"),
+      months = [...new Set(S.sales.map((x) => x.month))].filter((m) => /^\d{4}-\d{2}$/.test(m)),
+      withCost = S.items.filter((p) => Number(p.costNet) > 0 || (S.recipes || []).some((r) => r.productId === p.id && (r.lines || []).length)),
+      fixed = Object.keys(S.monthlyCosts || {}).length;
+    const steps = [
+      {
+        title: "Betrieb und Outlets",
+        done: outlets.length > 0 && S.business && S.business !== "Mein Betrieb",
+        status: `${S.business || "ohne Namen"} · ${outlets.length} ${outlets.length === 1 ? "Outlet" : "Outlets"}`,
+        need: "Name des Betriebs (Einstellungen) und die Bereiche, die du getrennt auswerten willst, z. B. Restaurant, Bar, Terrasse.",
+        format: "Direkt in der Suite, keine Datei nötig.",
+        go: ["outlets", "Outlets anlegen"],
+      },
+      {
+        title: "Speisekarte",
+        done: S.items.length > 0,
+        status: `${S.items.length} Artikel`,
+        need: "Artikelname, Bruttopreis, Warengruppe; Steuersatz wird für Speisen 7 % und Getränke 19 % vorbelegt und ist änderbar.",
+        format: "CSV, kopierter Text oder PDF mit Textebene. Fotos und gescannte PDFs werden nicht gelesen – Text dann z. B. mit der Texterkennung des Handys kopieren.",
+        template: `<button type="button" class="btn btn-small" data-v08="menu-template">${I("download")} CSV-Vorlage</button>`,
+        go: ["menuimport", "Speisekarte importieren"],
+      },
+      {
+        title: "Verkäufe",
+        done: months.length > 0,
+        status: months.length ? `${months.length} ${months.length === 1 ? "Monat" : "Monate"} mit Verkäufen` : "noch keine Monatsverkäufe",
+        need: "Je Artikel, Outlet und Monat: Menge und Bruttopreis, als Export aus der Kasse. Artikel und Outlets werden über den Namen zugeordnet, nichts doppelt angelegt.",
+        format: "CSV mit Produkt;Outlet;Monat;Menge;Bruttopreis. Tagesabsätze für den Bestell-Forecast optional als eigene CSV.",
+        template: `<button type="button" class="btn btn-small" data-action="sales-template">${I("download")} Verkaufs-Vorlage</button>`,
+        go: ["v11sales", "Monatsverkäufe importieren"],
+      },
+      {
+        title: "Kosten",
+        done: S.items.length > 0 && withCost.length === S.items.length,
+        status: `${withCost.length}/${S.items.length} Artikel mit Wareneinsatz · ${fixed} ${fixed === 1 ? "Monat" : "Monate"} mit Fixkosten · Ziel-Warenquote ${targetSet() ? pct(S.targetPct) : "nicht festgelegt"}`,
+        need: "Wareneinsatz netto je Artikel (direkt oder über ein Rezept), für Zielpreise die Monatsfixkosten, für Bewertungen dein Ziel für die Warenquote.",
+        format: "Direkt am Artikel, im Rezept oder per Artikel-CSV mit der Spalte „Wareneinsatz netto“. Fixkosten unter Deckungsbeiträge & Zielpreise.",
+        go: ["products", "Kosten am Artikel pflegen"],
+      },
+      {
+        title: "Erste Auswertung",
+        done: S.items.length > 0 && months.length > 0 && withCost.length > 0,
+        status: months.length >= 4 ? "Übersicht, Berichte, Menu Engineering und Lebenszyklen nutzbar" : months.length ? "Übersicht und Berichte nutzbar; Lebenszyklen ab 4 Monaten" : "nach dem Verkaufsimport",
+        need: "Nichts weiter. Fehlende Kosten werden als unvollständig gezeigt, nicht geschätzt.",
+        format: "Export der Berichte als CSV oder Excel, Drucken als PDF.",
+        go: ["overview", "Übersicht öffnen"],
+      },
+    ];
+    const next = steps.findIndex((x) => !x.done);
+    return `<section class="v12-onboard" aria-labelledby="v12-onboard-title"><div class="v12-onboard-head"><div><span class="v5-eyebrow">ERSTE SCHRITTE</span><h2 id="v12-onboard-title">In fünf Schritten zur ersten Auswertung</h2><p>Jede Datei zeigt vor dem Speichern eine Vorschau: fehlerhafte Zeilen mit Zeilennummer und Grund, nichts wird ohne Bestätigung übernommen, dieselbe Datei wird wiedererkannt. Einmal angelegte Artikel und Outlets nutzen alle Module.</p></div><b class="v12-onboard-count">${steps.filter((x) => x.done).length}/5 erledigt</b></div><ol class="v12-steps">${steps
+      .map(
+        (x, i) =>
+          `<li class="v12-step ${x.done ? "done" : i === next ? "next" : ""}"><span class="v12-step-no" aria-hidden="true">${x.done ? "✓" : i + 1}</span><div><h3>${esc(x.title)} <small>${x.done ? "erledigt" : i === next ? "als Nächstes" : "offen"}</small></h3><p class="v12-step-status">${esc(x.status)}</p><dl><div><dt>Was du brauchst</dt><dd>${esc(x.need)}</dd></div><div><dt>Format</dt><dd>${esc(x.format)}</dd></div></dl><div class="actions">${x.template || ""}<button type="button" class="btn btn-small ${i === next ? "btn-primary" : ""}" data-view="${x.go[0]}">${esc(x.go[1])} →</button></div></div></li>`,
+      )
+      .join("")}</ol></section>`;
+  }
   handlers.setup = () =>
     pageHeader(
-      "GET STARTED",
-      "Suite einrichten",
-      "Ein verlässlicher Betrieb beginnt mit vollständigen Stammdaten und einer ersten Inventur.",
+      "EINRICHTUNG",
+      "Erste Schritte",
+      "Vom eigenen Betrieb zur ersten Auswertung. Lager und Inventur kannst du danach ergänzen.",
       `<button class="btn" data-action="export-json">${I("download")} Backup</button>`,
     ) +
     demoNotice() +
+    v12Onboarding() +
+    `<h2 class="v12-subhead">Danach: Lager, Rezepte und Inventur für den Bestell-Forecast</h2>` +
     v5Toolbar() +
     v5Readiness() +
     `<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">WEITERENTWICKLUNG</div><h2>Was die Suite kann – und was nicht</h2></div></div><div class="v5-info-grid"><div><b>Funktioniert</b><p>Artikel, Rezepte, Rohwaren und Lager; Importe mit Vorschau; Deckungsbeiträge mit Kostenständen; Bestell-Forecast; Bestellentwürfe und Wareneingang; Warenbewegungen; Report Studio mit CSV und Excel; Backup. Mit Cloud-Projekt zusätzlich Anmeldung, Rollen und gemeinsamer Arbeitsbereich mit Revisionsprüfung.</p></div><div><b>Gibt es nicht</b><p>Bestellungen werden nicht an Lieferanten gesendet. Keine Kassenanbindung, keine Texterkennung für Scans oder Fotos, keine automatisch recherchierten Wettbewerbspreise. Buchungen sind nicht revisionssicher im Sinne der GoBD. Hinweise sind regelbasiert, keine KI.</p></div></div></section>`;
@@ -4783,7 +4885,7 @@
   function v6Exec() {
     const t = v6Report();
     const cmp = v6MonthCompare();
-    return `<section class="v6-executive"><div class="v6-executive-copy"><span class="v6-overline">DASHBOARD · KENNZAHLEN</span><h2>Wie läuft das Geschäft?</h2><p>Umsatz, Deckungsbeitrag und Trends aus deinen Verkaufszeilen, für die Auswahl im Berichtsfilter.</p><p class="v6-exec-scope">Tagesaufgaben: Mein Arbeitsplatz · Einrichtung und Datenqualität: Mission Control</p><div class="v6-hero-links"><button class="v6-hero-btn" data-view="reports">Report Studio öffnen →</button><button class="v6-hero-ghost" data-view="funnel">Service Funnel</button></div></div><div class="v6-hero-card"><span>Monatsumsatz netto · letzte ${Math.min(8, t.months.length)} Monate</span><div class="v6-hero-mini" role="img" aria-label="Verlauf des Monatsumsatzes">${v6MiniBars(t.months)}</div><small>${!cmp ? "Noch keine Verkäufe erfasst" : cmp.change === null ? `Kein Vergleich: für ${periodName(cmp.prevId)} sind keine Verkäufe erfasst` : `${periodName(cmp.target)} ggü. ${periodName(cmp.prevId)}: ${cmp.change >= 0 ? "+" : ""}${pct(cmp.change)}`}</small></div></section>`;
+    return `<section class="v6-executive"><div class="v6-executive-copy"><span class="v6-overline">ÜBERSICHT · ${esc(v6ScopeLabel())}</span><h1 class="v6-exec-title">Wie läuft der Betrieb?</h1><p>Umsatz, Deckungsbeitrag und Handlungsbedarf aus deinen Verkäufen, für die Auswahl im Berichtsfilter.</p><p class="v6-exec-scope">Aufgaben für heute: <button type="button" class="link-button" data-view="myday">Heute zu tun</button> · Fehlende Daten: <button type="button" class="link-button" data-view="operations">Datenqualität</button></p><div class="v6-hero-links"><button class="v6-hero-btn" data-view="reports">Berichte & Export →</button><button class="v6-hero-ghost" data-view="funnel">Service Funnel</button></div></div><div class="v6-hero-card"><span>Monatsumsatz netto · letzte ${Math.min(8, t.months.length)} Monate</span><div class="v6-hero-mini" role="img" aria-label="Verlauf des Monatsumsatzes">${v6MiniBars(t.months)}</div><small>${!cmp ? "Noch keine Verkäufe erfasst" : cmp.change === null ? `Kein Vergleich: für ${periodName(cmp.prevId)} sind keine Verkäufe erfasst` : `${periodName(cmp.target)} ggü. ${periodName(cmp.prevId)}: ${cmp.change >= 0 ? "+" : ""}${pct(cmp.change)}`}</small></div></section>`;
   }
   function v6MiniBars(months) {
     const rows = months.slice(-8),
@@ -4797,22 +4899,118 @@
       t = r.totals,
       cmp = v6MonthCompare();
     if (!r.products.length) return `<div class="v6-page-top">${v6Exec()}${v6ReportFilters()}</div>${v6NoSales()}`;
-    return `<div class="v6-page-top">${v6Exec()}${v6ReportFilters()}</div><div class="v6-kpis">${v6Kpi(`Netto-Umsatz · ${V6_MONTH === "all" ? "alle Monate" : periodName(V6_MONTH)}`, euro(t.revenue), !cmp ? "Kein Monat mit Verkäufen" : cmp.change === null ? `${periodName(cmp.target)}: kein Vormonat (${periodName(cmp.prevId)}) erfasst` : `${periodName(cmp.target)} ggü. ${periodName(cmp.prevId)}: ${cmp.change >= 0 ? "+" : ""}${pct(cmp.change)}`)}${v6Kpi("DB II", euro(t.db2), "Vor Fixkosten", "mint")}${v6Kpi("Wareneinsatzquote", v6Percent(t.goodsPct), "Warenkosten / Netto-Umsatz")}${v6Kpi("Verkaufte Einheiten", number(t.quantity), "Aus erfassten Verkaufszeilen")}</div><div class="v6-split"><div>${v6Panel("PERFORMANCE", "Umsatz und DB im Zeitverlauf", "Monatlicher Netto-Umsatz. Alle Filter wirken auf die Grafik.", v6LineChart(r.months, "revenue"))}</div><div>${v6Panel("SORTIMENT", "Umsatz nach Warengruppe", "Anteil der Produktkategorien am Netto-Umsatz.", v6Donut(r.categories))}</div></div><div class="v6-split"><div>${v6Panel("OUTLETS", "Umsatz nach Outlet", "Klick auf ein Outlet filtert alle Reports.", v6BarChart(r.outlets, "revenue", { click: "outlet" }))}</div><div>${v6Tips(
-      "Was du als Nächstes prüfen solltest",
-      [
-        {
-          title: "Wareneinsatz und Rezeptkosten",
-          detail: "Artikel mit hoher Warenquote auf Preis, Portionierung und Rezept prüfen.",
+    return `<div class="v6-page-top">${v6Exec()}${v6ReportFilters()}</div><div class="v6-kpis">${v6Kpi(`Netto-Umsatz · ${V6_MONTH === "all" ? "alle Monate" : periodName(V6_MONTH)}`, euro(t.revenue), V6_MONTH === "all" ? v6RangeLabel(r) : !cmp ? "Kein Monat mit Verkäufen" : cmp.change === null ? `Kein Vergleich: ${periodName(cmp.prevId)} ohne Verkäufe` : `ggü. ${periodName(cmp.prevId)}: ${cmp.change >= 0 ? "+" : ""}${pct(cmp.change)}`)}${v6Kpi("DB II", euro(t.db2), "Vor Fixkosten", "mint")}${v6Kpi("Wareneinsatzquote", v6Percent(t.goodsPct), "Warenkosten / Netto-Umsatz")}${v6Kpi("Verkaufte Einheiten", number(t.quantity), "Aus erfassten Verkaufszeilen")}</div>${v6Definitions()}${v6ActionHints(r)}<div class="v6-split"><div>${v6Panel("PERFORMANCE", "Umsatz und DB im Zeitverlauf", "Monatlicher Netto-Umsatz. Alle Filter wirken auf die Grafik.", v6LineChart(r.months, "revenue"))}</div><div>${v6Panel("SORTIMENT", "Umsatz nach Warengruppe", "Anteil der Produktkategorien am Netto-Umsatz.", v6Donut(r.categories))}</div></div>${v6Panel("OUTLETS", "Umsatz nach Outlet", "Klick auf ein Outlet filtert alle Reports.", v6BarChart(r.outlets, "revenue", { click: "outlet" }))}`;
+  }
+  // "Handlungsbedarf" on the overview (Oct 2026): only statements backed by data and, for good/bad judgements, by a
+  // target the business set itself. Every line names article or outlet, period and basis and opens the matching page.
+  function targetSet() {
+    return S.mode === "demo" || S.targetSet === true;
+  }
+  /** "Summe April bis September 2026 (6 Monate)" – what an all-months total covers. */
+  function v6RangeLabel(r) {
+    const m = r.months.map((x) => x.id).filter((x) => /^\d{4}-\d{2}$/.test(x)).sort();
+    if (!m.length) return "Summe aller erfassten Verkäufe";
+    return m.length === 1 ? `Summe ${periodName(m[0])}` : `Summe ${periodName(m[0])} bis ${periodName(m.at(-1))} (${m.length} Monate)`;
+  }
+  function v6ActionHints(r) {
+    const scope = v6ScopeLabel(),
+      hints = [],
+      basis = V6_COSTBASIS === "current" ? "heutige Produktkosten (Szenario)" : "Kostenstand im Verkaufsmonat";
+    const sold = r.products.filter((x) => x.revenue > 0);
+    // 1. articles without cost: DB cannot be judged
+    const noCost = sold.filter((x) => !(x.goods > 0));
+    if (noCost.length)
+      hints.push({
+        level: "warn",
+        title: `${noCost.length === 1 ? noCost[0].name + ": Wareneinsatz fehlt" : noCost.length + " verkaufte Artikel ohne Wareneinsatz"}`,
+        detail: `${noCost.length === 1 ? "" : noCost.slice(0, 3).map((x) => x.name).join(", ") + (noCost.length > 3 ? " … · " : " · ")}${euro(noCost.reduce((a, x) => a + x.revenue, 0))} Netto-Umsatz ohne Kosten; DB und Warenquote dieser Artikel sind nicht berechenbar und fehlen in den Summen.`,
+        action: "Kosten hinterlegen",
+        view: "products",
+      });
+    // 2. goods quota above the business's own target
+    if (targetSet()) {
+      const over = sold
+        .filter((x) => x.goods > 0 && (x.goods / x.revenue) * 100 > S.targetPct)
+        .map((x) => ({ ...x, q: (x.goods / x.revenue) * 100, extra: x.goods - (x.revenue * S.targetPct) / 100 }))
+        .sort((a, b) => b.extra - a.extra)
+        .slice(0, 3);
+      for (const x of over)
+        hints.push({
+          level: "warn",
+          title: `${x.name}: Warenquote ${pct(x.q)} über deinem Ziel von ${pct(S.targetPct)}`,
+          detail: `Wareneinsatz ${euro(x.goods)} ÷ Netto-Umsatz ${euro(x.revenue)}. Rezeptkosten, Portionierung und Verkaufspreis prüfen.`,
+          action: "Zielpreis ansehen",
           view: "costs",
-        },
-        { title: "Verkaufspotenziale im Service", detail: "Aperitif, Dessert und Upgrades getrennt nach Tagen auswerten.", view: "funnel" },
-        {
-          title: "Bestellungen gegen Forecast prüfen",
-          detail: "Offene Bestellungen, Lagerwarnungen und Bedarfsprognose ansehen.",
+        });
+    } else
+      hints.push({
+        level: "info",
+        title: "Kein Ziel für die Warenquote hinterlegt",
+        detail: "Ohne eigenes Ziel bewertet die Übersicht keine Warenquote als zu hoch oder gut. Ziel unter Einstellungen festlegen.",
+        action: "Ziel festlegen",
+        view: "settings",
+      });
+    // 3. clear decline in the last four complete months (same rule as the lifecycle page), for the chosen outlet
+    const sales = S.sales.filter((x) => V6_OUTLET === "all" || x.outletId === V6_OUTLET);
+    const declines = S.items
+      .filter((p) => V6_CATEGORY === "all" || p.category === V6_CATEGORY)
+      .map((p) => ({ p, life: C.lifecycle(sales, p.id, p.launchMonth) }))
+      .filter((x) => x.life.phase === "decline")
+      .sort((a, b) => a.life.changePct - b.life.changePct)
+      .slice(0, 2);
+    for (const { p, life } of declines)
+      hints.push({
+        level: "info",
+        title: `${p.name}: Absatz ${pct(life.changePct)} (Rückgang)`,
+        detail: `Ø ${periodName(life.period[2])}/${periodName(life.period[3])} gegenüber Ø ${periodName(life.period[0])}/${periodName(life.period[1])}, ${v6OutletName(V6_OUTLET)}. Verfügbarkeit, Preis, Platzierung und Saison prüfen.`,
+        action: "Verlauf ansehen",
+        lifecycle: p.id,
+      });
+    // 4. current state, independent of the report filter
+    try {
+      const f = v4Forecast(),
+        toOrder = f.rows.filter((x) => x.packs > 0);
+      if (toOrder.length)
+        hints.push({
+          level: "todo",
+          title: `${toOrder.length} ${toOrder.length === 1 ? "Rohware" : "Rohwaren"} laut Forecast bestellen`,
+          detail: `Aktueller Stand: Bedarf der nächsten Tage aus dem Tagesabsatz, abzüglich gezähltem Bestand und offener Bestellungen (${toOrder
+            .slice(0, 3)
+            .map((x) => x.name)
+            .join(", ")}${toOrder.length > 3 ? " …" : ""}).`,
+          action: "Bestellung vorbereiten",
           view: "purchasing",
-        },
-      ],
-    )}</div></div>`;
+        });
+    } catch {
+      /* forecast needs complete master data; the data-quality page shows what is missing */
+    }
+    const day = new Date().toISOString().slice(0, 10),
+      late = (S.tasks || []).filter((t) => t.status !== "done" && /^\d{4}-\d{2}-\d{2}$/.test(t.due_on || "") && t.due_on < day);
+    if (late.length) {
+      const names = [...new Set(late.map((t) => (t.outlet_id ? S.outlets.find((o) => o.id === t.outlet_id)?.name || "Outlet nicht mehr vorhanden" : "Allgemein")))];
+      hints.push({
+        level: "todo",
+        title: `${late.length} ${late.length === 1 ? "Aufgabe" : "Aufgaben"} überfällig`,
+        detail: `Aktueller Stand · ${names.join(", ")}.`,
+        action: "Aufgaben öffnen",
+        view: "v11tasks",
+      });
+    }
+    const mark = { warn: "Prüfen", todo: "Zu tun", info: "Hinweis" };
+    return `<section class="v6-panel v6-actions" aria-labelledby="v6-actions-title"><div class="v6-panel-head"><div><span class="v6-overline">HANDLUNGSBEDARF</span><h2 id="v6-actions-title">Was du als Nächstes tun solltest</h2><p>Auswahl: ${esc(scope)} · Kostenbasis: ${esc(basis)}. Bestellungen und Aufgaben: aktueller Stand. Nur aus deinen Daten und deinen Zielen; ohne Ziel keine Bewertung, ohne Daten kein Hinweis.</p></div></div>${
+      hints.length
+        ? `<ol class="v6-action-list">${hints
+            .map(
+              (h) =>
+                `<li class="v6-action ${h.level}"><span class="v6-action-mark">${mark[h.level]}</span><div><b>${esc(h.title)}</b><p>${esc(h.detail)}</p></div><button type="button" class="btn btn-small" ${h.lifecycle ? `data-lifecycle="${esc(h.lifecycle)}"` : `data-view="${h.view}"`}>${esc(h.action)} →</button></li>`,
+            )
+            .join("")}</ol>`
+        : `<p class="v6-smallnote">In dieser Auswahl gibt es nichts, das aus den Daten heraus Handlungsbedarf zeigt.</p>`
+    }</section>`;
+  }
+  /** Short definitions that match the calculation in core.js (saleMetrics / costBreakdown). */
+  function v6Definitions() {
+    return `<details class="v6-terms"><summary>Wie die Kennzahlen gerechnet werden</summary><dl><div><dt>Netto-Umsatz</dt><dd>Bruttopreis ÷ (1 + USt-Satz des Artikels) × Menge.</dd></div><div><dt>DB I</dt><dd>Netto-Umsatz minus Wareneinsatz (Rezept- oder Einkaufskosten je Einheit).</dd></div><div><dt>DB II</dt><dd>DB I minus weitere variable Kosten je Einheit (Verpackung, Arbeitszeit je Portion, Gebühren, Sonstiges), vor Fixkosten.</dd></div><div><dt>Warenquote</dt><dd>Wareneinsatz ÷ Netto-Umsatz der Auswahl.</dd></div><div><dt>Kostenbasis</dt><dd>„Kostenstand im Verkaufsmonat“ bewertet jeden Monat mit den damals gültigen Kosten; „Szenario: heutige Kosten“ bewertet alle Monate mit den aktuellen Kosten.</dd></div><div><dt>Szenario-Werte</dt><dd>Im Service Funnel: Hochrechnung aus Zielquoten und beobachteten Durchschnittspreisen. Keine Prognose und kein Ist-Umsatz.</dd></div></dl></details>`;
   }
   function v6ABC(r) {
     const a = r.abc.filter((x) => x.abc === "A"),
@@ -4942,7 +5140,7 @@
     const f = v4Forecast(),
       items = (f.rows || []).filter((x) => x.packs !== null);
     const pending = V5.orderStats(S.purchaseOrders);
-    return `<div class="v6-modular-head"><span>BESTELL-REPORTING</span><button class="btn btn-small" data-view="orders">Bestellungen öffnen ↗</button></div><div class="v6-kpis">${v6Kpi("Prognosequalität", String(f.quality || "—"), "Abhängig von erfassten Tagesverkäufen")}${v6Kpi("Bestellwert netto", euro(items.reduce((a, b) => a + v6Safe(b.estimatedNet), 0)), "Vorläufig, aktuelle EK")}${v6Kpi("Rohwaren ohne Bestand", number(f.rows.filter((x) => x.packs === null).length), "Nicht als 0 kalkuliert")}${v6Kpi("Offenes Bestellvolumen", euro(pending.openTotal), "Entwurf + als bestellt markiert")}</div>${v6Panel(
+    return `<div class="v6-modular-head"><span>BESTELL-REPORTING</span><button class="btn btn-small" data-view="orders">Bestellungen öffnen ↗</button></div><div class="v6-kpis">${v6Kpi("Prognosequalität", String(f.quality || "—"), "Abhängig von erfassten Tagesverkäufen")}${v6Kpi("Bestellwert netto", euro(items.reduce((a, b) => a + v6Safe(b.estimatedNet), 0)), "Vorläufig, aktuelle EK")}${v6Kpi("Bedarf nicht berechenbar", number(V4.forecastSummary(f).notComputable.length), v4StatusLine(V4.forecastSummary(f)))}${v6Kpi("Offenes Bestellvolumen", euro(pending.openTotal), "Entwurf + als bestellt markiert")}</div>${v6Panel(
       "BEDARFSRANKING",
       "Höchster prognostizierter Einkaufswert",
       "Voraussetzung: Rezepte, Tagesabsätze und Inventur.",
@@ -5033,7 +5231,7 @@
       )
       .join(
         "",
-      )}</tbody></table></div><p class="v6-smallnote">Bis zu 150 Artikel sichtbar. Export enthält alle gefilterten Daten. Produktkosten sind aktuell, nicht historisiert.</p>`;
+      )}</tbody></table></div><p class="v6-smallnote">Bis zu 150 Artikel sichtbar. Export enthält alle gefilterten Daten. Kostenbasis: ${V6_COSTBASIS === "current" ? "Szenario, heutige Produktkosten für alle Monate" : "Kostenstand im jeweiligen Verkaufsmonat"}.</p>`;
   }
   function v6ReportContent() {
     const r = v6Report(),
@@ -5043,7 +5241,7 @@
     if (V6_TAB === "inventory") return v6Inventory() + v6Purchasing();
     if (V6_TAB === "sortiment") return v6Products() + v6Recipes();
     if (!r.products.length) return v6NoSales();
-    return `<div class="v6-kpis">${v6Kpi("Netto-Umsatz", euro(r.totals.revenue), "Aktuelle Filter")}${v6Kpi("DB II", euro(r.totals.db2), "Kalkulatorisch vor Fixkosten")}${v6Kpi("Wareneinsatzquote", v6Percent(r.totals.goodsPct), "Aktuelle Produktkosten")}${v6Kpi("Absatz", number(r.totals.quantity), "Verkaufte Artikel")}</div><div class="v6-split">${v6Panel("TREND", "Monatsentwicklung", "Umsatz, DB II oder Absatz über den Zeitverlauf.", v6LineChart(r.months, metric, metric !== "quantity"))}${v6Panel("BREAKDOWN", "Warengruppenverteilung", "Anteile des aktuellen Sortiments.", v6Donut(r.categories, metric))}</div><div class="v6-split">${v6Panel("OUTLET REPORT", "Outlets im Vergleich", "Klick filtert die gesamte Ansicht.", v6BarChart(r.outlets, metric, { money: metric !== "quantity", click: "outlet" }))}${v6Panel(
+    return `<div class="v6-kpis">${v6Kpi("Netto-Umsatz", euro(r.totals.revenue), "Aktuelle Filter")}${v6Kpi("DB II", euro(r.totals.db2), "Kalkulatorisch vor Fixkosten")}${v6Kpi("Wareneinsatzquote", v6Percent(r.totals.goodsPct), V6_COSTBASIS === "current" ? "Szenario: heutige Kosten" : "Kostenstand im Verkaufsmonat")}${v6Kpi("Absatz", number(r.totals.quantity), "Verkaufte Artikel")}</div><div class="v6-split">${v6Panel("TREND", "Monatsentwicklung", "Umsatz, DB II oder Absatz über den Zeitverlauf.", v6LineChart(r.months, metric, metric !== "quantity"))}${v6Panel("BREAKDOWN", "Warengruppenverteilung", "Anteile des aktuellen Sortiments.", v6Donut(r.categories, metric))}</div><div class="v6-split">${v6Panel("OUTLET REPORT", "Outlets im Vergleich", "Klick filtert die gesamte Ansicht.", v6BarChart(r.outlets, metric, { money: metric !== "quantity", click: "outlet" }))}${v6Panel(
       "TOP 9",
       "Stärkste Produkte",
       "Aus der aktuellen Auswahl.",
@@ -5116,11 +5314,10 @@
     orders: v6Orders,
     // lifecycle: the former line chart supplement is replaced by the interactive chart on the page itself (Oct 2026)
     market: v6Market,
-    insights: v6MainOverview,
     menuimport: v6Recipes,
     groups: v6Products,
-    import: v6MainOverview,
-    setup: v6MainOverview,
+    // insights and import no longer repeat the whole overview below their own content (Oct 2026)
+    // setup: the onboarding stays on its own page (the overview has its own entry)
   };
   for (const [name, fn] of Object.entries(v6Sections)) {
     const original = handlers[name];
@@ -5804,6 +6001,11 @@
     get view() {
       return VIEW;
     },
+    /** v11/ui.mjs has registered all its views: an address that still names no page is corrected now. */
+    extensionsReady() {
+      EXT_READY = true;
+      if (location.hash.slice(1) !== VIEW) render();
+    },
     registerView(id, label, fn) {
       handlers[id] = fn;
       labels[id] = label;
@@ -5829,6 +6031,7 @@
     uid,
   };
   window.GLBAppSync = {
+    view: () => VIEW,
     snapshot: () => JSON.parse(JSON.stringify(S)),
     hydrate: (source) => {
       const clean = migrate(JSON.parse(JSON.stringify(source)));

@@ -94,6 +94,7 @@ export function comparisonRows(observations, meinMarkt, products, categoryGroups
       checked: o.checked_on,
       note: o.note || "",
       placeUrl: o.place_url || "",
+      example: o.example === true,
       cmp: comparability({
         ownPrice: o.our_price_gross,
         competitorPrice: o.competitor_price_gross,

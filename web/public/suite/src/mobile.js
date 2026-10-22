@@ -126,8 +126,10 @@
     orders: "Bestellung",
     reports: "Reports",
     menuimport: "Karte",
-    overview: "Dashboard",
-    operations: "Control",
+    overview: "Übersicht",
+    operations: "Daten",
+    v11tasks: "Aufgaben",
+    purchasing: "Bestellen",
   };
   const bottom = $("#glb08-bottomnav");
   const shorten = () =>

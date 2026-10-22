@@ -468,6 +468,9 @@ async function posIngest(request, env, fetchImpl, raw) {
 /** Entry point for all /api/suite/* routes. */
 export async function handleSuiteApi(request, env = {}, fetchImpl = fetch) {
   const path = new URL(request.url).pathname;
+  // Which operator-side services are set up – only yes/no, never a key or a model secret. Customers manage no keys.
+  if (request.method === "GET" && path.endsWith("/market/status"))
+    return json({ ai_configured: Boolean(env.OPENAI_API_KEY), discover: "OpenStreetMap, ohne Kosten", price_lookup: false });
   if (request.method !== "POST") return fail("POST_REQUIRED", 405);
   const raw = await request.text();
   if (path.endsWith("/api/suite/pos/ingest"))

@@ -382,7 +382,47 @@
       assumptions: { periodDays, recentWeight, wasteSafetyPct, referenceDate: anchor, leadDays, coverageDays },
     };
   }
+  /** One set of definitions for every forecast view (Oct 2026), so cards, tables and reports count the same things.
+   *  order: packs to order · covered: enough stock · stockMissing: used in a recipe with demand, but no counted stock ·
+   *  stockZero: counted stock is really 0 · noUsage: in no recipe, so no consumption can be derived ·
+   *  noDays: no daily sales at all · invalidUnit: recipe unit not convertible · notComputable: order quantity cannot be
+   *  computed although the ingredient is needed (stockMissing + invalidUnit + noDays for ingredients in recipes) ·
+   *  missingRecipes: sold articles without recipe (article ids). */
+  function forecastSummary(f) {
+    const rows = f.rows || [],
+      by = (fn) => rows.filter(fn);
+    const stockMissing = by((r) => r.basis === "computed" && r.stockBase === null),
+      invalidUnit = by((r) => r.basis === "invalid-unit"),
+      noDays = by((r) => r.basis === "no-data");
+    return {
+      order: by((r) => r.packs > 0),
+      covered: by((r) => r.packs === 0),
+      stockMissing,
+      stockZero: by((r) => r.stockBase === 0),
+      noUsage: by((r) => r.basis === "not-in-recipe"),
+      noDays,
+      invalidUnit,
+      notComputable: [...stockMissing, ...invalidUnit, ...noDays],
+      missingRecipes: f.missingRecipes || [],
+    };
+  }
+  /** Forecast quantities for people: kg and l from 1000 g/ml on, whole pieces, no false precision. */
+  function displayQuantity(n, unit) {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return { value: null, unit };
+    const u = String(unit || "").toLowerCase();
+    const round = (x, d) => Math.round(x * 10 ** d) / 10 ** d;
+    if ((u === "g" || u === "ml") && Math.abs(v) >= 1000) {
+      const big = v / 1000;
+      return { value: round(big, Math.abs(big) < 10 ? 2 : 1), unit: u === "g" ? "kg" : "l" };
+    }
+    if (u === "g" || u === "ml") return { value: Math.round(v), unit: u };
+    if (u === "stk" || u === "stück") return { value: round(v, Math.abs(v) < 10 ? 1 : 0), unit: "Stk." };
+    return { value: round(v, 2), unit };
+  }
   return {
+    forecastSummary,
+    displayQuantity,
     N,
     R,
     norm,
