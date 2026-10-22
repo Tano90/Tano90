@@ -36,6 +36,16 @@ Gefunden und behoben bei 768 px:
 - Unsichtbare Tabellenbeschriftung (sr-only) vergrößerte die Seitenbreite um 397 px.
 - Kontrast der unteren Leiste lag bei 3,9 : 1 und ist jetzt höher.
 
+## Volltest am Ende der Runde (22.10.2026, 22:45–23:00 UTC)
+- Playwright, gesamtes Projekt: **313 bestanden, 2 fehlgeschlagen.**
+  - Die zwei Fehler liegen außerhalb dieser Runde: F06-H2 (Bestellvorschlag) und H-E2 (HACCP-Vortag). Beide Bereiche wurden nicht geändert.
+  - Ursache ist eine Tagesgrenze: Die Testdaten setzen „gestern“ bzw. „letzte Wochen“ nach UTC, die App rechnet nach Berliner Tag. Zwischen 22 und 24 Uhr UTC zeigen beide auf verschiedene Tage.
+  - Der Testlauf fiel in genau dieses Fenster. Zu einer anderen Uhrzeit waren alle 301 Tests grün.
+  - Offen: Die Seed-Daten auf den Berliner Tag umstellen.
+- Unit (`npm run test:suite`): 160/160.
+- vitest: 60 bestanden, 34 übersprungen (brauchen DB).
+- tsc ohne Fehler.
+
 Gefundener Fehler nebenbei: Demo-Aufgaben hatten feste Fälligkeiten (22.10.2026) → wurden ab Mitternacht Berliner Zeit „überfällig“; Übersicht rechnete „heute“ in UTC, Aufgabenliste in Berliner Zeit. Beides vereinheitlicht.
 
 ---
