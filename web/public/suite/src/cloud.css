@@ -327,3 +327,6 @@ body.glb-locked #app {
     overflow: hidden;
   }
 }
+
+/* Demo account notice */
+.cloud-demo-facts { margin: 0 0 18px; padding-left: 20px; display: grid; gap: 8px; color: #33525a; font-size: 14px; line-height: 1.5; }

@@ -67,8 +67,6 @@
     document
       .querySelectorAll('.sidebar>.nav-label, .sidebar>.nav:not([aria-label="Hauptnavigation"])')
       .forEach((x) => (x.style.display = "none"));
-    const status = document.querySelector(".side-status strong");
-    if (status) status.textContent = "GLB Cloud · v0.8";
     document.querySelectorAll(".topbar [data-view]").forEach((el) => {
       el.hidden = !(window.GLBAccess?.canView(el.dataset.view) ?? true);
     });

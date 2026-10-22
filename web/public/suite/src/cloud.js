@@ -23,15 +23,7 @@
     displaying = false,
     authMode = "signin";
   let fatalMessage = "";
-  // Website integration: without a configured Supabase project the suite runs as a demo in this browser only.
-  if (window.GLB_CLOUD_ENABLED === false) {
-    document.body.classList.remove("glb-locked");
-    status.textContent = "Demo · Daten nur in diesem Browser";
-    status.className = "cloud-status pending";
-    window.GLB08UI?.activate?.("owner");
-    return;
-  }
-
+  let problemLabel = ""; // why saving stopped: kept in the status until it is resolved
   const showStatus = (text, type = "") => {
     status.textContent = text;
     status.className = "cloud-status" + (type ? " " + type : "");
@@ -48,14 +40,53 @@
   const card = (content) => {
     area.innerHTML = `<section class="cloud-cover"><div class="cloud-login-card"><header class="cloud-brand"><span class="cloud-brand-icon">G</span><div><strong>GLB <em>AI Suite</em></strong><small>GASTRO LEADERSHIP BOARD · CLOUD</small></div></header>${content}</div></section>`;
   };
+  // Sidebar footer: says where the data of this session is kept.
+  const side = (title, detail) => {
+    const t = $(".side-status strong"),
+      d = $(".side-status small");
+    if (t) t.textContent = title;
+    if (d) d.textContent = detail;
+  };
+
+  // Website integration: without a configured Supabase project the suite runs as a demo in this browser only.
+  // No sign-in exists then; the account button explains that instead of doing nothing.
+  if (window.GLB_CLOUD_ENABLED === false) {
+    document.body.classList.remove("glb-locked");
+    const time = () => new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    showStatus("Demo · Daten nur in diesem Browser", "pending");
+    // Called by app.js after each local save: only a save that went through is reported as saved.
+    window.GLBStorageStatus = (ok, message = "") =>
+      ok ? showStatus("Demo · im Browser gespeichert " + time(), "pending") : showStatus("Demo · NICHT gespeichert: " + message, "danger");
+    window.GLB08UI?.activate?.("owner");
+    side("Demo-Arbeitsbereich", "Speichert nur in diesem Browser, keine Cloud");
+    $("#cloud-account")?.addEventListener("click", () => {
+      card(`<div class="cloud-title"><span class="cloud-eyebrow">DEMO OHNE KONTO</span><h1>Hier gibt es keine Anmeldung</h1>
+        <p>Diese Suite läuft ohne verbundenes Cloud-Projekt. Deshalb kannst du dich nicht anmelden, und es gibt keine Synchronisierung.</p></div>
+        <ul class="cloud-demo-facts"><li>Deine Eingaben liegen nur in diesem Browser auf diesem Gerät. Niemand sonst sieht sie.</li>
+        <li>Sie gehen verloren, wenn du die Website-Daten des Browsers löschst. Sichere sie mit einem Backup.</li>
+        <li>Für den echten Betrieb verbindet der Betreiber ein Supabase-Projekt. Dann erscheint hier die Anmeldung mit Betrieb, Rollen und Cloud-Speicherung.</li></ul>
+        <div class="cloud-account-actions"><button class="cloud-primary" type="button" data-demo="close">Zurück zur Suite</button><button type="button" data-demo="close" data-action="export-json">JSON-Backup herunterladen</button></div>`);
+      area.querySelector("[data-demo]")?.focus();
+    });
+    area.addEventListener("click", (e) => {
+      if (e.target.closest('[data-demo="close"]')) area.innerHTML = "";
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && area.querySelector("[data-demo]")) area.innerHTML = "";
+    });
+    return;
+  }
+
   const fmtStatus = () => {
-    if (blocked) showStatus("Synchronisation blockiert", "danger");
-    else if (saving || dirty > saved) showStatus("Speichern …", "pending");
+    if (blocked) showStatus(problemLabel || "Synchronisation blockiert", "danger");
+    else if (saving) showStatus("Speichern …", "pending");
+    else if (dirty > saved) showStatus(navigator.onLine ? "Änderungen werden gespeichert …" : "Offline · Änderungen warten", "pending");
     else showStatus("In der Cloud gespeichert", "good");
   };
   const setCloudProblem = (msg, conflict = false) => {
     blocked = true;
-    showStatus(conflict ? "Bearbeitungskonflikt" : "Nicht gespeichert", "danger");
+    problemLabel = conflict ? "Bearbeitungskonflikt" : "Nicht gespeichert";
+    showStatus(problemLabel, "danger");
     let box = $("#cloud-warning");
     if (!box) {
       box = document.createElement("div");
@@ -68,6 +99,7 @@
   const clearCloudProblem = () => {
     $("#cloud-warning")?.remove();
     blocked = false;
+    problemLabel = "";
     fmtStatus();
   };
   function authView(message = "") {
@@ -174,6 +206,7 @@
       unlock();
       fmtStatus();
       window.GLB08UI?.activate(currentRole);
+      side("GLB Cloud", `${chosen.organization.name} · ${window.GLBAccess?.label(currentRole) || currentRole}`);
       document.body.classList.toggle("glb-viewer", currentRole === "viewer");
       if (!data.data || !Array.isArray(data.data.items)) changed(window.GLBAppSync.snapshot());
     } catch (e) {
@@ -192,6 +225,7 @@
   }
   async function flush() {
     if (saving || blocked || !ready || !currentOrg || currentRole === "viewer" || dirty <= saved) return;
+    if (!navigator.onLine) return fmtStatus(); // stays pending; the "online" event sends it
     saving = true;
     fmtStatus();
     try {
@@ -470,6 +504,7 @@
     }
   });
   $("#cloud-account")?.addEventListener("click", () => void accountView());
+  window.addEventListener("offline", () => fmtStatus());
   window.addEventListener("online", () => {
     if (ready && !blocked) void flush();
   });

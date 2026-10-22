@@ -97,3 +97,40 @@ test.describe("SU Mein Markt", () => {
     problems.splice(0, problems.length, ...problems.filter((p) => !p.includes("net::ERR_FAILED")));
   });
 });
+
+test.describe("SU Speicherstatus und Konto (Demo)", () => {
+  test("SU-S1 Konto-Knopf erklärt die Demo, Status meldet echtes lokales Speichern, keine Cloud-Behauptung", async ({ page }) => {
+    await page.goto("/suite");
+    await expect(page.locator(".side-status")).toContainText("Speichert nur in diesem Browser, keine Cloud");
+    await expect(page.locator(".side-status")).not.toContainText("Online-Datenspeicherung");
+    await page.locator("#cloud-account").click();
+    await expect(page.getByRole("heading", { name: "Hier gibt es keine Anmeldung" })).toBeVisible();
+    await expect(page.locator("#cloud-layer")).toContainText("nur in diesem Browser");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("heading", { name: "Hier gibt es keine Anmeldung" })).toHaveCount(0);
+    // a real change is saved locally and reported as such
+    await page.evaluate(() => (document.querySelector('#sidebar .glb08-nav-link[data-view="funnel"]') as HTMLElement).click());
+    await page.locator('[data-action="new-funnel"]').first().click();
+    await page.locator('#modal-layer input[name="date"]').fill("2026-08-03");
+    await page.locator('#modal-layer input[name="covers"]').fill("40");
+    await page.locator("#modal-layer .modal-footer button[type=submit], #modal-layer .modal-footer .btn-primary").first().click();
+    await expect(page.locator("#cloud-sync-status")).toContainText(/Demo · im Browser gespeichert \d\d:\d\d/);
+    const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("glb-ai-suite-v01") || "{}").funnel?.some((r: { date: string }) => r.date === "2026-08-03"));
+    expect(stored).toBe(true);
+    await page.reload();
+    await page.evaluate(() => (document.querySelector('#sidebar .glb08-nav-link[data-view="funnel"]') as HTMLElement).click());
+    await expect(page.locator("#main")).toContainText("2026-08-03");
+  });
+
+  test("SU-S2 Speichern schlägt fehl: Status zeigt es, nichts wird als gespeichert gemeldet", async ({ page }) => {
+    await page.addInitScript(() => {
+      Storage.prototype.setItem = function () { throw new DOMException("QuotaExceededError"); };
+    });
+    await page.goto("/suite");
+    await page.evaluate(() => (document.querySelector('#sidebar .glb08-nav-link[data-view="funnel"]') as HTMLElement).click());
+    await page.locator('[data-action="new-funnel"]').first().click();
+    await page.locator('#modal-layer input[name="covers"]').fill("40");
+    await page.locator("#modal-layer .modal-footer button[type=submit], #modal-layer .modal-footer .btn-primary").first().click();
+    await expect(page.locator("#cloud-sync-status")).toContainText("Demo · NICHT gespeichert");
+  });
+});

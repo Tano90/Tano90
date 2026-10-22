@@ -1,0 +1,225 @@
+import { expect, test, type BrowserContext, type Page } from "./fixtures";
+
+// The GLB AI Suite in cloud mode against a stand-in for Supabase that lives in this test process, so two browser
+// sessions share one "server". It implements exactly the calls cloud.js makes (auth, glb_* RPCs, two table reads)
+// with the same rules as suite-sql/002 for revisions and restricted roles. The real SQL is tested in
+// suite-tests/rls.test.mjs; a real Supabase project is not reachable from this environment.
+
+type Role = "owner" | "service_staff";
+type Snapshot = { data: Record<string, unknown>; revision: number };
+function fakeServer() {
+  const users = new Map<string, { id: string; password: string }>([
+    ["inhaber@betrieb.example", { id: "u-owner", password: "geheim-123" }],
+    ["service@betrieb.example", { id: "u-service", password: "geheim-456" }],
+  ]);
+  const members: { org: string; user: string; role: Role }[] = [
+    { org: "org-1", user: "u-owner", role: "owner" },
+    { org: "org-1", user: "u-service", role: "service_staff" },
+  ];
+  const orgs = [{ id: "org-1", name: "Testbetrieb Nord", created_at: "2026-10-01" }];
+  const snaps: Record<string, Snapshot> = { "org-1": { data: {}, revision: 0 } };
+  const state = { saves: 0, delayMs: 0, failNextSave: false };
+  const err = (message: string) => ({ data: null, error: { message } });
+  async function handle(call: { kind: string; name?: string; args?: Record<string, unknown>; uid?: string | null; table?: string }) {
+    const uid = call.uid ?? null;
+    const role = (org: string) => members.find((m) => m.org === org && m.user === uid)?.role;
+    if (call.kind === "signIn") {
+      const u = users.get(String(call.args!.email));
+      return u && u.password === call.args!.password ? { data: { session: { user: { id: u.id, email: call.args!.email } } }, error: null } : err("Invalid login credentials");
+    }
+    if (call.kind === "from") {
+      if (call.table === "glb_memberships") return { data: members.filter((m) => m.user === uid).map((m) => ({ organization_id: m.org, role: m.role })), error: null };
+      return { data: orgs.filter((o) => members.some((m) => m.org === o.id && m.user === uid)), error: null };
+    }
+    const a = call.args || {};
+    const org = String(a.p_org ?? "");
+    switch (call.name) {
+      case "glb_accept_invitations":
+        return { data: 0, error: null };
+      case "glb_read_workspace": {
+        const r = role(org);
+        if (!r) return err("ACCESS_DENIED");
+        const s = snaps[org];
+        if (r === "owner") return { data: { data: s.data, revision: s.revision, role: r }, error: null };
+        const items = ((s.data.items as Record<string, unknown>[]) || []).map(({ costNet: _c, costDetail: _d, ...x }) => ({ ...x, costNet: 0 }));
+        // same shape as glb_read_workspace for service_staff in suite-sql/002
+        const data = { version: 4, mode: "own", business: s.data.business ?? "Betrieb", targetPct: 30, items, recipe: {}, outlets: s.data.outlets ?? [], sales: [], market: [], funnel: s.data.funnel ?? [], funnelGoals: s.data.funnelGoals ?? {}, funnelProjectedDays: s.data.funnelProjectedDays ?? 30 };
+        return { data: { data, revision: s.revision, role: r }, error: null };
+      }
+      case "glb_save_snapshot":
+      case "glb_save_limited": {
+        const r = role(org);
+        if (!r) return err("ACCESS_DENIED");
+        if (call.name === "glb_save_snapshot" && r !== "owner") return err("WRITE_NOT_ALLOWED");
+        if (state.delayMs) await new Promise((res) => setTimeout(res, state.delayMs));
+        if (state.failNextSave) {
+          state.failNextSave = false;
+          return err("Netzwerkfehler beim Speichern (Test)");
+        }
+        const s = snaps[org];
+        if (s.revision !== a.p_expected_revision) return err("REVISION_CONFLICT");
+        const d = a.p_data as Record<string, unknown>;
+        s.data = call.name === "glb_save_snapshot" ? d : { ...s.data, funnel: d.funnel ?? s.data.funnel };
+        s.revision++;
+        state.saves++;
+        return { data: s.revision, error: null };
+      }
+      case "glb_list_members":
+        return role(org) === "owner" ? { data: members.filter((m) => m.org === org).map((m) => ({ user_id: m.user, email: [...users].find(([, u]) => u.id === m.user)![0], role: m.role })), error: null } : err("NOT_AUTHORIZED");
+      default:
+        return err("NOT_IMPLEMENTED " + call.name);
+    }
+  }
+  return { handle, snaps, state };
+}
+
+// Browser side: a supabase-js shaped client that forwards to the test server. The session sits in localStorage
+// like the real client's, so reloading keeps the user signed in and signing out removes it.
+const CLIENT = `window.supabase = { createClient: () => {
+  const KEY = "sb-test-session";
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (_) { return null; } };
+  const uid = () => read()?.user?.id ?? null;
+  return {
+    auth: {
+      getSession: async () => ({ data: { session: read() }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+      signInWithPassword: async (args) => { const r = await window.__glbServer({ kind: "signIn", args }); if (r.data?.session) localStorage.setItem(KEY, JSON.stringify(r.data.session)); return r; },
+      signUp: async () => ({ data: { session: null }, error: null }),
+      signOut: async () => { localStorage.removeItem(KEY); return { error: null }; },
+      resetPasswordForEmail: async () => ({ error: null }),
+      updateUser: async () => ({ error: null }),
+    },
+    rpc: (name, args) => window.__glbServer({ kind: "rpc", name, args, uid: uid() }),
+    from: (table) => ({ select: () => ({
+      eq: () => window.__glbServer({ kind: "from", table, uid: uid() }),
+      in: () => window.__glbServer({ kind: "from", table, uid: uid() }),
+    }) }),
+  };
+} };`;
+
+async function cloudPage(context: BrowserContext, server: ReturnType<typeof fakeServer>) {
+  await context.exposeBinding("__glbServer", (_src, call) => server.handle(call));
+  await context.route("**/suite/config.js", (r) => r.fulfill({ contentType: "application/javascript", body: 'window.GLB_CLOUD_CONFIG = { url: "https://test.supabase.invalid", publishableKey: "sb_publishable_test" };' }));
+  await context.route("**/suite/vendor/supabase.min.js", (r) => r.fulfill({ contentType: "application/javascript", body: CLIENT }));
+  return context.newPage();
+}
+async function signIn(page: Page, email: string, password: string) {
+  await page.goto("/suite");
+  await page.getByLabel("E-Mail").fill(email);
+  await page.getByLabel("Passwort").fill(password);
+  await page.getByRole("button", { name: /Einloggen/ }).click();
+  await page.getByRole("button", { name: /Testbetrieb Nord/ }).click();
+  await expect(page.locator("#cloud-sync-status")).toHaveText("In der Cloud gespeichert");
+}
+async function addFunnelDay(page: Page, date: string, covers: string) {
+  await page.evaluate(() => (document.querySelector('#sidebar .glb08-nav-link[data-view="funnel"]') as HTMLElement).click());
+  await page.locator('[data-action="new-funnel"]').first().click();
+  await page.locator('#modal-layer input[name="date"]').fill(date);
+  await page.locator('#modal-layer input[name="covers"]').fill(covers);
+  await page.locator("#modal-layer .modal-footer button[type=submit], #modal-layer .modal-footer .btn-primary").first().click();
+}
+
+test.describe("SC Suite im Cloud-Betrieb (Test-Server)", () => {
+  test("SC-1 Anmelden, erst nach Bestätigung gespeichert, Neuladen, Konto, Abmelden", async ({ browser }) => {
+    const server = fakeServer();
+    const context = await browser.newContext();
+    const page = await cloudPage(context, server);
+    await page.goto("/suite");
+    await expect(page.getByRole("heading", { name: "Willkommen zurück" })).toBeVisible();
+    await page.getByLabel("E-Mail").fill("inhaber@betrieb.example");
+    await page.getByLabel("Passwort").fill("falsch-123");
+    await page.getByRole("button", { name: /Einloggen/ }).click();
+    await expect(page.locator("#cloud-layer")).toContainText("Anmeldung fehlgeschlagen");
+    await signIn(page, "inhaber@betrieb.example", "geheim-123");
+    await expect(page.locator(".side-status")).toContainText("Testbetrieb Nord");
+
+    // opening a still empty business saves its starting state once; count from here
+    const before = server.state.saves;
+    server.state.delayMs = 1500;
+    await addFunnelDay(page, "2026-10-05", "64");
+    await expect(page.locator("#cloud-sync-status")).toHaveText(/Änderungen werden gespeichert|Speichern …/);
+    expect(server.state.saves).toBe(before);
+    await expect(page.locator("#cloud-sync-status")).toHaveText("In der Cloud gespeichert", { timeout: 8000 });
+    expect(server.state.saves).toBe(before + 1);
+    expect((server.snaps["org-1"].data.funnel as { date: string }[]).some((r) => r.date === "2026-10-05")).toBe(true);
+    server.state.delayMs = 0;
+
+    await page.reload();
+    await page.getByRole("button", { name: /Testbetrieb Nord/ }).click();
+    await page.evaluate(() => (document.querySelector('#sidebar .glb08-nav-link[data-view="funnel"]') as HTMLElement).click());
+    await expect(page.locator("#main")).toContainText("2026-10-05");
+
+    await page.locator("#cloud-account").click();
+    await expect(page.locator("#cloud-layer")).toContainText("Angemeldet als inhaber@betrieb.example");
+    await expect(page.locator("#cloud-layer")).toContainText("service@betrieb.example");
+    await page.getByRole("button", { name: "Ausloggen" }).click();
+    await expect(page.getByRole("heading", { name: "Willkommen zurück" })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Willkommen zurück" })).toBeVisible();
+    await context.close();
+  });
+
+  test("SC-2 Zwei Sitzungen: der ältere Stand überschreibt nicht still, Konflikt wird gezeigt", async ({ browser }) => {
+    const server = fakeServer();
+    const c1 = await browser.newContext(), c2 = await browser.newContext();
+    const p1 = await cloudPage(c1, server), p2 = await cloudPage(c2, server);
+    await signIn(p1, "inhaber@betrieb.example", "geheim-123");
+    await signIn(p2, "inhaber@betrieb.example", "geheim-123");
+    await addFunnelDay(p1, "2026-10-06", "50");
+    await expect(p1.locator("#cloud-sync-status")).toHaveText("In der Cloud gespeichert", { timeout: 8000 });
+    const savedRevision = server.snaps["org-1"].revision;
+    await addFunnelDay(p2, "2026-10-07", "70");
+    await expect(p2.locator("#cloud-sync-status")).toHaveText("Bearbeitungskonflikt", { timeout: 8000 });
+    await expect(p2.locator("#cloud-warning")).toContainText("Ein anderer Benutzer hat Daten gespeichert");
+    await expect(p2.locator("#cloud-warning").getByRole("button", { name: "Ungesicherte Änderungen herunterladen" })).toBeVisible();
+    expect(server.snaps["org-1"].revision).toBe(savedRevision);
+    expect((server.snaps["org-1"].data.funnel as { date: string }[]).some((r) => r.date === "2026-10-06")).toBe(true);
+    await c1.close();
+    await c2.close();
+  });
+
+  test("SC-3 Offline: Änderung wartet sichtbar und wird nach Rückkehr gespeichert", async ({ browser }) => {
+    const server = fakeServer();
+    const context = await browser.newContext();
+    const page = await cloudPage(context, server);
+    await signIn(page, "inhaber@betrieb.example", "geheim-123");
+    const before = server.state.saves;
+    await context.setOffline(true);
+    await addFunnelDay(page, "2026-10-08", "33");
+    await expect(page.locator("#cloud-sync-status")).toHaveText("Offline · Änderungen warten");
+    await page.waitForTimeout(1500);
+    expect(server.state.saves).toBe(before);
+    await context.setOffline(false);
+    await expect(page.locator("#cloud-sync-status")).toHaveText("In der Cloud gespeichert", { timeout: 8000 });
+    expect((server.snaps["org-1"].data.funnel as { date: string }[]).some((r) => r.date === "2026-10-08")).toBe(true);
+    await context.close();
+  });
+
+  test("SC-4 Speicherfehler: bleibt sichtbar, nichts als gespeichert gemeldet, erneut speichern geht", async ({ browser }) => {
+    const server = fakeServer();
+    const context = await browser.newContext();
+    const page = await cloudPage(context, server);
+    await signIn(page, "inhaber@betrieb.example", "geheim-123");
+    server.state.failNextSave = true;
+    await addFunnelDay(page, "2026-10-09", "41");
+    await expect(page.locator("#cloud-sync-status")).toHaveText("Nicht gespeichert", { timeout: 8000 });
+    await expect(page.locator("#cloud-warning")).toContainText("Netzwerkfehler beim Speichern (Test)");
+    await page.locator("#cloud-warning").getByRole("button", { name: "Erneut speichern" }).click();
+    await expect(page.locator("#cloud-sync-status")).toHaveText("In der Cloud gespeichert", { timeout: 8000 });
+    await context.close();
+  });
+
+  test("SC-5 Service-Mitarbeiter: nur Arbeitsplatz und Funnel, speichert eingeschränkt", async ({ browser }) => {
+    const server = fakeServer();
+    server.snaps["org-1"] = { data: { business: "Testbetrieb Nord", items: [{ id: "p1", name: "Burger", category: "Burger", quantity: 0, grossPrice: 14.9, costNet: 4.2, vat: 19, unit: "Portion" }], outlets: [{ id: "restaurant", name: "Restaurant" }], funnel: [] }, revision: 1 };
+    const context = await browser.newContext();
+    const page = await cloudPage(context, server);
+    await signIn(page, "service@betrieb.example", "geheim-456");
+    const views = await page.locator("#sidebar .glb08-nav-link").evaluateAll((b) => b.map((x) => (x as HTMLElement).dataset.view));
+    expect(views.sort()).toEqual(["funnel", "myday"]);
+    await addFunnelDay(page, "2026-10-10", "55");
+    await expect(page.locator("#cloud-sync-status")).toHaveText("In der Cloud gespeichert", { timeout: 8000 });
+    expect((server.snaps["org-1"].data.items as { costNet: number }[])[0].costNet).toBe(4.2);
+    await context.close();
+  });
+});

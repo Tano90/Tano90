@@ -168,7 +168,9 @@
     try {
       localStorage.setItem(KEY, JSON.stringify(S));
       document.querySelector("#workspace-name").textContent = S.business;
+      window.GLBStorageStatus?.(true);
     } catch (e) {
+      window.GLBStorageStatus?.(false, "Speicher voll oder gesperrt");
       toast("Speicher voll oder nicht verfügbar. Bitte Backup herunterladen.", "error");
     }
   };

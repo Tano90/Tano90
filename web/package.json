@@ -20,7 +20,8 @@
     "e2e": "playwright test",
     "vercel-build": "npm run db:migrate && npm run build",
     "legal:check": "node scripts/legal-check.mjs",
-    "test:suite": "node --test suite-tests/tests/*.test.cjs"
+    "test:suite": "node --test suite-tests/tests/*.test.cjs",
+    "test:suite-sql": "node --test suite-tests/rls.test.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
