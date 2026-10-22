@@ -161,11 +161,19 @@ function cockpit() {
     ["v11training", "Funnel Quest", "Kurze Verkaufstrainings"],
   ].filter(([v]) => window.GLBAccess?.canView(v) ?? true);
   return (
-    pageHeader("MANAGEMENT-COCKPIT", "Management-Cockpit", `Monatsverkäufe auf einen Blick. ${esc(sourceLabel())}.`) +
+    pageHeader(
+      "MANAGEMENT-COCKPIT",
+      "Management-Cockpit",
+      finance()
+        ? `Monatsverkäufe auf einen Blick. ${esc(sourceLabel())}.`
+        : "Offene Aufgaben und Bereiche des Betriebs. Umsatzzahlen sieht die Geschäftsleitung.",
+    ) +
     demoNotice() +
-    `<div class="v11-headline"><p class="v11-scope">Auswahl: <b>${esc(selection())}</b>. Kosten: Snapshot beim Import, bei älteren Zeilen der Kostenstand des Monats. Kassenbon-Umsätze aus dem Tagesfunnel sind nicht addiert.</p>${finance() ? filters() : ""}</div>` +
+    (finance()
+      ? `<div class="v11-headline"><p class="v11-scope">Auswahl: <b>${esc(selection())}</b>. Kosten: Snapshot beim Import, bei älteren Zeilen der Kostenstand des Monats. Kassenbon-Umsätze aus dem Tagesfunnel sind nicht addiert.</p>${filters()}</div>`
+      : "") +
     `<section class="v6-kpis">${cards.join("")}</section>` +
-    `<div class="content-grid"><section class="panel">${panelHeader("Umsatzentwicklung", "Bruttoumsatz je Monat")}${finance() ? chart(s) : `<p class="calc-note">Umsatzkennzahlen sind der Geschäftsleitung vorbehalten.</p>`}</section>` +
+    `<div class="content-grid">${finance() ? `<section class="panel">${panelHeader("Umsatzentwicklung", "Bruttoumsatz je Monat")}${chart(s)}</section>` : `<section class="panel">${panelHeader("Kennzahlen")}<p class="calc-note">Umsatz- und Kostenkennzahlen sind der Geschäftsleitung vorbehalten.</p></section>`}` +
     `<section class="panel">${panelHeader("Management-Hinweise", "Regelbasiert, keine KI")}<div class="v11-notes">${notes
       .filter((n) => window.GLBAccess?.canView(target[n.target]) ?? true)
       .map(

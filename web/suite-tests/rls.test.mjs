@@ -60,6 +60,8 @@ describe("GLB SQL: Mandanten und Rollen", { skip: !base && "TEST_DATABASE_URL fe
     for (const [id, email] of Object.entries(EMAIL)) await db`insert into auth.users values (${id}, ${email}, now())`;
     await db.unsafe(readFileSync(new URL("001_cloud_pilot.sql", sqlDir), "utf8"));
     await db.unsafe(readFileSync(new URL("002_roles_and_security.sql", sqlDir), "utf8"));
+    // GLB_SQL_EXTRA=006_glb_v11_integrated.sql: the same checks must hold after the v1.1 migration
+    for (const f of (process.env.GLB_SQL_EXTRA || "").split(",").filter(Boolean)) await db.unsafe(readFileSync(new URL(f, sqlDir), "utf8"));
     orgA = (await as(OWNER_A, (tx) => tx`select public.glb_create_workspace('Betrieb A') as id`))[0].id;
     orgB = (await as(OWNER_B, (tx) => tx`select public.glb_create_workspace('Betrieb B') as id`))[0].id;
     await as(OWNER_A, (tx) => tx`select public.glb_save_snapshot(${orgA}, 0, ${tx.json(snapshot)})`);
