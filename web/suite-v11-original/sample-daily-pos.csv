@@ -1,0 +1,4 @@
+Datum;BonID;Outlet;Produkt;Menge;Bruttopreis;Gaeste;Mitarbeiter;FunnelStufe;USt;WareneinsatzNetto
+2026-10-21;B-001;Restaurant;Cheeseburger;2;19,50;2;;none;7;4,60
+2026-10-21;B-001;Restaurant;Signature Cocktail;1;9,50;2;;aperitif;19;2,70
+2026-10-21;B-002;Restaurant;Hüftsteak;1;29,50;1;;none;7;9,30
