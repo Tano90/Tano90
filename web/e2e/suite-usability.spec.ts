@@ -175,4 +175,35 @@ test.describe("SB Bedienung", () => {
       dlg.getByRole("button", { name: "Fenster schließen" }),
     ).toBeVisible();
   });
+
+  test("SB-5 Lange Detailtabellen eingeklappt mit Anzahl, Beispieldaten ohne Ersatz-Kostenbasis", async ({
+    page,
+  }) => {
+    await page.evaluate(() =>
+      (
+        document.querySelector('#sidebar [data-view="outlets"]') as HTMLElement
+      ).click(),
+    );
+    const lines = page.locator('details[data-collapse="sales-lines"]');
+    await expect(lines).not.toHaveAttribute("open", "");
+    await expect(lines.locator("summary")).toContainText(
+      /\d+ Zeilen in der Auswahl/,
+    );
+    await expect(page.locator("[data-sale-edit]").first()).toBeHidden();
+    await lines.locator("summary").click();
+    await expect(page.locator("[data-sale-edit]").first()).toBeVisible();
+    // stays open after a filter change (re-render)
+    await page.locator("#month-filter").selectOption({ index: 1 });
+    await expect(
+      page.locator('details[data-collapse="sales-lines"]'),
+    ).toHaveAttribute("open", "");
+    await page.evaluate(() =>
+      (
+        document.querySelector('#sidebar [data-view="overview"]') as HTMLElement
+      ).click(),
+    );
+    await expect(page.locator(".v6-cost-note").first()).toHaveText(
+      "Kosten je Verkaufsmonat aus den Kostenständen der Artikel.",
+    );
+  });
 });

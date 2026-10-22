@@ -280,3 +280,38 @@ body {
   font-size: 13px;
   color: var(--ink);
 }
+/* long detail tables fold away; the summary says what is inside */
+.panel-collapsible > summary {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.panel-collapsible > summary::-webkit-details-marker {
+  display: none;
+}
+.panel-collapsible > summary b {
+  display: block;
+  font-size: 15px;
+}
+.panel-collapsible > summary small {
+  display: block;
+  color: var(--calm-ink-soft);
+  font-size: 12px;
+  margin-top: 3px;
+}
+.panel-collapsible-hint::after {
+  content: "Anzeigen ▾";
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--teal-dark);
+  white-space: nowrap;
+}
+.panel-collapsible[open] .panel-collapsible-hint::after {
+  content: "Einklappen ▴";
+}
+.panel-collapsible[open] > summary {
+  margin-bottom: 14px;
+}

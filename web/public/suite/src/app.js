@@ -266,6 +266,16 @@
     [0, "0 %"],
   ];
   const vatPresets = () => ({ vatFood: S.vatFood ?? 7, vatDrinks: S.vatDrinks ?? 19 });
+  // collapsible panels remember whether they are open while the app is open
+  const OPEN_PANELS = new Set();
+  document.addEventListener(
+    "toggle",
+    (e) => {
+      const key = e.target?.dataset?.collapse;
+      if (key) e.target.open ? OPEN_PANELS.add(key) : OPEN_PANELS.delete(key);
+    },
+    true,
+  );
   const selectOptions = (list, value) =>
     list.map(([v, t]) => `<option value="${esc(v)}" ${String(v) === String(value) ? "selected" : ""}>${esc(t)}</option>`).join("");
   function kpi(title, value, icon, foot) {
@@ -575,6 +585,10 @@
     }</div>`;
   }
   function outletsView() {
+    const salesLines = S.sales
+      .filter((x) => (OFILTER === "all" || x.outletId === OFILTER) && (MFILTER === "all" || x.month === MFILTER))
+      .slice()
+      .sort((a, b) => b.month.localeCompare(a.month));
     return (
       pageHeader(
         "Revenue Intelligence",
@@ -583,12 +597,9 @@
         `<button class="btn" data-action="new-outlet">${I("plus")} Outlet</button><button class="btn" data-view="import">${I("upload")} CSV</button><button class="btn btn-primary" data-action="new-sale">${I("plus")} Verkaufszeile</button>`,
       ) +
       demoNotice() +
-      `<div class="toolbar"><div class="toolbar-left"><select id="outlet-filter" class="select" aria-label="Outlet wählen">${outletSelect(OFILTER)}</select><select id="month-filter" class="select" aria-label="Zeitraum wählen">${monthSelect(MFILTER)}</select></div><span class="micro">${S.sales.length} Verkaufszeilen vorhanden</span></div>${outletDetail()}<div class="panel" style="margin-top:18px">${panelHeader("Einzelne Verkaufszeilen", "Jede Zeile kann bearbeitet und gelöscht werden")}${
+      `<div class="toolbar"><div class="toolbar-left"><select id="outlet-filter" class="select" aria-label="Outlet wählen">${outletSelect(OFILTER)}</select><select id="month-filter" class="select" aria-label="Zeitraum wählen">${monthSelect(MFILTER)}</select></div><span class="micro">${S.sales.length} Verkaufszeilen vorhanden</span></div>${outletDetail()}<details class="panel panel-collapsible" style="margin-top:18px" data-collapse="sales-lines"${OPEN_PANELS.has("sales-lines") ? " open" : ""}><summary><span><b>Einzelne Verkaufszeilen</b><small>${number(salesLines.length)} Zeilen in der Auswahl · bearbeiten und löschen</small></span><span class="panel-collapsible-hint" aria-hidden="true"></span></summary>${
         S.sales.length
-          ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Monat</th><th>Outlet</th><th>Produkt</th><th class="align-right">Menge</th><th class="align-right">VK brutto</th><th class="align-right">Umsatz netto</th><th>Aktion</th></tr></thead><tbody>${S.sales
-              .filter((x) => (OFILTER === "all" || x.outletId === OFILTER) && (MFILTER === "all" || x.month === MFILTER))
-              .slice()
-              .sort((a, b) => b.month.localeCompare(a.month))
+          ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Monat</th><th>Outlet</th><th>Produkt</th><th class="align-right">Menge</th><th class="align-right">VK brutto</th><th class="align-right">Umsatz netto</th><th>Aktion</th></tr></thead><tbody>${salesLines
               .slice(0, 150)
               .map(
                 (s) =>
@@ -596,9 +607,9 @@
               )
               .join(
                 "",
-              )}</tbody></table></div><p class="chart-note">Maximal 150 Zeilen in der Ansicht. Filter wirken auch auf Tabelle, Diagramme und KPIs.</p>`
+              )}</tbody></table></div><p class="chart-note">${salesLines.length > 150 ? `Angezeigt: die neuesten 150 von ${number(salesLines.length)} Zeilen; Monat oder Outlet wählen, um gezielt zu suchen.` : `${number(salesLines.length)} Zeilen.`} Filter wirken auch auf Diagramme und Kennzahlen.</p>`
           : empty("Noch keine Verkäufe", "Erfasse einen ersten Monatsumsatz.")
-      }</div>`
+      }</details>`
     );
   }
   function lifecycleLabel(phase) {
@@ -1351,7 +1362,7 @@
         `<button class="btn" data-action="funnel-template">${I("download")} CSV-Vorlage</button><button class="btn" data-action="pick-funnel-csv">${I("upload")} CSV importieren</button><button class="btn" data-action="save-funnel-assumptions">${I("calculator")} Werte speichern</button><button class="btn btn-primary" data-action="new-funnel">${I("plus")} Tageserfassung</button>`,
       ) +
       demoNotice() +
-      `<input type="file" id="funnel-csv-file" accept=".csv,text/csv" hidden><div class="toolbar"><div class="toolbar-left"><select class="select" id="funnel-outlet" aria-label="Outlet">${outletSelect(FOUTLET)}</select><label>Von <input id="funnel-start" type="date" value="${esc(FSTART)}"></label><label>Bis <input id="funnel-end" type="date" value="${esc(FEND)}"></label></div><span class="micro">${rows.length} Tage / Outlet-Tage</span></div><div class="panel">${panelHeader("Was passiert bei höherer Conversion?", "Schieberegler verändern die Prognose unmittelbar. Änderungen per „Werte speichern“ übernehmen.")}<div class="field" style="max-width:240px;margin-bottom:16px"><label>Geplante Outlet-Tage / Monat</label><input id="funnel-projected-days" type="number" min="1" max="31" value="${S.funnelProjectedDays}"><small>Für Monatshochrechnung, nicht Ist-Umsatz</small></div><div class="funnel-sliders"><div class="field"><label>Gästeentwicklung in %</label><input id="funnel-traffic" class="funnel-range" type="range" min="-50" max="100" step="1" value="${S.funnelTrafficLift}"><span id="funnel-traffic-label" class="micro">${pct(S.funnelTrafficLift)}</span></div>${C.FUNNEL_STEPS.map((s) => `<div class="field"><label>${esc(s.label)} – Ziel je 100 Gäste</label><input class="funnel-range" data-funnel-goal="${s.id}" type="range" min="0" max="150" step="1" value="${S.funnelGoals[s.id]}"><span class="micro" data-funnel-value="${s.id}">${pct(S.funnelGoals[s.id])}</span></div>`).join("")}</div></div><div id="funnel-results" style="margin-top:18px">${funnelResults()}</div><div class="panel" style="margin-top:20px">${panelHeader("Wirtschaftliche Annahmen je Verkauf", "Brutto-VK, Umsatzsteuer, direkt variable Netto-Kosten je verkauftem Artikel. Keine Fixkosten enthalten.")}<div class="table-scroll"><table class="data-table"><thead><tr><th>Funnel-Stufe</th><th>Durchschnittlicher VK brutto €</th><th>USt %</th><th>Variable Kosten netto €</th></tr></thead><tbody>${C.FUNNEL_STEPS.map(
+      `<input type="file" id="funnel-csv-file" accept=".csv,text/csv" hidden><div class="toolbar"><div class="toolbar-left"><select class="select" id="funnel-outlet" aria-label="Outlet">${outletSelect(FOUTLET)}</select><label>Von <input id="funnel-start" type="date" value="${esc(FSTART)}"></label><label>Bis <input id="funnel-end" type="date" value="${esc(FEND)}"></label></div><span class="micro">${rows.length} Tage / Outlet-Tage</span></div><div class="panel">${panelHeader("Was passiert bei höherer Conversion?", "Schieberegler verändern die Prognose unmittelbar. Änderungen per „Werte speichern“ übernehmen.")}<div class="field" style="max-width:240px;margin-bottom:16px"><label>Geplante Outlet-Tage / Monat</label><input id="funnel-projected-days" type="number" min="1" max="31" value="${S.funnelProjectedDays}"><small>Für Monatshochrechnung, nicht Ist-Umsatz</small></div><div class="funnel-sliders"><div class="field"><label>Gästeentwicklung in %</label><input id="funnel-traffic" class="funnel-range" type="range" min="-50" max="100" step="1" value="${S.funnelTrafficLift}"><span id="funnel-traffic-label" class="micro">${pct(S.funnelTrafficLift)}</span></div>${C.FUNNEL_STEPS.map((s) => `<div class="field"><label>${esc(s.label)} – Ziel je 100 Gäste</label><input class="funnel-range" data-funnel-goal="${s.id}" type="range" min="0" max="150" step="1" value="${S.funnelGoals[s.id]}"><span class="micro" data-funnel-value="${s.id}">${pct(S.funnelGoals[s.id])}</span></div>`).join("")}</div></div><div id="funnel-results" style="margin-top:18px">${funnelResults()}</div><details class="panel panel-collapsible" style="margin-top:20px" data-collapse="funnel-assumptions"${OPEN_PANELS.has("funnel-assumptions") ? " open" : ""}><summary><span><b>Wirtschaftliche Annahmen je Verkauf</b><small>Brutto-VK, USt und variable Netto-Kosten je Service-Schritt · Grundlage aller Euro-Werte oben</small></span><span class="panel-collapsible-hint" aria-hidden="true"></span></summary><div class="table-scroll"><table class="data-table"><thead><tr><th>Funnel-Stufe</th><th>Durchschnittlicher VK brutto €</th><th>USt %</th><th>Variable Kosten netto €</th></tr></thead><tbody>${C.FUNNEL_STEPS.map(
         (s) => {
           const a = S.funnelAssumptions[s.id];
           return `<tr><td>${esc(s.label)}</td><td><input class="funnel-assumption" data-assumption="${s.id}" data-field="priceGross" inputmode="decimal" value="${fmt(a.priceGross)}"></td><td><select class="funnel-assumption" data-assumption="${s.id}" data-field="vat">${selectOptions(
@@ -1365,7 +1376,7 @@
         },
       ).join(
         "",
-      )}</tbody></table></div><p class="chart-note">Werte hier sind bei Demo-Daten fiktiv. Für deinen Betrieb Durchschnittspreise und direkt variable Kosten hinterlegen; ansonsten bleibt die Ergebnisprognose illustrativ.</p></div><div class="panel" style="margin-top:20px">${panelHeader("Taggenaue Verkaufserfassung", "Gästezahl + Anzahl je Service-Schritt")}${rows.length ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Datum</th><th>Outlet</th><th class="align-right">Covers</th>${C.FUNNEL_STEPS.map((s) => `<th class="align-right">${esc(s.short)}</th>`).join("")}<th>Aktion</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(r.date)}</td><td>${esc(outletName(r.outletId))}</td><td class="align-right">${number(r.covers)}</td>${C.FUNNEL_STEPS.map((s) => `<td class="align-right">${number(r[s.id])}</td>`).join("")}<td><button class="btn btn-small btn-quiet" data-funnel-edit="${esc(r.id)}" aria-label="Erfassung vom ${esc(r.date)} bearbeiten" title="Bearbeiten">${I("edit")}</button><button class="btn btn-small btn-quiet" data-funnel-delete="${esc(r.id)}" aria-label="Erfassung vom ${esc(r.date)} löschen" title="Löschen">${I("trash")}</button></td></tr>`).join("")}</tbody></table></div>` : empty("Keine Funnel-Daten", "Neue Tageserfassung anlegen.")}</div>`
+      )}</tbody></table></div><p class="chart-note">Werte hier sind bei Demo-Daten fiktiv. Für deinen Betrieb Durchschnittspreise und direkt variable Kosten hinterlegen; ansonsten bleibt die Ergebnisprognose illustrativ.</p></details><div class="panel" style="margin-top:20px">${panelHeader("Taggenaue Verkaufserfassung", "Gästezahl + Anzahl je Service-Schritt")}${rows.length ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Datum</th><th>Outlet</th><th class="align-right">Covers</th>${C.FUNNEL_STEPS.map((s) => `<th class="align-right">${esc(s.short)}</th>`).join("")}<th>Aktion</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(r.date)}</td><td>${esc(outletName(r.outletId))}</td><td class="align-right">${number(r.covers)}</td>${C.FUNNEL_STEPS.map((s) => `<td class="align-right">${number(r[s.id])}</td>`).join("")}<td><button class="btn btn-small btn-quiet" data-funnel-edit="${esc(r.id)}" aria-label="Erfassung vom ${esc(r.date)} bearbeiten" title="Bearbeiten">${I("edit")}</button><button class="btn btn-small btn-quiet" data-funnel-delete="${esc(r.id)}" aria-label="Erfassung vom ${esc(r.date)} löschen" title="Löschen">${I("trash")}</button></td></tr>`).join("")}</tbody></table></div>` : empty("Keine Funnel-Daten", "Neue Tageserfassung anlegen.")}</div>`
     );
   }
   function funnelModal(id) {
@@ -4320,6 +4331,19 @@
     S.version = 6;
     // Cost states with a date (website revision): existing costs become one undated state, see C.migrateCostHistory.
     C.migrateCostHistory(S.items);
+    // Example data only: the example costs apply from the first example month, so reports do not show
+    // an "undated" fallback that real data would not have. Own data keeps its honest undated state.
+    if (S.mode !== "own") {
+      const first = S.sales
+        .map((x) => x.month)
+        .filter(Boolean)
+        .sort()[0];
+      if (first)
+        for (const p of S.items)
+          for (const e of p.costHistory || [])
+            if (!e.validFrom && e.source === "Bestand ohne Datum (Migration)")
+              Object.assign(e, { validFrom: first + "-01", source: "Beispieldaten" });
+    }
   }
   ensureV06();
   // "history": each month with its cost state; "current": today's costs as a named scenario.
