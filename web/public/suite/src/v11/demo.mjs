@@ -40,9 +40,9 @@ const STOCK = [
   ["Gin", "Flaschen", 3, 5, 12, ""],
 ];
 const TASKS = [
-  ["Wareneinsatz Tagesdessert hinterlegen", "high", "open", "2026-10-23"],
-  ["Rinderhüfte nachbestellen", "high", "open", "2026-10-22"],
-  ["Wochenreport prüfen", "medium", "done", "2026-10-21"],
+  ["Wareneinsatz Tagesdessert hinterlegen", "high", "open", "2026-10-23", "restaurant"],
+  ["Rinderhüfte nachbestellen", "high", "open", "2026-10-22", "restaurant"],
+  ["Wochenreport prüfen", "medium", "done", "2026-10-21", null],
 ];
 
 /** Adds the v1.1 areas to a data object without touching existing keys. Seeds example data once in demo mode.
@@ -92,12 +92,14 @@ export function initializeIntelligence(data, mode = "demo") {
       version: 1,
     }));
   if (!data.tasks.length)
-    data.tasks = TASKS.map(([title, priority, status, due_on], i) => ({
+    data.tasks = TASKS.map(([title, priority, status, due_on, outlet], i) => ({
       id: `demo-task-${i}`,
       title,
       priority,
       status,
       due_on,
+      // example outlet only if this example workspace has it; otherwise general (never a guess)
+      outlet_id: (data.outlets || []).some((o) => o.id === outlet) ? outlet : null,
       version: 1,
       created_at: "2026-10-20T08:00:00.000Z",
     }));

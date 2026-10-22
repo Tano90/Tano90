@@ -442,6 +442,60 @@
       points: months.map(point),
     };
   }
+  /** Data for the lifecycle chart (Oct 2026). Uses lifecycle() unchanged on the sales of the chosen outlet and period.
+   *  Axis: every calendar month from the article's first to its last month in that scope. A month without any recorded
+   *  sales of the scope is a gap (quantity null), never 0. costFor(row) returns the net unit cost valid for a row or
+   *  null; DB I of a month is only given when every line of that month has a cost. */
+  function lifecycleSeries(sales, product, opts = {}, costFor = null) {
+    const ok = (m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(m));
+    const scoped = (sales || []).filter(
+      (s) =>
+        ok(s.month) &&
+        (!opts.outletId || s.outletId === opts.outletId) &&
+        (!opts.from || s.month >= opts.from) &&
+        (!opts.to || s.month <= opts.to),
+    );
+    const life = lifecycle(scoped, product.id, product.launchMonth);
+    const known = new Map(life.points.map((p) => [p.month, p]));
+    const axis = [];
+    if (life.points.length) for (let m = life.points[0].month; m <= life.points.at(-1).month; m = addMonths(m, 1)) axis.push(m);
+    let prev = null;
+    const points = axis.map((month) => {
+      const p = known.get(month);
+      if (!p) {
+        prev = null;
+        return { month, status: "gap", quantity: null };
+      }
+      const rows = scoped.filter((s) => s.month === month && String(s.productId) === String(product.id));
+      const m = rows.map((r) => saleMetrics(r, product));
+      const units = m.reduce((a, x) => a + x.quantity, 0);
+      const costs = costFor ? rows.map((r) => costFor(r)) : [];
+      const costKnown = rows.length > 0 && costFor && costs.every((c) => Number.isFinite(c) && c > 0);
+      const point = {
+        month,
+        status: p.zero ? "zero" : "data",
+        quantity: p.quantity,
+        revenueNet: m.reduce((a, x) => a + x.revenueNet, 0),
+        grossAvg: units > 0 ? m.reduce((a, x) => a + x.quantity * x.grossPrice, 0) / units : null,
+        db1: costKnown ? m.reduce((a, x, i) => a + x.quantity * (x.netPrice - costs[i]), 0) : null,
+        costMissing: rows.length > 0 && !costKnown,
+        lines: rows.length,
+        outlets: new Set(rows.map((r) => r.outletId)).size,
+        changePct: prev && prev.quantity > 0 ? ((p.quantity - prev.quantity) / prev.quantity) * 100 : null,
+      };
+      prev = point;
+      return point;
+    });
+    const trend = ["growth", "decline", "maturity"].includes(life.phase) && life.period;
+    const q = (m) => known.get(m)?.quantity;
+    return {
+      life,
+      points,
+      window: life.period || null,
+      averages: trend ? { before: (q(life.period[0]) + q(life.period[1])) / 2, after: (q(life.period[2]) + q(life.period[3])) / 2 } : null,
+      gaps: points.filter((x) => x.status === "gap").map((x) => x.month),
+    };
+  }
   function marketComparison(ownGross, competitionGross, ownUnit, competitionUnit) {
     const own = finite(ownGross),
       other = finite(competitionGross);
@@ -774,6 +828,7 @@
     saleMetrics,
     reportSales,
     lifecycle,
+    lifecycleSeries,
     marketComparison,
     addMonths,
     monthlyCostModel,

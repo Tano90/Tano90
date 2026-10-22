@@ -14,6 +14,7 @@ import {
   findPosOverlaps,
 } from "./intelligence.mjs";
 import { initializeIntelligence } from "./demo.mjs";
+import * as T from "./tasks.mjs";
 import * as cloud from "./cloud.mjs";
 
 const G = window.GLBSuite;
@@ -102,6 +103,11 @@ const V = {
     }
   })(),
   summary: null,
+  taskOutlet: "all",
+  taskStatus: "all",
+  taskPrio: "all",
+  taskSort: "due",
+  taskGroup: true,
 };
 const tag = (txt, cls = "neutral") => `<span class="tag tag-${cls}">${esc(txt)}</span>`;
 const kpi = (label, value, foot, accent = "") =>
@@ -431,44 +437,88 @@ function exportOrders() {
 
 // ---------- Team & Aufgaben ----------
 const PRIO = { high: ["Hoch", "red"], medium: ["Mittel", "orange"], normal: ["Normal", "neutral"] };
+const outletChoices = () => [[T.GENERAL, T.GENERAL_LABEL], ...outlets().map((o) => [o.id, o.name])];
+function taskRow(t, edit, day) {
+  const o = T.taskOutlet(t),
+    late = T.isOverdue(t, day);
+  return `<div class="v11-task ${t.status === "done" ? "done" : ""}"><input type="checkbox" id="v11-task-${esc(t.id)}" data-v11-task-toggle="${esc(t.id)}" ${t.status === "done" ? "checked" : ""} ${edit ? "" : "disabled"} aria-label="Aufgabe „${esc(t.title)}“ ${t.status === "done" ? "wieder öffnen" : "als erledigt markieren"}"><label for="v11-task-${esc(t.id)}"><b>${esc(t.title)}</b><small><span class="v11-task-outlet">${esc(T.outletLabel(o, outlets()))}</span> · Fällig: ${t.due_on ? esc(dateDE(t.due_on)) : "ohne Termin"} · ${t.status === "done" ? "Erledigt" : late ? "<b class=\"v11-late\">Überfällig</b>" : "Offen"}</small></label><span class="v11-task-side">${tag(PRIO[t.priority]?.[0] || "Normal", PRIO[t.priority]?.[1] || "neutral")}${edit ? `<button type="button" class="btn btn-small btn-quiet" data-v11="task-outlet" data-id="${esc(t.id)}" aria-label="Outlet von „${esc(t.title)}“ ändern">Outlet ändern</button>` : ""}</span></div>`;
+}
 function tasksView() {
-  const tasks = [...(S().tasks || [])].sort(
-    (a, b) => (a.status === "done") - (b.status === "done") || String(a.due_on || "9999").localeCompare(String(b.due_on || "9999")),
-  );
-  const edit = canUpdateTasks();
+  const all = S().tasks || [],
+    day = berlinDay(),
+    edit = canUpdateTasks(),
+    list = T.sortTasks(T.filterTasks(all, { outlet: V.taskOutlet, status: V.taskStatus, priority: V.taskPrio }, day), V.taskSort, outlets()),
+    grouped = V.taskGroup && V.taskOutlet === "all",
+    stats = T.outletStats(all, outlets(), day),
+    unknown = all.filter((t) => T.taskOutlet(t) !== null && !outlets().some((o) => o.id === T.taskOutlet(t))).length,
+    sel = (name, label, options, value) =>
+      `<label class="field"><span>${label}</span><select data-v11-filter="${name}">${G.ui.selectOptions(options, value)}</select></label>`;
+  const body = !list.length
+    ? G.ui.empty(all.length ? "Keine Aufgabe passt zum Filter" : "Noch keine Aufgaben", all.length ? "Filter oben anpassen." : "Lege rechts die erste Maßnahme an.")
+    : grouped
+      ? T.groupByOutlet(list, outlets())
+          .map((g) => `<h3 class="v11-task-group">${esc(g.label)} <small>${pl(g.tasks.length, "Aufgabe", "Aufgaben")}</small></h3><div class="v11-tasks">${g.tasks.map((t) => taskRow(t, edit, day)).join("")}</div>`)
+          .join("")
+      : `<div class="v11-tasks">${list.map((t) => taskRow(t, edit, day)).join("")}</div>`;
+  const preset = V.taskOutlet !== "all" ? V.taskOutlet : T.GENERAL;
   return (
     pageHeader(
       "TEAM & AUFGABEN",
       "Team & Aufgaben",
-      "Operative Maßnahmen nach Priorität, Termin und Status.",
-      tag(`${tasks.filter((x) => x.status !== "done").length} offen`, "blue"),
+      "Operative Maßnahmen je Outlet nach Priorität, Termin und Status.",
+      tag(`${all.filter((x) => x.status !== "done").length} offen`, "blue"),
     ) +
-    `<div class="content-grid"><section class="panel">${panelHeader("Aufgabenliste")}<div class="v11-tasks">${
-      tasks
-        .map(
-          (t) =>
-            `<label class="v11-task ${t.status === "done" ? "done" : ""}"><input type="checkbox" data-v11-task-toggle="${esc(t.id)}" ${t.status === "done" ? "checked" : ""} ${edit ? "" : "disabled"} aria-label="Aufgabe „${esc(t.title)}“ ${t.status === "done" ? "wieder öffnen" : "als erledigt markieren"}"><span><b>${esc(t.title)}</b><small>Fällig: ${t.due_on ? esc(dateDE(t.due_on)) : "ohne Termin"} · ${t.status === "done" ? "Erledigt" : "Offen"}</small></span>${tag(PRIO[t.priority]?.[0] || "Normal", PRIO[t.priority]?.[1] || "neutral")}</label>`,
-        )
-        .join("") || G.ui.empty("Noch keine Aufgaben", "Lege rechts die erste Maßnahme an.")
-    }</div></section><section class="panel">${panelHeader("Neue Aufgabe")}${
+    `<section class="panel v11-task-overview">${panelHeader("Offen und überfällig je Outlet", "Klick filtert die Liste")}<div class="v11-outlet-chips">${stats
+      .map(
+        (x) =>
+          `<button type="button" class="v11-outlet-chip ${V.taskOutlet === (x.id ?? T.GENERAL) ? "active" : ""}" data-v11="task-outlet-filter" data-outlet="${esc(x.id ?? T.GENERAL)}" aria-pressed="${V.taskOutlet === (x.id ?? T.GENERAL)}"><b>${esc(x.label)}</b><span>${pl(x.open, "offen", "offen")}${x.overdue ? ` · <b class="v11-late">${x.overdue} überfällig</b>` : " · nichts überfällig"}</span></button>`,
+      )
+      .join("")}</div>${unknown ? `<p class="calc-note">${pl(unknown, "Aufgabe verweist", "Aufgaben verweisen")} auf ein Outlet, das es nicht mehr gibt. Sie bleiben unverändert und sind unter „Outlet nicht mehr vorhanden“ zu finden.</p>` : ""}</section>` +
+    `<div class="content-grid"><section class="panel">${panelHeader("Aufgabenliste", `${pl(list.length, "Aufgabe", "Aufgaben")} im Filter`)}<div class="v11-filters v11-task-filters">${sel(
+      "taskOutlet",
+      "Outlet",
+      [["all", "Alle Outlets"], ...outletChoices()],
+      V.taskOutlet,
+    )}${sel("taskStatus", "Status", [["all", "Alle"], ["open", "Offen"], ["overdue", "Überfällig"], ["done", "Erledigt"]], V.taskStatus)}${sel(
+      "taskPrio",
+      "Priorität",
+      [["all", "Alle"], ["high", "Hoch"], ["medium", "Mittel"], ["normal", "Normal"]],
+      V.taskPrio,
+    )}${sel("taskSort", "Sortierung", [["due", "Fälligkeit"], ["priority", "Priorität"], ["status", "Status"], ["outlet", "Outlet"]], V.taskSort)}${
+      V.taskOutlet === "all"
+        ? `<label class="v11-check"><input type="checkbox" data-v11-task-group ${V.taskGroup ? "checked" : ""}> Nach Outlet gruppieren</label>`
+        : ""
+    }</div>${body}</section><section class="panel">${panelHeader("Neue Aufgabe")}${
       edit
-        ? `<form id="v11-task-form" class="v11-form"><div class="field"><label for="v11-t-title">Beschreibung</label><input id="v11-t-title" name="title" placeholder="Welche Maßnahme steht an?" maxlength="250" required></div><div class="form-grid"><div class="field"><label for="v11-t-prio">Priorität</label><select id="v11-t-prio" name="priority"><option value="normal">Normal</option><option value="medium">Mittel</option><option value="high">Hoch</option></select></div><div class="field"><label for="v11-t-due">Fälligkeit</label><input id="v11-t-due" name="due_on" type="date"></div></div><button class="btn btn-primary" type="submit">Aufgabe erstellen</button></form>`
+        ? `<form id="v11-task-form" class="v11-form"><div class="field"><label for="v11-t-title">Beschreibung</label><input id="v11-t-title" name="title" placeholder="Welche Maßnahme steht an?" maxlength="250" required></div><div class="field"><label for="v11-t-outlet">Outlet</label><select id="v11-t-outlet" name="outlet_id" required>${G.ui.selectOptions(outletChoices(), preset)}</select></div><div class="form-grid"><div class="field"><label for="v11-t-prio">Priorität</label><select id="v11-t-prio" name="priority"><option value="normal">Normal</option><option value="medium">Mittel</option><option value="high">Hoch</option></select></div><div class="field"><label for="v11-t-due">Fälligkeit</label><input id="v11-t-due" name="due_on" type="date"></div></div><button class="btn btn-primary" type="submit">Aufgabe erstellen</button></form><p class="calc-note">Aufgaben ohne Outlet aus früheren Versionen stehen unter „${T.GENERAL_LABEL}“. Über „Outlet“ an der Aufgabe lassen sie sich gezielt zuordnen.</p>`
         : `<p class="calc-note">Deine Rolle darf Aufgaben nur lesen.</p>`
     }</section></div>`
   );
 }
-function addTask(title, priority = "normal", due_on = null) {
+/** outlet: null for general, else an outlet id of this workspace (checked by resolveOutletChoice; SQL 007 checks again). */
+function addTask(title, priority = "normal", due_on = null, outlet = null) {
   (S().tasks ||= []).push({
     id: G.uid(),
     title: title.slice(0, 250),
     priority,
     status: "open",
     due_on,
+    outlet_id: outlet,
     version: 1,
     created_at: new Date().toISOString(),
   });
   G.markEdited();
   G.persist();
+}
+function taskOutletModal(id) {
+  const t = (S().tasks || []).find((x) => x.id === id);
+  if (!t) throw Error("Aufgabe nicht gefunden – wurde sie inzwischen gelöscht?");
+  const current = T.taskOutlet(t);
+  const options = outletChoices();
+  if (current !== null && !outlets().some((o) => o.id === current)) options.push([current, "Outlet nicht mehr vorhanden (unverändert lassen)"]);
+  document.querySelector("#modal-layer").innerHTML =
+    `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="v11-to-title"><div class="modal-header"><h2 id="v11-to-title">Outlet zuordnen</h2><button type="button" class="close-btn" data-v11="close" aria-label="Fenster schließen">×</button></div><form id="v11-task-outlet-form"><input type="hidden" name="id" value="${esc(t.id)}"><input type="hidden" name="version" value="${esc(t.version || 1)}"><p><b>${esc(t.title)}</b></p><div class="field"><label for="v11-to-outlet">Outlet</label><select id="v11-to-outlet" name="outlet_id">${G.ui.selectOptions(options, current ?? T.GENERAL)}</select></div><div class="modal-footer"><button type="button" class="btn" data-v11="close">Abbrechen</button><button type="submit" class="btn btn-primary">Speichern</button></div></form></div>`;
+  document.querySelector("#v11-to-outlet")?.focus();
 }
 
 // ---------- Tagesfunnel ----------
@@ -955,9 +1005,20 @@ const ACTIONS = {
   "training-task": (el) => {
     const st = STAGES.find((x) => x.id === el.dataset.stage);
     if (!st) return;
-    addTask(`Training ${st.name}: ${st.tip}`, "medium", null);
+    // only an outlet chosen in the funnel filter is taken over; "Alle Outlets" gives a general task, never a guess
+    const outlet = V.outlet !== "all" && outlets().some((o) => o.id === V.outlet) ? V.outlet : null;
+    addTask(`Training ${st.name}: ${st.tip}`, "medium", null, outlet);
     G.render();
-    G.toast("Schulungsaufgabe in Team & Aufgaben angelegt.");
+    G.toast(
+      outlet
+        ? `Schulungsaufgabe für ${T.outletLabel(outlet, outlets())} in Team & Aufgaben angelegt.`
+        : `Schulungsaufgabe als „${T.GENERAL_LABEL}“ angelegt – im Funnel war kein einzelnes Outlet gewählt.`,
+    );
+  },
+  "task-outlet": (el) => taskOutletModal(el.dataset.id),
+  "task-outlet-filter": (el) => {
+    V.taskOutlet = el.dataset.outlet;
+    G.render();
   },
   "market-ai": marketAI,
   "load-legacy": loadLegacy,
@@ -980,6 +1041,11 @@ document.addEventListener("change", (e) => {
   if (f) {
     V[f] = e.target.value;
     V.summary = null;
+    G.render();
+    return;
+  }
+  if (e.target.matches?.("[data-v11-task-group]")) {
+    V.taskGroup = e.target.checked;
     G.render();
     return;
   }
@@ -1045,9 +1111,25 @@ const FORMS = {
     if (!canUpdateTasks()) throw Error("Deine Rolle darf Aufgaben nur lesen.");
     if (!o.title?.trim()) throw Error("Aufgabenbeschreibung fehlt.");
     if (!["normal", "medium", "high"].includes(o.priority)) throw Error("Ungültige Priorität.");
-    addTask(o.title.trim(), o.priority, o.due_on || null);
+    const outlet = T.resolveOutletChoice(o.outlet_id, outlets());
+    addTask(o.title.trim(), o.priority, o.due_on || null, outlet);
     G.render();
-    G.toast("Aufgabe erstellt.");
+    G.toast(`Aufgabe erstellt (${T.outletLabel(outlet, outlets())}).`);
+  },
+  "v11-task-outlet-form": (o) => {
+    if (!canUpdateTasks()) throw Error("Deine Rolle darf Aufgaben nur lesen.");
+    const t = (S().tasks || []).find((x) => x.id === o.id);
+    if (!t) throw Error("Aufgabe nicht gefunden – wurde sie inzwischen gelöscht?");
+    if (Number(t.version || 1) !== Number(o.version))
+      throw Error("Änderungskonflikt: Die Aufgabe wurde parallel geändert. Bitte neu öffnen.");
+    const keepUnknown = o.outlet_id === T.taskOutlet(t) && !outlets().some((x) => x.id === o.outlet_id);
+    t.outlet_id = keepUnknown ? t.outlet_id : T.resolveOutletChoice(o.outlet_id, outlets());
+    t.version = Number(t.version || 1) + 1;
+    G.closeModal();
+    G.markEdited();
+    G.persist();
+    G.render();
+    G.toast(`Outlet gespeichert: ${T.outletLabel(T.taskOutlet(t), outlets())}.`);
   },
   "v11-target-form": (o) => {
     const num = numberInput(o.target);

@@ -36,7 +36,13 @@
     document.body.classList.remove("glb-locked");
     ready = true;
   };
-  const errorText = (e) => String(e?.message || e || "Unbekannter Fehler").replace(/^Error:\s*/, "");
+  const errorText = (e) => {
+    const t = String(e?.message || e || "Unbekannter Fehler").replace(/^Error:\s*/, "");
+    // SQL 007: the server refused an outlet that is not part of this workspace
+    return t.includes("TASK_OUTLET_INVALID")
+      ? "Gespeichert wurde nichts: Eine Aufgabe verweist auf ein Outlet, das nicht zu diesem Betrieb gehört (TASK_OUTLET_INVALID)."
+      : t;
+  };
   const card = (content) => {
     area.innerHTML = `<section class="cloud-cover"><div class="cloud-login-card"><header class="cloud-brand"><span class="cloud-brand-icon">G</span><div><strong>GLB <em>AI Suite</em></strong><small>GASTRO LEADERSHIP BOARD · CLOUD</small></div></header>${content}</div></section>`;
   };

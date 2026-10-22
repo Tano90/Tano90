@@ -151,7 +151,12 @@
     QFILTER = "all",
     OFILTER = "all",
     MFILTER = "all",
-    LPRODUCT = "";
+    LPRODUCT = "",
+    LOUTLET = "all",
+    LFROM = "",
+    LTO = "",
+    LSEARCH = "",
+    LC = null;
   const euro = (n) =>
     new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(Number.isFinite(Number(n)) ? Number(n) : 0);
   const number = (n) => new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -626,11 +631,227 @@
       }[phase] || phase
     );
   }
+  // Lifecycle chart (Oct 2026): actual monthly values of the chosen article, outlet and period. No fitted or idealised
+  // curve: points are recorded months, a missing month is drawn as a gap, the comparison window shows the two averages
+  // the existing classification uses.
+  const LC_PHASE_TEXT = {
+    introduction: "Einführung: Absatz aufbauen und zunächst echte Monatswerte sammeln; der Startmonat ist manuell hinterlegt.",
+    growth: "Wachstum: Verfügbarkeit und Kapazität sichern; Preis- und DB-Entwicklung beobachten.",
+    decline: "Absatzrückgang: Verfügbarkeit, Preis, Qualität, Menüpositionierung und Saisoneffekte prüfen.",
+    maturity: "Stabiler Absatz: Marge, Upgrades und operative Effizienz optimieren.",
+  };
+  const lcMonth = (m) =>
+    new Date(m + "-01T12:00:00Z").toLocaleDateString("de-DE", { month: "short", year: "2-digit", timeZone: "UTC" }).replace(".", "");
+  const lcQty = (n) => new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 }).format(n);
+  function lcScope() {
+    return { outletId: LOUTLET !== "all" ? LOUTLET : "", from: LFROM, to: LTO };
+  }
+  function lcScopedSales() {
+    const o = lcScope();
+    return S.sales.filter((s) => (!o.outletId || s.outletId === o.outletId) && (!o.from || s.month >= o.from) && (!o.to || s.month <= o.to));
+  }
+  function lcCostFor(product) {
+    return (r) => {
+      if ("unitCostNet" in r) return Number(r.unitCostNet) > 0 ? Number(r.unitCostNet) : null;
+      const c = Number(C.costAt(product, r.month)?.costNet);
+      return c > 0 ? c : null;
+    };
+  }
+  let LC_LAUNCH = "";
+  function lcExplain(series, unit) {
+    const life = series.life,
+      w = series.window;
+    if (life.phase === "introduction")
+      return `<b>Einführung.</b> Für den Artikel ist der Startmonat ${esc(periodName(LC_LAUNCH))} hinterlegt und der letzte Monat mit Daten liegt höchstens zwei Monate danach. Eine Trendbewertung folgt, sobald vier zusammenhängende Monate vorliegen.`;
+    if (life.phase === "insufficient")
+      return life.months === 0
+        ? "<b>Keine Monatswerte in dieser Auswahl.</b> Für den gewählten Artikel, das Outlet und den Zeitraum sind keine Verkäufe erfasst."
+        : `<b>Noch keine belastbare Einordnung.</b> Es ${life.months === 1 ? "liegt 1 Monat" : `liegen ${life.months} Monate`} mit Daten vor. Für eine Einordnung braucht es vier zusammenhängende Kalendermonate: Ø der letzten zwei gegenüber Ø der zwei davor. Die vorhandenen Werte sind im Graphen zu sehen.`;
+    if (life.phase === "incomplete")
+      return `<b>Datenlücke im Vergleichsfenster.</b> Für ${esc(life.missingMonths.map(periodName).join(", "))} gibt es keine Verkaufsdaten. Eine Lücke ist nicht dasselbe wie null Verkäufe; deshalb gibt es keine Einordnung. Fehlende Monate nachtragen, dann wird neu bewertet.`;
+    const a = series.averages;
+    const rule = life.phase === "growth" ? "ab +20 % = Wachstum" : life.phase === "decline" ? "ab −20 % = Rückgang" : "zwischen −20 % und +20 % = Reife / stabil";
+    return `<b>${esc(lifecycleLabel(life.phase))}.</b> Ø ${lcQty(a.before)} ${esc(unit)} in ${esc(lcMonth(w[0]))} und ${esc(lcMonth(w[1]))} gegenüber Ø ${lcQty(a.after)} ${esc(unit)} in ${esc(lcMonth(w[2]))} und ${esc(lcMonth(w[3]))}: ${esc(deltaLabel(life.changePct))} (${rule}). Die beiden Durchschnitte sind im Graphen als gestrichelte Linien im hinterlegten Vergleichsfenster eingezeichnet.`;
+  }
+  function lcPanel(product, series) {
+    const unit = product?.unit || "Portion";
+    const months = periods().filter((m) => /^\d{4}-\d{2}$/.test(m)).sort();
+    const q = LSEARCH.trim().toLowerCase();
+    const matches = q ? S.items.filter((p) => p.name.toLowerCase().includes(q)) : S.items;
+    const options = matches.some((p) => p.id === product?.id) || !product ? matches : [product, ...matches];
+    const scopeText = `${LOUTLET === "all" ? "alle Outlets" : outletName(LOUTLET)} · ${LFROM ? periodName(LFROM) : "erster Monat"} bis ${LTO ? periodName(LTO) : "letzter Monat"}`;
+    LC = product ? { product, unit, series } : null;
+    LC_LAUNCH = product?.launchMonth || "";
+    if (product) window.requestAnimationFrame ? window.requestAnimationFrame(drawLifecycleChart) : setTimeout(drawLifecycleChart);
+    return `<section class="panel lc-panel">${panelHeader("Absatzverlauf", `Tatsächliche Monatswerte · ${esc(scopeText)}`)}<div class="lc-filters"><div class="field"><label for="lc-search">Produkt suchen</label><input id="lc-search" type="search" autocomplete="off" placeholder="Name eingeben …" value="${esc(LSEARCH)}"><small>${q ? `${matches.length} Treffer` : `${S.items.length} Produkte`}</small></div><div class="field"><label for="life-product">Produkt</label><select id="life-product">${selectOptions(
+      options.map((p) => [p.id, p.name]),
+      product?.id || "",
+    )}</select></div><div class="field"><label for="lc-outlet">Outlet</label><select id="lc-outlet">${outletSelect(LOUTLET)}</select></div><div class="field"><label for="lc-from">Von</label><select id="lc-from">${selectOptions(
+      [["", "Erster Monat"], ...months.map((m) => [m, periodName(m)])],
+      LFROM,
+    )}</select></div><div class="field"><label for="lc-to">Bis</label><select id="lc-to">${selectOptions([["", "Letzter Monat"], ...months.map((m) => [m, periodName(m)])], LTO)}</select></div>${
+      LOUTLET !== "all" || LFROM || LTO || LSEARCH ? `<button type="button" class="btn btn-small lc-reset" data-action="lc-reset">Filter zurücksetzen</button>` : ""
+    }</div>${
+      !product
+        ? empty("Keine Produkte", "Lege einen Artikel an.")
+        : `<p class="lc-axis-title">Verkaufte Menge je Monat · Einheit: <b>${esc(unit)}</b></p><div class="lc-chart" id="lc-chart" role="group" aria-label="Absatzverlauf ${esc(product.name)}, ${esc(scopeText)}. Datenpunkte mit Pfeiltasten wechseln."><div class="lc-svg"></div><div class="lc-tip" id="lc-tip" role="status" aria-live="polite" hidden></div></div><ul class="lc-legend"><li><i class="lc-key lc-key-data"></i>Monat mit Verkäufen</li><li><i class="lc-key lc-key-zero"></i>Echte Null: Betrieb hat verkauft, dieser Artikel nicht</li><li><i class="lc-key lc-key-gap"></i>Datenlücke: keine Verkaufsdaten, nicht 0</li><li><i class="lc-key lc-key-window"></i>Vergleichsfenster der Einordnung</li><li><i class="lc-key lc-key-avg"></i>Ø je zwei Monate</li></ul><div class="lc-explain"><span class="tag ${series.life.phase === "decline" ? "tag-red" : series.life.phase === "growth" ? "" : "tag-neutral"}">${esc(lifecycleLabel(series.life.phase))}</span><p>${lcExplain(series, unit)}</p>${
+            series.gaps.length && series.life.phase !== "incomplete"
+              ? `<p class="micro">Datenlücken im Verlauf: ${esc(series.gaps.map(periodName).join(", "))}. Die Linie ist dort unterbrochen.</p>`
+              : ""
+          }</div><p class="chart-note">Keine geglättete oder idealisierte Kurve: Jeder Punkt ist ein erfasster Monat. Antippen, Überfahren oder per Tastatur auswählen zeigt Monat, Absatz und weitere Kennzahlen.</p>`
+    }</section>`;
+  }
+  function drawLifecycleChart() {
+    const host = document.querySelector("#lc-chart .lc-svg");
+    if (!host || !LC) return;
+    const { series, unit } = LC,
+      pts = series.points,
+      W = Math.max(280, host.clientWidth || 600),
+      H = W < 520 ? 240 : 300,
+      L = 46,
+      R = 14,
+      T = 26,
+      B = 40,
+      n = pts.length;
+    if (!n) {
+      host.innerHTML = `<p class="lc-empty">Für diese Auswahl gibt es keine Monatswerte. Outlet oder Zeitraum ändern oder Monatsabsatz erfassen.</p>`;
+      return;
+    }
+    const step = (W - L - R) / n,
+      X = (i) => L + step * (i + 0.5),
+      vals = pts.filter((p) => p.quantity !== null).map((p) => p.quantity),
+      top = Math.max(1, ...vals, ...(series.averages ? [series.averages.before, series.averages.after] : [])),
+      mag = Math.pow(10, Math.floor(Math.log10(top))),
+      niceTop = [1, 2, 2.5, 5, 10].map((f) => f * mag).find((v) => v >= top) || top,
+      Y = (v) => T + (H - T - B) * (1 - v / niceTop),
+      ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => niceTop * f),
+      every = Math.max(1, Math.ceil(54 / step)),
+      idx = new Map(pts.map((p, i) => [p.month, i]));
+    let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true" focusable="false">`;
+    const win = series.window && series.window.every((m) => idx.has(m)) ? series.window.map((m) => idx.get(m)) : null;
+    if (win) {
+      svg += `<rect class="lc-window" x="${X(win[0]) - step / 2}" y="${T - 18}" width="${step * 4}" height="${H - B - T + 18}"/><text class="lc-window-label" x="${X(win[0]) - step / 2 + 6}" y="${T - 6}">Vergleichsfenster</text>`;
+    }
+    for (const v of ticks)
+      svg += `<line class="lc-grid" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text class="lc-ytick" x="${L - 8}" y="${Y(v) + 4}">${lcQty(v)}</text>`;
+    svg += `<text class="lc-yunit" x="${L - 8}" y="${T - 10}">${esc(unit)}</text>`;
+    pts.forEach((p, i) => {
+      if (p.status === "gap")
+        svg += `<rect class="lc-gap" x="${X(i) - step / 2 + 2}" y="${T}" width="${Math.max(2, step - 4)}" height="${H - B - T}"/><text class="lc-gap-label" x="${X(i)}" y="${H - B - 6}">${step >= 34 ? "keine Daten" : "–"}</text>`;
+    });
+    if (win && series.averages) {
+      const seg = (a, b, v, label) =>
+        `<line class="lc-avg" x1="${X(a) - step * 0.35}" x2="${X(b) + step * 0.35}" y1="${Y(v)}" y2="${Y(v)}"/><text class="lc-avg-label" x="${(X(a) + X(b)) / 2}" y="${Y(v) - 7}">${label}</text>`;
+      svg += seg(win[0], win[1], series.averages.before, `Ø ${lcQty(series.averages.before)}`) + seg(win[2], win[3], series.averages.after, `Ø ${lcQty(series.averages.after)}`);
+    }
+    let path = "";
+    pts.forEach((p, i) => {
+      if (p.status === "gap") return;
+      path += `${i > 0 && pts[i - 1].status !== "gap" ? "L" : "M"}${X(i)} ${Y(p.quantity)} `;
+    });
+    svg += `<path class="lc-line" d="${path}"/>`;
+    pts.forEach((p, i) => {
+      if (i % every === 0 || i === n - 1) svg += `<text class="lc-xtick" x="${X(i)}" y="${H - B + 18}">${esc(lcMonth(p.month))}</text>`;
+      svg += `<rect class="lc-hit" data-lc-i="${i}" x="${X(i) - step / 2}" y="${T}" width="${step}" height="${H - T - B + 24}"/>`;
+    });
+    pts.forEach((p, i) => {
+      if (p.status !== "gap")
+        svg += `<circle class="lc-point ${p.status === "zero" ? "zero" : ""}" data-lc-i="${i}" cx="${X(i)}" cy="${Y(p.quantity)}" r="${W < 520 ? 6 : 5}"/>`;
+    });
+    svg += `<line class="lc-cursor" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/></svg>`;
+    // keyboard: one focusable element per month (also gaps), arrow keys move between months
+    host.innerHTML =
+      svg +
+      `<div class="lc-keys">${pts.map((p, i) => `<button type="button" class="lc-key-btn" data-lc-i="${i}" style="left:${X(i) - step / 2}px;width:${step}px" aria-label="${esc(lcAria(p, unit))}"></button>`).join("")}</div>`;
+    LC.geometry = { X, Y, step, H, T, B, W };
+  }
+  function lcAria(p, unit) {
+    return p.status === "gap"
+      ? `${periodName(p.month)}: keine Verkaufsdaten (Datenlücke)`
+      : `${periodName(p.month)}: ${lcQty(p.quantity)} ${unit}${p.status === "zero" ? ", nicht verkauft" : ""}`;
+  }
+  function lcShow(i) {
+    const tip = document.querySelector("#lc-tip"),
+      chart = document.querySelector("#lc-chart");
+    if (!tip || !LC?.geometry || !LC.series.points[i]) return;
+    const p = LC.series.points[i],
+      g = LC.geometry,
+      unit = LC.unit,
+      w = LC.series.window,
+      inWin = w ? w.indexOf(p.month) : -1;
+    const rows =
+      p.status === "gap"
+        ? [`<b>Keine Verkaufsdaten</b>`, "Datenlücke – wird nicht als 0 gezählt."]
+        : [
+            `Absatz: <b>${lcQty(p.quantity)} ${esc(unit)}</b>${p.status === "zero" ? " (nicht verkauft)" : ""}`,
+            p.changePct === null ? "" : `Zum Vormonat: ${esc(deltaLabel(p.changePct))}`,
+            p.lines ? `Netto-Umsatz: ${euro(p.revenueNet)}` : "",
+            p.grossAvg === null ? "" : `Ø Bruttopreis: ${euro(p.grossAvg)}`,
+            p.lines ? (p.db1 === null ? "DB I: nicht ermittelbar, Wareneinsatz fehlt" : `DB I (Kostenstand des Monats): ${euro(p.db1)}`) : "",
+            p.lines ? `${p.lines} ${p.lines === 1 ? "Verkaufszeile" : "Verkaufszeilen"} · ${p.outlets} ${p.outlets === 1 ? "Outlet" : "Outlets"}` : "",
+          ];
+    if (inWin >= 0) rows.push(inWin < 2 ? "Vergleichsfenster: Basis (Monat 1–2)" : "Vergleichsfenster: aktuell (Monat 3–4)");
+    tip.innerHTML = `<strong>${esc(periodName(p.month))}</strong>${rows.filter(Boolean).map((r) => `<span>${r}</span>`).join("")}`;
+    tip.hidden = false;
+    const x = g.X(i),
+      y = p.quantity === null ? g.T + 20 : g.Y(p.quantity);
+    const tw = tip.offsetWidth,
+      cw = chart.clientWidth;
+    // phones: the details sit below the chart instead of covering the curve
+    tip.classList.toggle("lc-tip-below", cw < 520);
+    tip.style.left = cw < 520 ? "" : Math.min(Math.max(4, x - tw / 2), cw - tw - 4) + "px";
+    tip.style.top = cw < 520 ? "" : Math.max(0, y - tip.offsetHeight - 14) + "px";
+    const cur = chart.querySelector(".lc-cursor");
+    cur?.setAttribute("x1", x);
+    cur?.setAttribute("x2", x);
+    cur?.setAttribute("visibility", "visible");
+    chart.querySelectorAll(".lc-point").forEach((c) => c.classList.toggle("active", Number(c.dataset.lcI) === i));
+  }
+  function lcHide() {
+    const tip = document.querySelector("#lc-tip");
+    if (tip) tip.hidden = true;
+    document.querySelector("#lc-chart .lc-cursor")?.setAttribute("visibility", "hidden");
+    document.querySelectorAll("#lc-chart .lc-point.active").forEach((c) => c.classList.remove("active"));
+  }
+  document.addEventListener("pointerover", (e) => {
+    const t = e.target.closest?.("#lc-chart [data-lc-i]");
+    if (t) lcShow(Number(t.dataset.lcI));
+  });
+  document.addEventListener("pointerdown", (e) => {
+    const t = e.target.closest?.("#lc-chart [data-lc-i]");
+    if (t) lcShow(Number(t.dataset.lcI));
+  });
+  document.addEventListener("pointerout", (e) => {
+    const c = e.target.closest?.("#lc-chart");
+    if (c && e.pointerType === "mouse" && !c.contains(e.relatedTarget)) lcHide();
+  });
+  document.addEventListener("focusin", (e) => {
+    const t = e.target.closest?.("#lc-chart .lc-key-btn");
+    if (t) lcShow(Number(t.dataset.lcI));
+  });
+  document.addEventListener("keydown", (e) => {
+    const t = e.target.closest?.("#lc-chart .lc-key-btn");
+    if (!t) return;
+    if (e.key === "Escape") return lcHide();
+    const d = { ArrowRight: 1, ArrowLeft: -1, Home: -1e9, End: 1e9 }[e.key];
+    if (d === undefined) return;
+    e.preventDefault();
+    const all = [...document.querySelectorAll("#lc-chart .lc-key-btn")];
+    all[Math.min(all.length - 1, Math.max(0, all.indexOf(t) + d))]?.focus();
+  });
+  let lcResize;
+  window.addEventListener("resize", () => {
+    clearTimeout(lcResize);
+    lcResize = setTimeout(() => document.querySelector("#lc-chart") && drawLifecycleChart(), 120);
+  });
   function lifecycleView() {
     const selected = LPRODUCT || S.items[0]?.id || "";
     const product = stockOf(selected);
-    const life = product ? C.lifecycle(S.sales, product.id, product.launchMonth) : null;
-    const results = S.items.map((p) => ({ p, life: C.lifecycle(S.sales, p.id, p.launchMonth) }));
+    // outlet and period of the chart filter apply to the whole page; with "alle" the result is exactly as before
+    const scoped = lcScopedSales();
+    const series = product ? C.lifecycleSeries(S.sales, product, lcScope(), lcCostFor(product)) : null;
+    const life = series ? series.life : null;
+    const results = S.items.map((p) => ({ p, life: C.lifecycle(scoped, p.id, p.launchMonth) }));
     const valid = results.filter((x) => ["introduction", "growth", "decline", "maturity"].includes(x.life.phase)).length;
     return (
       pageHeader(
@@ -640,10 +861,7 @@
         `<button class="btn btn-primary" data-action="new-sale">${I("plus")} Monatsabsatz erfassen</button>`,
       ) +
       demoNotice() +
-      `<div class="notice">${I("info")}<span><strong>Trendindikator, keine Marktprognose.</strong> Berechnung: Ø Absatz der letzten zwei Monate gegenüber den beiden Monaten davor. Ab +20 % Wachstum, ab −20 % Rückgang, dazwischen Reife. Nötig sind vier aufeinanderfolgende Monate. <strong>Echte Null:</strong> Der Betrieb hat in dem Monat Verkäufe erfasst, dieser Artikel wurde nicht verkauft. <strong>Fehlend:</strong> Für den Monat gibt es gar keine Verkaufsdaten; dann keine Einordnung. Einführung nur mit hinterlegtem Startmonat.</span></div><section class="kpi-grid">${kpi("Produkte", String(results.length), "layers", "Im Sortiment")}${kpi("Auswertbar", String(valid), "chart", "Mit vier zusammenhängenden Monaten")}${kpi("Wachstum", String(results.filter((x) => x.life.phase === "growth").length), "trending", "Absatz-Trendindikator")}${kpi("Rückgang", String(results.filter((x) => x.life.phase === "decline").length), "alert", "Absatz-Trendindikator")}</section><section class="content-grid"><div class="panel">${panelHeader("Einzelanalyse", "Produkt auswählen und Absatzkurve ansehen")}<div class="field"><label for="life-product">Produkt</label><select id="life-product">${selectOptions(
-        S.items.map((p) => [p.id, p.name]),
-        selected,
-      )}</select></div>${product ? `<div class="lifecycle-callout"><span class="tag ${life.phase === "decline" ? "tag-red" : life.phase === "growth" ? "" : "tag-neutral"}">${esc(lifecycleLabel(life.phase))}</span><strong>${esc(product.name)}</strong><div class="kpi-value">${deltaLabel(life.changePct)}</div><small>${esc(life.description)}${life.period ? ` · Betrachtungszeitraum ${esc(periodName(life.period[0]))} bis ${esc(periodName(life.period[3]))}` : ""}${life.missingMonths?.length ? ` · fehlende Monate: ${esc(life.missingMonths.map(periodName).join(", "))}` : ""}</small></div>${life.points.length ? `<div class="month-bars">${life.points.map((x) => `<div class="month-bar-line"><span>${esc(periodName(x.month))}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(0, (x.quantity / Math.max(1, ...life.points.map((y) => y.quantity))) * 100)}%"></div></div><strong>${number(x.quantity)} Stk.${x.zero ? " (nicht verkauft)" : ""}</strong></div>`).join("")}</div>` : empty("Keine Monatsdaten", "Erfasse monatliche Verkäufe für dieses Produkt.")}` : empty("Keine Produkte", "Lege einen Artikel an.")}</div><div class="panel">${panelHeader("Phasen & Handlung", "Interpretation und sinnvolle Reaktion")}${life ? `<div class="insights-list"><div class="insight-card"><div class="insight-content"><h3>${esc(lifecycleLabel(life.phase))}</h3><p>${esc(life.phase === "introduction" ? "Einführung: Absatz aufbauen und zunächst echte Monatswerte sammeln; der Startmonat ist manuell hinterlegt." : life.phase === "growth" ? "Wachstum: Verfügbarkeit und Kapazität sichern; Preis- und DB-Entwicklung beobachten." : life.phase === "decline" ? "Absatzrückgang: Verfügbarkeit, Preis, Qualität, Menüpositionierung und Saisoneffekte prüfen." : life.phase === "maturity" ? "Stabiler Absatz: Marge, Upgrades und operative Effizienz optimieren." : "Noch keine tragfähige Trendklassifizierung. Monatswerte nachtragen; Datenlücken nicht als Null interpretieren.")}</p></div></div></div>` : ""}<p class="chart-note">Einführung wird nur angezeigt, wenn ein Startmonat im Produkt hinterlegt ist und der neueste Verkaufsmonat maximal zwei Monate nach dem Start liegt. Die Phase wird nicht aus einem einzelnen Absatzwert geraten.</p></div></section><div class="panel">${panelHeader("Lebenszyklus des gesamten Sortiments", "Einordnung für jedes Produkt")}${results.length ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Produkt</th><th>Phase</th><th class="align-right">Trend</th><th class="align-right">Monate</th><th>Details</th></tr></thead><tbody>${results.map(({ p, life }) => `<tr><td><strong>${esc(p.name)}</strong><div class="micro">${esc(p.category)}</div></td><td><span class="tag ${life.phase === "decline" ? "tag-red" : life.phase === "growth" ? "" : "tag-neutral"}">${esc(lifecycleLabel(life.phase))}</span></td><td class="align-right">${deltaLabel(life.changePct)}</td><td class="align-right">${life.months}</td><td><button class="btn btn-small" data-lifecycle="${esc(p.id)}">Details</button></td></tr>`).join("")}</tbody></table></div>` : empty("Keine Produkte", "Erst Artikel und Monatsverkäufe anlegen.")}</div>`
+      `<div class="notice">${I("info")}<span><strong>Trendindikator, keine Marktprognose.</strong> Berechnung: Ø Absatz der letzten zwei Monate gegenüber den beiden Monaten davor. Ab +20 % Wachstum, ab −20 % Rückgang, dazwischen Reife. Nötig sind vier aufeinanderfolgende Monate. <strong>Echte Null:</strong> Der Betrieb hat in dem Monat Verkäufe erfasst, dieser Artikel wurde nicht verkauft. <strong>Fehlend:</strong> Für den Monat gibt es gar keine Verkaufsdaten; dann keine Einordnung. Einführung nur mit hinterlegtem Startmonat.</span></div><section class="kpi-grid">${kpi("Produkte", String(results.length), "layers", "Im Sortiment")}${kpi("Auswertbar", String(valid), "chart", "Mit vier zusammenhängenden Monaten")}${kpi("Wachstum", String(results.filter((x) => x.life.phase === "growth").length), "trending", "Absatz-Trendindikator")}${kpi("Rückgang", String(results.filter((x) => x.life.phase === "decline").length), "alert", "Absatz-Trendindikator")}</section>${lcPanel(product, series)}<section class="content-grid"><div class="panel">${panelHeader("Einzelanalyse", "Monatswerte des oben gewählten Produkts")}${product ? `<div class="lifecycle-callout"><span class="tag ${life.phase === "decline" ? "tag-red" : life.phase === "growth" ? "" : "tag-neutral"}">${esc(lifecycleLabel(life.phase))}</span><strong>${esc(product.name)}</strong><div class="kpi-value">${deltaLabel(life.changePct)}</div><small>${esc(life.description)}${life.period ? ` · Betrachtungszeitraum ${esc(periodName(life.period[0]))} bis ${esc(periodName(life.period[3]))}` : ""}${life.missingMonths?.length ? ` · fehlende Monate: ${esc(life.missingMonths.map(periodName).join(", "))}` : ""}</small></div>${life.points.length ? `<div class="month-bars">${life.points.map((x) => `<div class="month-bar-line"><span>${esc(periodName(x.month))}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(0, (x.quantity / Math.max(1, ...life.points.map((y) => y.quantity))) * 100)}%"></div></div><strong>${number(x.quantity)} Stk.${x.zero ? " (nicht verkauft)" : ""}</strong></div>`).join("")}</div>` : empty("Keine Monatsdaten", "Erfasse monatliche Verkäufe für dieses Produkt.")}` : empty("Keine Produkte", "Lege einen Artikel an.")}</div><div class="panel">${panelHeader("Phasen & Handlung", "Interpretation und sinnvolle Reaktion")}${life ? `<div class="insights-list"><div class="insight-card"><div class="insight-content"><h3>${esc(lifecycleLabel(life.phase))}</h3><p>${esc(life.phase === "introduction" ? "Einführung: Absatz aufbauen und zunächst echte Monatswerte sammeln; der Startmonat ist manuell hinterlegt." : life.phase === "growth" ? "Wachstum: Verfügbarkeit und Kapazität sichern; Preis- und DB-Entwicklung beobachten." : life.phase === "decline" ? "Absatzrückgang: Verfügbarkeit, Preis, Qualität, Menüpositionierung und Saisoneffekte prüfen." : life.phase === "maturity" ? "Stabiler Absatz: Marge, Upgrades und operative Effizienz optimieren." : "Noch keine tragfähige Trendklassifizierung. Monatswerte nachtragen; Datenlücken nicht als Null interpretieren.")}</p></div></div></div>` : ""}<p class="chart-note">Einführung wird nur angezeigt, wenn ein Startmonat im Produkt hinterlegt ist und der neueste Verkaufsmonat maximal zwei Monate nach dem Start liegt. Die Phase wird nicht aus einem einzelnen Absatzwert geraten.</p></div></section><div class="panel">${panelHeader("Lebenszyklus des gesamten Sortiments", "Einordnung für jedes Produkt")}${results.length ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Produkt</th><th>Phase</th><th class="align-right">Trend</th><th class="align-right">Monate</th><th>Details</th></tr></thead><tbody>${results.map(({ p, life }) => `<tr><td><strong>${esc(p.name)}</strong><div class="micro">${esc(p.category)}</div></td><td><span class="tag ${life.phase === "decline" ? "tag-red" : life.phase === "growth" ? "" : "tag-neutral"}">${esc(lifecycleLabel(life.phase))}</span></td><td class="align-right">${deltaLabel(life.changePct)}</td><td class="align-right">${life.months}</td><td><button class="btn btn-small" data-lifecycle="${esc(p.id)}">Details</button></td></tr>`).join("")}</tbody></table></div>` : empty("Keine Produkte", "Erst Artikel und Monatsverkäufe anlegen.")}</div>`
     );
   }
   function marketViewLegacy() {
@@ -2013,6 +2231,14 @@
       case "save-month-costs":
         saveMonthCosts();
         break;
+      case "lc-reset":
+        LOUTLET = "all";
+        LFROM = "";
+        LTO = "";
+        LSEARCH = "";
+        render();
+        document.querySelector("#life-product")?.focus();
+        break;
       case "new-sale":
         saleModal();
         break;
@@ -2244,6 +2470,22 @@
   });
 
   document.addEventListener("input", (e) => {
+    if (e.target.id === "lc-search") {
+      // typing switches to the first matching product; the select still offers every match
+      LSEARCH = e.target.value;
+      const q = LSEARCH.trim().toLowerCase(),
+        cur = stockOf(LPRODUCT || S.items[0]?.id);
+      if (q && !cur?.name.toLowerCase().includes(q)) {
+        const hit = S.items.find((p) => p.name.toLowerCase().includes(q));
+        if (hit) LPRODUCT = hit.id;
+      }
+      const pos = e.target.selectionStart;
+      render();
+      const input = document.querySelector("#lc-search");
+      input?.focus();
+      input?.setSelectionRange(pos, pos);
+      return;
+    }
     if (e.target.id === "product-search") {
       FILTER = e.target.value;
       const pos = e.target.selectionStart;
@@ -2333,6 +2575,14 @@
     if (e.target.id === "life-product") {
       LPRODUCT = e.target.value;
       render();
+    }
+    if (["lc-outlet", "lc-from", "lc-to"].includes(e.target.id)) {
+      if (e.target.id === "lc-outlet") LOUTLET = e.target.value;
+      if (e.target.id === "lc-from") LFROM = e.target.value;
+      if (e.target.id === "lc-to") LTO = e.target.value;
+      if (LFROM && LTO && LFROM > LTO) [LFROM, LTO] = [LTO, LFROM]; // a reversed range is read as meant, not as empty
+      render();
+      document.querySelector("#" + e.target.id)?.focus();
     }
     if (e.target.closest("#sale-form") && e.target.name === "productId") {
       const p = stockOf(e.target.value),
@@ -4725,22 +4975,6 @@
       .slice(0, 5);
     return `<div class="v6-modular-head"><span>MENÜ-ENGINEERING</span><button class="btn btn-small" data-view="reports">ABC und Produktreport ↗</button></div>${v6Panel("VERKAUFSPOTENZIAL", "Preis-Szenario für ausgewählte Artikel", "Prozentuale Preisänderung bei unveränderter Stückzahl. Keine Nachfrageprognose.", `<div class="v6-sim"><label>Preisveränderung <strong id="v6-lift-label">${V6_LIFT} %</strong><input id="v6-lift" type="range" min="-10" max="15" step="1" value="${V6_LIFT}"></label><div><small>Rechnerische DB-II-Veränderung</small><b id="v6-lift-result">${euro((r.totals.revenue * V6_LIFT) / 100)}</b><span>Bei unverändertem Absatz und unveränderten variablen Stückkosten.</span></div></div>`)}${v6Panel("PRIORITÄTEN", "Artikel zur Überprüfung", "Renner = hohe Menge bei niedrigem Stück-DB; Penner = niedrig bei beidem.", flagged.length ? `<div class="v6-priority-list">${flagged.map((x) => `<button data-edit="${esc(x.id)}"><span class="v6-priority-dot"></span><span><b>${esc(x.name)}</b><small>${x.quadrant === "runner" ? "Rezept- und Preishebel testen" : "Sortimentsplatz, Präsentation und Absatz überprüfen"}</small></span><strong>${euro(x.contributionUnit)} / Stück</strong> ↗</button>`).join("")}</div>` : v6Empty("Keine relevanten Artikel"))}`;
   }
-  function v6Lifecycle() {
-    const p = S.items.find((x) => x.id === LPRODUCT) || S.items[0];
-    const x = p ? C.lifecycle(S.sales, p.id, p.launchMonth) : null;
-    return `<div class="v6-modular-head"><span>PRODUKTLEBENSZYKLUS</span><button class="btn btn-small" data-view="products">Alle Produkte ↗</button></div>${v6Panel(
-      "ABSATZTREND",
-      p ? p.name : "Produkt auswählen",
-      "Nur echte, vorhandene Monatsverkäufe und keine aufgefüllten Nullwerte.",
-      x && x.points.length
-        ? v6LineChart(
-            x.points.map((y) => ({ id: y.month, name: y.month, quantity: y.quantity })),
-            "quantity",
-            false,
-          )
-        : v6Empty(),
-    )}`;
-  }
   function v6Market() {
     const rows = S.market || [],
       comparable = rows
@@ -4871,7 +5105,7 @@
     recipes: v6Recipes,
     purchasing: v6Purchasing,
     orders: v6Orders,
-    lifecycle: v6Lifecycle,
+    // lifecycle: the former line chart supplement is replaced by the interactive chart on the page itself (Oct 2026)
     market: v6Market,
     insights: v6MainOverview,
     menuimport: v6Recipes,
