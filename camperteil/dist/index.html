@@ -194,6 +194,12 @@
             <button type="button" class="material" data-material="olive" aria-pressed="false"><i style="--swatch:#68705a"></i>Olive</button>
             <button type="button" class="material" data-material="graphite" aria-pressed="false"><i style="--swatch:#3a3f3b"></i>Graphit</button>
           </div>
+          <p class="control-label" id="view-label">Blickwinkel</p>
+          <div class="model-choices view-choices" role="group" aria-labelledby="view-label">
+            <button type="button" class="material view active" data-view="schraeg" aria-pressed="true">Schräg</button>
+            <button type="button" class="material view" data-view="vorne" aria-pressed="false">Vorne</button>
+            <button type="button" class="material view" data-view="seite" aria-pressed="false">Seite</button>
+          </div>
           <div class="explode-row"><label class="control-label" for="explode">Explosionsansicht</label><output id="explode-value" for="explode">0 %</output></div>
           <input id="explode" type="range" min="0" max="100" step="1" value="0" aria-describedby="explode-hint">
           <p id="explode-hint" class="control-hint">Zieht Rahmen, Einleger und Schrauben auseinander.</p>
@@ -277,6 +283,10 @@
           <p>Mit der Einschätzung des Betriebs. Ob und zu welchem Preis ein Teil möglich ist, steht erst nach dieser Prüfung fest. Über diese Website wird nichts gekauft.</p>
         </li>
       </ol>
+      <div class="section-cta">
+        <a class="btn btn-primary" href="#anfrage">Ersatzteil anfragen <span aria-hidden="true">↗</span></a>
+        <p>Fotos und Maße bereithalten, dann in fünf Schritten zur Anfrage.</p>
+      </div>
     </div>
   </section>
 
@@ -324,12 +334,16 @@
           <dd>Auf der Rückseite stehen oft Teilenummern oder ein Werkstoffzeichen wie <span class="mono">&gt;ABS&lt;</span> oder <span class="mono">&gt;PP&lt;</span>. Das hilft bei der Nachfertigung.</dd>
         </div>
       </dl>
+      <div class="section-cta measure-cta">
+        <a class="btn btn-primary" href="#anfrage">Mit diesen Angaben anfragen <span aria-hidden="true">↓</span></a>
+      </div>
     </div>
   </section>
 
   <!-- ANFRAGE -->
   <section class="section request" id="anfrage" aria-labelledby="anfrage-title">
-    <div class="wrap">
+    <div class="wrap request-grid">
+      <aside class="request-aside">
       <header class="section-head request-head">
         <p class="eyebrow">Anfrage</p>
         <h2 id="anfrage-title" class="h2">Ersatzteil anfragen</h2>
@@ -340,6 +354,16 @@
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v6M12 16.5v.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
         <p><strong>Versand noch nicht eingerichtet.</strong> Sie können die Anfrage vollständig ausfüllen und am Ende als Text kopieren oder speichern. Übertragen wird noch nichts.</p>
       </div>
+      <div class="ready-list">
+        <p class="control-label" id="ready-title">Bereitlegen</p>
+        <ul aria-labelledby="ready-title">
+          <li><b>1 bis 8 Fotos</b> des Teils, gern mit Lineal daneben</li>
+          <li><b>Fahrzeug</b>: Hersteller, Modell, Baujahr</li>
+          <li><b>Mindestens zwei Maße</b> in Millimetern</li>
+          <li><b>Kurze Beschreibung</b>: was fehlt oder gebrochen ist</li>
+        </ul>
+      </div>
+      </aside>
 
       <form class="wizard" id="wizard" novalidate>
         <ol class="progress" aria-label="Schritte der Anfrage">
@@ -351,8 +375,8 @@
         </ol>
         <p class="progress-mobile" aria-hidden="true"><span data-progress-text>Schritt 1 von 5</span><span class="bar"><span data-progress-bar></span></span></p>
 
-        <div class="error-summary" id="error-summary" tabindex="-1" hidden>
-          <h3>Bitte prüfen Sie diese Angaben:</h3>
+        <div class="error-summary" id="error-summary" tabindex="-1" aria-labelledby="error-summary-title" hidden>
+          <h3 id="error-summary-title">Bitte prüfen Sie diese Angaben:</h3>
           <ul></ul>
         </div>
 

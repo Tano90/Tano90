@@ -26,6 +26,7 @@ dist/                         Auslieferung (diesen Ordner hochladen)
 scripts/build-preview.mjs     erzeugt preview/index.html für eine private Claude-Artifact-Vorschau
 tests/flow.mjs                Browserprüfung (siehe unten)
 MEDIEN.md                     Herkunft und Bearbeitung aller Medien
+design-system/camperteil/     Designsystem (MASTER.md) und Rohausgaben der UI-UX-Pro-Max-Abfragen
 PRUEFSTATUS.md                was tatsächlich geprüft wurde und was offen ist
 ```
 
@@ -63,7 +64,14 @@ Veröffentlichen: den Inhalt von `dist/` auf einen statischen Hoster kopieren. V
 - 3D mit WebGL: Ausgangsansicht, kein Zeichnen ohne Bewegung oder außerhalb des Bildes, Maus, Mausrad (scrollt die Seite; Strg zoomt), Zoom-Knöpfe, Farbe, Explosion mit Beschriftung, Drahtgitter, Drehen, Zurücksetzen, Tastatur, Ansagen für Screenreader, Kontextverlust
 - 3D per Touch: waagerecht wischen dreht, senkrecht scrollt, zwei Finger zoomen
 - 3D ohne WebGL (Canvas-Ansicht) und ganz ohne Canvas (Standbild, Regler deaktiviert); automatische Qualitätsanpassung bei langsamer Darstellung
-- Gesamter Anfrage-Ablauf: Dateiprüfung, Fehlermeldungen, Zurück, Ändern, Neuladen mit Textentwurf, Löschen; Unterseiten erreichbar
+- Gesamter Anfrage-Ablauf: Dateiprüfung, Fehlermeldungen, Zurück, Ändern, Neuladen mit Textentwurf, Löschen; Browser-Zurück und -Vorwärts gehen schrittweise
+- Designsystem: Text auf der Hauptaktion mindestens 4,5:1, Fokusringe auf hellen und dunklen Flächen mindestens 3:1, Fokus nicht von der Kopfzeile verdeckt, Wege zur Anfrage
+- 3D-Blickwinkel Schräg, Vorne, Seite in WebGL und Canvas-Ansicht
+- Unterseiten bei 320 und 1440 px: gleiche Flächen und Kopfzeile, Überschrift nicht verdeckt, kein Überlauf
+
+## Designsystem
+
+`design-system/camperteil/MASTER.md` beschreibt Farben mit Rollen, Typografieskala, Abstände, Komponenten, Zustände, Bewegung und mobile Regeln. Die Werte stehen als CSS-Variablen am Anfang von `dist/assets/css/experience.css`. Neue Komponenten nutzen die Rollen (`--color-*`, `--space-*`, `--text-*`, `--dur-*`), keine Rohwerte.
 
 ## Versand später anbinden
 

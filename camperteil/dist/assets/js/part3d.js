@@ -11,6 +11,8 @@ export const PALETTE = {
 };
 
 const REST = { radius: 12.4, theta: 0.52, phi: 1.22 };
+// Feste Blickwinkel zur Orientierung; „vorne“ blickt senkrecht auf das nach hinten geneigte Teil
+const VIEWS = { schraeg: REST, vorne: { radius: 12.4, theta: 0, phi: 1.37 }, seite: { radius: 12.4, theta: 1.52, phi: 1.37 } };
 const LIMITS = { minRadius: 7, maxRadius: 19, minPhi: 0.35, maxPhi: 1.62 };
 const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -283,6 +285,10 @@ export function createWebGLViewer({ stage, canvas, coarse, reduced, onLabels, on
     rotateBy(dTheta, dPhi) {
       const cur = aim();
       cur.theta += dTheta; cur.phi = THREE.MathUtils.clamp(cur.phi + dPhi, LIMITS.minPhi, LIMITS.maxPhi); tweenCamera(cur, 220);
+    },
+    setView(name) {
+      const v = VIEWS[name]; if (!v) return;
+      state.auto = false; tweenCamera(new THREE.Spherical(v.radius, v.phi, v.theta), 800);
     },
     reset() {
       state.auto = false; setExplode(0, 700);

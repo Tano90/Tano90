@@ -2,6 +2,7 @@
    Gleiche Schnittstelle wie part3d.js. */
 const COLORS = { sand: [203, 189, 159], olive: [104, 112, 90], graphite: [58, 63, 59] };
 const REST = { yaw: -0.5, pitch: -0.3, zoom: 1 };
+const VIEWS = { schraeg: REST, vorne: { yaw: 0, pitch: -0.08, zoom: 1 }, seite: { yaw: -1.45, pitch: -0.12, zoom: 1 } };
 
 export function createSoftwareViewer({ stage, canvas, reduced, onLabels }) {
   // Ein Canvas, das schon einen WebGL-Kontext hatte, liefert keinen 2D-Kontext mehr: dann ersetzen
@@ -187,6 +188,7 @@ export function createSoftwareViewer({ stage, canvas, reduced, onLabels }) {
     setWire(on) { s.wire = on; request(); },
     zoomBy(f) { const t = tween ? tween.to : s; go({ zoom: clampZoom(t.zoom / f) }, 260); },
     rotateBy(dYaw, dPitch) { const t = tween ? tween.to : s; go({ yaw: t.yaw + dYaw, pitch: clampPitch(t.pitch + dPitch) }, 220); },
+    setView(name) { if (VIEWS[name]) { s.auto = false; go({ ...VIEWS[name] }, 800); } },
     reset() { s.auto = false; s.wire = false; this.setExplode(0); go({ ...REST }, 900); },
     debug() { return { yaw: +s.yaw.toFixed(2), pitch: +s.pitch.toFixed(2), zoom: +s.zoom.toFixed(2), explode: +s.explode.toFixed(2), color: s.colorTarget.join(','), wire: s.wire, auto: s.auto, frames }; }
   };

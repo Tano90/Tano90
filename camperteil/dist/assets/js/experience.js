@@ -66,6 +66,15 @@ const filmIO = new IntersectionObserver((entries) => entries.forEach((e) => {
   } else if (!film.video.paused) film.video.pause();
 }), { threshold: 0.15 });
 films.forEach((f) => filmIO.observe(f.section));
+// Ladepriorität: Der Hero-Film lädt erst nach dem Seitenstart (siehe oben). Weitere Filme werden eine Bildschirmhöhe
+// vor ihrem Abschnitt vorgeladen, damit sie beim Erscheinen bereitstehen; bei Datensparen oder weniger Bewegung nicht.
+const nearIO = new IntersectionObserver((entries) => entries.forEach((e) => {
+  if (!e.isIntersecting) return;
+  const film = films.find((f) => f.section === e.target);
+  nearIO.unobserve(e.target);
+  if (film && autoplayAllowed() && film.video.id !== 'hero-film') { film.video.preload = 'auto'; film.load(); }
+}), { rootMargin: '100% 0px' });
+films.forEach((f) => nearIO.observe(f.section));
 reducedQuery.addEventListener?.('change', () => { if (reducedQuery.matches) films.forEach((f) => f.video.pause()); });
 // Zwischen Hoch- und Querformat nur wechseln, solange der Film noch nicht läuft
 tallQuery.addEventListener?.('change', () => films.forEach((f) => { if (f.video.paused && f.video.getAttribute('src')) { f.video.removeAttribute('src'); f.frame.classList.remove('is-playing'); f.video.load(); f.render(); } }));
@@ -99,7 +108,7 @@ if (cta) {
   const ctaIO = new IntersectionObserver((entries) => {
     entries.forEach((e) => (e.isIntersecting ? blockers.add(e.target) : blockers.delete(e.target)));
     cta.classList.toggle('is-suppressed', blockers.size > 0);
-  }, { threshold: 0.25 });
+  }, { threshold: 0, rootMargin: '0px 0px -40px 0px' });
   [$('#model-stage'), $('.site-footer')].forEach((n) => n && ctaIO.observe(n));
 }
 
@@ -217,16 +226,24 @@ async function setupWorkbench() {
   slider.addEventListener('input', () => { ui.explode = Number(slider.value); viewer.setExplode(ui.explode / 100); syncButtons(); });
   autoBtn.addEventListener('click', () => { ui.auto = !ui.auto; syncButtons(); afterPaint(() => viewer.setAuto(ui.auto)); });
   wireBtn.addEventListener('click', () => { ui.wire = !ui.wire; syncButtons(); say(ui.wire ? 'Drahtgitter an' : 'Drahtgitter aus'); afterPaint(() => viewer.setWire(ui.wire)); });
+  const viewBtns = $$('[data-view]');
+  const markView = (name) => viewBtns.forEach((n) => { const on = n.dataset.view === name; n.classList.toggle('active', on); n.setAttribute('aria-pressed', String(on)); });
+  viewBtns.forEach((b) => b.addEventListener('click', () => {
+    ui.auto = false; markView(b.dataset.view); syncButtons(); say(`Blickwinkel ${b.textContent.trim()}`);
+    afterPaint(() => viewer.setView(b.dataset.view));
+  }));
+  // Wer selbst dreht, verlässt den festen Blickwinkel
+  stage.addEventListener('pointerdown', (e) => { if (e.target.tagName === 'CANVAS') markView(null); });
   $('#zoom-in').addEventListener('click', () => afterPaint(() => viewer.zoomBy(0.82)));
   $('#zoom-out').addEventListener('click', () => afterPaint(() => viewer.zoomBy(1.22)));
   $('#reset-model').addEventListener('click', () => {
-    ui.explode = 0; ui.auto = false; ui.wire = false; syncButtons(); say('Ansicht zurückgesetzt'); afterPaint(() => viewer.reset());
+    ui.explode = 0; ui.auto = false; ui.wire = false; markView('schraeg'); syncButtons(); say('Ansicht zurückgesetzt'); afterPaint(() => viewer.reset());
   });
   // Tastatur, wenn die Bühne ausgewählt ist: Pfeile drehen, + / − zoomen, Pos1 setzt zurück
   stage.addEventListener('keydown', (e) => {
     if (e.target.tagName !== 'CANVAS') return;
     const map = { ArrowLeft: [-0.2, 0], ArrowRight: [0.2, 0], ArrowUp: [0, -0.14], ArrowDown: [0, 0.14] };
-    if (map[e.key]) { e.preventDefault(); viewer.rotateBy(...map[e.key]); }
+    if (map[e.key]) { e.preventDefault(); markView(null); viewer.rotateBy(...map[e.key]); }
     else if (e.key === '+' || e.key === '=') { e.preventDefault(); viewer.zoomBy(0.82); }
     else if (e.key === '-' || e.key === '_') { e.preventDefault(); viewer.zoomBy(1.22); }
     else if (e.key === 'Home') { e.preventDefault(); $('#reset-model').click(); }

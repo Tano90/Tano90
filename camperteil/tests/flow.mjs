@@ -318,12 +318,15 @@ console.log("3D mit WebGL (SwiftShader, Qualitätsanpassung für den Test abgesc
   check(await until(page, () => document.querySelector("#model-stage").debug3d().wire === true), "Drahtgitter an");
   await page.waitForTimeout(1200);
   await page.screenshot({ path: join(OUT, "3d-webgl-drahtgitter.png"), clip: await page.locator("#model-stage").boundingBox() });
-  await page.locator("#auto-rotate").click(); const ta = (await d3(page)).theta; await page.waitForTimeout(2500);
-  check(Math.abs((await d3(page)).theta - ta) > 0.05, "Langsames Drehen läuft");
+  await page.locator("#auto-rotate").click(); const ta = (await d3(page)).theta;
+  // Zeitbasiert, aber in SwiftShader mit wenigen Bildern pro Sekunde: auf die Bewegung warten statt fest zu warten
+  check(await until(page, (t) => Math.abs(document.querySelector("#model-stage").debug3d().theta - t) > 0.05, ta, 8000), "Langsames Drehen läuft");
   // Unsichtbar: kein Zeichnen, auch bei laufender Drehung
-  await page.evaluate(() => scrollTo(0, 0)); await page.waitForTimeout(1500);
+  await page.evaluate(() => scrollTo(0, 0));
+  // Messen, sobald die Bühne als unsichtbar gemeldet ist (ein bereits angefordertes Bild darf noch fertig werden)
+  await until(page, () => !document.querySelector("#model-stage").debug3d().visible); await page.waitForTimeout(400);
   const fa = (await d3(page)).frames; await page.waitForTimeout(1000);
-  check((await d3(page)).frames - fa <= 1, "Außerhalb des Bildes ruht die Darstellung");
+  { const d = await d3(page); check(d.frames - fa === 0, `Außerhalb des Bildes ruht die Darstellung (${d.frames - fa} Bilder, sichtbar=${d.visible}, scrollY=${await page.evaluate(() => scrollY)})`); }
   await scrollToEl(page, "#model-stage"); await page.waitForTimeout(300);
   await page.locator("#reset-model").click();
   await until(page, () => { const d = document.querySelector("#model-stage").debug3d(); return Math.abs(d.radius - 12.4) < 0.3 && d.explode < 0.02; });
@@ -580,6 +583,118 @@ for (const p of ["impressum.html", "datenschutz.html"]) {
   check(res.ok(), `${p} erreichbar`);
   check((await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)) <= 0, `${p}: kein horizontales Scrollen`);
   await ctx.close();
+}
+
+
+console.log("Designsystem: Fokus, Hauptaktion, Wege zur Anfrage");
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
+  const page = await ctx.newPage();
+  await page.goto(BASE + "/index.html", { waitUntil: "networkidle" });
+  const res = await page.evaluate(() => {
+    const parse = (c) => { const m = c.match(/[\d.]+/g).map(Number); const k = c.startsWith("color(") ? 255 : 1; return [m[0] * k, m[1] * k, m[2] * k]; };
+    const lum = (rgb) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; const [r, g, b] = rgb.map(f); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return +((x + 0.05) / (y + 0.05)).toFixed(2); };
+    const css = (sel, prop) => getComputedStyle(document.querySelector(sel)).getPropertyValue(prop).trim();
+    const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const btn = document.querySelector(".hero-actions .btn-primary");
+    return {
+      cta: ratio(parse(getComputedStyle(btn).color), parse(getComputedStyle(btn).backgroundColor)),
+      ringLight: ratio(hex(css(".request", "--focus")), parse(getComputedStyle(document.querySelector(".request")).backgroundColor)),
+      ringNight: ratio(hex(css(".night", "--focus")), parse(getComputedStyle(document.querySelector(".night")).backgroundColor)),
+      ringFooter: ratio(hex(css(".site-footer", "--focus")), parse(getComputedStyle(document.querySelector(".site-footer")).backgroundColor)),
+      ctas: [...document.querySelectorAll('a[href="#anfrage"]')].length,
+    };
+  });
+  check(res.cta >= 4.5, `Hauptaktion: Text auf Ocker ${res.cta}:1`);
+  check(res.ringLight >= 3, `Fokusring auf heller Fläche ${res.ringLight}:1`);
+  check(res.ringNight >= 3, `Fokusring auf Kieferngrün (Ablauf) ${res.ringNight}:1`);
+  check(res.ringFooter >= 3, `Fokusring in der Fußzeile ${res.ringFooter}:1`);
+  check(res.ctas >= 6, `Wege zur Anfrage: ${res.ctas} Verweise (Kopf, Hero, Werkbank, Ablauf, Messen, mobil)`);
+  // Tab bis zu einem Knopf der Werkbank: Fokus sichtbar und nicht von der Kopfzeile verdeckt
+  await page.locator("#reset-model").focus();
+  const f = await page.evaluate(() => { const a = document.activeElement, r = a.getBoundingClientRect(), h = document.querySelector(".site-header").getBoundingClientRect(); const cs = getComputedStyle(a); return { outline: cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) >= 2, covered: r.top < h.bottom && !document.querySelector(".site-header").classList.contains("is-tucked") && r.bottom > 0 && r.top < h.bottom - 2 }; });
+  check(f.outline && !f.covered, "Fokus auf Werkbank-Knopf sichtbar und nicht verdeckt");
+  await ctx.close();
+}
+
+console.log("3D: Blickwinkel (WebGL)");
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  await page.addInitScript(() => { window.CAMPERTEIL_3D = { adaptive: false }; });
+  await page.goto(BASE + "/index.html");
+  await scrollToEl(page, "#model-stage");
+  await until(page, () => document.querySelector("#model-stage").dataset.ready === "webgl");
+  await page.waitForTimeout(2200);
+  await page.locator('[data-view="vorne"]').click();
+  check(await until(page, () => Math.abs(document.querySelector("#model-stage").debug3d().theta) < 0.05), "Blickwinkel „Vorne“");
+  check((await page.locator('[data-view="vorne"]').getAttribute("aria-pressed")) === "true", "Blickwinkel meldet Zustand");
+  await page.locator('[data-view="seite"]').click();
+  check(await until(page, () => Math.abs(document.querySelector("#model-stage").debug3d().theta - 1.52) < 0.05), "Blickwinkel „Seite“");
+  await page.screenshot({ path: join(OUT, "3d-blick-seite.png"), clip: await page.locator("#model-stage").boundingBox() });
+  const box = await page.locator("#part-canvas").boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2, { steps: 4 }); await page.mouse.up();
+  check((await page.locator('[aria-pressed="true"][data-view]').count()) === 0, "Selbst drehen hebt den festen Blickwinkel auf");
+  await page.locator("#reset-model").click();
+  check(await until(page, () => Math.abs(document.querySelector("#model-stage").debug3d().theta - 0.52) < 0.05), "Zurücksetzen führt zu „Schräg“");
+  check((await page.locator('[data-view="schraeg"]').getAttribute("aria-pressed")) === "true", "„Schräg“ wieder als aktiv markiert");
+  await ctx.close();
+}
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  await page.addInitScript(() => { const o = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (t, ...r) { return /webgl/.test(t) ? null : o.call(this, t, ...r); }; });
+  await page.goto(BASE + "/index.html");
+  await scrollToEl(page, "#model-stage");
+  await until(page, () => document.querySelector("#model-stage").dataset.ready === "software3d");
+  await page.waitForTimeout(1800);
+  await page.locator('[data-view="vorne"]').click();
+  check(await until(page, () => Math.abs(document.querySelector("#model-stage").debug3d().yaw) < 0.05), "Canvas-Ansicht: Blickwinkel „Vorne“");
+  await ctx.close();
+}
+
+console.log("Anfrage: Browser-Zurück");
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  await page.goto(BASE + "/index.html#anfrage");
+  const step = () => page.evaluate(() => document.querySelector(".step:not([hidden])").dataset.step);
+  await page.setInputFiles("#photos", [files.a]);
+  await page.click("[data-next]");
+  await page.fill("#make", "Knaus"); await page.fill("#model", "Sport 500"); await page.fill("#year", "1988");
+  await page.click("[data-next]");
+  check((await step()) === "3", "Schritt 3 erreicht");
+  await page.goBack();
+  check(await until(page, () => document.querySelector(".step:not([hidden])").dataset.step === "2"), "Browser-Zurück zeigt Schritt 2 statt die Seite zu verlassen");
+  check((await page.inputValue("#model")) === "Sport 500", "Eingaben bleiben dabei erhalten");
+  await page.goBack();
+  check(await until(page, () => document.querySelector(".step:not([hidden])").dataset.step === "1"), "Noch einmal zurück: Schritt 1, Foto noch da");
+  check((await page.locator(".thumb").count()) === 1, "Foto bleibt ausgewählt");
+  await page.goForward();
+  check(await until(page, () => document.querySelector(".step:not([hidden])").dataset.step === "2"), "Browser-Vorwärts: Schritt 2");
+  await ctx.close();
+}
+
+console.log("Unterseiten im Designsystem");
+for (const [w, h] of [[320, 640], [1440, 900]]) {
+  for (const p of ["nachweise.html", "impressum.html", "datenschutz.html"]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: w < 500 });
+    const page = await ctx.newPage();
+    const errors = errorsOf(page);
+    await page.goto(`${BASE}/${p}`, { waitUntil: "networkidle" });
+    const r = await page.evaluate(() => ({
+      xp: [...document.styleSheets].some((s) => (s.href || "").includes("experience.css")),
+      bg: getComputedStyle(document.body).backgroundColor,
+      headerBottom: document.querySelector(".site-header").getBoundingClientRect().bottom,
+      h1Top: document.querySelector("h1").getBoundingClientRect().top,
+      overflow: document.documentElement.scrollWidth - innerWidth,
+      imgs: [...document.querySelectorAll("main img")].every((i) => i.complete && i.naturalWidth > 0 && Math.abs(i.getBoundingClientRect().width / i.getBoundingClientRect().height - 16 / 9) < 0.05),
+    }));
+    check(r.xp && r.bg === "rgb(243, 240, 230)" && r.h1Top > r.headerBottom && r.overflow <= 0 && r.imgs && errors.length === 0, `${p} bei ${w}px: gleiche Flächen und Kopfzeile, nichts verdeckt, kein Überlauf`);
+    if (p === "nachweise.html") await page.screenshot({ path: join(OUT, `nachweise-${w}.png`), fullPage: true });
+    await ctx.close();
+  }
 }
 
 await browser.close();

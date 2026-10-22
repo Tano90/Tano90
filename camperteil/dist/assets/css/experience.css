@@ -6,7 +6,7 @@
   --paper: #f3f0e6;
   --sheet: #e9e7dd;
   --ink: #1f342b;
-  --ink-2: #5d675e;       /* dunkler als zuvor: 5,6:1 auf Creme */
+  --ink-2: #5d675e;       /* dunkler als zuvor: 5,2:1 auf Creme */
   --rule: #cfd2c5;
   --ochre: #d1b96f;
   --ochre-ink: #6f5822;   /* 6,1:1 auf Creme */
@@ -24,7 +24,56 @@
   --ease-out: cubic-bezier(.2, .7, .2, 1);
   --t-label: 0.6875rem;   /* 11 px: kleinste Schrift auf der Seite */
   color-scheme: light;
+
+  /* ---------- Designsystem (Dokumentation: design-system/camperteil/MASTER.md) ----------
+     Semantische Rollen zeigen auf die bestehenden Markenfarben. Komponenten nutzen die Rollen, nicht die Rohwerte. */
+  --color-background: var(--paper);
+  --color-surface: #f8f6ec;
+  --color-surface-sunken: #e7e6da;
+  --color-foreground: var(--ink);
+  --color-muted-foreground: var(--ink-2);
+  --color-primary: var(--pine);
+  --color-on-primary: var(--cream-on-pine);
+  --color-accent: var(--ochre);
+  --color-on-accent: var(--on-ochre);
+  --color-accent-hover: #e0cc8f;
+  --color-accent-text: var(--ochre-ink);
+  --color-border: var(--rule);
+  --color-border-strong: #bfc3b2;
+  --color-ring: #1f5fbf;
+  --color-ring-on-dark: #e6d8ae;
+  --color-destructive: var(--error);
+  --color-destructive-surface: var(--error-bg);
+  --color-success: var(--ok);
+
+  /* Abstände: 4-px-Raster, für eine ruhige Marketingseite eher großzügig */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px;
+  --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px; --space-10: 128px;
+
+  /* Typografieskala */
+  --text-label: var(--t-label);                         /* 11 px, Mono, Versalien */
+  --text-sm: 0.8125rem;                                 /* 13 px, Hinweise */
+  --text-body: 1rem;                                    /* 16 px, Fließtext und Eingaben */
+  --text-lead: 1.0625rem;                               /* 17 px, Einleitungen */
+  --text-h4: 1.125rem;
+  --text-h3: clamp(1.4rem, 1.1rem + 1.2vw, 1.85rem);
+  --text-h2: clamp(2rem, 1.2rem + 2.6vw, 3.4rem);
+  --text-display: clamp(3rem, 1.6rem + 6vw, 7rem);
+
+  /* Bewegung: Eintreten bremst ab, Austreten beschleunigt und ist kürzer (etwa zwei Drittel) */
+  --dur-press: 120ms;
+  --dur-fast: 180ms;
+  --dur-base: 280ms;
+  --dur-slow: 450ms;
+  --dur-film: 1400ms;
+  --ease-enter: cubic-bezier(.2, .7, .2, 1);
+  --ease-exit: cubic-bezier(.4, 0, 1, 1);
+  --focus: var(--color-ring);
 }
+/* Fokus auf dunklen Flächen: heller Ring statt Blau, damit er mindestens 3:1 vom Grund abhebt */
+.film-hero, .journey-film, .night, .model-stage, .site-footer, .site-header, .nav-list.open { --focus: var(--color-ring-on-dark); }
+.site-header.is-solid, .sub .site-header { --focus: var(--color-ring); }
+@media (min-width: 881px) { .site-header.is-solid .nav-list { --focus: var(--color-ring); } }
 body { background: var(--paper); }
 body::before { display: none; }
 h1, h2, h3 { text-wrap: balance; }
@@ -347,3 +396,116 @@ p, li, dd { text-wrap: pretty; }
   .film-video, .site-header, .reveal, .btn, .part-labels span { transition: none !important; }
   .stage-loading span { animation: none; }
 }
+
+
+/* =====================================================================
+   Designsystem: Komponenten und Zustände (Revision „UI UX Pro Max“)
+   ===================================================================== */
+
+/* Fokus nie verdeckt: feste Kopfzeile oben, mobile Schaltfläche unten */
+html { scroll-padding-top: calc(var(--header-h) + var(--space-4)); }
+@media (max-width: 720px) { html { scroll-padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); } }
+
+/* Knöpfe: Ruhe, Hover, Drücken, Fokus, gesperrt */
+.btn { cursor: pointer; transition: transform var(--dur-fast) var(--ease-enter), background-color var(--dur-fast) ease, border-color var(--dur-fast) ease, color var(--dur-fast) ease; }
+.btn-primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent); }
+.btn-primary:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+.btn:active { transform: translateY(1px) scale(.99); transition-duration: var(--dur-press); }
+.btn-quiet { border-color: var(--color-border-strong); }
+.btn-quiet:hover { border-color: var(--color-foreground); background: rgba(31, 52, 43, .05); }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; transform: none; }
+.material, .stage-tools button, .film-toggle, .link-btn, .sum-edit, .progress button:not(:disabled), summary, .parts-list tbody tr { cursor: pointer; }
+.material:active, .stage-tools button:active, .film-toggle:active { transform: scale(.97); transition: transform var(--dur-press) ease; }
+.stage-tools { gap: var(--space-2); }          /* mindestens 8 px zwischen Tippflächen */
+.model-choices { gap: var(--space-2); }
+
+/* Kopfzeile: Austreten schneller als Eintreten */
+.site-header { transition: transform var(--dur-slow) var(--ease-enter), background-color var(--dur-base) ease, color var(--dur-base) ease, border-color var(--dur-base) ease; }
+.site-header.is-tucked { transition: transform var(--dur-base) var(--ease-exit); }
+@media (max-width: 720px) {
+  .mobile-cta { transition: transform var(--dur-slow) var(--ease-enter); }
+  .mobile-cta.is-away, .mobile-cta.is-suppressed { transition: transform var(--dur-base) var(--ease-exit); }
+}
+
+/* Weg zur Anfrage: Handlungsaufforderung am Ende von „Ablauf“ und „Messen“ */
+.section-cta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4) var(--space-5); margin-top: var(--space-7); }
+.section-cta p { margin: 0; font-size: var(--text-sm); color: var(--color-muted-foreground); max-width: 40ch; }
+.night .section-cta p { color: var(--night-dim); }
+.measure-cta { grid-column: 1 / -1; margin-top: 0; }
+
+/* Anfrage: Leitfaden links, Formular rechts; auf dem Handy untereinander */
+.request-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
+.request-aside { min-width: 0; }
+.request-aside .limit-note { margin-bottom: var(--space-5); }
+.ready-list { border-top: 2px solid var(--color-foreground); padding-top: var(--space-4); }
+.ready-list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.ready-list li { position: relative; padding-left: var(--space-6); font-size: .9375rem; line-height: 1.5; color: var(--color-muted-foreground); }
+.ready-list li b { color: var(--color-foreground); font-weight: 600; }
+.ready-list li::before { content: ""; position: absolute; left: 0; top: .2em; width: 16px; height: 16px; border: 1.5px solid var(--color-foreground); border-radius: 50%; background: radial-gradient(circle, var(--color-accent) 0 3px, transparent 3.5px); }
+.request .wizard { max-width: none; background: var(--color-surface); }
+@media (min-width: 1000px) {
+  .request-grid { grid-template-columns: minmax(0, .78fr) minmax(0, 1.5fr); gap: var(--space-8); align-items: start; }
+  .request-aside { position: sticky; top: calc(var(--header-h) + var(--space-5)); }
+  .request-head { margin-bottom: var(--space-5); }
+}
+@media (max-width: 999px) { .ready-list { display: none; } }   /* auf schmalen Bildschirmen steht dieselbe Information in den Schritten */
+
+/* Formularschritte: einheitlicher Rhythmus */
+.step-title { font-family: var(--f-display); font-stretch: 100%; font-weight: 600; letter-spacing: -.02em; font-size: var(--text-h3); }
+.step > .hint { margin-bottom: var(--space-5); }
+.fields { gap: var(--space-5) var(--space-5); margin-top: var(--space-5); }
+.field > label, .field .label { margin-bottom: var(--space-2); }
+input[type="text"], input[type="email"], input[type="tel"], select, textarea { font-size: var(--text-body); background: var(--color-background); border-color: #a9b0a3; transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease; }
+input:hover:not(:focus), select:hover:not(:focus), textarea:hover:not(:focus) { border-color: var(--color-muted-foreground); }
+input:focus, select:focus, textarea:focus { border-color: var(--color-foreground); box-shadow: 0 0 0 3px rgba(31, 95, 191, .35); }
+.progress { margin-bottom: var(--space-6); }
+.progress button { min-height: 44px; transition: color var(--dur-fast) ease, border-color var(--dur-fast) ease; }
+.progress button:not(:disabled):hover { color: var(--color-foreground); }
+.progress li.is-current .p-no { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent); }
+.progress li.is-done .p-no { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-on-primary); }
+.wizard-nav { margin-top: var(--space-6); padding-top: var(--space-5); }
+.error-summary { border-radius: var(--radius); }
+.error-summary a { text-underline-offset: .18em; }
+.sum-edit { min-height: 44px; display: inline-flex; align-items: center; color: var(--color-foreground); text-decoration-color: var(--color-accent); text-decoration-thickness: 2px; }
+.send-box { background: var(--color-background); border-color: var(--color-border-strong); }
+.limit-note { border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface)); }
+@media (max-width: 640px) {
+  .step-kicker { display: none; }  /* die Fortschrittszeile oben nennt den Schritt bereits */
+  .request .wizard { padding: var(--space-5) var(--space-4); }
+}
+
+/* 3D-Blickwinkel */
+.view-choices { margin-bottom: var(--space-5); }
+.view-choices .material { padding: 0 var(--space-4); }
+
+/* Seitenwechsel zu Nachweisen, Impressum und Datenschutz: kurze Überblendung, nur wenn Bewegung erwünscht */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+  ::view-transition-old(root) { animation: vt-out var(--dur-base) var(--ease-exit) both; }
+  ::view-transition-new(root) { animation: vt-in var(--dur-slow) var(--ease-enter) both; }
+}
+@keyframes vt-out { to { opacity: 0; } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* Unterseiten: gleiche Kopf- und Fußzeile, gleiche Flächen und Schriftstufen */
+.sub .site-header { position: sticky; top: 0; background: rgba(243, 240, 230, .96); color: var(--color-foreground); border-bottom-color: var(--color-border); }
+.sub .site-header .btn { min-height: 44px; }
+.legal { padding-block: var(--space-8) var(--space-9); }
+.legal .wrap > * { max-width: 46rem; }
+.legal h1 { font-size: var(--text-h2); margin-bottom: var(--space-5); }
+.legal h2 { font-family: var(--f-display); font-stretch: 100%; font-weight: 600; letter-spacing: -.015em; font-size: 1.35rem; margin: var(--space-7) 0 var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--color-border); }
+.legal p, .legal li { color: var(--color-muted-foreground); font-size: var(--text-body); line-height: 1.7; }
+.legal ul { padding-left: 1.2em; display: grid; gap: var(--space-2); }
+.legal a { color: var(--color-foreground); text-decoration-color: var(--color-accent); text-decoration-thickness: 2px; }
+.legal .lead { font-size: var(--text-lead); color: var(--color-foreground); }
+.media-list { list-style: none; padding: 0 !important; display: grid; gap: var(--space-5) !important; }
+.media-item { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+.media-item img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid var(--color-border-strong); display: block; }
+.media-item h3 { margin: 0 0 var(--space-1); font-size: var(--text-h4); font-weight: 600; color: var(--color-foreground); }
+.media-item p { margin: 0; }
+@media (max-width: 560px) { .media-item { grid-template-columns: minmax(0, 1fr); } .legal { padding-block: var(--space-7) var(--space-8); } }
+.media-item img { height: auto; }
+/* Kontrollkästchen bleiben neben ihrem Text, auch als direktes Kind eines Feldes */
+.field > label.check { flex-wrap: nowrap; display: flex; margin-bottom: 0; font-weight: 400; }
+.field > label.check span { flex: 1 1 auto; min-width: 0; }
+.wizard-nav .btn { padding: 0 var(--space-4); }

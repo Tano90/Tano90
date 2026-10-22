@@ -328,6 +328,14 @@
   function goTo(n, opts) {
     opts = opts || {};
     n = Math.max(1, Math.min(TOTAL, n));
+    // Browser-Zurück soll im Formular den vorigen Schritt zeigen, statt die Seite zu verlassen.
+    // Vorwärts (Weiter, Ändern, Schrittleiste) legt einen Verlaufseintrag an; „Zurück“ im Formular ersetzt ihn nur.
+    if (!opts.silent && !opts.fromHistory && n !== state.step && window.history && history.pushState) {
+      try {
+        if (opts.replace) history.replaceState({ ctStep: n }, "");
+        else history.pushState({ ctStep: n }, "");
+      } catch (e) { /* Verlauf nicht verfügbar: Formular funktioniert trotzdem */ }
+    }
     errorSummary.hidden = true;
     steps.forEach(function (s, i) {
       var on = i === n - 1;
@@ -371,7 +379,11 @@
     goTo(target);
   }
   nextBtn.addEventListener("click", function () { tryGoTo(state.step + 1); });
-  prevBtn.addEventListener("click", function () { goTo(state.step - 1); });
+  prevBtn.addEventListener("click", function () { goTo(state.step - 1, { replace: true }); });
+  window.addEventListener("popstate", function (e) {
+    var target = e.state && e.state.ctStep ? e.state.ctStep : 1;
+    if (target !== state.step) goTo(Math.min(target, state.maxReached), { fromHistory: true });
+  });
   $all("[data-goto]", form).forEach(function (b) {
     b.addEventListener("click", function () { tryGoTo(+b.getAttribute("data-goto")); });
   });
@@ -606,7 +618,7 @@
     state.maxReached = 1;
     confirmBox.hidden = true;
     draftState.textContent = "Alle Eingaben gelöscht.";
-    goTo(1);
+    goTo(1, { replace: true });
   });
 
   loadDraft();
@@ -614,4 +626,5 @@
   renderThumbs();
   $("#photos-count").textContent = "";
   goTo(1, { silent: true });
+  try { if (window.history && history.replaceState) history.replaceState({ ctStep: 1 }, ""); } catch (e) { /* egal */ }
 })();

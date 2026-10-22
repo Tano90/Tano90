@@ -1,5 +1,17 @@
 # Prüfstatus und offene Punkte
 
+## Revision „Designsystem mit UI UX Pro Max“ (22.10.2026)
+
+Tatsächlich durchgeführt:
+- Skill `ui-ux-pro-max` 2.15.0 über die Claude-Code-CLI installiert (Marketplace-Weg), `claude plugin list` zeigt ihn als aktiviert. SKILL.md vollständig gelesen, Python 3.13 vorhanden, vier Abfragearten ausgeführt; Rohausgaben in `design-system/camperteil/skill-abfragen/`, Bewertung in `design-system/camperteil/MASTER.md`.
+- `tests/flow.mjs` (Chromium 141, SwiftShader): vier vollständige Läufe. Drei ohne Fehler (195 von 195), einer mit 194 von 195; der Fehlschlag („Langsames Drehen“) war eine zu kurze feste Wartezeit bei SwiftShader-Bildraten und ist durch Warten auf die Bewegung ersetzt. Neu geprüft: Kontrast der Hauptaktion, Fokusringe auf hellen und dunklen Flächen, Fokus nicht verdeckt, Wege zur Anfrage, 3D-Blickwinkel (WebGL und Canvas), Browser-Zurück/-Vorwärts im Formular, Unterseiten bei 320 und 1440 px.
+- Sichtprüfung aller Formularschritte (390 und 1440 px), Nachweisseite (390 und 1440 px), Werkbank mit Blickwinkeln, Zwischen-CTA. Gefunden und behoben: verzerrte Vorschaubilder auf der Nachweisseite, umbrechendes Kontrollkästchen bei den Maßen, doppelte Schrittanzeige auf dem Handy, blauer Fokusring auf Kieferngrün kaum sichtbar, mobile Schaltfläche überdeckte den Rand der 3D-Bühne.
+- Lighthouse 12.8.2 mobil, drei Läufe (Labor, simulierte Drosselung): Leistung 0,94 bis 0,95, LCP 2,7 bis 2,9 s, CLS 0, TBT 0 ms, 480 KiB; Barrierefreiheit, Best Practices, SEO je 1. Nachweisseite: Leistung 0,95, Barrierefreiheit 1, Best Practices 1, SEO 0,91 (danach Meta-Beschreibung ergänzt, nicht erneut gemessen). Ziel LCP ≤ 2,5 s im Labor weiter knapp verfehlt.
+
+Weiter offen: wie unten (echte Geräte, GPU, Safari/Firefox, H.264 im Browser, Rechtstexte, Versandweg, Partner). Die Seitenüberblendung (`@view-transition`) wirkt nur in Browsern, die sie unterstützen; geprüft wurde nur, dass sie nichts stört.
+
+---
+
 Stand: 22.10.2026, Revision „Cinematik, 3D, Handy“. Alle Angaben beziehen sich auf den Code in diesem Ordner.
 
 ## Tatsächlich durchgeführt
