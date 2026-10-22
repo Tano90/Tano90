@@ -18,7 +18,7 @@ const shot = async (locator, file, pad = 0) => {
 };
 // 1 article hint: the first hint of the overview
 await open("overview");
-await shot(p.locator(".v6-action").first(), "detail-hint.png", 12);
+await shot(p.locator(".v6-action").first(), "detail-hint.png", 4);
 // 2 recipe calculation: input panel and result side by side
 await open("calculator");
 const panels = p.locator("#main .panel");

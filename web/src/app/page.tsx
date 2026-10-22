@@ -225,11 +225,11 @@ export default function LandingPage() {
           <p className="text-sm font-bold tracking-wide text-accent">Im Detail</p>
           <h2 id="closeups" className="font-display mt-3 max-w-3xl text-[2rem] leading-tight lg:text-[2.5rem]">So sehen die Ansichten aus der Nähe aus.</h2>
           <p className="mt-4 max-w-2xl text-base text-text-muted">Ausschnitte aus der Suite mit ihren Beispieldaten.</p>
-          <div className="mt-10 grid gap-8 lg:grid-cols-2">
+          <div className="mt-10 flex flex-col gap-12">
             {DETAILS.map((d) => (
-              <figure key={d.title} className={d.wide ? "lg:col-span-2" : ""}>
+              <figure key={d.title} className={d.wide ? "" : "mx-auto w-full max-w-[1000px]"}>
                 <div className="overflow-hidden rounded-[12px] border border-border bg-white">
-                  <Image src={d.shot} alt={d.alt} placeholder="blur" className="h-auto w-full" sizes={d.wide ? "(min-width: 1024px) 1200px, 100vw" : "(min-width: 1024px) 600px, 100vw"} />
+                  <Image src={d.shot} alt={d.alt} placeholder="blur" className="h-auto w-full" sizes="(min-width: 1024px) 1200px, 100vw" />
                 </div>
                 <figcaption className="mt-3"><span className="font-semibold">{d.title}.</span> <span className="text-text-muted">{d.text}</span></figcaption>
               </figure>

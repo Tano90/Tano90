@@ -48,8 +48,10 @@ Nur Darstellung. Nicht geändert: Funktionen, Berechnungen, Daten, Rollen, Preis
   - Unit 160/160.
   - vitest 60 bestanden, 34 übersprungen.
   - tsc ohne Fehler.
-  - Suite- und Startseiten-e2e 99/99.
-  - Volltest: siehe Commit.
+  - Suite- und Startseiten-e2e 99/99, nach den letzten Korrekturen 32/32.
+  - Volltest (23:15–23:30 UTC): 312 bestanden, 3 fehlgeschlagen. Keiner der drei betrifft geänderte Teile:
+    - F02-E4 (Rezept per Tastatur) ist unter Last gekippt und besteht im Einzellauf 12/12.
+    - F06-H2 und H-E2 sind die bekannten Tagesgrenzen-Fälle (Lauf zwischen 22 und 24 Uhr UTC).
 - Preise und Rechenlogik: `pricing.ts`, `core.js` und `v04core.js` sind unverändert. Die Preis-Tests sind grün.
 - Kein echtes Gerät, keine Prüfung mit Textvergrößerung über Systemeinstellungen.
 

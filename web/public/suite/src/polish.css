@@ -532,3 +532,7 @@ body {
 .data-table .micro {
   color: var(--ink-soft);
 }
+.v6-action-line,
+.v6-action-head {
+  text-wrap: pretty;
+}
