@@ -88,11 +88,10 @@
     },
     writableKeys() {
       const x = {
-        // tasks/parStock: v1.1 Team & Aufgaben and Mindestbestände (SQL 006 allows the same keys)
-        service_staff: ["funnel", "tasks"],
-        service_lead: ["funnel", "sales", "dailySales", "tasks"],
-        sales: ["funnel", "sales", "dailySales", "market", "marketDiscovered", "marketLastScan", "tasks"],
-        kitchen_staff: ["inventoryCounts", "tasks"],
+        service_staff: ["funnel"],
+        service_lead: ["funnel", "sales", "dailySales"],
+        sales: ["funnel", "sales", "dailySales", "market", "marketDiscovered", "marketLastScan"],
+        kitchen_staff: ["inventoryCounts"],
         kitchen_lead: [
           "items",
           "ingredients",
@@ -104,8 +103,6 @@
           "purchaseOrders",
           "dailySales",
           "v04Forecast",
-          "tasks",
-          "parStock",
         ],
       };
       return x[role] || [];
