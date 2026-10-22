@@ -4,7 +4,9 @@
  *  water, upgrade, coffee and after-glow lines so that all six topics have example values. */
 import { norm } from "./core.mjs";
 
-export const EMPTY_INTELLIGENCE = () => ({ pos: [], tags: [], targets: [], markets: [], training: [], tasks: [], stock: [] });
+// intelligence: finance data of the v1.1 modules (as in RC1). tasks/parStock are separate top-level keys because
+// kitchen and service roles may read and write them (RC1: glb_v1_tasks, glb_v1_inventory).
+export const EMPTY_INTELLIGENCE = () => ({ pos: [], tags: [], targets: [], markets: [], training: [] });
 
 // [day, check, guests, article, quantity, gross price, net cost or null, vat, topic]
 const CHECKS = [
@@ -48,6 +50,8 @@ const TASKS = [
 export function initializeIntelligence(data, mode = "demo") {
   data.intelligence ??= EMPTY_INTELLIGENCE();
   for (const [k, v] of Object.entries(EMPTY_INTELLIGENCE())) data.intelligence[k] ??= v;
+  if (!Array.isArray(data.tasks)) data.tasks = [];
+  if (!Array.isArray(data.parStock)) data.parStock = [];
   if (mode !== "demo" || data.intelligence.demoCreated) return data;
   const products = data.items || data.products || [];
   const byName = new Map(products.map((p) => [norm(p.name), p]));
@@ -76,8 +80,8 @@ export function initializeIntelligence(data, mode = "demo") {
         line_type: "sale",
       }),
     );
-  if (!data.intelligence.stock.length)
-    data.intelligence.stock = STOCK.map(([name, unit, stock, reorder_point, par_level, supplier], i) => ({
+  if (!data.parStock.length)
+    data.parStock = STOCK.map(([name, unit, stock, reorder_point, par_level, supplier], i) => ({
       id: `demo-stock-${i}`,
       name,
       unit,
@@ -87,8 +91,8 @@ export function initializeIntelligence(data, mode = "demo") {
       supplier,
       version: 1,
     }));
-  if (!data.intelligence.tasks.length)
-    data.intelligence.tasks = TASKS.map(([title, priority, status, due_on], i) => ({
+  if (!data.tasks.length)
+    data.tasks = TASKS.map(([title, priority, status, due_on], i) => ({
       id: `demo-task-${i}`,
       title,
       priority,

@@ -142,6 +142,8 @@
     }
   }
 
+  // Extensions (v1.1 modules, src/v11/ui.mjs) register a hook that runs after every data load or reset.
+  const EXT_ENSURE = [];
   let S = load(),
     VIEW = (location.hash || "#overview").slice(1),
     FILTER = "",
@@ -920,7 +922,11 @@
       const d = parseSalesCSV(text);
       if (!d.rows.length) throw Error("Keine gültigen Verkaufsdaten gefunden." + (d.errors[0] ? " " + d.errors[0] : ""));
       const importId = uid();
-      const rows = d.rows.map((r) => ({ ...r, importId }));
+      // v1.1: cost and VAT of the article at import time stay with each line (snapshot); a missing cost stays null
+      const rows = d.rows.map((r) => {
+        const p = stockOf(r.productId);
+        return { ...r, importId, unitCostNet: Number(p?.costNet) > 0 ? Number(p.costNet) : null, vatPercent: Number(p?.vat) || 7 };
+      });
       const keyOf = (r) => `${r.productId}|${r.outletId}|${r.month}`;
       // Quantities from the article import have no month; together with monthly lines they would count twice.
       const legacy = (p) => p.month === "undated" && rows.some((r) => r.productId === p.productId);
@@ -2077,7 +2083,7 @@
         break;
       case "export-json":
         downloadFile(
-          JSON.stringify({ ...S, exportedAt: new Date().toISOString() }, null, 2),
+          JSON.stringify({ ...S, ...(window.GLBSuite?.backupExtras?.() || {}), exportedAt: new Date().toISOString() }, null, 2),
           "GLB_AI_Suite_Backup_" + new Date().toISOString().slice(0, 10) + ".json",
           "application/json;charset=utf-8",
         );
@@ -4353,6 +4359,7 @@
             if (!e.validFrom && e.source === "Bestand ohne Datum (Migration)")
               Object.assign(e, { validFrom: first + "-01", source: "Beispieldaten" });
     }
+    for (const fn of EXT_ENSURE) fn(S);
   }
   ensureV06();
   // "history": each month with its cost state; "current": today's costs as a named scenario.
@@ -5546,6 +5553,38 @@
   // ===== End GLB v0.8 extensions =====
 
   // Controlled entry point for the authenticated cloud bridge. Local Browser storage is never used in Cloud mode.
+  // Interface for extension modules: same data, same storage and rendering, no second copy of the app.
+  window.GLBSuite = {
+    get S() {
+      return S;
+    },
+    get view() {
+      return VIEW;
+    },
+    registerView(id, label, fn) {
+      handlers[id] = fn;
+      labels[id] = label;
+      if (VIEW === id || location.hash === "#" + id) {
+        VIEW = id;
+        render();
+      }
+    },
+    registerEnsure(fn) {
+      EXT_ENSURE.push(fn);
+      fn(S);
+    },
+    persist,
+    markEdited,
+    render: () => render(),
+    navigate: (v) => navigate(v),
+    toast: (m, t) => toast(m, t),
+    closeModal: () => closeModal(),
+    download: (contents, name, mime) => downloadFile(contents, name, mime),
+    ui: { esc, euro, number, pct, I, pageHeader, panelHeader, empty, demoNotice, periodName, selectOptions, dateDE: (d) => v6DateDE(d) },
+    costAt: (p, month) => C.costAt(p, month),
+    recordCost: (p, opts) => C.recordCost(p, opts),
+    uid,
+  };
   window.GLBAppSync = {
     snapshot: () => JSON.parse(JSON.stringify(S)),
     hydrate: (source) => {

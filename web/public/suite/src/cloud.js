@@ -209,6 +209,8 @@
       side("GLB Cloud", `${chosen.organization.name} · ${window.GLBAccess?.label(currentRole) || currentRole}`);
       document.body.classList.toggle("glb-viewer", currentRole === "viewer");
       if (!data.data || !Array.isArray(data.data.items)) changed(window.GLBAppSync.snapshot());
+      // v1.1 modules load their own tables (POS lines, training) for exactly this organization and role
+      window.dispatchEvent(new CustomEvent("glb:cloud-open", { detail: { org: id, role: currentRole } }));
     } catch (e) {
       currentOrg = null;
       workspaceView("Betrieb konnte nicht geladen werden: " + errorText(e));
@@ -360,6 +362,9 @@
     currentRole = null;
     window.GLBAccess?.setRole(null);
     await db.auth.signOut();
+    // nothing of the previous organisation stays in memory or on screen
+    window.dispatchEvent(new CustomEvent("glb:cloud-close"));
+    window.GLBAppSync?.startBlank?.("Nicht angemeldet");
     authView();
   }
   async function chooseDifferent() {
@@ -373,6 +378,8 @@
     currentOrg = null;
     ready = false;
     window.GLBAccess?.setRole(null);
+    window.dispatchEvent(new CustomEvent("glb:cloud-close"));
+    window.GLBAppSync?.startBlank?.("Kein Betrieb gewählt");
     await loadWorkspaces();
   }
   async function resetPassword() {
@@ -434,6 +441,25 @@
     }
   }
   window.GLBCloudBridge = { changed };
+  // Read-only context for extension modules (v1.1 tables are protected by RLS on the server).
+  window.GLBCloudContext = {
+    get db() {
+      return db;
+    },
+    get org() {
+      return ready && currentOrg ? currentOrg.organization_id : null;
+    },
+    get role() {
+      return ready && currentOrg ? currentRole : null;
+    },
+    get userId() {
+      return session?.user?.id || null;
+    },
+    async accessToken() {
+      const { data } = await db.auth.getSession();
+      return data.session?.access_token || null;
+    },
+  };
   document.addEventListener("submit", (e) => {
     if (e.target.id === "cloud-auth-form") {
       e.preventDefault();

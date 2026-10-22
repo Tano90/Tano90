@@ -100,7 +100,37 @@
     window.GLBAppSync?.rerender?.();
     updateActive();
   }
-  window.GLB08UI = { activate, renderNav, updateActive };
+  // Extension modules add their views to an existing group (or a new one before MANAGEMENT); labels must stay unique.
+  function addLinks(title, links) {
+    let group = NAV.find((g) => g.title === title);
+    if (!group) {
+      group = { title, links: [] };
+      NAV.splice(
+        Math.max(
+          0,
+          NAV.findIndex((g) => g.title === "MANAGEMENT"),
+        ),
+        0,
+        group,
+      );
+    }
+    for (const link of links) {
+      const all = NAV.flatMap((g) => g.links);
+      if (all.some((x) => x[0] === link[0])) continue;
+      if (all.some((x) => x[1] === link[1])) throw new Error("Doppelte Navigationsbeschriftung: " + link[1]);
+      group.links.push(link);
+    }
+    renderNav();
+  }
+  window.GLB08UI = {
+    activate,
+    renderNav,
+    updateActive,
+    addLinks,
+    get nav() {
+      return NAV;
+    },
+  };
   document.addEventListener("click", (e) => {
     if (e.target.closest("[data-view]")) queueMicrotask(updateActive);
   });

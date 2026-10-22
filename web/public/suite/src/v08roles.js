@@ -30,21 +30,34 @@
     "import",
     "settings",
     "roadmap",
+    // v1.1 modules (Intelligence Center), see src/v11/ui.mjs
+    "v11cockpit",
+    "v11sales",
+    "v11menu",
+    "v11funnel",
+    "v11market",
+    "v11stock",
+    "v11tasks",
+    "v11training",
+    "v11legacy",
   ];
+  // Same grants as v1.1 RC1 (allowed()/ROLES in app.js and RLS in 003/005): finance views for management only,
+  // minimum stock for kitchen roles, tasks for everyone, training for everyone except read-only.
+  const TEAM = ["v11cockpit", "v11tasks", "v11training"];
   const CONFIG = {
     owner: { label: "Inhaber / System-Owner", views: ALL },
     general_manager: { label: "Geschäftsführer", views: ALL },
     restaurant_manager: { label: "Restaurantleiter", views: ALL.filter((x) => x !== "settings") },
-    service_lead: { label: "Abteilungsleitung Service", views: ["myday", "funnel"] },
+    service_lead: { label: "Abteilungsleitung Service", views: ["myday", "funnel", ...TEAM] },
     kitchen_lead: {
       label: "Abteilungsleitung Küche",
-      views: ["myday", "products", "menuimport", "recipes", "inventory", "stockledger", "orders", "purchasing"],
+      views: ["myday", "products", "menuimport", "recipes", "inventory", "stockledger", "orders", "purchasing", ...TEAM, "v11stock"],
     },
-    sales: { label: "Sales", views: ["myday", "funnel", "market"] },
-    service_staff: { label: "MA Service", views: ["myday", "funnel"] },
-    kitchen_staff: { label: "MA Küche", views: ["myday", "inventory"] },
+    sales: { label: "Sales", views: ["myday", "funnel", "market", ...TEAM] },
+    service_staff: { label: "MA Service", views: ["myday", "funnel", ...TEAM] },
+    kitchen_staff: { label: "MA Küche", views: ["myday", "inventory", ...TEAM, "v11stock"] },
     editor: { label: "Bestandsrolle: Bearbeiten", views: ALL },
-    viewer: { label: "Bestandsrolle: Lesen", views: ["myday"] },
+    viewer: { label: "Bestandsrolle: Lesen", views: ["myday", "v11cockpit", "v11tasks"] },
   };
   let role = null;
   const api = {
@@ -75,10 +88,11 @@
     },
     writableKeys() {
       const x = {
-        service_staff: ["funnel"],
-        service_lead: ["funnel", "sales", "dailySales"],
-        sales: ["funnel", "sales", "dailySales", "market", "marketDiscovered", "marketLastScan"],
-        kitchen_staff: ["inventoryCounts"],
+        // tasks/parStock: v1.1 Team & Aufgaben and Mindestbestände (SQL 006 allows the same keys)
+        service_staff: ["funnel", "tasks"],
+        service_lead: ["funnel", "sales", "dailySales", "tasks"],
+        sales: ["funnel", "sales", "dailySales", "market", "marketDiscovered", "marketLastScan", "tasks"],
+        kitchen_staff: ["inventoryCounts", "tasks"],
         kitchen_lead: [
           "items",
           "ingredients",
@@ -90,6 +104,8 @@
           "purchaseOrders",
           "dailySales",
           "v04Forecast",
+          "tasks",
+          "parStock",
         ],
       };
       return x[role] || [];

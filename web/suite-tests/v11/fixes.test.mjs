@@ -208,8 +208,8 @@ test("PositionID doppelt in einer Datei wird gemeldet", () => {
 test("Demo-Initialisierung: alle v1.1-Bereiche sofort vorhanden, bestehende Schlüssel unberührt", () => {
   const d = initializeIntelligence({ outlets, items: [{ id: "x", name: "Classic Cheeseburger" }], sales: [1] }, "demo");
   assert.deepEqual(d.sales, [1]);
-  for (const k of ["pos", "tags", "targets", "markets", "training", "tasks", "stock"]) assert.ok(Array.isArray(d.intelligence[k]), k);
-  assert.ok(d.intelligence.pos.length > 0 && d.intelligence.stock.length === 3 && d.intelligence.tasks.length === 3);
+  for (const k of ["pos", "tags", "targets", "markets", "training"]) assert.ok(Array.isArray(d.intelligence[k]), k);
+  assert.ok(d.intelligence.pos.length > 0 && d.parStock.length === 3 && d.tasks.length === 3);
   assert.equal(d.intelligence.pos[0].product_id, "x");
   // a second call does not seed twice; cloud mode never seeds
   const n = d.intelligence.pos.length;
