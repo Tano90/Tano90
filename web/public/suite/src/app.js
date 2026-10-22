@@ -2473,6 +2473,12 @@
       navigate(nav.dataset.view);
       return;
     }
+    if (e.target.closest("[data-v6-filter-toggle]")) {
+      V6_FILTER_OPEN = !V6_FILTER_OPEN;
+      render();
+      document.querySelector("[data-v6-filter-toggle]")?.focus();
+      return;
+    }
     const cf = e.target.closest("[data-cost-focus]");
     if (cf) {
       COST_FOCUS = cf.dataset.costFocus;
@@ -4777,6 +4783,7 @@
   let V6_COSTBASIS = "history";
   let V6_MONTH = "all",
     V6_OUTLET = "all",
+    V6_FILTER_OPEN = false,
     V6_CATEGORY = "all",
     V6_TAB = "performance",
     V6_METRIC = "revenue",
@@ -4917,7 +4924,10 @@
     const off = (k) => (applies.includes(k) ? "" : ' disabled aria-describedby="v6-filter-note"');
     const months = [...new Set((S.sales || []).map((x) => x.month).filter((x) => /^\d{4}-\d{2}$/.test(x)))].sort().reverse();
     const cats = [...new Set(S.items.map((p) => p.category))].sort();
-    return `<div class="v6-filter-ribbon"><div class="v6-filter-info">${I("settings")} <span>Berichtsfilter</span></div><label>Zeitraum<select id="v6-filter-month" class="select"${off("month")}>${selectOptions([["all", "Alle Monate"], ...months.map((x) => [x, periodName(x)])], V6_MONTH)}</select></label><label>Outlet<select id="v6-filter-outlet" class="select"${off("outlet")}>${selectOptions([["all", "Alle Outlets"], ...S.outlets.map((o) => [o.id, o.name])], V6_OUTLET)}</select></label><label>Warengruppe<select id="v6-filter-category" class="select"${off("category")}>${selectOptions([["all", "Alle Warengruppen"], ...cats.map((x) => [x, x])], V6_CATEGORY)}</select></label>${
+    // phones: one summary line (period and outlet always readable) that opens the full filter panel
+    const extra = [V6_CATEGORY !== "all" && applies.includes("category") ? V6_CATEGORY : "", applies.includes("month") && V6_COSTBASIS === "current" ? "Szenario: heutige Kosten" : ""].filter(Boolean);
+    const summary = `${applies.includes("month") ? (V6_MONTH === "all" ? "Alle Monate" : periodName(V6_MONTH)) : "Aktueller Stand"} · ${V6_OUTLET === "all" ? "Alle Outlets" : outletName(V6_OUTLET)}${extra.length ? " · " + extra.join(" · ") : ""}`;
+    return `<div class="v6-filter-ribbon${V6_FILTER_OPEN ? " is-open" : ""}"><div class="v6-filter-info">${I("settings")} <span>Berichtsfilter</span></div><button type="button" class="v6-filter-toggle" data-v6-filter-toggle aria-expanded="${V6_FILTER_OPEN}" aria-controls="v6-filter-fields"><span class="v6-filter-toggle-label">Filter</span><span class="v6-filter-summary">${esc(summary)}</span><span class="v6-filter-toggle-act">${V6_FILTER_OPEN ? "Schließen" : "Ändern"}</span></button><div class="v6-filter-fields" id="v6-filter-fields"><label>Zeitraum<select id="v6-filter-month" class="select"${off("month")}>${selectOptions([["all", "Alle Monate"], ...months.map((x) => [x, periodName(x)])], V6_MONTH)}</select></label><label>Outlet<select id="v6-filter-outlet" class="select"${off("outlet")}>${selectOptions([["all", "Alle Outlets"], ...S.outlets.map((o) => [o.id, o.name])], V6_OUTLET)}</select></label><label>Warengruppe<select id="v6-filter-category" class="select"${off("category")}>${selectOptions([["all", "Alle Warengruppen"], ...cats.map((x) => [x, x])], V6_CATEGORY)}</select></label>${
       applies.includes("month")
         ? `<label>Kostenbasis<select id="v6-filter-costbasis" class="select">${selectOptions(
             [
@@ -4927,7 +4937,7 @@
             V6_COSTBASIS,
           )}</select></label>`
         : ""
-    }<button class="v6-text-button" data-v6="reset">Zurücksetzen</button>${note ? `<p class="v6-filter-note" id="v6-filter-note">${esc(note)}</p>` : ""}${applies.includes("month") ? v6CostNote() : ""}</div>`;
+    }<button class="v6-text-button" data-v6="reset">Zurücksetzen</button></div>${note ? `<p class="v6-filter-note" id="v6-filter-note">${esc(note)}</p>` : ""}${applies.includes("month") ? v6CostNote() : ""}</div>`;
   }
   function v6ReportHeader(title, desc) {
     return `<div class="v6-heading"><div><div class="v6-overline">GLB INSIGHTS / REPORTING</div><h2>${esc(title)}</h2><p>${esc(desc)}</p></div><div class="v6-report-actions"><button class="btn" data-v6="save-view">${I("plus")} Ansicht speichern</button><button class="btn" data-v6="csv" title="Spalten wie bisher, Semikolon, UTF-8">${I("download")} CSV</button><button class="btn" data-v6="xlsx" title="Mit Auswahl, Zeitraum, Einheiten und Grundlage">${I("download")} Excel</button><button class="btn btn-primary" data-v6="print">${I("file")} Drucken / PDF</button></div></div>`;
@@ -5037,7 +5047,8 @@
     } catch {
       /* forecast needs complete master data; the data-quality page shows what is missing */
     }
-    const day = new Date().toISOString().slice(0, 10),
+    // same calendar day as the task list (Berlin), so overview and tasks agree on "overdue"
+    const day = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date()),
       // tasks carry an outlet: with an outlet filter only that outlet's tasks (general ones are counted separately)
       lateAll = (S.tasks || []).filter((t) => t.status !== "done" && /^\d{4}-\d{2}-\d{2}$/.test(t.due_on || "") && t.due_on < day),
       late = V6_OUTLET === "all" ? lateAll : lateAll.filter((t) => t.outlet_id === V6_OUTLET),

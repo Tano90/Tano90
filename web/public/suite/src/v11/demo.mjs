@@ -39,11 +39,14 @@ const STOCK = [
   ["Burger Buns", "Stück", 68, 30, 90, ""],
   ["Gin", "Flaschen", 3, 5, 12, ""],
 ];
+// due dates relative to the day the demo opens (days from today), so no example task turns overdue by itself
 const TASKS = [
-  ["Wareneinsatz Tagesdessert hinterlegen", "high", "open", "2026-10-23", "restaurant"],
-  ["Rinderhüfte nachbestellen", "high", "open", "2026-10-22", "restaurant"],
-  ["Wochenreport prüfen", "medium", "done", "2026-10-21", null],
+  ["Wareneinsatz Tagesdessert hinterlegen", "high", "open", 1, "restaurant"],
+  ["Rinderhüfte nachbestellen", "high", "open", 0, "restaurant"],
+  ["Wochenreport prüfen", "medium", "done", -1, null],
 ];
+// same day definition as the task list (calendar day in Berlin), so the offsets mean what they say
+const localDay = (offset) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date(Date.now() + offset * 86400000));
 
 // Clearly fictitious competitor observations for the demo price comparison (Oct 2026): invented businesses,
 // "example.com" as a reserved non-source, the note says so, and the UI shows "Fiktives Beispiel" instead of a source.
@@ -123,12 +126,12 @@ export function initializeIntelligence(data, mode = "demo") {
       version: 1,
     }));
   if (!data.tasks.length)
-    data.tasks = TASKS.map(([title, priority, status, due_on, outlet], i) => ({
+    data.tasks = TASKS.map(([title, priority, status, dueIn, outlet], i) => ({
       id: `demo-task-${i}`,
       title,
       priority,
       status,
-      due_on,
+      due_on: localDay(dueIn),
       // example outlet only if this example workspace has it; otherwise general (never a guess)
       outlet_id: (data.outlets || []).some((o) => o.id === outlet) ? outlet : null,
       version: 1,

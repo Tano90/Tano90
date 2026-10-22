@@ -82,3 +82,59 @@ test.describe("S20 Handy", () => {
     await expectNoHorizontalScroll(page);
   });
 });
+
+test.describe("S21 Handy-Arbeitsplatz", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test("S21-1 Filter als Panel mit Zusammenfassung; Zeitraum und Outlet bleiben beim Scrollen sichtbar", async ({ page }) => {
+    await fresh(page, "#overview");
+    const toggle = page.locator("[data-v6-filter-toggle]");
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(toggle).toContainText("Alle Monate · Alle Outlets");
+    await expect(page.locator("#v6-filter-outlet")).toBeHidden();
+    await toggle.click();
+    await expect(page.locator("#v6-filter-outlet")).toBeVisible();
+    await page.selectOption("#v6-filter-outlet", { label: "Bar" });
+    await page.locator("[data-v6-filter-toggle]").click();
+    await expect(page.locator("[data-v6-filter-toggle]")).toContainText("Alle Monate · Bar");
+    await page.evaluate(() => window.scrollTo(0, 1600));
+    await expect(page.locator("[data-v6-filter-toggle]")).toBeInViewport();
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("S21-2 untere Leiste: höchstens fünf Einträge; Touch-Ziele mindestens 44 px", async ({ page }) => {
+    await fresh(page, "#overview");
+    await expect(page.locator(".glb08-bottom-button")).toHaveCount(5);
+    await expect(page.locator(".glb08-bottom-button").last()).toContainText("Mehr");
+    for (const view of ["overview", "v11tasks", "inventory", "costs"]) {
+      await page.evaluate((v) => (window as any).GLBSuite.navigate(v), view);
+      const small = await page.evaluate(() =>
+        [...document.querySelectorAll("#main .btn, #main select, #main [role=tab], .glb08-bottom-button, .v11-task-check")]
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && (r.height < 44 || r.width < 44);
+          })
+          .map((el) => (el as HTMLElement).innerText.slice(0, 30)),
+      );
+      expect(small, view).toEqual([]);
+      await expectNoHorizontalScroll(page);
+    }
+  });
+});
+
+test.describe("S22 Menügruppen", () => {
+  test("S22-1 Bereiche lassen sich einklappen; der Bereich der offenen Seite bleibt offen", async ({ page }) => {
+    await fresh(page, "#overview");
+    const area = page.locator("#sidebar button.glb08-nav-title", { hasText: "EINKAUF & LAGER" });
+    await expect(area).toHaveAttribute("aria-expanded", "true");
+    await area.click();
+    await expect(area).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator('#sidebar .glb08-nav-link[data-view="inventory"]')).toBeHidden();
+    await page.reload();
+    await page.waitForFunction(() => (window as any).GLBSuite);
+    await expect(page.locator("#sidebar button.glb08-nav-title", { hasText: "EINKAUF & LAGER" })).toHaveAttribute("aria-expanded", "false");
+    await page.evaluate(() => (window as any).GLBSuite.navigate("inventory"));
+    await expect(page.locator('#sidebar .glb08-nav-link[data-view="inventory"]')).toBeVisible();
+    await expect(page.locator('#sidebar .glb08-nav-link[data-view="inventory"]')).toHaveAttribute("aria-current", "page");
+  });
+});

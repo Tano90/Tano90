@@ -69,15 +69,40 @@
   // first four the role may open: management starts with the overview, staff with today's tasks
   const mobilePriorities = ["overview", "myday", "v11tasks", "funnel", "inventory", "purchasing", "orders", "reports", "menuimport"];
   let deferredPrompt = null;
+  function collapsedGroups() {
+    try {
+      const v = JSON.parse(localStorage.getItem("glb-nav-collapsed") || "[]");
+      return Array.isArray(v) ? v : [];
+    } catch {
+      return [];
+    }
+  }
   function renderNav() {
     const holder = document.querySelector('.nav[aria-label="Hauptnavigation"]');
     if (!holder) return;
-    holder.innerHTML = NAV.map((group) => {
+    const closed = collapsedGroups();
+    holder.innerHTML = NAV.map((group, i) => {
       const links = group.links.filter((row) => window.GLBAccess?.canView(row[0]) ?? true);
+      const open = !closed.includes(group.title);
+      // each area folds away on its own; the area of the open page is unfolded again in updateActive()
       return !links.length
         ? ""
-        : `<div class="glb08-nav-title">${esc(group.title)}</div>${links.map(([v, title, ico]) => `<button data-view="${v}" class="nav-item glb08-nav-link"><span class="glb08-nav-icon" aria-hidden="true">${ico}</span><span>${esc(title)}</span></button>`).join("")}`;
+        : `<div class="glb08-nav-group" data-group="${esc(group.title)}"><button type="button" class="glb08-nav-title" aria-expanded="${open}" aria-controls="glb08-group-${i}">${esc(group.title)}</button><div class="glb08-nav-items" id="glb08-group-${i}"${open ? "" : " hidden"}>${links.map(([v, title, ico]) => `<button data-view="${v}" class="nav-item glb08-nav-link"><span class="glb08-nav-icon" aria-hidden="true">${ico}</span><span>${esc(title)}</span></button>`).join("")}</div></div>`;
     }).join("");
+    holder.querySelectorAll(".glb08-nav-title").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        const items = document.getElementById(btn.getAttribute("aria-controls"));
+        const open = btn.getAttribute("aria-expanded") !== "true";
+        btn.setAttribute("aria-expanded", String(open));
+        if (items) items.hidden = !open;
+        const title = btn.closest(".glb08-nav-group")?.dataset.group || "";
+        const list = collapsedGroups().filter((x) => x !== title);
+        if (!open) list.push(title);
+        try {
+          localStorage.setItem("glb-nav-collapsed", JSON.stringify(list));
+        } catch {}
+      }),
+    );
     document
       .querySelectorAll('.sidebar>.nav-label, .sidebar>.nav:not([aria-label="Hauptnavigation"])')
       .forEach((x) => (x.style.display = "none"));
@@ -105,6 +130,12 @@
     const current = window.GLBAppSync?.view?.() || decodeURIComponent(location.hash.slice(1) || "overview");
     document.querySelectorAll(".glb08-nav-link,.glb08-bottom-button[data-view]").forEach((el) => {
       el.classList.toggle("active", el.dataset.view === current);
+      const items = el.dataset.view === current ? el.closest(".glb08-nav-items") : null;
+      if (items?.hidden) {
+        // never hide the page the person is on
+        items.hidden = false;
+        document.querySelector(`[aria-controls="${items.id}"]`)?.setAttribute("aria-expanded", "true");
+      }
       if (el.dataset.view === current) el.setAttribute("aria-current", "page");
       else el.removeAttribute("aria-current");
     });

@@ -922,3 +922,122 @@ body {
     text-align: left;
   }
 }
+
+/* collapsible sidebar areas; the open page is marked with a bar, not only a tint */
+button.glb08-nav-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  text-transform: uppercase;
+}
+button.glb08-nav-title::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-right: 4px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+button.glb08-nav-title[aria-expanded="false"]::after {
+  transform: rotate(-45deg);
+}
+button.glb08-nav-title:focus-visible {
+  outline: 2px solid #9fe0d4;
+  outline-offset: -2px;
+}
+.sidebar .nav .glb08-nav-link.active {
+  box-shadow: inset 3px 0 0 #6fd3c1;
+  font-weight: 800;
+}
+
+/* report filter: on wide screens the fields sit in the ribbon as before */
+.v6-filter-fields {
+  display: contents;
+}
+.v6-filter-toggle {
+  display: none;
+}
+@media (max-width: 760px) {
+  /* phones: a summary row stays at the top while scrolling; tapping it opens the panel */
+  .v6-page-top {
+    display: contents; /* lets the ribbon stick within the whole page, not just the header block */
+  }
+  .v6-filter-ribbon {
+    position: sticky;
+    top: calc(var(--glbm-top, 56px) + env(safe-area-inset-top));
+    z-index: 30;
+    padding: 8px 10px;
+  }
+  .v6-filter-ribbon .v6-filter-info,
+  .v6-filter-ribbon .v6-filter-note,
+  .v6-filter-ribbon > p {
+    display: none;
+  }
+  .v6-filter-ribbon.is-open .v6-filter-note,
+  .v6-filter-ribbon.is-open > p {
+    display: block;
+  }
+  .v6-filter-toggle {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 4px 6px;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .v6-filter-toggle-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #19836f;
+  }
+  .v6-filter-summary {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #15333b;
+    overflow-wrap: anywhere;
+  }
+  .v6-filter-toggle-act {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--teal-dark);
+    padding: 6px 10px;
+    border: 1px solid var(--calm-border);
+    border-radius: 999px;
+  }
+  .v6-filter-fields {
+    display: none;
+  }
+  .v6-filter-ribbon.is-open .v6-filter-fields {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    width: 100%;
+    padding-top: 8px;
+  }
+  .v6-filter-ribbon.is-open .v6-filter-fields label {
+    font-size: 11px;
+  }
+}
+@media (max-width: 760px) {
+  .v6-filter-ribbon.is-open {
+    position: relative;
+    top: auto;
+  }
+}

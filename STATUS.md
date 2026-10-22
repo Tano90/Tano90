@@ -8,13 +8,16 @@ Stand: 22.10.2026 · Branch `claude/replica-skill-install-vzriug`
 | P1 | Detail-Links: Bar → Limonade → Lebenszyklus mit Outlet; Bestellhinweis betriebsweit gekennzeichnet; überfällige Aufgaben nach Outlet; „Zielpreis ansehen“ öffnet den Artikel | erledigt |
 | P2 | Zwei Preisziele (Ziel-Warenquote / kalkulatorische Untergrenze), Handy-Karten für die Tabelle | erledigt |
 | P4a | „−0,00 €“ → „0,00 €“; Forecast-Kachel „Rohwaren ohne Bestellvorschlag“ zählt, was sie aufschlüsselt | erledigt |
-| P3 | Handy: Filterpanel, Touch-Ziele, Safe Areas, Formulare, Inventur/Aufgaben, einklappbare Menügruppen | offen |
+| P3 | Handy: Filterpanel mit Zusammenfassung (bleibt oben), Touch-Ziele ≥ 44 px, `viewport-fit=cover` für Safe Areas, Eingaben ≥ 16 px und über der Tastatur, Wisch-Hinweis bei breiten Tabellen, Inventur-Filter, Aufgaben-Häkchen 44 px, einklappbare Menübereiche; Demo-Fälligkeiten relativ zu heute (Berliner Tag) | erledigt |
 | P4b | Rest „KI-Marktcheck“, zwei Einrichtungsphasen | offen |
 | P5 | Tarife: Karten, Rechner, CTAs, Tarifmatrix zur Freigabe | offen |
 | P6 | Abläufe A–D bei 360/390/430/768/1280/1440, Tastatur, Abschlussbericht | offen |
 
 Geänderte Dateien (P1/P2/P4a): `web/public/suite/src/{app.js, core.js, v04core.js, calm.css, v11/core.mjs}`, `web/suite-tests/tests/v13.test.cjs`, `web/e2e/suite-v14.spec.ts`, `web/e2e/suite-v13.spec.ts` (Kachelname).
 Tests nach P1/P2/P4a: Unit 160/160; e2e suite-v13 + suite-v14 17/17.
+Geänderte Dateien P3: `web/public/suite/{index.html, src/app.js, src/v08ui.js, src/mobile.js, src/mobile.css, src/calm.css, src/v11/ui.mjs, src/v11/demo.mjs}`, `web/e2e/suite-v14.spec.ts` (S21, S22).
+Tests nach P3: alle Suite-e2e-Specs 80/80; Unit 160/160.
+Gefundener Fehler nebenbei: Demo-Aufgaben hatten feste Fälligkeiten (22.10.2026) → wurden ab Mitternacht Berliner Zeit „überfällig“; Übersicht rechnete „heute“ in UTC, Aufgabenliste in Berliner Zeit. Beides vereinheitlicht.
 
 ---
 
