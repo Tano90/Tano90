@@ -20,7 +20,7 @@ test.describe("SU GLB AI Suite", () => {
     expect(res.headers()["cache-control"]).toBe("no-store");
     expect(await res.text()).toContain("window.GLB_CLOUD_ENABLED = false;");
     const html = await (await page.request.get("/suite")).text();
-    expect(html).toContain('<base href="/suite/">');
+    expect(html).toMatch(/<base href="\/suite\/"\s*\/?>/);
     expect(html).not.toContain("cdn.jsdelivr.net");
   });
 });
