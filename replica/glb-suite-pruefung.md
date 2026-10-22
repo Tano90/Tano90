@@ -92,3 +92,58 @@ Legende: **bestätigt** = am Code bzw. im Test nachgestellt; **behoben** = Ursac
 | 30 | Speisekarte: unsichere Erkennung nicht erkennbar, stille Kürzung auf 180 Zeilen | bestätigt, behoben | Positionen mit Prüfgrund markiert (zwei Zeilen, Preis < 1 € oder > 200 €, Großbuchstaben, Ziffern im Namen), Filter „nur zu prüfende“, Rückfrage vor dem Speichern; alle Zeilen werden angezeigt | SM-1 |
 | 31 | Fotos nicht auswählbar, Scan-PDF mit Fachbegriff „OCR“ abgewiesen | bestätigt, behoben | Fotos und Scans werden angenommen und mit konkretem Ausweg abgelehnt (Text am Handy kopieren, CSV-Vorlage); keine vorgetäuschte Texterkennung | SM-2 |
 | 32 | Exporte ohne Angabe von Auswahl, Einheiten, Grundlage | bestätigt, ergänzt | CSV unverändert (Format erhalten, Dateiname nennt Auswahl). Neu optional Excel (.xlsx) für Report Studio und Bestell-Forecast: Blatt „Bericht“ mit Zeitraum, Outlet, Warengruppe, Kostenbasis, Formeln, Einheiten, Rundung, Beispiel-/Echtdaten; Blatt „Daten“ mit Zahlen als Zahlen | SN-8, v09.test, LibreOffice |
+
+### Bedienung, Mobil, Barrierefreiheit, Design, Website
+
+| # | Befund | Status | Ursache / Änderung | Test |
+| --- | --- | --- | --- | --- |
+| 33 | Suche fand „Report Studio“ nicht über „Report“, kannte nur 17 von 23 Zielen | bestätigt, behoben | Feste Liste ersetzt: Suche baut sich aus der Navigation der aktuellen Rolle auf, mit Suchbegriffen je Modul (z. B. Excel, Wareneingang, USt); Pfeiltasten, Enter. Fenster blieb nach der Auswahl offen – behoben | SB-1 |
+| 34 | Mein Arbeitsplatz, Mission Control und Dashboard kaum unterscheidbar, große Begrüßungsflächen | bestätigt, behoben | Arbeitsplatz zeigt Aufgaben aus den Daten (Wareneingang, Entwürfe, Forecast, fehlende Zählung, Artikel ohne Kosten) mit Begründung; Mission Control = Einrichtung und Datenqualität; Dashboard = Kennzahlen. Kopfbereiche auf normale Seitenköpfe verkleinert, Kopfzeile heißt wie die Navigation („Dashboard“ statt „Übersicht“) | SB-2 |
+| 35 | Zu blasse Texte, unbeschriftete Felder und Symbol-Buttons | bestätigt, behoben | axe-Scan über alle 23 Module: 69 Textfarben im selben Farbton abgedunkelt (WCAG AA), Bearbeiten/Löschen nennen ihr Ziel, Felder erhalten die sichtbare Beschriftung als Namen (`a11y.js`), Tabellen-Scrollbereiche per Tastatur erreichbar, sichtbarer Fokus | SX-1 (0 schwere Befunde) |
+| 36 | Inventur: „Lose Menge (Gebinde-Einheit)“, gerechnet wurde aber in g/ml/Stk | bestätigt, behoben | Einheit am Feld je Rohware („Volle Gebinde je 5 kg“, „Lose Menge in g“), Summe vor dem Buchen | SB-3 |
+| 37 | Warenbewegung: alle Felder für alle Vorgänge | bestätigt, behoben | Felder je Vorgang, Schwund mit Grund (in der Bemerkung, Datenmodell unverändert), Klartext der Buchung vor dem Speichern | SB-4 |
+| 38 | Mein Markt: technische Fehlermeldungen | bestätigt, behoben | Zeitüberschreitung, Überlastung, HTTP-Fehler, offline in Worten; „Erneut versuchen“ | SU-MK3 |
+| 39 | Lange Ansichten (Outlets 7.000 px, 144 Einzelzeilen) | bestätigt, behoben | Detailtabellen einklappbar mit Anzahl in der Zusammenfassung, Zustand bleibt beim Filtern; Kürzung auf 150 Zeilen wird genannt | SB-5 |
+| 40 | Beispieldaten erzeugten eine Ersatzbasis-Warnung bei Kosten | bestätigt, behoben | Beispielkosten gelten ab dem ersten Beispielmonat; eigene Daten behalten den ehrlichen undatierten Stand | SB-5 |
+| 41 | Tablet: Kopfzeile rechts abgeschnitten | bestätigt, behoben | 768–1279 px kompakte Kopfzeile | SB-6, Layoutprüfung |
+| 42 | „App installieren“ immer sichtbar, auch ohne Installationsmöglichkeit | bestätigt, behoben | Nur bei Angebot des Browsers, auf iPhone/iPad mit Anleitung | SB-7 |
+| 43 | Bilderkennung in der Inventur auf der Website: JSON-Fehlermeldung | bestätigt, behoben | Klar als Zusatz der lokalen Installation benannt, auf der Website verständliche Meldung; Funktion bleibt erhalten | – (manuell) |
+| 44 | Generischer Look: dunkle Verläufe, Leuchten, englische Fachwörter | umgesetzt | `calm.css`: flache neutrale Flächen, Grün für Aktionen und Positives; „Payroll“ → Personalkosten; Liste „Was die Suite kann – und was nicht“ ehrlich (kein Lieferantenversand, keine Kasse, keine Texterkennung, nicht GoBD-revisionssicher, Hinweise regelbasiert) | Sichtprüfung |
+| 45 | Website zeigte alten Stand der App | behoben | Screenshots und Rundgang-Video neu aus der aktuellen Suite, Texte zu Excel-Export, Kostenständen, Speisekartenimport, Vergleichsgruppen, Dubletten-Erkennung | landing.spec |
+
+## Abschluss
+
+### Testläufe (22.10.2026, Stand Commit am Ende dieses Abschnitts)
+
+| Prüfung | Befehl | Ergebnis |
+| --- | --- | --- |
+| Rechenlogik (Unit) | `npm run test:suite` | 92 / 92 bestanden (80 aus v0.8, 12 neu) |
+| Mandantentrennung und Rollen in Postgres | `TEST_DATABASE_URL=… npm run test:suite-sql` | 8 / 8 bestanden |
+| Browser: Suite und Website | `npx playwright test e2e/suite*.spec.ts e2e/landing.spec.ts e2e/legal.spec.ts` | 53 / 53 bestanden |
+| Barrierefreiheit | SX-1 (axe, WCAG 2 A/AA, alle 23 Module) | 0 schwere Befunde |
+| Layout Handy/Tablet/Desktop | `scripts/suite-audit.mjs` bei 320, 360, 390, 768, 1024, 1280 px | 0 Überläufe |
+| Excel-Datei | Öffnen in LibreOffice (headless) | öffnet, Zahlenformate korrekt, Formeltext bleibt Text |
+| Typprüfung, Build | `npx tsc --noEmit`, `npm run build` | ohne Fehler |
+
+### Offen bzw. hier nicht prüfbar
+
+- Echtes Supabase-Projekt, E-Mail-Bestätigung, Passwort-Zurücksetzen: keine Zugangsdaten und kein Netz zu Supabase in dieser Umgebung. Geprüft ist das Verhalten gegen einen Testserver mit denselben Regeln und die SQL-Dateien in lokalem Postgres.
+- Echte Geräte (iPhone, Android, iPad): geprüft mit Browser-Emulation in Chromium, nicht auf Hardware. Safari selbst wurde nicht ausgeführt.
+- Bildschirmleser: automatische Prüfung (axe) bestanden, kein Test mit VoiceOver/TalkBack.
+- Microsoft Excel: Datei in LibreOffice geprüft; Excel selbst nicht verfügbar.
+- Overpass/Nominatim im Live-Betrieb: Verhalten mit nachgestellten Antworten getestet (Erfolg, 429, Ausfall).
+- Bilderkennung (lokaler GLB-Server mit Ollama): nicht Teil der Website, nicht getestet.
+- Steuersätze: Voreinstellung 7 % Speisen / 19 % Getränke ist änderbar; der richtige Satz je Betrieb ist mit der Steuerberatung zu klären.
+- Offene Entscheidungen beim Betreiber: Preise, Zahlungsweg, Supabase-Region, Impressumsdaten; Vercel-Variablen `GLB_SUPABASE_URL` und `GLB_SUPABASE_PUBLISHABLE_KEY` sowie die Redirect-URL in Supabase.
+
+### So prüfst du das Ergebnis
+
+1. Website öffnen (Vercel-Vorschau dieses Branches) und auf „Demo öffnen“ bzw. `/suite` gehen. Ohne Cloud-Variablen läuft die Suite als Demo mit markierten Beispieldaten nur im Browser.
+2. Strg + K drücken, „Report“ tippen, Enter → Report Studio. Dort Monat wählen, „Excel“ laden: Blatt „Bericht“ nennt Zeitraum, Outlet, Kostenbasis, Einheiten.
+3. Mein Arbeitsplatz: Aufgaben aus den Beispieldaten; Klick führt zur passenden Stelle.
+4. Speisekartenimport: Beispieltext einfügen, „Text erkennen“ → markierte Positionen; ein Foto auswählen → verständliche Ablehnung.
+5. Datenimport: dieselbe Verkaufs-CSV zweimal laden → „bereits importiert“, nichts doppelt.
+6. Inventur & Lager: Rohware wählen → Einheit am Feld, Summe vor dem Buchen.
+7. Auf dem Handy: Menü unten, „⋯“ oben rechts für Konto, Suche, Backup.
+
+Lokal: `cd web && npm run build && ALLOW_DEMO=1 npx next start -p 3300`, dann `http://localhost:3300/suite`.
