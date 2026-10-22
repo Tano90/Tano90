@@ -799,8 +799,17 @@
       cw = chart.clientWidth;
     // phones: the details sit below the chart instead of covering the curve
     tip.classList.toggle("lc-tip-below", cw < 520);
-    tip.style.left = cw < 520 ? "" : Math.min(Math.max(4, x - tw / 2), cw - tw - 4) + "px";
-    tip.style.top = cw < 520 ? "" : Math.max(0, y - tip.offsetHeight - 14) + "px";
+    if (cw < 520) {
+      tip.style.left = tip.style.top = "";
+    } else if (y - tip.offsetHeight - 14 >= 0) {
+      // above the point
+      tip.style.left = Math.min(Math.max(4, x - tw / 2), cw - tw - 4) + "px";
+      tip.style.top = y - tip.offsetHeight - 14 + "px";
+    } else {
+      // no room above: beside the point, so the point itself stays visible
+      tip.style.left = (x + 18 + tw <= cw - 4 ? x + 18 : Math.max(4, x - 18 - tw)) + "px";
+      tip.style.top = Math.max(0, Math.min(y - tip.offsetHeight / 2, chart.clientHeight - tip.offsetHeight)) + "px";
+    }
     const cur = chart.querySelector(".lc-cursor");
     cur?.setAttribute("x1", x);
     cur?.setAttribute("x2", x);

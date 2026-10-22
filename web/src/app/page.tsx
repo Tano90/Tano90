@@ -35,8 +35,10 @@ import shotV11Training from "../../public/landing/suite-v11training.png";
 // No testimonials, logos or user counts until there are real ones.
 
 const SUITE = "/suite";
-const cta = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-pill bg-saffron px-6 text-base font-bold text-on-saffron transition-transform duration-fast hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-saffron";
-const ctaLight = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-pill bg-accent px-6 text-base font-bold text-on-accent shadow-glow transition-transform duration-fast hover:-translate-y-0.5 hover:bg-accent-hover";
+// Calm, solid buttons: green for the main action, an outlined one beside it. No glow, no lift.
+const cta = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-pill bg-accent px-6 text-base font-bold text-on-accent transition-colors duration-fast hover:bg-accent-hover";
+const ctaLight = cta;
+const ctaQuiet = "inline-flex h-(--size-control-lg) items-center rounded-pill border border-border-input bg-transparent px-6 text-base font-semibold hover:bg-row-hover";
 const eur = (cents: number) => formatCents(cents).replace(",00", "");
 
 type Spotlight = { icon: typeof BarChart3; kicker: string; title: string; body: string; points: string[]; shot: StaticImageData; alt: string };
@@ -96,6 +98,14 @@ const MODULES: { icon: typeof BarChart3; title: string; body: string; shot: Stat
   { icon: ScanLine, title: "GLB Intelligence", body: "Regelbasierte Hinweise und Handlungsempfehlungen. Vorschläge, keine Automatik: du entscheidest.", shot: shotInsights, alt: "GLB Intelligence mit Handlungsempfehlungen und Analysegrundlage." },
 ];
 
+// Situations from day-to-day work, each with the screen that answers it (example data of the suite).
+const USE_CASES: { when: string; question: string; answer: string; shot: StaticImageData; alt: string }[] = [
+  { when: "Bürotag am Monatsanfang", question: "Wie lief der Monat, und wo fehlen noch Kosten?", answer: "Das Management-Cockpit zeigt Brutto, Netto, DB I und Wareneinsatzquote je Outlet und Monat. Fehlender Wareneinsatz steht als unvollständig da, statt geschätzt zu werden.", shot: shotV11Cockpit, alt: "Management-Cockpit mit Kennzahlen je Outlet und Monat." },
+  { when: "Vor der neuen Karte", question: "Welcher Artikel wächst, welcher verliert?", answer: "Der Lebenszyklus zeigt die echten Monatswerte je Artikel, Outlet und Zeitraum als Verlauf. Fehlende Monate bleiben Lücken; die Einordnung wird am Graphen erklärt.", shot: shotLifecycle, alt: "Absatzverlauf eines Artikels mit Monatspunkten, Vergleichsfenster und Erklärung der Einordnung." },
+  { when: "Preise prüfen", question: "Was verlangen andere für Vergleichbares?", answer: "Der Marktcheck trennt Speisen und Getränke vom Umfeld in der Nähe. Abweichungen gibt es nur bei vergleichbarer Menge und Leistung, jede Zahl mit Quelle und Prüfdatum.", shot: shotV11Market, alt: "KI-Marktcheck mit den Reitern Speisen- und Getränkevergleich sowie Restaurants und Locations in der Nähe." },
+  { when: "Schichtbriefing", question: "Was ist in welchem Outlet offen?", answer: "Team & Aufgaben zeigt offene und überfällige Aufgaben je Outlet. Betriebsübergreifendes steht getrennt; Schulungen aus dem Tagesfunnel landen beim gewählten Outlet.", shot: shotV11Tasks, alt: "Team und Aufgaben mit offenen und überfälligen Aufgaben je Outlet und gruppierter Aufgabenliste." },
+];
+
 const TICKER = ["Management-Cockpit", "Tagesfunnel", "Funnel Quest", "Menu Engineering", "KI-Marktcheck", "Report Studio", "Mission Control", "Service Funnel", "Deckungsbeiträge", "Zielpreise", "Renner-Penner", "Lebenszyklen", "Mein Markt", "Speisekarten-Import", "Rezepte & Rohwaren", "Inventur & Lager", "Bestell-Forecast", "7 Rollen", "App fürs Handy"];
 
 // From the suite's access model (v0.8): what each role works with.
@@ -130,13 +140,12 @@ const FAQ = [
 
 export default function LandingPage() {
   return (
-    <div className="bg-bg">
+    <div className="landing-beige">
       <ViewBeacon />
 
       {/* ------------------------------------------------ hero */}
-      <div className="relative overflow-hidden bg-cream">
-        <div aria-hidden className="pointer-events-none absolute -top-40 -right-40 size-[36rem] rounded-pill bg-[radial-gradient(closest-side,var(--color-accent-subtle),transparent)]" />
-        <header className="relative mx-auto flex max-w-(--size-content-max) items-center justify-between px-4 py-5 lg:px-8">
+      <div className="border-b border-border">
+        <header className="mx-auto flex max-w-(--size-content-max) items-center justify-between px-4 py-5 lg:px-8">
           <Link href="/" aria-label={`${APP_NAME} Startseite`}><Logo /></Link>
           <nav aria-label="Konto" className="flex items-center gap-5">
             <a href="#rundgang" className="hidden font-semibold text-text-muted hover:text-text md:inline">Rundgang</a>
@@ -148,15 +157,14 @@ export default function LandingPage() {
           </nav>
         </header>
 
-        <section aria-labelledby="hero" className="relative mx-auto grid max-w-(--size-content-max) items-center gap-10 px-4 pt-6 pb-16 lg:grid-cols-[5fr_7fr] lg:px-8 lg:pt-12 lg:pb-24">
-          <div className="min-w-0 animate-rise">
-            <a href="#funktionen" className="mb-5 inline-flex max-w-full items-center gap-2 rounded-pill border border-border bg-bg py-1 pr-3 pl-1 text-sm shadow-card hover:bg-row-hover">
-              <span className="rounded-pill bg-accent px-2 py-0.5 text-xs font-bold text-on-accent">v0.8</span>
-              <span className="truncate">Report Studio, Service Funnel, 7 Rollen, App fürs Handy</span>
+        <section aria-labelledby="hero" className="mx-auto grid max-w-(--size-content-max) items-center gap-12 px-4 pt-8 pb-20 lg:grid-cols-[5fr_7fr] lg:px-8 lg:pt-16 lg:pb-28">
+          <div className="min-w-0">
+            <a href="#alltag" className="mb-6 inline-flex max-w-full items-center gap-2 border-b border-accent pb-0.5 text-sm font-semibold text-accent hover:text-accent-hover">
+              <span className="truncate">Neu: Lebenszyklus-Graph, Marktcheck in zwei Ansichten, Aufgaben je Outlet</span>
               <ArrowRight aria-hidden className="size-4 shrink-0" />
             </a>
-            <h1 id="hero" className="text-display lg:text-hero">
-              Gastro führen mit <span className="relative isolate inline-block whitespace-nowrap text-accent">echten Zahlen.<span aria-hidden className="absolute inset-x-0 bottom-1 -z-10 h-4 -rotate-1 rounded-sm bg-saffron/70" /></span>
+            <h1 id="hero" className="font-display text-[2.5rem] leading-[1.08] sm:text-[3.25rem] lg:text-[4rem]">
+              Gastro führen mit <span className="text-accent">echten Zahlen.</span>
             </h1>
             <p className="mt-6 max-w-xl text-base text-text-muted lg:text-lg lg:font-normal">
               Das Gastro Leadership Board: Umsatz, Deckungsbeitrag, Service Funnel, Rezepte, Lager und Einkauf in einer Suite.
@@ -164,75 +172,100 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href={SUITE} className={ctaLight}>Live ausprobieren <ArrowRight aria-hidden className="size-4" /></Link>
-              <a href="#rundgang" className="inline-flex h-(--size-control-lg) items-center rounded-pill border border-border-input bg-bg px-6 text-base font-semibold hover:bg-row-hover">Rundgang ansehen</a>
+              <a href="#rundgang" className={ctaQuiet}>Rundgang ansehen</a>
             </div>
-            <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-text-muted">
+            <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-text-muted">
               {["Mit Beispieldaten sofort testen", "Ohne Kreditkarte", "Im Browser und als App"].map((x) => (
-                <li key={x} className="flex items-center gap-1.5"><Check aria-hidden className="size-4 text-success" />{x}</li>
+                <li key={x} className="flex items-center gap-1.5"><Check aria-hidden className="size-4 text-accent" />{x}</li>
               ))}
             </ul>
           </div>
-          <div className="relative animate-rise [animation-delay:150ms]">
-            <figure className="overflow-hidden rounded-lg border border-border bg-surface shadow-pop">
+          <div className="relative">
+            <figure className="overflow-hidden rounded-md border border-border bg-surface-raised">
               <Image src={shotOverview} alt="Dashboard der GLB AI Suite: Netto-Umsatz 22.766 Euro, DB II, Wareneinsatzquote und verkaufte Einheiten, mit Beispieldaten." placeholder="blur" priority className="h-auto w-full" sizes="(min-width: 1024px) 760px, 100vw" />
             </figure>
-            <figure className="absolute -bottom-10 -left-6 hidden w-36 overflow-hidden rounded-lg border-4 border-ink shadow-pop sm:block lg:w-44">
+            <figure className="absolute -bottom-10 -left-6 hidden w-36 overflow-hidden rounded-md border-4 border-text sm:block lg:w-44">
               <Image src={shotMobile} alt="Die Suite auf dem Handy." placeholder="blur" className="h-auto w-full" sizes="176px" />
             </figure>
           </div>
         </section>
       </div>
 
-      <div aria-hidden className="overflow-hidden bg-accent py-4">
-        <div className="flex w-max animate-marquee gap-10 whitespace-nowrap text-sm font-semibold text-on-accent">
-          {[...TICKER, ...TICKER].map((t, i) => <span key={i} className="flex items-center gap-10">{t}<span className="size-1.5 rounded-pill bg-saffron" /></span>)}
-        </div>
+      {/* the module names as a quiet line instead of a moving ticker */}
+      <div className="border-b border-border bg-surface">
+        <p className="mx-auto max-w-(--size-content-max) px-4 py-5 text-sm text-text-muted lg:px-8">
+          <span className="font-semibold text-text">Enthalten: </span>{TICKER.join(" · ")}
+        </p>
       </div>
 
       <main>
+        {/* ------------------------------------------------ use cases */}
+        <section id="alltag" aria-labelledby="usecases" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8 lg:py-28">
+          <Reveal>
+            <p className="text-sm font-bold uppercase tracking-wide text-accent">Aus dem Betriebsalltag</p>
+            <h2 id="usecases" className="font-display mt-3 max-w-3xl text-[2rem] leading-tight lg:text-[2.75rem]">Vier Fragen, die jede Woche kommen.</h2>
+            <p className="mt-4 max-w-2xl text-base text-text-muted">Jede Antwort ist eine echte Ansicht der Suite, aufgenommen mit ihren Beispieldaten.</p>
+          </Reveal>
+          <ol className="mt-14 flex flex-col">
+            {USE_CASES.map((u, i) => (
+              <li key={u.question} className="grid gap-8 border-t border-border py-12 lg:grid-cols-[4fr_7fr] lg:gap-16">
+                <Reveal>
+                  <p className="text-sm font-semibold text-text-muted"><span className="num mr-2 text-accent">0{i + 1}</span>{u.when}</p>
+                  <h3 className="font-display mt-3 text-[1.625rem] leading-snug">{u.question}</h3>
+                  <p className="mt-3 text-base text-text-muted">{u.answer}</p>
+                </Reveal>
+                <Reveal delay={100}>
+                  <figure className="overflow-hidden rounded-md border border-border bg-surface-raised">
+                    <Image src={u.shot} alt={u.alt} placeholder="blur" className="h-auto w-full" sizes="(min-width: 1024px) 760px, 100vw" />
+                  </figure>
+                </Reveal>
+              </li>
+            ))}
+          </ol>
+        </section>
+
         {/* ------------------------------------------------ video walkthrough */}
-        <section id="rundgang" aria-labelledby="tour" className="relative overflow-hidden bg-ink text-on-ink">
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_60%_at_85%_20%,var(--color-accent)_0%,transparent_70%)] opacity-70" />
-          <div className="relative mx-auto grid max-w-(--size-content-max) items-center gap-12 px-4 py-20 lg:grid-cols-[4fr_7fr] lg:px-8">
+        <section id="rundgang" aria-labelledby="tour" className="border-y border-border bg-surface">
+          <div className="mx-auto grid max-w-(--size-content-max) items-center gap-12 px-4 py-20 lg:grid-cols-[4fr_7fr] lg:px-8">
             <div>
-              <p className="text-sm font-bold uppercase tracking-wide text-saffron">Rundgang</p>
-              <h2 id="tour" className="mt-2 text-xl lg:text-display">Die Suite in 26 Sekunden</h2>
-              <p className="mt-4 max-w-lg text-base text-on-ink-muted">
+              <p className="text-sm font-bold uppercase tracking-wide text-accent">Rundgang</p>
+              <h2 id="tour" className="font-display mt-3 text-[2rem] leading-tight lg:text-[2.75rem]">Die Suite in 26 Sekunden</h2>
+              <p className="mt-4 max-w-lg text-base text-text-muted">
                 Report Studio, Service Funnel, Renner-Penner, Deckungsbeiträge, Lebenszyklen, Mein Markt, Bestell-Forecast und GLB Intelligence,
                 aufgenommen in der Suite mit ihren Beispieldaten.
               </p>
               <div className="mt-8"><Link href={SUITE} className={cta}>Selbst ausprobieren <ArrowRight aria-hidden className="size-4" /></Link></div>
             </div>
-            <figure className="overflow-hidden rounded-lg border border-ink-raised shadow-pop">
+            <figure className="overflow-hidden rounded-md border border-border bg-surface-raised">
               <video controls muted playsInline preload="metadata" poster="/landing/suite-reports.png" className="h-auto w-full" aria-label={`Rundgang durch die ${APP_NAME}, ohne Ton`}>
                 <source src="/landing/suite-rundgang.mp4" type="video/mp4" />
                 <track kind="captions" src="/landing/suite-rundgang.vtt" srcLang="de" label="Deutsch" default />
               </video>
-              <figcaption className="bg-ink-raised px-4 py-2 text-xs text-on-ink-muted">Ohne Ton. Untertitel nennen das jeweilige Modul.</figcaption>
+              <figcaption className="border-t border-border px-4 py-2 text-xs text-text-muted">Ohne Ton. Untertitel nennen das jeweilige Modul.</figcaption>
             </figure>
           </div>
         </section>
 
         {/* ------------------------------------------------ spotlights */}
-        <section id="funktionen" aria-labelledby="features" className="bg-bg">
-          <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
+        <section id="funktionen" aria-labelledby="features">
+          <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8 lg:py-28">
             <Reveal>
               <p className="text-sm font-bold uppercase tracking-wide text-accent">Funktionen</p>
-              <h2 id="features" className="mt-2 max-w-3xl text-xl lg:text-display">Vom Service bis zum Ergebnis.</h2>
+              <h2 id="features" className="font-display mt-3 max-w-3xl text-[2rem] leading-tight lg:text-[2.75rem]">Vom Service bis zum Ergebnis.</h2>
             </Reveal>
-            <div className="mt-12 flex flex-col gap-20">
+            <div className="mt-14 flex flex-col gap-20">
               {SPOTLIGHTS.map((n, i) => (
-                <article key={n.title} aria-labelledby={`spot-${i}`} className="grid items-center gap-8 lg:grid-cols-[5fr_7fr] lg:gap-14">
+                <article key={n.title} aria-labelledby={`spot-${i}`} className="grid items-center gap-8 lg:grid-cols-[5fr_7fr] lg:gap-16">
                   <Reveal className={i % 2 ? "lg:order-2" : ""}>
-                    <p className="inline-flex items-center gap-2 rounded-pill bg-accent-subtle px-3 py-1 text-xs font-bold text-accent"><n.icon aria-hidden className="size-4" />{n.kicker}</p>
-                    <h3 id={`spot-${i}`} className="mt-3 text-xl">{n.title}</h3>
-                    <p className="mt-2 text-base text-text-muted">{n.body}</p>
+                    <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-accent"><n.icon aria-hidden className="size-4" />{n.kicker}</p>
+                    <h3 id={`spot-${i}`} className="font-display mt-3 text-[1.625rem] leading-snug">{n.title}</h3>
+                    <p className="mt-3 text-base text-text-muted">{n.body}</p>
                     <ul className="mt-5 flex flex-col gap-2">
-                      {n.points.map((p) => <li key={p} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{p}</li>)}
+                      {n.points.map((p) => <li key={p} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />{p}</li>)}
                     </ul>
                   </Reveal>
-                  <Reveal delay={120}>
-                    <figure className="overflow-hidden rounded-lg border border-border bg-surface shadow-pop">
+                  <Reveal delay={100}>
+                    <figure className="overflow-hidden rounded-md border border-border bg-surface-raised">
                       <Image src={n.shot} alt={n.alt} placeholder="blur" className="h-auto w-full" sizes="(min-width: 1024px) 700px, 100vw" />
                     </figure>
                   </Reveal>
@@ -242,70 +275,67 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ------------------------------------------------ module gallery */}
-        <section aria-labelledby="modules" className="bg-cream">
+        {/* ------------------------------------------------ module index: a list, not a card grid */}
+        <section aria-labelledby="modules" className="border-y border-border bg-surface">
           <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="text-sm font-bold uppercase tracking-wide text-accent">Alles drin</p>
-                <h2 id="modules" className="mt-2 max-w-2xl text-xl lg:text-display">Ein Board statt zehn Listen</h2>
+                <h2 id="modules" className="font-display mt-3 max-w-2xl text-[2rem] leading-tight lg:text-[2.75rem]">Ein Board statt zehn Listen</h2>
               </div>
-              <p className="max-w-sm text-text-muted">Jede Karte ist ein Modul der {APP_NAME}, so wie es heute aussieht.</p>
+              <p className="max-w-sm text-text-muted">Jeder Eintrag ist ein Modul der {APP_NAME}, so wie es heute aussieht.</p>
             </div>
-            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {MODULES.map(({ icon: Icon, title, body, shot, alt }, i) => (
-                <li key={title}><Reveal delay={(i % 4) * 80} className="h-full">
-                  <article className="flex h-full flex-col overflow-hidden rounded-lg bg-bg shadow-card transition-transform duration-base hover:-translate-y-1">
-                    <Image src={shot} alt={alt} placeholder="blur" className="h-auto w-full border-b border-border" sizes="(min-width: 1024px) 300px, (min-width: 640px) 50vw, 100vw" />
-                    <div className="flex flex-1 flex-col gap-2 p-5">
-                      <span className="inline-flex size-10 items-center justify-center rounded-md bg-accent-subtle text-accent"><Icon aria-hidden className="size-5" /></span>
-                      <h3 className="text-lg">{title}</h3>
-                      <p className="text-sm text-text-muted">{body}</p>
-                    </div>
-                  </article>
-                </Reveal></li>
+            <ul className="mt-12 grid gap-x-12 lg:grid-cols-2">
+              {MODULES.map(({ icon: Icon, title, body, shot, alt }) => (
+                <li key={title} className="grid grid-cols-[7rem_1fr] items-start gap-5 border-t border-border py-6 sm:grid-cols-[10rem_1fr]">
+                  <Image src={shot} alt={alt} placeholder="blur" className="h-auto w-full rounded-sm border border-border" sizes="160px" />
+                  <div className="min-w-0">
+                    <h3 className="flex items-center gap-2 text-lg"><Icon aria-hidden className="size-4 shrink-0 text-accent" />{title}</h3>
+                    <p className="mt-1 text-sm text-text-muted">{body}</p>
+                  </div>
+                </li>
               ))}
             </ul>
           </div>
         </section>
 
         {/* ------------------------------------------------ numbers, all true of the product today */}
-        <section aria-label="In Zahlen" className="bg-ink text-on-ink">
-          <dl className="mx-auto grid max-w-(--size-content-max) grid-cols-2 gap-8 px-4 py-14 lg:grid-cols-4 lg:px-8">
+        <section aria-label="In Zahlen">
+          <dl className="mx-auto grid max-w-(--size-content-max) grid-cols-2 gap-8 px-4 py-16 lg:grid-cols-4 lg:px-8">
             {[
               { value: SPOTLIGHTS.length + MODULES.length, suffix: "", label: "Module in einer Oberfläche" },
               { value: ROLES.length, suffix: "", label: "Rollen vom Service bis zur Geschäftsführung" },
               { value: 6, suffix: "", label: "Stufen im Service Funnel" },
               { value: 28, suffix: " Tage", label: "Absatz als Grundlage für den Bestell-Forecast" },
             ].map((x) => (
-              <div key={x.label} className="flex flex-col-reverse justify-end gap-1">
-                <dt className="text-sm text-on-ink-muted">{x.label}</dt>
-                <dd className="num text-display text-saffron"><CountUp value={x.value} suffix={x.suffix} /></dd>
+              <div key={x.label} className="flex flex-col-reverse justify-end gap-1 border-l-2 border-accent pl-4">
+                <dt className="text-sm text-text-muted">{x.label}</dt>
+                <dd className="num font-display text-[2.5rem] leading-none text-text"><CountUp value={x.value} suffix={x.suffix} /></dd>
               </div>
             ))}
           </dl>
         </section>
 
         {/* ------------------------------------------------ roles */}
-        <section id="rollen" aria-labelledby="roles" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-          <div className="grid items-center gap-12 lg:grid-cols-[7fr_4fr]">
+        <section id="rollen" aria-labelledby="roles" className="border-t border-border">
+          <div className="mx-auto grid max-w-(--size-content-max) items-center gap-12 px-4 py-20 lg:grid-cols-[7fr_4fr] lg:px-8">
             <div>
               <Reveal>
                 <p className="text-sm font-bold uppercase tracking-wide text-accent">Rollen</p>
-                <h2 id="roles" className="mt-2 max-w-2xl text-xl lg:text-display">Jeder sieht, was er braucht</h2>
-                <p className="mt-3 max-w-xl text-text-muted">Service und Sales arbeiten mit Quoten und Absatz, ohne Einkaufspreise und Fixkosten zu sehen. Die Leitung sieht das ganze Bild.</p>
+                <h2 id="roles" className="font-display mt-3 max-w-2xl text-[2rem] leading-tight lg:text-[2.75rem]">Jeder sieht, was er braucht</h2>
+                <p className="mt-4 max-w-xl text-text-muted">Service und Sales arbeiten mit Quoten und Absatz, ohne Einkaufspreise und Fixkosten zu sehen. Die Leitung sieht das ganze Bild.</p>
               </Reveal>
-              <ul className="mt-8 flex flex-col divide-y divide-border rounded-lg border border-border bg-surface">
+              <ul className="mt-8 flex flex-col divide-y divide-border border-y border-border">
                 {ROLES.map(([role, scope]) => (
-                  <li key={role} className="flex flex-col gap-1 px-5 py-3 sm:flex-row sm:items-baseline sm:gap-4">
+                  <li key={role} className="flex flex-col gap-1 py-3 sm:flex-row sm:items-baseline sm:gap-4">
                     <span className="flex items-center gap-2 font-semibold sm:w-60 sm:shrink-0"><Users aria-hidden className="size-4 text-accent" />{role}</span>
                     <span className="text-sm text-text-muted">{scope}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <Reveal delay={120} className="mx-auto w-64">
-              <figure className="overflow-hidden rounded-lg border-8 border-ink shadow-pop">
+            <Reveal delay={100} className="mx-auto w-64">
+              <figure className="overflow-hidden rounded-lg border-8 border-text">
                 <Image src={shotMobile} alt="Die Suite auf dem Handy: Übersicht mit Netto-Umsatz und Berichtsfilter." placeholder="blur" className="h-auto w-full" sizes="256px" />
               </figure>
             </Reveal>
@@ -313,18 +343,17 @@ export default function LandingPage() {
         </section>
 
         {/* ------------------------------------------------ trust, facts only */}
-        <section aria-labelledby="facts" className="bg-surface">
+        <section aria-labelledby="facts" className="border-y border-border bg-surface">
           <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
             <Reveal>
               <p className="text-sm font-bold uppercase tracking-wide text-accent">Verlässlich</p>
-              <h2 id="facts" className="mt-2 max-w-2xl text-xl lg:text-display">Worauf du dich verlassen kannst</h2>
+              <h2 id="facts" className="font-display mt-3 max-w-2xl text-[2rem] leading-tight lg:text-[2.75rem]">Worauf du dich verlassen kannst</h2>
             </Reveal>
-            <ul className="mt-10 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
               {FACTS.map(({ icon: Icon, title, body }) => (
-                <li key={title}>
-                  <span className="inline-flex size-12 items-center justify-center rounded-md border-2 border-saffron text-accent"><Icon aria-hidden className="size-6" /></span>
-                  <h3 className="mt-4 text-lg">{title}</h3>
-                  <p className="mt-1 text-text-muted">{body}</p>
+                <li key={title} className="border-t border-border pt-5">
+                  <h3 className="flex items-center gap-2 text-lg"><Icon aria-hidden className="size-5 shrink-0 text-accent" />{title}</h3>
+                  <p className="mt-2 text-text-muted">{body}</p>
                 </li>
               ))}
             </ul>
@@ -332,31 +361,31 @@ export default function LandingPage() {
         </section>
 
         {/* ------------------------------------------------ pricing */}
-        <section id="preise" aria-labelledby="pricing" className="bg-bg">
+        <section id="preise" aria-labelledby="pricing">
           <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-            <h2 id="pricing" className="text-xl lg:text-display">Preise</h2>
+            <h2 id="pricing" className="font-display text-[2rem] leading-tight lg:text-[2.75rem]">Preise</h2>
             <p className="mt-2 text-text-muted">Alle Module in jedem Tarif. {PRICE_TAX_NOTE}</p>
             <div className="mt-10 grid gap-6 md:grid-cols-2">
-              <div className="rounded-lg border border-border bg-surface p-8">
+              <div className="rounded-md border border-border bg-surface-raised p-8">
                 <h3 className="text-lg">Ein Betrieb</h3>
                 <p className="mt-1 text-text-muted">Für das Restaurant, die Bar, das Café.</p>
-                <p className="num mt-6 text-display">{eur(PRICING.firstOutletMonthly)} <span className="text-sm font-normal text-text-muted">pro Monat</span></p>
-                <p className="text-xs font-normal text-text-muted">oder {eur(PRICING.firstOutletYearly)} pro Jahr (2 Monate geschenkt)</p>
+                <p className="num font-display mt-6 text-[2.5rem] leading-none">{eur(PRICING.firstOutletMonthly)} <span className="font-sans text-sm font-normal text-text-muted">pro Monat</span></p>
+                <p className="mt-2 text-xs font-normal text-text-muted">oder {eur(PRICING.firstOutletYearly)} pro Jahr (2 Monate geschenkt)</p>
                 <ul className="mt-6 flex flex-col gap-2">
                   {["Report Studio und Mission Control", "Service Funnel, Deckungsbeiträge, Renner-Penner", "Rezepte, Inventur, Bestell-Forecast", "Alle 7 Rollen"].map((x) => (
-                    <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{x}</li>
+                    <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />{x}</li>
                   ))}
                 </ul>
               </div>
-              <div className="relative rounded-lg bg-ink p-8 text-on-ink shadow-glow">
-                <span className="absolute -top-3 right-6 rounded-pill bg-saffron px-3 py-1 text-xs font-bold text-on-saffron">für Gruppen</span>
+              <div className="relative rounded-md border border-border border-t-4 border-t-accent bg-surface-raised p-8">
+                <span className="absolute -top-3.5 right-6 rounded-pill bg-accent px-3 py-1 text-xs font-bold text-on-accent">für Gruppen</span>
                 <h3 className="text-lg">Weitere Standorte</h3>
-                <p className="mt-1 text-on-ink-muted">Für Gruppen und Betriebe mit mehreren Häusern.</p>
-                <p className="num mt-6 text-display">+ {eur(PRICING.extraOutletMonthly)} <span className="text-sm font-normal text-on-ink-muted">pro weiterem Standort und Monat</span></p>
-                <p className="text-xs font-normal text-on-ink-muted">oder {eur(PRICING.extraOutletYearly)} pro Jahr und Standort</p>
+                <p className="mt-1 text-text-muted">Für Gruppen und Betriebe mit mehreren Häusern.</p>
+                <p className="num font-display mt-6 text-[2.5rem] leading-none">+ {eur(PRICING.extraOutletMonthly)} <span className="font-sans text-sm font-normal text-text-muted">pro weiterem Standort und Monat</span></p>
+                <p className="mt-2 text-xs font-normal text-text-muted">oder {eur(PRICING.extraOutletYearly)} pro Jahr und Standort</p>
                 <ul className="mt-6 flex flex-col gap-2">
                   {["Outlets einzeln und gesamt auswerten", "Mehrere Lager mit Transfer", "Rollen je Mitarbeiter"].map((x) => (
-                    <li key={x} className="flex gap-2"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-saffron" />{x}</li>
+                    <li key={x} className="flex gap-2"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />{x}</li>
                   ))}
                 </ul>
               </div>
@@ -365,32 +394,34 @@ export default function LandingPage() {
         </section>
 
         {/* ------------------------------------------------ inquiry */}
-        <section id="anfrage" aria-labelledby="lead" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
-          <div className="grid gap-10 rounded-lg border border-border bg-bg p-6 shadow-pop lg:grid-cols-[5fr_7fr] lg:p-10">
+        <section id="anfrage" aria-labelledby="lead" className="border-t border-border">
+          <div className="mx-auto grid max-w-(--size-content-max) gap-10 px-4 py-20 lg:grid-cols-[5fr_7fr] lg:px-8">
             <div>
               <p className="text-sm font-bold uppercase tracking-wide text-accent">Vorführung</p>
-              <h2 id="lead" className="mt-2 text-xl lg:text-display">Deine Zahlen im Board</h2>
-              <p className="mt-3 text-text-muted">
+              <h2 id="lead" className="font-display mt-3 text-[2rem] leading-tight lg:text-[2.75rem]">Deine Zahlen im Board</h2>
+              <p className="mt-4 text-text-muted">
                 In einer halben Stunde importieren wir zusammen deine Speisekarte und einen Monat Verkäufe, und du siehst Renner,
                 Penner und Deckungsbeiträge deines Betriebs.
               </p>
               <ul className="mt-6 flex flex-col gap-2 text-sm">
                 {["30 Minuten, per Video oder bei euch", "Mit deiner echten Speisekarte", "Kostenlos und unverbindlich"].map((x) => (
-                  <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-success" />{x}</li>
+                  <li key={x} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />{x}</li>
                 ))}
               </ul>
             </div>
-            <LeadForm appName={APP_NAME} />
+            <div className="rounded-md border border-border bg-surface-raised p-6 lg:p-8">
+              <LeadForm appName={APP_NAME} />
+            </div>
           </div>
         </section>
 
         {/* ------------------------------------------------ faq */}
-        <section aria-labelledby="faq" className="bg-surface">
+        <section aria-labelledby="faq" className="border-y border-border bg-surface">
           <div className="mx-auto max-w-(--size-form-max) px-4 py-20">
-            <h2 id="faq" className="text-xl">Häufige Fragen</h2>
-            <div className="mt-6 flex flex-col gap-3">
+            <h2 id="faq" className="font-display text-[2rem] leading-tight">Häufige Fragen</h2>
+            <div className="mt-6 flex flex-col divide-y divide-border border-y border-border">
               {FAQ.map(({ q, a }) => (
-                <details key={q} className="group rounded-md border border-border bg-bg px-5 py-4 open:shadow-card">
+                <details key={q} className="group py-4">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold marker:hidden">
                     {q}<Plus aria-hidden className="size-4 shrink-0 text-accent transition-transform duration-base group-open:rotate-45" />
                   </summary>
@@ -402,10 +433,9 @@ export default function LandingPage() {
         </section>
 
         {/* ------------------------------------------------ final */}
-        <section aria-labelledby="final" className="relative overflow-hidden bg-ink text-on-ink">
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_80%_at_50%_120%,var(--color-accent)_0%,transparent_70%)]" />
-          <div className="relative mx-auto max-w-(--size-content-max) px-4 py-24 text-center lg:px-8">
-            <h2 id="final" className="mx-auto max-w-3xl text-xl lg:text-display">Sieh deinen Betrieb so, wie die Zahlen ihn sehen.</h2>
+        <section aria-labelledby="final">
+          <div className="mx-auto max-w-(--size-content-max) px-4 py-24 text-center lg:px-8">
+            <h2 id="final" className="font-display mx-auto max-w-3xl text-[2rem] leading-tight lg:text-[2.75rem]">Sieh deinen Betrieb so, wie die Zahlen ihn sehen.</h2>
             <div className="mt-8 flex justify-center"><Link href={SUITE} className={cta}>Live ausprobieren <ArrowRight aria-hidden className="size-4" /></Link></div>
           </div>
         </section>

@@ -2,6 +2,7 @@
 // landing page, into public/landing/. Run again after the suite changes.
 //   npm run build && ALLOW_DEMO=1 npx next start -p 3300   (without GLB_SUPABASE_*: the suite runs as a browser demo)
 //   BASE_URL=http://localhost:3300 node scripts/suite-shots.mjs     (needs ffmpeg for the video)
+//   ONLY=lifecycle,v11tasks node scripts/suite-shots.mjs              (just these desktop shots, no phone shot, no video)
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -22,13 +23,30 @@ async function open(page, view) {
 }
 
 // Desktop screenshots
-const SHOTS = ["overview", "reports", "funnel", "portfolio", "costs", "lifecycle", "market", "purchasing", "inventory", "insights", "recipes", "menuimport", "v11cockpit", "v11funnel", "v11training", "v11market", "v11menu", "v11tasks"];
+const ALL_SHOTS = ["overview", "reports", "funnel", "portfolio", "costs", "lifecycle", "market", "purchasing", "inventory", "insights", "recipes", "menuimport", "v11cockpit", "v11funnel", "v11training", "v11market", "v11menu", "v11tasks"];
+const ONLY = (process.env.ONLY || "").split(",").filter(Boolean);
+const SHOTS = ONLY.length ? ALL_SHOTS.filter((x) => ONLY.includes(x)) : ALL_SHOTS;
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: "de-DE", timezoneId: "Europe/Berlin" });
 await page.goto(`${base}/suite`);
 await page.waitForSelector("#sidebar [data-view]");
 for (const v of SHOTS) {
   await open(page, v);
+  if (v === "lifecycle") {
+    // the chart of actual monthly values with one month's details open: the panel itself is the picture
+    const panel = page.locator(".lc-panel");
+    await panel.scrollIntoViewIfNeeded();
+    const box = await page.locator("#lc-chart .lc-hit").nth(4).boundingBox();
+    if (box) await page.mouse.move(box.x + box.width / 2, box.y + 80);
+    await page.waitForTimeout(200);
+    await panel.screenshot({ path: out(`suite-${v}.png`) });
+    continue;
+  }
   await page.screenshot({ path: out(`suite-${v}.png`) });
+}
+if (ONLY.length) {
+  await browser.close();
+  console.log("suite screenshots written:", SHOTS.join(", "));
+  process.exit(0);
 }
 
 // Phone: the service funnel as staff see it after service

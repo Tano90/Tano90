@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/fraunces";
 
 @layer base {
   html {
@@ -43,4 +44,36 @@
 @utility animate-float { animation: float 6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee, .animate-rise, .animate-wobble, .animate-float { animation: none; }
+}
+
+/* Public start page in warm beige (Oct 2026). The overrides live only inside .landing-beige, so the app, the
+   suite and the legal pages keep their own colours. Green stays the brand accent; contrast checked (AA). */
+.landing-beige {
+  --color-bg: #f7f2e8;
+  --color-surface: #efe6d6;
+  --color-surface-raised: #fbf8f2;
+  --color-surface-sunken: #e8dcc8;
+  --color-cream: #f2eadb;
+  --color-row-hover: #ebe1cf;
+  --color-border: #dccfb8;
+  --color-border-input: #857862;
+  --color-text: #221c15;
+  --color-text-muted: #574c3f;
+  --color-text-subtle: #62574a;
+  --color-accent: #0f6a64;
+  --color-accent-hover: #0a5450;
+  --color-accent-subtle: #e1eae1;
+  --color-focus-ring: #0f6a64;
+  --color-success: #1d6a44;
+  --color-ink: #2b251d;
+  --color-ink-raised: #3a3227;
+  --color-on-ink-muted: #ddd2c0;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.landing-beige .font-display {
+  font-family: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
