@@ -5340,7 +5340,7 @@
   const v6OldOverview = v5OldOverview;
   handlers.overview = () =>
     v6MainOverview() +
-    `<details class="v6-legacy-details"><summary>${I("layers")} Weitere operative Kennzahlen und die bisherige Detailansicht öffnen <span>+</span></summary><div class="v6-legacy-section">${v6OldOverview()}</div></details>`;
+    `<details class="v6-legacy-details"><summary>${I("layers")} Weitere operative Kennzahlen und die bisherige Detailansicht öffnen <span>+</span></summary><div class="v6-legacy-section">${v6OldOverview().replace('<h1 class="page-title">', '<h2 class="page-title">').replace("</h1>", "</h2>")}</div></details>`;
   const v6OldOperations = handlers.operations;
   // Datenqualität shows data and set-up state; the figures have their own page (Übersicht), not a copy below (Oct 2026)
   handlers.operations = () => v6OldOperations();
