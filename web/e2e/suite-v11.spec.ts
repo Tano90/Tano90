@@ -431,9 +431,11 @@ test.describe("SV v1.1-Module in der Suite", () => {
     page,
   }) => {
     await open(page, "v11tasks");
-    await page.getByLabel("Beschreibung").fill("Kühlhaus prüfen");
-    await page.getByLabel("Priorität").selectOption("high");
-    await page.getByLabel("Fälligkeit").fill("2026-10-30");
+    // since the outlet filters (Oct 2026) the list has its own "Priorität" filter: fill the form's fields
+    const form = page.locator("#v11-task-form");
+    await form.getByLabel("Beschreibung").fill("Kühlhaus prüfen");
+    await form.getByLabel("Priorität").selectOption("high");
+    await form.getByLabel("Fälligkeit").fill("2026-10-30");
     await page.getByRole("button", { name: "Aufgabe erstellen" }).click();
     const task = page.locator(".v11-task", { hasText: "Kühlhaus prüfen" });
     await expect(task).toContainText("30.10.2026");
@@ -473,12 +475,14 @@ test.describe("SV v1.1-Module in der Suite", () => {
       }),
     );
     await open(page, "v11market");
+    // view A (Oct 2026): own article from the product master, quantity and scope decide whether a deviation is shown
     const f = page.locator("#v11-market-form");
+    await f.getByLabel("Eigener Artikel").selectOption({ label: "Classic Cheeseburger (Burger)" });
+    await expect(f.getByLabel("Eigene Menge / Portion")).toHaveValue("Portion");
     await f.getByLabel("Wettbewerber").fill("Bistro Nachbar");
-    await f.getByLabel("Eigenes Produkt").fill("Classic Cheeseburger");
-    await f
-      .getByLabel("Vergleichbares Konkurrenzprodukt")
-      .fill("Burger Classic");
+    await f.getByLabel("Konkurrenzprodukt", { exact: true }).fill("Burger Classic");
+    await f.getByLabel("Menge / Portion bei der Konkurrenz").fill("Portion");
+    await f.getByLabel("Vergleichbar", { exact: true }).check();
     await f.getByLabel("Konkurrenzpreis brutto (€)").fill("16");
     await f.getByLabel("Unser Bruttopreis (€)").fill("17.9");
     await f.getByLabel("Quelle (https-Link)").fill("http://example.com/karte");
@@ -487,29 +491,23 @@ test.describe("SV v1.1-Module in der Suite", () => {
     await expect(page.locator(".toast.error")).toContainText("https");
     await f.getByLabel("Quelle (https-Link)").fill("https://example.com/karte");
     await f.getByRole("button", { name: "Beobachtung speichern" }).click();
+    const row = page.locator("#main tbody tr", { hasText: "Bistro Nachbar" });
+    await expect(row).toContainText("+11,9 %");
+    await expect(row).toContainText("+1,90 €");
+    await expect(row).toContainText("Vergleichbar");
     await expect(
-      page.locator("#main tbody tr", { hasText: "Bistro Nachbar" }),
-    ).toContainText("+11,9 %");
-    await expect(
-      page.getByRole("button", { name: "KI-Einordnung erstellen" }),
+      page.getByRole("button", { name: "KI-Einordnung für diese Auswahl" }),
     ).toBeDisabled();
-    await page
-      .locator("#v11-discover-form")
-      .getByLabel("Breitengrad")
-      .fill("50.8");
-    await page
-      .locator("#v11-discover-form")
-      .getByLabel("Längengrad")
-      .fill("6.48");
-    await page
-      .locator("#v11-discover-form")
-      .getByLabel("Umkreis")
-      .selectOption("1000");
-    await page.getByRole("button", { name: "Gastronomie suchen" }).click();
+    // view B: surroundings
+    await page.getByRole("tab", { name: /Restaurants und Locations/ }).click();
+    await page.getByText("Koordinaten von Hand eingeben").click();
+    await page.locator("#v11-coord-form").getByLabel("Breitengrad").fill("50.8");
+    await page.locator("#v11-coord-form").getByLabel("Längengrad").fill("6.48");
+    await page.getByRole("button", { name: "Koordinaten verwenden" }).click();
+    await page.getByLabel("Radius").selectOption("1000");
+    await page.getByRole("button", { name: "Umgebung durchsuchen" }).click();
     await expect(page.locator("#main")).toContainText("Bistro Nachbar");
-    await expect(page.locator("#main")).toContainText(
-      "regional · Markt 2 Düren",
-    );
+    await expect(page.locator("#main")).toContainText("Markt 2 Düren");
     problems.splice(
       0,
       problems.length,

@@ -9,5 +9,5 @@ export default defineConfig({
       "server-only": fileURLToPath(new URL("./tests/empty.ts", import.meta.url)),
     },
   },
-  test: { fileParallelism: false, exclude: ["e2e/**", "node_modules/**"] },
+  test: { fileParallelism: false, exclude: ["e2e/**", "node_modules/**", "suite-tests/**", "suite-v11-original/**"] /* node:test files, run by test:suite and in suite-v11-original */ },
 });

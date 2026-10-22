@@ -42,6 +42,31 @@ test.describe("L01 Landingpage", () => {
     for (const old of ["HACCP", "Zentralküche", "DATEV", "Barcode", "Allergene"]) await expect(page.locator("body")).not.toContainText(old);
   });
 
+  test("L01-E4 Startseite beige, dunkle Schrift, Grün als Akzent; Suite und Rechtsseiten behalten ihr Design", async ({ page }) => {
+    await page.goto("/");
+    const look = await page.evaluate(() => {
+      const root = document.querySelector(".landing-beige") as HTMLElement;
+      const cta = [...document.querySelectorAll("a")].find((a) => a.textContent?.includes("Live ausprobieren")) as HTMLElement;
+      return { bg: getComputedStyle(root).backgroundColor, text: getComputedStyle(root).color, cta: getComputedStyle(cta).backgroundColor, h1: getComputedStyle(document.querySelector("h1")!).fontFamily };
+    });
+    expect(look.bg).toBe("rgb(247, 242, 232)");
+    expect(look.text).toBe("rgb(34, 28, 21)");
+    expect(look.cta).toBe("rgb(15, 106, 100)");
+    expect(look.h1).toContain("Fraunces");
+    // no moving ticker, no glow on the start page
+    expect(await page.locator(".animate-marquee, .shadow-glow").count()).toBe(0);
+    // real views of the application for concrete use cases
+    const cases = page.getByRole("region", { name: "Vier Fragen, die jede Woche kommen." });
+    await expect(cases.getByRole("img")).toHaveCount(4);
+    for (const h of ["Wie lief der Monat, und wo fehlen noch Kosten?", "Welcher Artikel wächst, welcher verliert?", "Was verlangen andere für Vergleichbares?", "Was ist in welchem Outlet offen?"]) await expect(cases.getByRole("heading", { name: h })).toBeVisible();
+    // every in-page link has its target
+    const anchors = await page.locator('a[href^="#"]').evaluateAll((as) => as.map((a) => a.getAttribute("href")!));
+    for (const h of anchors) expect(await page.locator(h).count(), h).toBe(1);
+    // the legal pages keep the app colours
+    await page.goto("/legal/imprint");
+    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(255, 255, 255)");
+  });
+
   test("L01-N1 Rechtsseiten verlinkt", async ({ page }) => {
     await page.goto("/");
     for (const name of ["Datenschutz", "Nutzungsbedingungen", "Impressum"]) {

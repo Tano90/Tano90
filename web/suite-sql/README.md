@@ -31,3 +31,10 @@ werden für den integrierten Betrieb nicht benötigt; `005` lässt sich nicht zw
 
     TEST_DATABASE_URL=postgres://postgres@localhost:54329/kitchen npm run test:suite-sql
     # 001+002 (8 Tests), dieselben 8 Tests nach 006, und suite-tests/rls-v11.test.mjs (7 Tests, zwei Betriebe)
+
+## 007 – Aufgaben nach Outlet (Oktober 2026)
+
+`007_glb_task_outlets.sql` nach 006 ausführen (wiederholbar, ändert keine Daten). Ein Trigger auf `glb_snapshots`
+lehnt jede Speicherung ab, in der eine Aufgabe auf ein Outlet verweist, das nicht im selben Betrieb existiert
+(`TASK_OUTLET_INVALID`). Aufgaben ohne `outlet_id` gelten als „Betriebsübergreifend / Allgemein“.
+Test: `TEST_DATABASE_URL=… node --test suite-tests/rls-v12.test.mjs`. Details: `replica/glb-v12-aenderungen.md`.
