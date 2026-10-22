@@ -324,3 +324,23 @@ body {
     display: none;
   }
 }
+/* tablets: the header keeps status, search, account and backup; reports stay in the side menu */
+@media (min-width: 761px) and (max-width: 1279px) {
+  .topbar .breadcrumbs,
+  .topbar .bread-sep,
+  #v6-report-quick,
+  #v5-open-command kbd,
+  .topbar .avatar {
+    display: none !important;
+  }
+  .topbar .top-right {
+    gap: 8px;
+    min-width: 0;
+  }
+  #cloud-sync-status {
+    white-space: normal;
+    max-width: 210px;
+    line-height: 1.25;
+    font-size: 11px;
+  }
+}

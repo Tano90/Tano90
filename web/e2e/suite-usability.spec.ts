@@ -206,4 +206,29 @@ test.describe("SB Bedienung", () => {
       "Kosten je Verkaufsmonat aus den Kostenständen der Artikel.",
     );
   });
+
+  for (const width of [768, 1024]) {
+    test(`SB-6 Tablet ${width} px: Kopfzeile passt, Speicherstatus, Suche, Konto und Backup sichtbar`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.reload();
+      const bar = await page.locator(".topbar").boundingBox();
+      for (const sel of [
+        "#v5-open-command",
+        "#cloud-sync-status",
+        "#cloud-account",
+        '.topbar [data-action="export-json"]',
+      ]) {
+        const box = await page.locator(sel).boundingBox();
+        expect(box, sel).not.toBeNull();
+        expect(box!.x + box!.width, sel).toBeLessThanOrEqual(
+          bar!.x + bar!.width + 1,
+        );
+      }
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBeLessThanOrEqual(width);
+    });
+  }
 });
