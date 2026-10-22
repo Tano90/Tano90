@@ -621,10 +621,10 @@
         `<button class="btn btn-primary" data-action="new-sale">${I("plus")} Monatsabsatz erfassen</button>`,
       ) +
       demoNotice() +
-      `<div class="notice">${I("info")}<span><strong>Indikator, keine Prognose:</strong> Vergleich der letzten zwei Monate mit den beiden vorherigen. Ab +20 % Wachstum, bis −20 % Rückgang, sonst stabil. Vier zusammenhängende Monatswerte für Trends nötig. Einführung nur mit hinterlegtem Startmonat; fehlende Monate gelten nicht automatisch als Null. Lebenszyklus ist damit eine operative Näherung, keine beweissichere Marktphase.</span></div><section class="kpi-grid">${kpi("Produkte", String(results.length), "layers", "Im Sortiment")}${kpi("Auswertbar", String(valid), "chart", "Mit vier zusammenhängenden Monaten")}${kpi("Wachstum", String(results.filter((x) => x.life.phase === "growth").length), "trending", "Absatz-Trendindikator")}${kpi("Rückgang", String(results.filter((x) => x.life.phase === "decline").length), "alert", "Absatz-Trendindikator")}</section><section class="content-grid"><div class="panel">${panelHeader("Einzelanalyse", "Produkt auswählen und Absatzkurve ansehen")}<div class="field"><label for="life-product">Produkt</label><select id="life-product">${selectOptions(
+      `<div class="notice">${I("info")}<span><strong>Trendindikator, keine Marktprognose.</strong> Berechnung: Ø Absatz der letzten zwei Monate gegenüber den beiden Monaten davor. Ab +20 % Wachstum, ab −20 % Rückgang, dazwischen Reife. Nötig sind vier aufeinanderfolgende Monate. <strong>Echte Null:</strong> Der Betrieb hat in dem Monat Verkäufe erfasst, dieser Artikel wurde nicht verkauft. <strong>Fehlend:</strong> Für den Monat gibt es gar keine Verkaufsdaten; dann keine Einordnung. Einführung nur mit hinterlegtem Startmonat.</span></div><section class="kpi-grid">${kpi("Produkte", String(results.length), "layers", "Im Sortiment")}${kpi("Auswertbar", String(valid), "chart", "Mit vier zusammenhängenden Monaten")}${kpi("Wachstum", String(results.filter((x) => x.life.phase === "growth").length), "trending", "Absatz-Trendindikator")}${kpi("Rückgang", String(results.filter((x) => x.life.phase === "decline").length), "alert", "Absatz-Trendindikator")}</section><section class="content-grid"><div class="panel">${panelHeader("Einzelanalyse", "Produkt auswählen und Absatzkurve ansehen")}<div class="field"><label for="life-product">Produkt</label><select id="life-product">${selectOptions(
         S.items.map((p) => [p.id, p.name]),
         selected,
-      )}</select></div>${product ? `<div class="lifecycle-callout"><span class="tag ${life.phase === "decline" ? "tag-red" : life.phase === "growth" ? "" : "tag-neutral"}">${esc(lifecycleLabel(life.phase))}</span><strong>${esc(product.name)}</strong><div class="kpi-value">${deltaLabel(life.changePct)}</div><small>${esc(life.description)}</small></div>${life.points.length ? `<div class="month-bars">${life.points.map((x) => `<div class="month-bar-line"><span>${esc(periodName(x.month))}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(0, (x.quantity / Math.max(1, ...life.points.map((y) => y.quantity))) * 100)}%"></div></div><strong>${number(x.quantity)} Stk.</strong></div>`).join("")}</div>` : empty("Keine Monatsdaten", "Erfasse monatliche Verkäufe für dieses Produkt.")}` : empty("Keine Produkte", "Lege einen Artikel an.")}</div><div class="panel">${panelHeader("Phasen & Handlung", "Interpretation und sinnvolle Reaktion")}${life ? `<div class="insights-list"><div class="insight-card"><div class="insight-content"><h3>${esc(lifecycleLabel(life.phase))}</h3><p>${esc(life.phase === "introduction" ? "Einführung: Absatz aufbauen und zunächst echte Monatswerte sammeln; der Startmonat ist manuell hinterlegt." : life.phase === "growth" ? "Wachstum: Verfügbarkeit und Kapazität sichern; Preis- und DB-Entwicklung beobachten." : life.phase === "decline" ? "Absatzrückgang: Verfügbarkeit, Preis, Qualität, Menüpositionierung und Saisoneffekte prüfen." : life.phase === "maturity" ? "Stabiler Absatz: Marge, Upgrades und operative Effizienz optimieren." : "Noch keine tragfähige Trendklassifizierung. Monatswerte nachtragen; Datenlücken nicht als Null interpretieren.")}</p></div></div></div>` : ""}<p class="chart-note">Einführung wird nur angezeigt, wenn ein Startmonat im Produkt hinterlegt ist und der neueste Verkaufsmonat maximal zwei Monate nach dem Start liegt. Die Phase wird nicht aus einem einzelnen Absatzwert geraten.</p></div></section><div class="panel">${panelHeader("Lebenszyklus des gesamten Sortiments", "Einordnung für jedes Produkt")}${results.length ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Produkt</th><th>Phase</th><th class="align-right">Trend</th><th class="align-right">Monate</th><th>Details</th></tr></thead><tbody>${results.map(({ p, life }) => `<tr><td><strong>${esc(p.name)}</strong><div class="micro">${esc(p.category)}</div></td><td><span class="tag ${life.phase === "decline" ? "tag-red" : life.phase === "growth" ? "" : "tag-neutral"}">${esc(lifecycleLabel(life.phase))}</span></td><td class="align-right">${deltaLabel(life.changePct)}</td><td class="align-right">${life.months}</td><td><button class="btn btn-small" data-lifecycle="${esc(p.id)}">Details</button></td></tr>`).join("")}</tbody></table></div>` : empty("Keine Produkte", "Erst Artikel und Monatsverkäufe anlegen.")}</div>`
+      )}</select></div>${product ? `<div class="lifecycle-callout"><span class="tag ${life.phase === "decline" ? "tag-red" : life.phase === "growth" ? "" : "tag-neutral"}">${esc(lifecycleLabel(life.phase))}</span><strong>${esc(product.name)}</strong><div class="kpi-value">${deltaLabel(life.changePct)}</div><small>${esc(life.description)}${life.period ? ` · Betrachtungszeitraum ${esc(periodName(life.period[0]))} bis ${esc(periodName(life.period[3]))}` : ""}${life.missingMonths?.length ? ` · fehlende Monate: ${esc(life.missingMonths.map(periodName).join(", "))}` : ""}</small></div>${life.points.length ? `<div class="month-bars">${life.points.map((x) => `<div class="month-bar-line"><span>${esc(periodName(x.month))}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(0, (x.quantity / Math.max(1, ...life.points.map((y) => y.quantity))) * 100)}%"></div></div><strong>${number(x.quantity)} Stk.${x.zero ? " (nicht verkauft)" : ""}</strong></div>`).join("")}</div>` : empty("Keine Monatsdaten", "Erfasse monatliche Verkäufe für dieses Produkt.")}` : empty("Keine Produkte", "Lege einen Artikel an.")}</div><div class="panel">${panelHeader("Phasen & Handlung", "Interpretation und sinnvolle Reaktion")}${life ? `<div class="insights-list"><div class="insight-card"><div class="insight-content"><h3>${esc(lifecycleLabel(life.phase))}</h3><p>${esc(life.phase === "introduction" ? "Einführung: Absatz aufbauen und zunächst echte Monatswerte sammeln; der Startmonat ist manuell hinterlegt." : life.phase === "growth" ? "Wachstum: Verfügbarkeit und Kapazität sichern; Preis- und DB-Entwicklung beobachten." : life.phase === "decline" ? "Absatzrückgang: Verfügbarkeit, Preis, Qualität, Menüpositionierung und Saisoneffekte prüfen." : life.phase === "maturity" ? "Stabiler Absatz: Marge, Upgrades und operative Effizienz optimieren." : "Noch keine tragfähige Trendklassifizierung. Monatswerte nachtragen; Datenlücken nicht als Null interpretieren.")}</p></div></div></div>` : ""}<p class="chart-note">Einführung wird nur angezeigt, wenn ein Startmonat im Produkt hinterlegt ist und der neueste Verkaufsmonat maximal zwei Monate nach dem Start liegt. Die Phase wird nicht aus einem einzelnen Absatzwert geraten.</p></div></section><div class="panel">${panelHeader("Lebenszyklus des gesamten Sortiments", "Einordnung für jedes Produkt")}${results.length ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Produkt</th><th>Phase</th><th class="align-right">Trend</th><th class="align-right">Monate</th><th>Details</th></tr></thead><tbody>${results.map(({ p, life }) => `<tr><td><strong>${esc(p.name)}</strong><div class="micro">${esc(p.category)}</div></td><td><span class="tag ${life.phase === "decline" ? "tag-red" : life.phase === "growth" ? "" : "tag-neutral"}">${esc(lifecycleLabel(life.phase))}</span></td><td class="align-right">${deltaLabel(life.changePct)}</td><td class="align-right">${life.months}</td><td><button class="btn btn-small" data-lifecycle="${esc(p.id)}">Details</button></td></tr>`).join("")}</tbody></table></div>` : empty("Keine Produkte", "Erst Artikel und Monatsverkäufe anlegen.")}</div>`
     );
   }
   function marketViewLegacy() {
@@ -1235,18 +1235,44 @@
       }</div>${m.fixedRate === null ? `<div class="notice">Für diesen Monat sind noch keine Fixkosten gespeichert oder der Umsatz fehlt. Bitte die Monatskosten hinterlegen und speichern, damit valide Zielpreise berechnet werden.</div>` : m.fixedRate + S.profitTarget / 100 >= 1 ? `<div class="notice">Zielpreiskalkulation derzeit nicht möglich: Fixkostenquote und Zielergebnis erreichen zusammen mindestens 100 %. Prüfe Kostenbasis, Umsatzabdeckung oder Zielmarge.</div>` : ""}<div class="panel">${panelHeader("Alle Produkte: aktueller Preis vs. Zielpreis", "Zielpreis = variable Netto-Stückkosten / (1 − Fixkostenquote − Zielgewinnquote) × (1 + USt)")}${list.length ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Artikel</th><th>Oberkategorie</th><th class="align-right">Warenkosten / Stk.</th><th class="align-right">DB I / Stk.</th><th class="align-right">DB II / Stk.</th><th class="align-right">Aktueller VK brutto</th><th class="align-right">Ziel-VK brutto</th><th class="align-right">Differenz brutto</th><th>Aktion</th></tr></thead><tbody>${list.map((x) => `<tr><td><strong>${esc(x.p.name)}</strong><div class="micro">${esc(x.p.category)}</div></td><td>${esc(groupOf(x.p))}</td><td class="align-right">${euro(C.costBreakdown(x.p).goodsNet)}</td><td class="align-right">${euro(x.db1Net)}</td><td class="align-right">${euro(x.db2Net)}</td><td class="align-right">${euro(x.gross)}</td><td class="align-right"><strong>${x.targetGross === null ? "—" : euro(x.targetGross)}</strong></td><td class="align-right ${x.deltaGross > 0 ? "negative" : ""}">${x.deltaGross === null ? "—" : (x.deltaGross > 0 ? "+" : "") + euro(x.deltaGross)}</td><td><button class="btn btn-small" data-edit="${esc(x.p.id)}">Produkt</button></td></tr>`).join("")}</tbody></table></div>` : empty("Keine Produkte", "Lege Produkte an, um alle Zielpreise zu sehen.")}<p class="chart-note">Die Übersicht ändert keine aktuellen Verkaufspreise automatisch. Eine 1:1-Zuordnung von Gemeinkosten zu Artikeln wäre Scheingenauigkeit; der Zuschlag dient zur Szenariokalkulation und nicht als tatsächlicher Stück-DB.</p></div><div class="panel" style="margin-top:18px">${panelHeader("Wareneinsatzprüfung", "Buchhaltungswert gegen kalkulierte Verkaufskosten")}${kpi("Wareneinsatz aus Produktkalkulation", euro(netMonthly.goodsNet), "calculator", "Aktuelle Rezeptkosten × verkaufte Mengen")}${kpi("Buchhalterischer Wareneinsatz", S.monthlyCosts[COST_MONTH] ? euro(m.goods) : "—", "calculator", "Manueller Monatswert")}${kpi("Abweichung", S.monthlyCosts[COST_MONTH] ? euro(m.goods - netMonthly.goodsNet) : "—", "alert", "Manuell minus kalkuliert")}${kpi("WE-Quote aus Verkäufen", actualGoodsPct === null ? "—" : pct(actualGoodsPct), "chart", "Produktspezifisch, netto")}</div>`
     );
   }
+  // Comparison group, period and outlet for Renner-Penner. "all" keeps the comparison across the whole range.
+  let PF_GROUP = "all",
+    PF_MONTH = "all",
+    PF_OUTLET = "all";
+  function portfolioSelection() {
+    const items = reportItems({ outletId: PF_OUTLET === "all" ? undefined : PF_OUTLET, month: PF_MONTH === "all" ? undefined : PF_MONTH });
+    const [kind, value] = PF_GROUP === "all" ? ["all", ""] : PF_GROUP.split(/:(.*)/s);
+    return items.filter((p) => kind === "all" || (kind === "cat" ? p.category === value : groupOf(p) === value));
+  }
   function portfolioView() {
-    const list = C.productActions(reportItems()),
-      q = QFILTER === "all" ? list : list.filter((p) => p.quadrant === QFILTER);
+    const items = portfolioSelection(),
+      a = C.portfolioAnalysis(items),
+      q = QFILTER === "all" ? a.rows : a.rows.filter((p) => p.quadrant === QFILTER);
+    const cats = [...new Set(S.items.map((p) => p.category))].sort(),
+      groups = [...new Set(S.items.map(groupOf))].filter((g) => g !== "Nicht zugeordnet").sort();
+    const groupLabel =
+      PF_GROUP === "all"
+        ? "gesamtes Sortiment"
+        : PF_GROUP.startsWith("cat:")
+          ? `Warengruppe ${PF_GROUP.slice(4)}`
+          : `Oberkategorie ${PF_GROUP.slice(4)}`;
+    const scope = `${groupLabel} · ${PF_MONTH === "all" ? "alle Monate" : periodName(PF_MONTH)} · ${PF_OUTLET === "all" ? "alle Outlets" : outletName(PF_OUTLET)}`;
     return (
       pageHeader(
         "Menu Engineering",
         "Renner & Penner – Aktionsplan",
-        "Konkrete Maßnahmen pro Artikel, priorisiert nach Absatz und Deckungsbeitrag.",
+        "Konkrete Maßnahmen pro Artikel, verglichen innerhalb einer sinnvollen Gruppe.",
         `<button class="btn" data-view="costs">${I("calculator")} Zielpreise prüfen</button>`,
       ) +
       demoNotice() +
-      `<div class="notice">${I("info")}<span>Die Quadranten sind relativ zum aktuellen Sortiment, auf Basis des Medians von Absatz und DB II je Stück. Empfehlungen sind Hypothesen für Praxistests, keine garantierte Umsatzsteigerung.</span></div><div class="toolbar"><div class="toolbar-left"><select id="quadrant-filter" class="select">${selectOptions(
+      `<div class="toolbar"><div class="toolbar-left"><label>Vergleichsgruppe<select id="pf-group" class="select">${selectOptions(
+        [
+          ["all", "Gesamtes Sortiment"],
+          ...cats.map((c) => ["cat:" + c, "Warengruppe: " + c]),
+          ...groups.map((g) => ["grp:" + g, "Oberkategorie: " + g]),
+        ],
+        PF_GROUP,
+      )}</select></label><label>Zeitraum<select id="pf-month" class="select">${selectOptions([["all", "Alle Monate"], ...periods().map((m) => [m, periodName(m)])], PF_MONTH)}</select></label><label>Outlet<select id="pf-outlet" class="select">${selectOptions([["all", "Alle Outlets"], ...S.outlets.map((o) => [o.id, o.name])], PF_OUTLET)}</select></label><label>Typ<select id="quadrant-filter" class="select">${selectOptions(
         [
           ["all", "Alle"],
           ["star", "Stars"],
@@ -1255,15 +1281,27 @@
           ["loser", "Penner"],
         ],
         QFILTER,
-      )}</select></div><span class="micro">${q.length} Artikel</span></div><section class="content-grid"><div class="panel">${panelHeader("Renner-Penner-Matrix", "Ein Produkt anklicken, um dessen Kosten zu bearbeiten.")}${scatter(reportItems())}</div><div class="panel">${panelHeader("Priorisierte Schritte", "Was genau im operativen Betrieb zu testen ist")}${q
-        .slice(0, 7)
-        .map(
-          (p) =>
-            `<div class="glb-action"><span class="tag ${tagClass(p.quadrant)}">${tagName(p.quadrant)}</span><strong>${esc(p.name)}</strong><p>${esc(p.action)}</p><small>Absatz ${number(p.quantity)} · DB II/Stk. ${euro(p.contributionUnit)}</small></div>`,
-        )
-        .join(
-          "",
-        )}</div></section><div class="panel" style="margin-top:18px">${panelHeader("Alle konkreten Handlungsempfehlungen", "Nach einer Testperiode Verkauf und DB II erneut vergleichen.")}${q.length ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Artikel</th><th>Typ</th><th class="align-right">Absatz</th><th class="align-right">DB II / Stück</th><th>Empfohlene Änderung</th><th>Erfolgskontrolle</th><th></th></tr></thead><tbody>${q.map((p) => `<tr><td><strong>${esc(p.name)}</strong></td><td><span class="tag ${tagClass(p.quadrant)}">${tagName(p.quadrant)}</span></td><td class="align-right">${number(p.quantity)}</td><td class="align-right">${euro(p.contributionUnit)}</td><td>${esc(p.action)}${p.quadrant === "runner" ? `<div class="micro">Preis-Test +5 %: ${euro(p.grossPrice * 1.05)} brutto · bei unverändertem Absatz rechnerisch +${euro((p.quantity * (p.grossPrice * 0.05)) / (1 + p.vat / 100))} DB II.</div>` : ""}</td><td>${esc(p.test)}</td><td><button class="btn btn-small" data-edit="${esc(p.id)}">Bearbeiten</button></td></tr>`).join("")}</tbody></table></div>` : empty("Keine Artikel", "Passe den Filter an.")}</div>`
+      )}</select></label></div><span class="micro">${q.length} Artikel</span></div>
+      <div class="notice">${I("info")}<span><strong>Vergleichsgrundlage:</strong> ${esc(scope)}, ${a.rows.length} Artikel mit Verkäufen${a.withoutSales ? `, ${a.withoutSales} ohne Verkäufe in der Auswahl (nicht eingeordnet)` : ""}. <strong>Schwellen</strong> (Median der Gruppe): Absatz ${number(a.medianQuantity)} · DB II je Stück ${euro(a.medianContribution)}. Gesamt-DB II der Gruppe: ${euro(a.totalDB)}. Empfehlungen sind regelbasierte Hypothesen für einen Praxistest, keine Prognose.</span></div>
+      ${a.small ? `<div class="notice warn" role="note">${I("alert")}<span>Nur ${a.rows.length} Artikel in dieser Gruppe: Die Einordnung über Mediane ist bei so wenigen Artikeln wenig aussagekräftig. Gruppe erweitern oder als grobe Orientierung lesen.</span></div>` : ""}
+      ${
+        a.rows.length
+          ? `<section class="content-grid"><div class="panel">${panelHeader("Renner-Penner-Matrix", "Ein Produkt anklicken, um dessen Kosten zu bearbeiten.")}${scatter(items.filter((x) => x.quantity > 0))}</div><div class="panel">${panelHeader("Priorisierte Schritte", "Nach Gesamt-DB II sortiert: zuerst, was am meisten bewegt")}${q
+              .slice(0, 7)
+              .map(
+                (p) =>
+                  `<div class="glb-action"><span class="tag ${tagClass(p.quadrant)}">${tagName(p.quadrant)}</span>${p.confidence === "gering" ? '<span class="tag tag-warn">Datenbasis gering</span>' : ""}<strong>${esc(p.name)}</strong><p>${esc(p.action)}</p><small>${esc(p.reason)}</small></div>`,
+              )
+              .join(
+                "",
+              )}</div></section><div class="panel" style="margin-top:18px">${panelHeader("Alle Empfehlungen mit Erfolgskontrolle", "Im nächsten gleich langen Zeitraum Absatz und DB II erneut mit derselben Auswahl vergleichen.")}<div class="table-scroll"><table class="data-table"><thead><tr><th>Artikel</th><th>Typ</th><th class="align-right">Absatz</th><th class="align-right">DB II / Stück</th><th class="align-right">Gesamt-DB II</th><th class="align-right">Anteil</th><th>Begründung</th><th>Empfohlene Änderung</th><th>Erfolgskontrolle</th></tr></thead><tbody>${q
+              .map(
+                (p) =>
+                  `<tr><td><strong>${esc(p.name)}</strong><div class="micro">${esc(p.category)}</div></td><td><span class="tag ${tagClass(p.quadrant)}">${tagName(p.quadrant)}</span>${p.confidence === "gering" ? '<div class="micro">Datenbasis gering</div>' : ""}</td><td class="align-right">${number(p.quantity)}</td><td class="align-right">${euro(p.contributionUnit)}</td><td class="align-right">${euro(p.dbTotal)}</td><td class="align-right">${p.share === null ? "—" : pct(p.share)}</td><td>${esc(p.reason)}</td><td>${esc(p.action)}</td><td>${esc(p.check)}</td></tr>`,
+              )
+              .join("")}</tbody></table></div></div>`
+          : empty("Keine Verkäufe in dieser Auswahl", "Andere Vergleichsgruppe, anderen Zeitraum oder anderes Outlet wählen.")
+      }`
     );
   }
   function filteredFunnelRows() {
@@ -4801,6 +4839,18 @@
         break;
       case "v6-filter-category":
         V6_CATEGORY = e.target.value;
+        render();
+        break;
+      case "pf-group":
+        PF_GROUP = e.target.value;
+        render();
+        break;
+      case "pf-month":
+        PF_MONTH = e.target.value;
+        render();
+        break;
+      case "pf-outlet":
+        PF_OUTLET = e.target.value;
         render();
         break;
       case "v6-filter-costbasis":

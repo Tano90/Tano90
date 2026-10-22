@@ -380,7 +380,19 @@
       groups.set(x.month, (groups.get(x.month) || 0) + finite(x.quantity));
     }
     for (const [m, q] of groups) groups.set(m, Math.max(0, q)); // a month's net quantity, corrections included
+    // A month in which the business recorded sales but this article sold nothing is a real zero (only after the
+    // article's first own sale). A month without any recorded sales stays missing.
+    const recorded = new Set(sales.map((x) => String(x.month)).filter((m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m)));
+    const firstOwn = [...groups.keys()].sort()[0];
+    const zeroMonths = [];
+    if (firstOwn)
+      for (const m of recorded)
+        if (m > firstOwn && !groups.has(m)) {
+          groups.set(m, 0);
+          zeroMonths.push(m);
+        }
     const months = [...groups.keys()].sort();
+    const point = (month) => ({ month, quantity: groups.get(month), zero: zeroMonths.includes(month) });
     if (months.length && /^\d{4}-(0[1-9]|1[0-2])$/.test(launchMonth)) {
       const [y, m] = launchMonth.split("-").map(Number),
         [ly, lm] = months.at(-1).split("-").map(Number);
@@ -391,26 +403,29 @@
           description: "Einführungsphase anhand des hinterlegten Startmonats; noch keine Trendbewertung",
           months: months.length,
           changePct: null,
-          points: months.map((month) => ({ month, quantity: groups.get(month) })),
+          points: months.map(point),
         };
     }
     if (months.length < 4)
       return {
         phase: "insufficient",
-        description: "Mindestens 4 echte Verkaufsmonate erforderlich",
+        description: "Mindestens 4 Monate mit Verkaufsdaten erforderlich",
         months: months.length,
         changePct: null,
-        points: months.map((month) => ({ month, quantity: groups.get(month) })),
+        points: months.map(point),
       };
     const latest = months.at(-1),
       last4 = [-3, -2, -1, 0].map((d) => addMonths(latest, d));
-    if (!last4.every((x) => groups.has(x)))
+    const missingMonths = last4.filter((x) => !groups.has(x));
+    if (missingMonths.length)
       return {
         phase: "incomplete",
         description: "In den letzten 4 Kalendermonaten fehlen Verkaufsdaten; 0 und fehlend sind nicht gleich",
         months: months.length,
         changePct: null,
-        points: months.map((month) => ({ month, quantity: groups.get(month) })),
+        period: last4,
+        missingMonths,
+        points: months.map(point),
       };
     const before = (groups.get(last4[0]) + groups.get(last4[1])) / 2;
     const after = (groups.get(last4[2]) + groups.get(last4[3])) / 2;
@@ -421,8 +436,10 @@
       changePct,
       months: months.length,
       latest,
+      period: last4,
+      zeroMonths: zeroMonths.filter((m) => last4.includes(m)),
       description: "Indikative Einordnung: Ø der letzten 2 Monate gegenüber den vorherigen 2 Monaten",
-      points: months.map((month) => ({ month, quantity: groups.get(month) })),
+      points: months.map(point),
     };
   }
   function marketComparison(ownGross, competitionGross, ownUnit, competitionUnit) {
@@ -565,6 +582,57 @@
     const a = Math.sin(dlat / 2) ** 2 + Math.cos(lat1 * toR) * Math.cos(lat2 * toR) * Math.sin(dlon / 2) ** 2;
     return 6371 * 2 * Math.asin(Math.min(1, Math.sqrt(a)));
   }
+  // Menu engineering within one comparison group: thresholds are the medians of this group, each article gets a
+  // reason, a measurable check and a confidence. Articles without sales in the selection are left out, not "Penner".
+  function portfolioAnalysis(items, { minItems = 4, minUnits = 10 } = {}) {
+    const sold = items.filter((x) => finite(x.quantity) > 0);
+    const cl = classify(sold);
+    const totalDB = cl.list.reduce((sum, x) => sum + x.contributionUnit * x.quantity, 0);
+    const small = cl.list.length < minItems;
+    const eur = (n) => (Math.round(n * 100) / 100).toFixed(2).replace(".", ",") + " €";
+    const qty = (n) => String(Math.round(n));
+    const rows = cl.list.map((p) => {
+      const dbTotal = p.contributionUnit * p.quantity,
+        share = totalDB > 0 ? (dbTotal / totalDB) * 100 : null;
+      const thin = p.quantity < minUnits;
+      const reason =
+        `Absatz ${qty(p.quantity)} (${p.quantity >= cl.medianQuantity ? "ab" : "unter"} Median ${qty(cl.medianQuantity)}), ` +
+        `DB II/Stk. ${eur(p.contributionUnit)} (${p.contributionUnit >= cl.medianContribution ? "ab" : "unter"} Median ${eur(cl.medianContribution)})` +
+        (share === null ? "" : `, ${Math.round(share)} % des Gesamt-DB II der Gruppe`);
+      let action, check;
+      if (p.contributionUnit < 0) {
+        action = "Verlustartikel: Einkauf, Rezeptur und Verkaufspreis sofort prüfen; jeder Verkauf senkt den DB II.";
+        check = "Ziel: DB II je Stück über 0 €, bevor der Artikel weiter beworben wird.";
+      } else if (p.quadrant === "star") {
+        action = "Halten: sichtbar platzieren, Rezeptur und Lieferfähigkeit sichern. Preis nur in kleinen Schritten testen.";
+        check = `Im nächsten gleich langen Zeitraum: Absatz ≥ ${qty(p.quantity * 0.95)}, DB II/Stk. ≥ ${eur(p.contributionUnit)}.`;
+      } else if (p.quadrant === "runner") {
+        action =
+          share !== null && share >= 15
+            ? "Beliebt, trägt viel zum DB II bei: zuerst Wareneinsatz und Portion prüfen, Preis nur in kleinen Schritten (z. B. +3 %)."
+            : "Beliebt, aber geringer Beitrag je Stück: Wareneinsatz, Portion und Preis prüfen, Add-on anbieten.";
+        check = `Ziel: DB II/Stk. ≥ ${eur(cl.medianContribution)} bei Absatz ≥ ${qty(p.quantity * 0.9)} (höchstens 10 % weniger).`;
+      } else if (p.quadrant === "sleeper") {
+        action = "Guter Beitrag je Stück, wenig verkauft: im Service empfehlen, auf der Karte sichtbarer platzieren.";
+        check = `Ziel: Absatz ≥ ${qty(cl.medianQuantity)} bei DB II/Stk. ≥ ${eur(p.contributionUnit * 0.95)}.`;
+      } else {
+        action = "Wenig verkauft und geringer Beitrag: überarbeiten (Rezept, Preis, Platzierung) oder streichen.";
+        check = `Nach 4 Wochen: bleibt der Absatz unter ${qty(cl.medianQuantity / 2)} und DB II/Stk. unter ${eur(cl.medianContribution)}, aus dem Sortiment nehmen.`;
+      }
+      return { ...p, dbTotal, share, reason, action, check, confidence: small || thin ? "gering" : "normal" };
+    });
+    rows.sort((a, b) => b.dbTotal - a.dbTotal);
+    return {
+      rows,
+      medianQuantity: cl.medianQuantity,
+      medianContribution: cl.medianContribution,
+      totalDB,
+      small,
+      minItems,
+      minUnits,
+      withoutSales: items.length - sold.length,
+    };
+  }
   // Cost states with a valid-from date, so a past month is valued with the cost of that month.
   // An entry without date (validFrom null) is the migrated old value: used only as a labelled substitute.
   const COST_FIELDS = ["costNet", "costDetail"];
@@ -684,6 +752,7 @@
     };
   }
   return {
+    portfolioAnalysis,
     fingerprint,
     planImport,
     costHistoryOf,

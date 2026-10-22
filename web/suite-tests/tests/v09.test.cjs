@@ -141,3 +141,35 @@ test("import plan: same file twice adds nothing in 'add', modes are explicit", (
   assert.equal(C.fingerprint("a;b\r\n1;2\r\n"), C.fingerprint("﻿a;b\n1;2"), "same content, other line endings/BOM");
   assert.notEqual(C.fingerprint("a;b\n1;2"), C.fingerprint("a;b\n1;3"));
 });
+
+test("portfolio analysis: within a group, reasons with medians and DB share, low confidence on thin data", () => {
+  const item = (id, quantity, grossPrice, costNet) => ({ id, name: id, category: "Burger", quantity, grossPrice, costNet, vat: 7 });
+  const r = C.portfolioAnalysis([item("a", 200, 16.05, 4), item("b", 180, 10.7, 6), item("c", 20, 21.4, 5), item("d", 10, 9.63, 7), item("e", 0, 12, 4)]);
+  assert.equal(r.withoutSales, 1, "no sales in the selection is left out, not classified");
+  assert.equal(r.rows.length, 4);
+  const a = r.rows.find((x) => x.id === "a");
+  assert.equal(a.quadrant, "star");
+  assert.match(a.reason, /Median/);
+  assert.match(a.reason, /% des Gesamt-DB II/);
+  assert.match(a.check, /Absatz ≥ 190/);
+  assert.equal(r.rows.find((x) => x.id === "d").confidence, "normal");
+  assert.equal(r.rows[0].id, "a", "sorted by total contribution");
+  const tiny = C.portfolioAnalysis([item("x", 5, 10, 3), item("y", 50, 10, 4)]);
+  assert.equal(tiny.small, true);
+  assert.ok(tiny.rows.every((x) => x.confidence === "gering"));
+  const loss = C.portfolioAnalysis([item("l", 50, 5, 8), item("m", 60, 10, 3), item("n", 70, 12, 3), item("o", 80, 9, 2)]);
+  assert.match(loss.rows.find((x) => x.id === "l").action, /Verlustartikel/);
+});
+
+test("lifecycle: a month with business data but no sale of this article is a real zero, a month without data is missing", () => {
+  const sale = (productId, month, quantity) => ({ productId, month, quantity, grossPrice: 10, outletId: "o" });
+  const other = ["2026-05", "2026-06", "2026-07", "2026-08"].map((m) => sale("x", m, 50));
+  const r = C.lifecycle([sale("a", "2026-05", 20), sale("a", "2026-06", 20), sale("a", "2026-07", 4), ...other], "a");
+  assert.equal(r.phase, "decline", "August had business sales, article none: 0, so (4+0)/2 vs (20+20)/2");
+  assert.deepEqual(r.zeroMonths, ["2026-08"]);
+  assert.deepEqual(r.period, ["2026-05", "2026-06", "2026-07", "2026-08"]);
+  assert.equal(r.points.find((p) => p.month === "2026-08").zero, true);
+  const gap = C.lifecycle([sale("a", "2026-04", 10), sale("a", "2026-05", 10), sale("a", "2026-07", 10), sale("a", "2026-08", 10)], "a");
+  assert.equal(gap.phase, "incomplete");
+  assert.deepEqual(gap.missingMonths, ["2026-06"]);
+});
