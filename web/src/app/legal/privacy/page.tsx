@@ -55,6 +55,7 @@ export default function PrivacyPage() {
         <ul className="list-disc pl-6">
           <li><strong>Anmeldung</strong> (Supabase, beginnt mit <code>sb-</code>): hält dich angemeldet; gelöscht beim Abmelden oder nach Ablauf der Sitzung.</li>
           <li><strong>kl_outlet</strong>: merkt sich den gewählten Standort; gelöscht, wenn du den Browser schließt.</li>
+          <li><strong>Standort</strong>: Nur wenn du in „Mein Markt“ auf „Meinen Standort verwenden“ tippst und es im Browser erlaubst, liest die Suite einmal deine Koordinaten. Sie werden in das Formular übernommen und nur bei der Umkreissuche gesendet.</li>
           <li><strong>Speicher im Browser (localStorage)</strong>: Die Suite speichert dort die Anmeldung und, wenn du sie ohne Konto ausprobierst, die Beispieldaten und deine Änderungen. Sie verlassen deinen Browser nicht; du löschst sie mit den Website-Daten deines Browsers.</li>
         </ul>
         <p>Wir nutzen keine Analyse-, Werbe- oder Tracking-Dienste; die Aufrufe der Startseite zählen wir selbst, ohne Cookie und ohne Personenbezug. Die Schrift ist auf unserem Server eingebunden; beim Laden der Seite wird keine Verbindung zu Schriftanbietern aufgebaut.</p>

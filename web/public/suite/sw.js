@@ -1,6 +1,6 @@
 /* PWA shell cache ONLY. Cloud data and Supabase authentication MUST NEVER be cached. */
-const NAME='glb-v08-shell-20261021m';
-const SHELL=['./','./index.html','./manifest.webmanifest','./config.js','./src/style.css','./src/v04.css','./src/v05.css','./src/v06.css','./src/cloud.css','./src/v08.css','./src/mobile.css','./src/core.js','./src/v04core.js','./src/v05core.js','./src/v06core.js','./src/v08roles.js','./src/v08menu.js','./src/app.js','./src/cloud.js','./src/v08ui.js','./src/mobile.js'];
+const NAME='glb-v08-shell-20261022m';
+const SHELL=['./','./index.html','./manifest.webmanifest','./config.js','./src/style.css','./src/v04.css','./src/v05.css','./src/v06.css','./src/cloud.css','./src/v08.css','./src/mobile.css','./src/core.js','./src/v04core.js','./src/v05core.js','./src/v06core.js','./src/v08roles.js','./src/v08menu.js','./src/app.js','./src/cloud.js','./src/v08ui.js','./src/mobile.js','./src/market-plus.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(NAME).then(async c=>{for(const url of SHELL){try{await c.add(url)}catch(_){/* optional offline shell */}}}));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==NAME).map(k=>caches.delete(k)))));self.clients.claim();});
 self.addEventListener('fetch',e=>{const req=e.request;const url=new URL(req.url);if(req.method!=='GET'||url.origin!==self.location.origin)return;if(url.pathname.includes('/api/')||url.pathname.endsWith('/sw.js'))return;e.respondWith(fetch(req).then(r=>{if(r.ok){const copy=r.clone();caches.open(NAME).then(c=>c.put(req,copy));}return r;}).catch(()=>caches.match(req)));});

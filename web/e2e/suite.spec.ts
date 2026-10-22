@@ -56,3 +56,44 @@ test.describe("SU GLB AI Suite auf dem Handy", () => {
     expect(nav.height).toBeGreaterThan(0);
   });
 });
+
+test.describe("SU Mein Markt", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test("SU-MK1 Ort per Adresse, Suche unter den Feldern, Ersatzserver, Ergebnisse sichtbar", async ({ page, problems }) => {
+    await page.route("https://nominatim.openstreetmap.org/**", (r) => r.fulfill({ json: [
+      { display_name: "Marktplatz 1, 52349 Düren, Deutschland", lat: "50.8037", lon: "6.4820" },
+      { display_name: "Marktplatz, Aachen, Deutschland", lat: "50.7762", lon: "6.0838" },
+    ] }));
+    await page.route("https://overpass.private.coffee/**", (r) => r.fulfill({ status: 503, body: "busy" }));
+    await page.route("https://overpass-api.de/**", (r) => r.fulfill({ json: { elements: [
+      { type: "node", id: 1, lat: 50.805, lon: 6.483, tags: { name: "Trattoria Beispiel", amenity: "restaurant" } },
+      { type: "node", id: 2, lat: 50.81, lon: 6.49, tags: { name: "Café Beispiel", amenity: "cafe" } },
+    ] } }));
+    await page.goto("/suite#market");
+    await page.evaluate(() => (document.querySelector('#sidebar [data-view="market"]') as HTMLElement).click());
+    await page.getByLabel("Adresse oder Ort deines Betriebs").fill("Marktplatz 1 Düren");
+    await page.getByRole("button", { name: "Suchen", exact: true }).click();
+    await page.getByRole("button", { name: /Marktplatz 1, 52349 Düren/ }).click();
+    await expect(page.locator("#market-lat")).toHaveValue("50.80370");
+    await expect(page.locator("#market-label")).toHaveValue("Marktplatz 1 Düren");
+    const go = page.getByRole("button", { name: "Umkreis jetzt durchsuchen (20 km)" });
+    await expect(go).toBeVisible();
+    await go.click();
+    await expect(page.getByText("Trattoria Beispiel")).toBeInViewport();
+    await expect(page.getByText(/Letzte manuelle Suche .* 2 Treffer/)).toBeVisible();
+    // The simulated outage of the first server shows up as a browser error; that one is expected.
+    problems.splice(0, problems.length, ...problems.filter((p) => !p.includes("503 (Service Unavailable)") && !p.includes("overpass.private.coffee")));
+  });
+
+  test("SU-MK2 Ortssuche nicht erreichbar: Hinweis, Koordinaten bleiben nutzbar", async ({ page, problems }) => {
+    await page.route("https://nominatim.openstreetmap.org/**", (r) => r.abort());
+    await page.goto("/suite#market");
+    await page.evaluate(() => (document.querySelector('#sidebar [data-view="market"]') as HTMLElement).click());
+    await page.getByLabel("Adresse oder Ort deines Betriebs").fill("Irgendwo 5");
+    await page.getByRole("button", { name: "Suchen", exact: true }).click();
+    await expect(page.getByText(/Ortssuche gerade nicht erreichbar/)).toBeVisible();
+    await expect(page.locator("#market-lat")).toBeEditable();
+    problems.splice(0, problems.length, ...problems.filter((p) => !p.includes("net::ERR_FAILED")));
+  });
+});
