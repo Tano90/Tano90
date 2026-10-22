@@ -199,3 +199,27 @@ test("Speisekarte CSV: Steuersatz aus Datei bleibt, fehlender wird je Warengrupp
   assert.equal(M.isDrinkCategory("Vom Schwein"), false);
   assert.equal(M.isDrinkCategory("Barbecue"), false);
 });
+
+const X = require("../src/xlsx.js");
+test("Excel-Export: gültiges ZIP, Zahlen bleiben Zahlen, Formeln werden nicht ausgeführt", () => {
+  const b = Buffer.from(
+    X.report({
+      title: "T",
+      meta: [["Zeitraum", "September 2026"]],
+      cols: [
+        { label: "Artikel", value: "n" },
+        { label: "Umsatz", unit: "€", style: "eur", value: "v" },
+      ],
+      rows: [{ n: "=1+1", v: 1234.5 }],
+    }),
+  );
+  assert.equal(b.readUInt32LE(0), 0x04034b50);
+  assert.equal(b.readUInt32LE(b.length - 22), 0x06054b50);
+  const text = b.toString("utf8");
+  assert.match(text, /<v>1234\.5<\/v>/);
+  assert.match(text, /t="inlineStr"><is><t xml:space="preserve">=1\+1<\/t>/);
+  assert.doesNotMatch(text, /<f>/);
+  assert.match(text, /Umsatz \(€\)/);
+  assert.equal(X.colName(0), "A");
+  assert.equal(X.colName(26), "AA");
+});

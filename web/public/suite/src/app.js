@@ -2700,7 +2700,7 @@
                 .join(", "),
             )}${f.missingRecipes.length > 6 ? " …" : ""} – deren Rohwarenverbrauch fehlt.`
           : ""
-      }</div></section><section class="panel"><div class="v4-toolbar"><h3>Bestellvorschlag je Rohware</h3><button class="btn" data-v4="export-order">${I("download")} CSV exportieren</button></div>${
+      }</div></section><section class="panel"><div class="v4-toolbar"><h3>Bestellvorschlag je Rohware</h3><span class="actions"><button class="btn" data-v4="export-order">${I("download")} CSV</button><button class="btn" data-v4="export-order-xlsx">${I("download")} Excel</button></span></div>${
         rows.length
           ? `<div class="table-scroll"><table class="data-table"><thead><tr><th>Rohware</th><th class="align-right">Prognosebedarf inkl. Sicherheit</th><th class="align-right">Bestand</th><th class="align-right">Bereits bestellt</th><th class="align-right">Bestellgebinde</th><th class="align-right">Einkaufswert netto</th><th>Hinweis</th></tr></thead><tbody>${rows
               .sort((a, b) => (b.estimatedNet || 0) - (a.estimatedNet || 0))
@@ -3242,6 +3242,50 @@
     if (r.packs === 0) return { text: r.basis === "no-sales" ? "Kein Verbrauch im Zeitraum" : "Bedarf gedeckt", tone: "good" };
     return { text: "Bestellen: Menge prüfen", tone: "neutral" };
   }
+  function v4ExportOrderExcel() {
+    const f = v4Forecast(),
+      q = f.dataQuality || {},
+      days = Number(S.v04Forecast?.days) || 7;
+    const meta = [
+      ["Bericht", "Bestellvorschlag je Rohware"],
+      ["Betrieb", S.business],
+      ["Daten", S.mode === "own" ? "eigene Daten" : "Beispieldaten (keine echten Betriebszahlen)"],
+      ["Stichtag", V4_TODAY()],
+      [
+        "Planungszeitraum",
+        `${days} Tage, Vorlauf ${Number(S.v04Forecast?.leadDays) || 2} Tage, Sicherheitszuschlag ${Number(S.v04Forecast?.safetyPct) || 0} %`,
+      ],
+      [
+        "Grundlage",
+        "Tagesabsätze × Rezepte = Verbrauch; minus Bestand (Inventur + Warenbewegungen) und offene Bestellungen. Entwürfe, MHD und Mindestmengen sind nicht berücksichtigt.",
+      ],
+      ["Datenqualität", [q.rating, ...(q.reasons || [])].filter(Boolean).join(" · ") || "–"],
+      ["Einheiten", "Bedarf und Bestand in der Rohwaren-Einheit (g, ml oder Stk) laut Spalte „Einheit“; Einkaufswert in Euro netto"],
+      ["Erstellt", new Date().toLocaleString("de-DE")],
+    ];
+    const cols = [
+      { label: "Rohware", value: "name" },
+      { label: "Einheit", value: "unit" },
+      {
+        label: "Bedarf mit Sicherheit",
+        unit: "Einheit",
+        style: "num",
+        value: (r) => (r.determinable === false ? "nicht ermittelbar" : r.requiredWithSafety),
+      },
+      { label: "Bestand", unit: "Einheit", style: "num", value: (r) => (r.stockBase === null ? "unbekannt" : r.stockBase) },
+      { label: "Bestellgebinde", unit: "Anzahl", style: "int", value: (r) => (r.packs === null ? "nicht berechenbar" : r.packs) },
+      { label: "Einkaufswert", unit: "€ netto", style: "eur", value: (r) => (r.estimatedNet === null ? "" : r.estimatedNet) },
+      { label: "Bereits bestellt", unit: "Gebinde", style: "int", value: (r) => r.reservedPacks || 0 },
+      { label: "Status", value: (r) => v4RowStatus(r).text },
+      {
+        label: "Grundlage",
+        value: (r) => ({ computed: "aus Absatz und Rezepten", "no-sales": "kein Absatz im Zeitraum" })[r.basis] || V4_BASIS[r.basis] || "",
+      },
+    ];
+    const bytes = GLBXlsx.report({ title: "GLB AI Suite · Bestell-Forecast", meta, cols, rows: f.rows });
+    downloadFile(bytes, "GLB_Bestellforecast_" + V4_TODAY() + ".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    toast("Excel-Datei exportiert.");
+  }
   function v4ExportOrder() {
     const f = v4Forecast(),
       head = [
@@ -3459,6 +3503,9 @@
         break;
       case "export-order":
         v4ExportOrder();
+        break;
+      case "export-order-xlsx":
+        v4ExportOrderExcel();
         break;
     }
   });
@@ -4313,7 +4360,7 @@
     }<button class="v6-text-button" data-v6="reset">Zurücksetzen</button>${note ? `<p class="v6-filter-note" id="v6-filter-note">${esc(note)}</p>` : ""}${applies.includes("month") ? v6CostNote() : ""}</div>`;
   }
   function v6ReportHeader(title, desc) {
-    return `<div class="v6-heading"><div><div class="v6-overline">GLB INSIGHTS / REPORTING</div><h2>${esc(title)}</h2><p>${esc(desc)}</p></div><div class="v6-report-actions"><button class="btn" data-v6="save-view">${I("plus")} Ansicht speichern</button><button class="btn" data-v6="csv">${I("download")} CSV-Report</button><button class="btn btn-primary" data-v6="print">${I("file")} Drucken / PDF</button></div></div>`;
+    return `<div class="v6-heading"><div><div class="v6-overline">GLB INSIGHTS / REPORTING</div><h2>${esc(title)}</h2><p>${esc(desc)}</p></div><div class="v6-report-actions"><button class="btn" data-v6="save-view">${I("plus")} Ansicht speichern</button><button class="btn" data-v6="csv" title="Spalten wie bisher, Semikolon, UTF-8">${I("download")} CSV</button><button class="btn" data-v6="xlsx" title="Mit Auswahl, Zeitraum, Einheiten und Grundlage">${I("download")} Excel</button><button class="btn btn-primary" data-v6="print">${I("file")} Drucken / PDF</button></div></div>`;
   }
   function v6Exec() {
     const t = v6Report();
@@ -4699,66 +4746,128 @@
     `<details class="v6-legacy-details"><summary>${I("layers")} Weitere operative Kennzahlen und die bisherige Detailansicht öffnen <span>+</span></summary><div class="v6-legacy-section">${v6OldOverview()}</div></details>`;
   const v6OldOperations = handlers.operations;
   handlers.operations = () => v6OldOperations() + `<section class="v6-module-report">${v6MainOverview()}</section>`;
-  function v6CSV() {
-    const r = v6Report();
-    let rows, cols, name;
+  // One description per report tab; CSV keeps its original columns, Excel adds units and the basis of the numbers.
+  function v6ExportSpec() {
+    const r = v6Report(),
+      applies = V6_APPLIES[V6_TAB] || [],
+      stepLabel = Object.fromEntries((C.FUNNEL_STEPS || []).map((x) => [x.id, x.label]));
     if (V6_TAB === "inventory") {
-      const st = v5State(),
-        val = V6.inventorySummary(S, st);
-      rows = val.warehouses;
-      name = "Lageruebersicht";
-      cols = [
-        { label: "Lager", value: "name" },
-        { label: "Lagerwert netto (geschaetzt)", value: (x) => V6.round(x.value) },
-        { label: "Positionen", value: "count" },
-        { label: "Warnpositionen", value: "risk" },
-      ];
-    } else if (V6_TAB === "service") {
-      const sc = v6ReportFunnelScope();
-      rows = V6.funnel(S, { outlet: sc.outlet, from: sc.from, to: sc.to }).steps;
-      name = "Service_Funnel_" + sc.label;
-      cols = [
-        { label: "Service Schritt", value: "id" },
-        { label: "Anzahl", value: "count" },
-        { label: "Quote je Covers %", value: "rate" },
-        { label: "Ziel %", value: "goal" },
-        { label: "DB netto", value: "db" },
-        { label: "Zielpotential DB", value: "potentialDB" },
-      ];
-    } else if (V6_TAB === "sortiment") {
-      rows = V6.recipeSummary(S).rows;
-      name = "Rezepturen";
-      cols = [
-        { label: "Artikel", value: "name" },
-        { label: "Rezeptkosten netto", value: "cost" },
-        { label: "Warenquote %", value: "foodPct" },
-        { label: "Rezept gueltig", value: "valid" },
-      ];
-    } else {
-      rows = r.products;
-      name = "Artikelperformance_" + v6ScopeLabel() + (V6_COSTBASIS === "current" ? "_heutige_Kosten" : "_Kosten_je_Monat");
-      cols = [
-        { label: "Artikel", value: "name" },
-        { label: "Absatz", value: "quantity" },
-        { label: "Nettoumsatz", value: "revenue" },
-        { label: "Warenkosten", value: "goods" },
-        { label: "DB I", value: "db1" },
-        { label: "DB II", value: "db2" },
-        { label: "DB II Marge %", value: "marginPct" },
-      ];
+      const val = V6.inventorySummary(S, v5State());
+      return {
+        name: "Lageruebersicht",
+        title: "Lager und Einkauf",
+        applies,
+        rows: val.warehouses,
+        basis: "Aktueller Bestand aus Inventur und Warenbewegungen, bewertet mit dem aktuellen Einkaufspreis netto. Schätzwert.",
+        cols: [
+          { label: "Lager", value: "name" },
+          { label: "Lagerwert netto (geschaetzt)", unit: "€", style: "eur", value: (x) => V6.round(x.value) },
+          { label: "Positionen", unit: "Anzahl", style: "int", value: "count" },
+          { label: "Warnpositionen", unit: "Anzahl", style: "int", value: "risk" },
+        ],
+      };
     }
-    const fileName = String(name)
+    if (V6_TAB === "service") {
+      const sc = v6ReportFunnelScope();
+      return {
+        name: "Service_Funnel_" + sc.label,
+        title: "Service & Conversion",
+        applies,
+        rows: V6.funnel(S, { outlet: sc.outlet, from: sc.from, to: sc.to }).steps,
+        basis:
+          "Erfasste Service-Tage im Zeitraum. DB netto aus den hinterlegten Annahmen je Verkauf (Preis, USt, variable Kosten), nicht aus Kassendaten.",
+        cols: [
+          { label: "Service Schritt", value: "id", excel: (x) => stepLabel[x.id] || x.id },
+          { label: "Anzahl", unit: "Stück", style: "int", value: "count" },
+          { label: "Quote je Covers %", unit: "% der Gäste", style: "pct", value: "rate" },
+          { label: "Ziel %", unit: "% der Gäste", style: "pct", value: "goal" },
+          { label: "DB netto", unit: "€", style: "eur", value: "db" },
+          { label: "Zielpotential DB", unit: "€", style: "eur", value: "potentialDB" },
+        ],
+      };
+    }
+    if (V6_TAB === "sortiment")
+      return {
+        name: "Rezepturen",
+        title: "Sortiment und Rezepturen",
+        applies: [],
+        rows: V6.recipeSummary(S).rows,
+        basis: "Aktuelle Rezepturen mit aktuellen Rohwarenpreisen netto. Der Zeitraum- und Outlet-Filter wirkt nicht auf Rezeptkosten.",
+        cols: [
+          { label: "Artikel", value: "name" },
+          { label: "Rezeptkosten netto", unit: "€ je Portion", style: "eur", value: "cost" },
+          { label: "Warenquote %", unit: "% vom Netto-VK", style: "pct", value: "foodPct" },
+          { label: "Rezept gueltig", value: "valid", excel: (x) => (x.valid ? "ja" : "nein") },
+        ],
+      };
+    return {
+      name: "Artikelperformance_" + v6ScopeLabel() + (V6_COSTBASIS === "current" ? "_heutige_Kosten" : "_Kosten_je_Monat"),
+      title: "Artikelperformance",
+      applies,
+      costBasis: V6_COSTBASIS === "current" ? "Szenario: heutige Kosten für alle Monate" : "Kostenstand im Verkaufsmonat",
+      rows: r.products,
+      basis:
+        "Verkaufszeilen der Auswahl. Umsatz netto = Brutto / (1 + USt). DB I = Netto − Warenkosten. DB II = Netto − variable Kosten (Warenkosten enthalten). " +
+        (V6_COSTBASIS === "current"
+          ? "Kosten: heutiger Stand für alle Monate (Szenario)."
+          : "Kosten: Stand, der im jeweiligen Verkaufsmonat galt."),
+      cols: [
+        { label: "Artikel", value: "name" },
+        { label: "Absatz", unit: "Stück", style: "int", value: "quantity" },
+        { label: "Nettoumsatz", unit: "€", style: "eur", value: "revenue" },
+        { label: "Warenkosten", unit: "€ netto", style: "eur", value: "goods" },
+        { label: "DB I", unit: "€", style: "eur", value: "db1" },
+        { label: "DB II", unit: "€", style: "eur", value: "db2" },
+        { label: "DB II Marge %", unit: "% vom Nettoumsatz", style: "pct", value: "marginPct" },
+      ],
+    };
+  }
+  function v6ExportName(spec, ext) {
+    const fileName = String(spec.name)
       .replace(/[^A-Za-z0-9ÄÖÜäöüß_-]+/g, "_")
       .replace(/_+/g, "_")
       .replace(/_$/, "");
-    downloadFile(V6.safeCSV(rows, cols), `GLB_${fileName}_${new Date().toISOString().slice(0, 10)}.csv`, "text/csv;charset=utf-8");
+    return `GLB_${fileName}_${new Date().toISOString().slice(0, 10)}.${ext}`;
+  }
+  function v6CSV() {
+    const spec = v6ExportSpec();
+    downloadFile(V6.safeCSV(spec.rows, spec.cols), v6ExportName(spec, "csv"), "text/csv;charset=utf-8");
     toast("CSV-Report exportiert.");
+  }
+  function v6Excel() {
+    const spec = v6ExportSpec(),
+      dates = [...new Set(S.sales.map((x) => x.month).filter(Boolean))].sort();
+    const period = !spec.applies.includes("month")
+      ? "Zeitraum wirkt hier nicht (aktueller Stand)"
+      : V6_MONTH === "all"
+        ? `alle Monate${dates.length ? ` (${periodName(dates[0])} bis ${periodName(dates.at(-1))})` : ""}`
+        : periodName(V6_MONTH);
+    const meta = [
+      ["Bericht", spec.title],
+      ["Betrieb", S.business],
+      ["Daten", S.mode === "own" ? "eigene Daten" : "Beispieldaten (keine echten Betriebszahlen)"],
+      ["Zeitraum", period],
+      ["Outlet", spec.applies.includes("outlet") ? v6OutletName(V6_OUTLET) : "wirkt hier nicht"],
+      ["Warengruppe", spec.applies.includes("category") ? (V6_CATEGORY === "all" ? "alle Warengruppen" : V6_CATEGORY) : "wirkt hier nicht"],
+      ...(spec.costBasis ? [["Kostenbasis", spec.costBasis]] : []),
+      ["Grundlage", spec.basis],
+      ["Einheiten", "Beträge in Euro netto ohne USt, sofern nicht anders genannt; Einheit steht in jeder Spaltenüberschrift"],
+      ["Rundung", "Werte ungerundet exportiert; die App rundet erst in der Anzeige"],
+      ["Erstellt", new Date().toLocaleString("de-DE")],
+    ];
+    const cols = spec.cols.map((c) => (c.excel ? { ...c, value: c.excel } : c));
+    const bytes = GLBXlsx.report({ title: `GLB AI Suite · ${spec.title}`, meta, cols, rows: spec.rows });
+    downloadFile(bytes, v6ExportName(spec, "xlsx"), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    toast("Excel-Report exportiert.");
   }
   function v6ReportAction(el) {
     const act = el.dataset.v6;
     switch (act) {
       case "csv":
         v6CSV();
+        break;
+      case "xlsx":
+        v6Excel();
         break;
       case "print":
         window.print();
