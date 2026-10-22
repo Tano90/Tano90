@@ -117,6 +117,13 @@
     const b = document.querySelector("#glb08-install");
     if (b) b.hidden = false;
   });
+  // iPhone/iPad Safari never fires beforeinstallprompt; there the button explains "Zum Home-Bildschirm".
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const installed = window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone === true;
+  if (ios && !installed) {
+    const b = document.querySelector("#glb08-install");
+    if (b) b.hidden = false;
+  }
   document.querySelector("#glb08-install")?.addEventListener("click", async () => {
     if (!deferredPrompt) {
       alert("Auf iPhone: Safari → Teilen → Zum Home-Bildschirm. Android: Browser-Menü → App installieren.");

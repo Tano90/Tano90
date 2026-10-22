@@ -231,4 +231,21 @@ test.describe("SB Bedienung", () => {
       ).toBeLessThanOrEqual(width);
     });
   }
+
+  test("SB-7 App installieren: auf dem iPhone mit Anleitung sichtbar, sonst nur wenn der Browser es anbietet", async ({
+    browser,
+    page,
+  }) => {
+    await expect(page.locator("#glb08-install")).toBeHidden();
+    const ctx = await browser.newContext({
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+      viewport: { width: 390, height: 844 },
+    });
+    const p2 = await ctx.newPage();
+    await p2.goto("/suite");
+    await p2.locator("#glbm-more").click();
+    await expect(p2.locator("#glbm-sheet")).toContainText("App installieren");
+    await ctx.close();
+  });
 });
