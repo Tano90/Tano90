@@ -173,3 +173,29 @@ test("lifecycle: a month with business data but no sale of this article is a rea
   assert.equal(gap.phase, "incomplete");
   assert.deepEqual(gap.missingMonths, ["2026-06"]);
 });
+
+const M = require("../src/v08menu.js");
+test("Speisekarte: USt aus Voreinstellung je Speisen/Getränke, Quelle und Prüfhinweise je Zeile", () => {
+  const r = M.parseText("BURGER\nClassic Burger 17,90 €\nGRILL\nRinderfilet\n39,90 €\nWEINE\nHAUSWEIN 6,50\nRosé 0,2l 6,90\nWasser 0,50", { vatFood: 7, vatDrinks: 19 });
+  const by = Object.fromEntries(r.rows.map((x) => [x.name, x]));
+  assert.equal(by["Classic Burger"].vat, 7);
+  assert.equal(by["Classic Burger"].vatSource, "Speisen-Voreinstellung");
+  assert.deepEqual(by["Classic Burger"].flags, []);
+  assert.match(by["Rinderfilet"].flags.join(), /zwei Zeilen/);
+  assert.equal(by["HAUSWEIN"].vat, 19);
+  assert.match(by["HAUSWEIN"].flags.join(), /Großbuchstaben/);
+  assert.match(by["Rosé 0,2l"].flags.join(), /Ziffern/);
+  assert.match(by["Wasser"].flags.join(), /unter 1 €/);
+  // explicit single rate (older callers) still wins
+  assert.ok(M.parseText("Espresso 3,40", { vat: 19 }).rows.every((x) => x.vat === 19));
+});
+test("Speisekarte CSV: Steuersatz aus Datei bleibt, fehlender wird je Warengruppe vorbelegt", () => {
+  const r = M.parseCSV("Produkt;Kategorie;Bruttopreis;USt\nEspresso;Kaffee;3,40;\nSchnitzel;Hauptgerichte;19,90;\nWein;Weine;6,50;7", { vatFood: 7, vatDrinks: 19 });
+  const by = Object.fromEntries(r.rows.map((x) => [x.name, x]));
+  assert.equal(by.Espresso.vat, 19);
+  assert.equal(by.Schnitzel.vat, 7);
+  assert.equal(by.Wein.vat, 7);
+  assert.equal(by.Wein.vatSource, "Datei");
+  assert.equal(M.isDrinkCategory("Vom Schwein"), false);
+  assert.equal(M.isDrinkCategory("Barbecue"), false);
+});

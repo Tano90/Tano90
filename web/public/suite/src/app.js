@@ -260,6 +260,12 @@
       : `<div class="notice">${I("info")}<span><strong>Beispieldaten${S.mode === "edited-demo" ? " (bearbeitet)" : ""}.</strong> Diese Umsätze und Artikel sind frei erfunden und dienen ausschließlich zum Testen.</span><button class="notice-action" data-action="start-blank">Eigene Daten starten ${I("arrow")}</button></div>`;
   const panelHeader = (title, sub = "", action = "") =>
     `<div class="panel-head"><div><h2 class="panel-title">${esc(title)}</h2>${sub ? `<p class="panel-sub">${esc(sub)}</p>` : ""}</div>${action}</div>`;
+  const VAT_CHOICES = [
+    [7, "7 %"],
+    [19, "19 %"],
+    [0, "0 %"],
+  ];
+  const vatPresets = () => ({ vatFood: S.vatFood ?? 7, vatDrinks: S.vatDrinks ?? 19 });
   const selectOptions = (list, value) =>
     list.map(([v, t]) => `<option value="${esc(v)}" ${String(v) === String(value) ? "selected" : ""}>${esc(t)}</option>`).join("");
   function kpi(title, value, icon, foot) {
@@ -475,7 +481,7 @@
     return (
       pageHeader("System", "Einstellungen", "Verwalte deinen lokalen Arbeitsbereich und sichere die Daten.") +
       demoNotice() +
-      `<div class="panel form-card">${panelHeader("Betrieb & Kennzahlen")}<div class="settings-row"><strong>Bezeichnung deines Betriebs</strong><p>Wird in der Navigation angezeigt und in deinem lokalen Backup gespeichert.</p><div class="field"><input id="settings-business" maxlength="80" value="${esc(S.business)}"></div></div><div class="settings-row"><strong>Ziel-Wareneinsatz (%)</strong><p>Dieser Richtwert steuert die Warnungen in GLB Intelligence. Er ist keine automatische Branchenvorgabe.</p><div class="field"><input id="settings-target" type="text" inputmode="decimal" value="${fmt(S.targetPct)}"></div></div><button class="btn btn-primary" data-action="save-settings">${I("check")} Einstellungen speichern</button><hr class="split-divider"><div class="settings-row"><strong>Datensicherung</strong><p>Alle Artikeldaten befinden sich nur in deinem Browserprofil. Löschen von Browserdaten kann deine Änderungen vernichten. Nutze regelmäßig Backups.</p><div class="actions"><button class="btn" data-action="export-json">${I("download")} JSON-Backup herunterladen</button><button class="btn" data-action="pick-json">${I("upload")} Backup wiederherstellen</button><input type="file" id="json-file" hidden accept=".json,application/json"></div></div><div class="settings-row"><strong>Lokale Daten zurücksetzen</strong><p>Alle Änderungen werden verworfen. Anschließend kannst du mit einem leeren Betrieb oder den Beispieldaten neu starten.</p><div class="actions"><button class="btn btn-danger" data-action="start-blank">${I("trash")} Mit leerem Betrieb starten</button><button class="btn" data-action="reset-demo">${I("refresh")} Beispieldaten laden</button></div></div></div>`
+      `<div class="panel form-card">${panelHeader("Betrieb & Kennzahlen")}<div class="settings-row"><strong>Bezeichnung deines Betriebs</strong><p>Wird in der Navigation, in Berichten und im Backup angezeigt.</p><div class="field"><input id="settings-business" maxlength="80" value="${esc(S.business)}"></div></div><div class="settings-row"><strong>Ziel-Wareneinsatz (%)</strong><p>Dieser Richtwert steuert die Warnungen in GLB Intelligence. Er ist keine automatische Branchenvorgabe.</p><div class="field"><input id="settings-target" type="text" inputmode="decimal" value="${fmt(S.targetPct)}"></div></div><div class="settings-row"><strong>Umsatzsteuer-Voreinstellung für Importe</strong><p>Wird beim Speisekartenimport vorbelegt, wenn die Datei keinen Steuersatz enthält. Getränke erkennt die Suite an Überschriften oder Warengruppen wie „Getränke“, „Weine“, „Kaffee“. Jede Position bleibt vor dem Speichern änderbar. Den richtigen Satz für deinen Betrieb mit der Steuerberatung klären.</p><div class="form-grid"><div class="field"><label for="settings-vat-food">Speisen</label><select id="settings-vat-food" class="select">${selectOptions(VAT_CHOICES, vatPresets().vatFood)}</select></div><div class="field"><label for="settings-vat-drinks">Getränke</label><select id="settings-vat-drinks" class="select">${selectOptions(VAT_CHOICES, vatPresets().vatDrinks)}</select></div></div></div><button class="btn btn-primary" data-action="save-settings">${I("check")} Einstellungen speichern</button><hr class="split-divider"><div class="settings-row"><strong>Datensicherung</strong><p>${window.GLB_CLOUD_ENABLED ? "Die Daten liegen im Cloud-Arbeitsbereich deines Betriebs. Ein JSON-Backup ist eine zusätzliche Kopie, z. B. vor größeren Importen." : "Die Daten liegen nur in diesem Browser. Löschen von Browserdaten oder ein anderes Gerät bedeutet: Daten weg. Nutze regelmäßig Backups."}</p><div class="actions"><button class="btn" data-action="export-json">${I("download")} JSON-Backup herunterladen</button><button class="btn" data-action="pick-json">${I("upload")} Backup wiederherstellen</button><input type="file" id="json-file" hidden accept=".json,application/json"></div></div><div class="settings-row"><strong>Lokale Daten zurücksetzen</strong><p>Alle Änderungen werden verworfen. Anschließend kannst du mit einem leeren Betrieb oder den Beispieldaten neu starten.</p><div class="actions"><button class="btn btn-danger" data-action="start-blank">${I("trash")} Mit leerem Betrieb starten</button><button class="btn" data-action="reset-demo">${I("refresh")} Beispieldaten laden</button></div></div></div>`
     );
   }
   function roadmapView() {
@@ -2060,6 +2066,10 @@
           return toast("Bitte Betriebsname und gültigen Zielwert (0–100 %) eingeben.", "error");
         S.business = business;
         S.targetPct = target;
+        const vatFood = Number(document.querySelector("#settings-vat-food")?.value),
+          vatDrinks = Number(document.querySelector("#settings-vat-drinks")?.value);
+        if ([0, 7, 19].includes(vatFood)) S.vatFood = vatFood;
+        if ([0, 7, 19].includes(vatDrinks)) S.vatDrinks = vatDrinks;
         persist();
         render();
         toast("Einstellungen gespeichert.");
@@ -4883,6 +4893,7 @@
 
   // ===== GLB v0.8: mobile mission, reliable, reviewable menu import =====
   let V08_MENU_ROWS = [],
+    V08_MENU_FLAGGED_ONLY = false,
     V08_MENU_ERRORS = [],
     V08_MENU_FILE = "",
     V08_MENU_STATUS = "";
@@ -4906,10 +4917,20 @@
       )
       .join(
         "",
-      )}</div><p class="v08-note">Alle Änderungen werden bei bestehender Internetverbindung mit der GLB Cloud synchronisiert. Den Speicherstatus oben überprüfen.</p></div>`;
+      )}</div><p class="v08-note">${window.GLB_CLOUD_ENABLED ? "Änderungen werden mit dem Cloud-Arbeitsbereich synchronisiert. Ob alles gespeichert ist, steht unten in der Seitenleiste." : "Demo: Änderungen bleiben nur in diesem Browser. Für eine Kopie unter Einstellungen ein Backup laden."}</p></div>`;
   labels.myday = "Mein Arbeitsplatz";
   function v08MenuView() {
-    const total = V08_MENU_ROWS.length;
+    const total = V08_MENU_ROWS.length,
+      flagged = V08_MENU_ROWS.filter((x) => x.flags?.length).length,
+      presets = vatPresets(),
+      vatNote = (x) =>
+        x.vatSource === "Datei"
+          ? "aus der Datei"
+          : x.vatSource === "Getränke-Voreinstellung"
+            ? "Voreinstellung Getränke"
+            : x.vatSource === "Speisen-Voreinstellung"
+              ? "Voreinstellung Speisen"
+              : "";
     return (
       pageHeader(
         "SORTIMENT / IMPORT CENTER",
@@ -4917,26 +4938,32 @@
         "PDF, CSV oder kopierter Text – mit überprüfbaren Artikeln, Preisänderung und Dublettencheck.",
         `<button class="btn" data-v08="menu-template">${I("download")} CSV-Vorlage</button>`,
       ) +
-      `<div class="v08-import-grid"><section class="panel v08-import-main"><div class="v08-import-drop" id="v08-dropzone"><span class="v08-dropicon">↥</span><h2>Speisekarte hochladen</h2><p>CSV · PDF mit Text · TXT · maximal 12 MB</p><label class="btn btn-primary v08-file-select">Datei wählen<input type="file" id="v08-menu-file" accept=".pdf,.csv,.txt,.text,text/plain,text/csv,application/pdf" hidden></label><small>Du kannst eine Datei hierher ziehen oder auswählen.</small></div><div class="v08-divider">ODER TEXT EINFÜGEN</div><textarea class="v08-textbox" id="v08-menu-text" rows="7" placeholder="BURGER\nClassic Burger ........ 17,90 €\nVeggie Burger 16,50 €\nKAFFEE\nEspresso 3,40 €"></textarea><div class="v08-inline-actions"><button class="btn btn-primary" data-v08="parse-text">Text erkennen</button><button class="btn" data-v08="clear-preview">Vorschau zurücksetzen</button></div><div class="v08-help"><strong>Gut zu wissen:</strong> Bei gescannten PDFs oder Fotos fehlt oft auslesbarer Text. Dann zuerst Text mit einem OCR-Werkzeug extrahieren und hier einfügen. Beträge und Umsatzsteuer vor dem Speichern kontrollieren.</div></section><section class="panel v08-review"><div class="v08-review-head"><span class="v08-overline">IMPORTPRÜFUNG</span><h2>${total ? `${total} Artikel erkannt` : "Noch keine Artikel erkannt"}</h2><p>${esc(V08_MENU_STATUS || "Lade eine Speisekarte hoch oder füge den Text ein.")}</p></div>${
+      `<div class="v08-import-grid"><section class="panel v08-import-main"><div class="v08-import-drop" id="v08-dropzone"><span class="v08-dropicon">↥</span><h2>Speisekarte hochladen</h2><p>CSV · PDF mit Text · TXT · maximal 12 MB</p><label class="btn btn-primary v08-file-select">Datei wählen<input type="file" id="v08-menu-file" accept=".pdf,.csv,.txt,.text,text/plain,text/csv,application/pdf,image/*" hidden></label><small>Du kannst eine Datei hierher ziehen oder auswählen.</small></div><div class="v08-divider">ODER TEXT EINFÜGEN</div><textarea class="v08-textbox" id="v08-menu-text" rows="7" placeholder="BURGER\nClassic Burger ........ 17,90 €\nVeggie Burger 16,50 €\nKAFFEE\nEspresso 3,40 €"></textarea><div class="v08-inline-actions"><button class="btn btn-primary" data-v08="parse-text">Text erkennen</button><button class="btn" data-v08="clear-preview">Vorschau zurücksetzen</button></div><div class="v08-help"><strong>Gut zu wissen:</strong> Die Suite liest Text, keine Bilder. Fotos und gescannte PDFs ohne Textebene werden erkannt und abgelehnt; den Text dann z. B. mit der Texterkennung des Handys kopieren und hier einfügen. Fehlt in der Datei der Steuersatz, wird er vorbelegt: Speisen ${presets.vatFood} %, Getränke ${presets.vatDrinks} % (<a href="#" data-view="settings">Einstellungen</a>).</div></section><section class="panel v08-review"><div class="v08-review-head"><span class="v08-overline">IMPORTPRÜFUNG</span><h2>${total ? `${total} Artikel erkannt` : "Noch keine Artikel erkannt"}</h2><p>${esc(V08_MENU_STATUS || "Lade eine Speisekarte hoch oder füge den Text ein.")}</p></div>${
         total
-          ? `<div class="v08-review-control"><label><input type="checkbox" id="v08-allow-update"> Bereits vorhandene Artikel mit gleichem Namen aktualisieren</label></div><div class="v08-review-items">${V08_MENU_ROWS.slice(
-              0,
-              180,
-            )
-              .map(
-                (x, i) =>
-                  `<div class="v08-review-item"><label class="v08-item-check"><input type="checkbox" data-v08-selected="${i}" checked></label><div class="v08-review-fields"><label>Artikelname<input data-v08-name="${i}" value="${esc(x.name)}" maxlength="120"></label><div class="v08-review-mini"><label>Warengruppe<input data-v08-category="${i}" value="${esc(x.category)}"></label><label>Preis €<input inputmode="decimal" data-v08-price="${i}" value="${String(x.grossPrice).replace(".", ",")}"></label><label>USt %<select data-v08-vat="${i}">${selectOptions(
+          ? `${
+              flagged
+                ? `<div class="notice warn" role="status">${I("alert")}<span><strong>${flagged} von ${total} Positionen bitte prüfen.</strong> Sie sind markiert und begründet. Unsichere Positionen werden nur gespeichert, wenn sie angehakt bleiben.</span></div>`
+                : ""
+            }<div class="v08-review-control"><label><input type="checkbox" id="v08-allow-update"> Bereits vorhandene Artikel mit gleichem Namen aktualisieren</label>${
+              flagged
+                ? `<label><input type="checkbox" id="v08-flagged-only"${V08_MENU_FLAGGED_ONLY ? " checked" : ""}> Nur zu prüfende anzeigen</label>`
+                : ""
+            }</div><div class="v08-review-items">${V08_MENU_ROWS.map((x, i) =>
+              V08_MENU_FLAGGED_ONLY && !x.flags?.length
+                ? `<input type="checkbox" data-v08-selected="${i}"${x.skip ? "" : " checked"} hidden>`
+                : `<div class="v08-review-item${x.flags?.length ? " is-flagged" : ""}"><label class="v08-item-check"><input type="checkbox" data-v08-selected="${i}"${x.skip ? "" : " checked"} aria-label="${esc(x.name)} übernehmen"></label><div class="v08-review-fields"><label>Artikelname<input data-v08-name="${i}" value="${esc(x.name)}" maxlength="120"></label><div class="v08-review-mini"><label>Warengruppe<input data-v08-category="${i}" value="${esc(x.category)}"></label><label>Preis €<input inputmode="decimal" data-v08-price="${i}" value="${String(x.grossPrice).replace(".", ",")}"></label><label>USt %<select data-v08-vat="${i}">${selectOptions(
                     [
                       [7, "7 %"],
                       [19, "19 %"],
                       [0, "0 %"],
                     ],
                     x.vat,
-                  )}</select></label></div></div></div>`,
-              )
-              .join(
-                "",
-              )}</div><div class="v08-sticky-action"><button class="btn btn-primary" data-v08="commit-menu">Geprüfte Artikel speichern →</button><small>Bis zu 180 Artikel pro Import · Speichern erfolgt erst nach deiner Freigabe.</small></div>`
+                  )}</select>${vatNote(x) ? `<small class="v08-vat-source">${vatNote(x)}</small>` : ""}</label></div>${
+                    x.flags?.length ? `<p class="v08-flags"><b>Prüfen:</b> ${x.flags.map(esc).join(" · ")}</p>` : ""
+                  }</div></div>`,
+            ).join(
+              "",
+            )}</div><div class="v08-sticky-action"><button class="btn btn-primary" data-v08="commit-menu">Angehakte Artikel speichern →</button><small>${total} Positionen · gespeichert wird erst nach deiner Freigabe.</small></div>`
           : `<div class="v08-empty"><b>Deine Vorschau erscheint hier.</b><p>Erst erkennen, anschließend Preise prüfen und dann speichern.</p></div>`
       }${
         V08_MENU_ERRORS.length
@@ -4961,10 +4988,17 @@
       let txt = "";
       if (/\.pdf$/i.test(file.name)) {
         txt = await v4ExtractPDF(file);
-        if (!txt.trim()) throw Error("PDF enthält keinen auslesbaren Text. Bei einem Scan bitte OCR verwenden.");
+        if (!txt.trim())
+          throw Error(
+            "Diese PDF enthält nur Bilder (z. B. ein Scan), keinen Text. Die Suite hat keine Texterkennung. Text mit der Texterkennung des Handys oder eines PDF-Programms kopieren und unten einfügen, oder die CSV-Vorlage nutzen.",
+          );
       } else if (/\.(csv|txt|text)$/i.test(file.name)) txt = await file.text();
-      else throw Error("Bitte PDF, CSV oder TXT verwenden.");
-      const result = /\.csv$/i.test(file.name) ? GLBMenu08.parseCSV(txt) : GLBMenu08.parseText(txt);
+      else if (/^image\//.test(file.type) || /\.(jpe?g|png|heic|heif|webp|gif)$/i.test(file.name))
+        throw Error(
+          "Fotos kann die Suite nicht auslesen, sie hat keine Texterkennung. Am Handy: Foto öffnen, Text markieren und kopieren, dann unten einfügen. Oder die CSV-Vorlage ausfüllen.",
+        );
+      else throw Error("Dieses Dateiformat wird nicht unterstützt. Möglich sind PDF mit Text, CSV und TXT.");
+      const result = /\.csv$/i.test(file.name) ? GLBMenu08.parseCSV(txt, vatPresets()) : GLBMenu08.parseText(txt, vatPresets());
       V08_MENU_ROWS = result.rows;
       V08_MENU_ERRORS = result.errors || [];
       V08_MENU_STATUS = `Datei: ${file.name} · ${result.rows.length} erkannte Positionen`;
@@ -4984,15 +5018,24 @@
       const i = Number(el.dataset.v08Selected),
         x = V08_MENU_ROWS[i];
       if (!x) continue;
-      const name = String(document.querySelector(`[data-v08-name="${i}"]`)?.value || "").trim(),
-        category = String(document.querySelector(`[data-v08-category="${i}"]`)?.value || "").trim() || "Speisekarte",
-        price = V4.N(document.querySelector(`[data-v08-price="${i}"]`)?.value),
-        vat = Number(document.querySelector(`[data-v08-vat="${i}"]`)?.value);
+      const field = (k, fallback) => document.querySelector(`[data-v08-${k}="${i}"]`)?.value ?? fallback;
+      const name = String(field("name", x.name)).trim(),
+        category = String(field("category", x.category)).trim() || "Speisekarte",
+        price = V4.N(String(field("price", x.grossPrice))),
+        vat = Number(field("vat", x.vat));
       if (name.length < 3 || !Number.isFinite(price) || price <= 0 || price > 9999 || ![0, 7, 19].includes(vat))
         return toast("Bitte Namen, Preise und USt bei allen markierten Artikeln überprüfen.", "error");
       rows.push({ ...x, name, category, grossPrice: price, vat });
     }
     if (!rows.length) return toast("Keine Artikel für den Import ausgewählt.", "error");
+    const unsure = rows.filter((x) => x.flags?.length).length;
+    if (
+      unsure &&
+      !confirm(
+        `${unsure} der angehakten Positionen sind als „prüfen“ markiert. Hast du Name, Preis und Steuersatz kontrolliert und willst sie speichern?`,
+      )
+    )
+      return;
     const allowUpdate = !!document.querySelector("#v08-allow-update")?.checked;
     let added = 0,
       updated = 0,
@@ -5024,7 +5067,7 @@
     V08_MENU_ROWS = [];
     V08_MENU_STATUS = `${added} neu, ${updated} aktualisiert, ${skipped} übersprungen`;
     render();
-    toast(`Speisekartenimport: ${V08_MENU_STATUS}. Cloud-Sync beachten.`);
+    toast(`Speisekartenimport: ${V08_MENU_STATUS}.`);
   }
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-v08]");
@@ -5039,7 +5082,8 @@
         );
         break;
       case "parse-text": {
-        const result = GLBMenu08.parseText(document.querySelector("#v08-menu-text")?.value || "");
+        const result = GLBMenu08.parseText(document.querySelector("#v08-menu-text")?.value || "", vatPresets());
+        V08_MENU_FLAGGED_ONLY = false;
         V08_MENU_ROWS = result.rows;
         V08_MENU_ERRORS = result.errors;
         V08_MENU_STATUS = `${result.rows.length} Textpositionen erkannt`;
@@ -5060,6 +5104,23 @@
   });
   document.addEventListener("change", (e) => {
     if (e.target.id === "v08-menu-file") void v08MenuFile(e.target.files?.[0]);
+    if (e.target.id === "v08-flagged-only") {
+      // keep edits made so far before re-rendering the list
+      for (const [i, x] of V08_MENU_ROWS.entries()) {
+        const f = (k) => document.querySelector(`[data-v08-${k}="${i}"]`)?.value;
+        const box = document.querySelector(`[data-v08-selected="${i}"]`);
+        if (box) x.skip = !box.checked;
+        if (f("name") != null)
+          Object.assign(x, {
+            name: f("name"),
+            category: f("category"),
+            grossPrice: V4.N(f("price")) || x.grossPrice,
+            vat: Number(f("vat")),
+          });
+      }
+      V08_MENU_FLAGGED_ONLY = e.target.checked;
+      render();
+    }
   });
   document.addEventListener("dragover", (e) => {
     if (e.target.closest?.("#v08-dropzone")) {

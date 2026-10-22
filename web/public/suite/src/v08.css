@@ -608,3 +608,27 @@
     grid-template-columns: 1fr;
   }
 }
+/* menu import: rows that need a second look */
+.v08-review-item.is-flagged {
+  background: var(--orange-soft);
+  border-left: 3px solid var(--orange);
+  padding-left: 8px;
+}
+.v08-flags {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.v08-flags b {
+  color: var(--orange);
+}
+.v08-vat-source {
+  font-weight: 500;
+  color: var(--muted);
+}
+.v08-review-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
