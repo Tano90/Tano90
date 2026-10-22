@@ -9,7 +9,7 @@ Stand: 22.10.2026 · Branch `claude/replica-skill-install-vzriug`
 | P2 | Zwei Preisziele (Ziel-Warenquote / kalkulatorische Untergrenze), Handy-Karten für die Tabelle | erledigt |
 | P4a | „−0,00 €“ → „0,00 €“; Forecast-Kachel „Rohwaren ohne Bestellvorschlag“ zählt, was sie aufschlüsselt | erledigt |
 | P3 | Handy: Filterpanel mit Zusammenfassung (bleibt oben), Touch-Ziele ≥ 44 px, `viewport-fit=cover` für Safe Areas, Eingaben ≥ 16 px und über der Tastatur, Wisch-Hinweis bei breiten Tabellen, Inventur-Filter, Aufgaben-Häkchen 44 px, einklappbare Menübereiche; Demo-Fälligkeiten relativ zu heute (Berliner Tag) | erledigt |
-| P4b | Rest „KI-Marktcheck“, zwei Einrichtungsphasen | offen |
+| P4b | Rest „KI-Marktcheck“ entfernt (Tab-Beschriftung, Herkunft, Modulname, Startseite); Erste Schritte in Phase 1 (erste Auswertung) und Phase 2 (später: Lager und Bestellung) getrennt | erledigt |
 | P5 | Tarife: Karten, Rechner, CTAs, Tarifmatrix zur Freigabe | offen |
 | P6 | Abläufe A–D bei 360/390/430/768/1280/1440, Tastatur, Abschlussbericht | offen |
 

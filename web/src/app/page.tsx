@@ -139,7 +139,7 @@ export default function LandingPage() {
         <section aria-labelledby="hero" className="mx-auto grid max-w-(--size-content-max) items-center gap-12 px-4 pt-8 pb-20 lg:grid-cols-[5fr_7fr] lg:px-8 lg:pt-16 lg:pb-28">
           <div className="min-w-0">
             <a href="#alltag" className="mb-6 inline-flex max-w-full items-center gap-2 border-b border-accent pb-0.5 text-sm font-semibold text-accent hover:text-accent-hover">
-              <span className="truncate">Neu: Lebenszyklus-Graph, Marktcheck in zwei Ansichten, Aufgaben je Outlet</span>
+              <span className="truncate">Neu: Lebenszyklus-Graph, Wettbewerbspreise in zwei Ansichten, Aufgaben je Outlet</span>
               <ArrowRight aria-hidden className="size-4 shrink-0" />
             </a>
             <h1 id="hero" className="font-display text-[2.5rem] leading-[1.08] sm:text-[3.25rem] lg:text-[4rem]">

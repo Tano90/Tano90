@@ -1041,3 +1041,25 @@ button.glb08-nav-title:focus-visible {
     top: auto;
   }
 }
+
+/* setup: the later stock phase is visibly a second, separate phase */
+.v12-phase2 {
+  margin-top: 26px;
+  padding: 18px 22px;
+  border: 1px dashed var(--calm-border);
+  border-radius: 14px;
+  background: var(--paper);
+}
+.v12-phase2 .v12-subhead {
+  margin: 4px 0 4px;
+}
+.v12-phase2-note {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--calm-ink-soft);
+}
+@media (max-width: 760px) {
+  .v12-phase2 {
+    padding: 14px 12px;
+  }
+}

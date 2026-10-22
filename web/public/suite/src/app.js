@@ -4054,7 +4054,7 @@
   }
   function v5Readiness() {
     const ready = V5.readiness(S);
-    return `<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">SETUP-CHECKLISTE</div><h2>In 6 Schritten zu nutzbaren Auswertungen</h2><p>Die Prognosen werden erst mit deinen eigenen, vollständigen Daten belastbar.</p></div>${v5Tag(`${ready.filter((x) => x.ready).length} / 6 erledigt`, "blue")}</div><div class="v5-checkgrid">${ready.map((x) => `<button data-view="${x.view}" class="v5-checkrow"><span class="v5-check-icon ${x.ready ? "done" : ""}">${x.ready ? I("check") : I("chevron")}</span><span><b>${esc(x.title)}</b><small>${esc(x.hint)}</small></span><span class="v5-arr">↗</span></button>`).join("")}</div></section>`;
+    return `<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">LAGER-CHECKLISTE</div><h2>Sechs Punkte für einen belastbaren Bestell-Forecast</h2><p>Die Prognosen werden erst mit deinen eigenen, vollständigen Daten belastbar.</p></div>${v5Tag(`${ready.filter((x) => x.ready).length} / 6 erledigt`, "blue")}</div><div class="v5-checkgrid">${ready.map((x) => `<button data-view="${x.view}" class="v5-checkrow"><span class="v5-check-icon ${x.ready ? "done" : ""}">${x.ready ? I("check") : I("chevron")}</span><span><b>${esc(x.title)}</b><small>${esc(x.hint)}</small></span><span class="v5-arr">↗</span></button>`).join("")}</div></section>`;
   }
   // Data completeness, separate from the setup steps: which articles can be calculated and why not.
   function v5Completeness() {
@@ -4609,7 +4609,7 @@
       },
     ];
     const next = steps.findIndex((x) => !x.done);
-    return `<section class="v12-onboard" aria-labelledby="v12-onboard-title"><div class="v12-onboard-head"><div><span class="v5-eyebrow">ERSTE SCHRITTE</span><h2 id="v12-onboard-title">In fünf Schritten zur ersten Auswertung</h2><p>Jede Datei zeigt vor dem Speichern eine Vorschau: fehlerhafte Zeilen mit Zeilennummer und Grund, nichts wird ohne Bestätigung übernommen, dieselbe Datei wird wiedererkannt. Einmal angelegte Artikel und Outlets nutzen alle Module.</p></div><b class="v12-onboard-count">${steps.filter((x) => x.done).length}/5 erledigt</b></div><ol class="v12-steps">${steps
+    return `<section class="v12-onboard" aria-labelledby="v12-onboard-title"><div class="v12-onboard-head"><div><span class="v5-eyebrow">PHASE 1 · ERSTE AUSWERTUNG</span><h2 id="v12-onboard-title">In fünf Schritten zur ersten Auswertung</h2><p>Jede Datei zeigt vor dem Speichern eine Vorschau: fehlerhafte Zeilen mit Zeilennummer und Grund, nichts wird ohne Bestätigung übernommen, dieselbe Datei wird wiedererkannt. Einmal angelegte Artikel und Outlets nutzen alle Module.</p></div><b class="v12-onboard-count">${steps.filter((x) => x.done).length}/5 erledigt</b></div><ol class="v12-steps">${steps
       .map(
         (x, i) =>
           `<li class="v12-step ${x.done ? "done" : i === next ? "next" : ""}"><span class="v12-step-no" aria-hidden="true">${x.done ? "✓" : i + 1}</span><div><h3>${esc(x.title)} <small>${x.done ? "erledigt" : i === next ? "als Nächstes" : "offen"}</small></h3><p class="v12-step-status">${esc(x.status)}</p><dl><div><dt>Was du brauchst</dt><dd>${esc(x.need)}</dd></div><div><dt>Format</dt><dd>${esc(x.format)}</dd></div></dl><div class="actions">${x.template || ""}<button type="button" class="btn btn-small ${i === next ? "btn-primary" : ""}" data-view="${x.go[0]}">${esc(x.go[1])} →</button></div></div></li>`,
@@ -4625,9 +4625,10 @@
     ) +
     demoNotice() +
     v12Onboarding() +
-    `<h2 class="v12-subhead">Danach: Lager, Rezepte und Inventur für den Bestell-Forecast</h2>` +
+    `<section class="v12-phase2" aria-labelledby="v12-phase2-title"><span class="v5-eyebrow">PHASE 2 · SPÄTER: LAGER UND BESTELLUNG</span><h2 class="v12-subhead" id="v12-phase2-title">Lager, Rezepte und Inventur für den Bestell-Forecast</h2><p class="v12-phase2-note">Für die erste Auswertung nicht nötig. Sinnvoll, sobald Phase 1 steht und du Bestand und Bestellungen mit der Suite führen willst.</p>` +
     v5Toolbar() +
     v5Readiness() +
+    `</section>` +
     `<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">WEITERENTWICKLUNG</div><h2>Was die Suite kann – und was nicht</h2></div></div><div class="v5-info-grid"><div><b>Funktioniert</b><p>Artikel, Rezepte, Rohwaren und Lager; Importe mit Vorschau; Deckungsbeiträge mit Kostenständen; Bestell-Forecast; Bestellentwürfe und Wareneingang; Warenbewegungen; Report Studio mit CSV und Excel; Backup. Mit Cloud-Projekt zusätzlich Anmeldung, Rollen und gemeinsamer Arbeitsbereich mit Revisionsprüfung.</p></div><div><b>Gibt es nicht</b><p>Bestellungen werden nicht an Lieferanten gesendet. Keine Kassenanbindung, keine Texterkennung für Scans oder Fotos, keine automatisch recherchierten Wettbewerbspreise. Buchungen sind nicht revisionssicher im Sinne der GoBD. Hinweise sind regelbasiert, keine KI.</p></div></div></section>`;
   // Search words per view, so people find a module by what they want to do, not only by its exact name.
   const COMMAND_WORDS = {

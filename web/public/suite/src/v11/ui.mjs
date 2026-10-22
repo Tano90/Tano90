@@ -745,7 +745,7 @@ async function submitQuiz(obj) {
   G.render();
 }
 
-// ---------- KI-Marktcheck: A Speisen- und Getränkevergleich, B Restaurants und Locations in der Nähe ----------
+// ---------- Wettbewerbspreise (formerly KI-Marktcheck): A Speisen- und Getränkevergleich, B Restaurants und Locations in der Nähe ----------
 const suiteProducts = () => (S().items || []).map((p) => ({ id: p.id, name: p.name, category: p.category || "", unit: p.unit || "Portion", grossPrice: Number(p.grossPrice) }));
 const manualSections = () => (intel().sections ||= {});
 function marketRows() {
@@ -763,7 +763,7 @@ function deviationCell(r) {
 function marketTabs() {
   const tab = (id, label, sub) =>
     `<button type="button" role="tab" id="v11-mtab-${id}" class="v11-tab ${V.marketTab === id ? "active" : ""}" aria-selected="${V.marketTab === id}" aria-controls="v11-mpanel-${id}" tabindex="${V.marketTab === id ? 0 : -1}" data-v11="market-tab" data-tab="${id}"><b>${label}</b><small>${sub}</small></button>`;
-  return `<div class="v11-tabs" role="tablist" aria-label="Bereiche des Marktchecks">${tab("products", "A · Speisen- und Getränkevergleich", "Konkrete Produkte, dokumentierte Preise")}${tab("places", "B · Restaurants und Locations in der Nähe", "Wettbewerbsumfeld, ohne Preise")}</div>`;
+  return `<div class="v11-tabs" role="tablist" aria-label="Bereiche des Preisvergleichs">${tab("products", "A · Speisen- und Getränkevergleich", "Konkrete Produkte, dokumentierte Preise")}${tab("places", "B · Restaurants und Locations in der Nähe", "Wettbewerbsumfeld, ohne Preise")}</div>`;
 }
 // operator-side status of the optional AI step (yes/no from the server; nothing to configure for customers)
 async function loadAiStatus() {
@@ -832,7 +832,7 @@ function productsPanel(rows) {
         const t = CMP_TAG[r.cmp.level];
         return `<tr><td><b>${esc(r.ownName)}</b><div class="micro">${esc(r.category || "Warengruppe unbekannt")}${r.section ? " · " + MK.SECTIONS[r.section] : ""}</div></td><td><b>${esc(r.competitor)}</b><div class="micro">${esc(r.competitorProduct)}${r.placeUrl ? ` · <a href="${esc(r.placeUrl)}" target="_blank" rel="noopener noreferrer">Ort ↗</a>` : ""}</div></td><td>${esc(r.ownPortion || "—")} / ${esc(r.competitorPortion || "—")}</td><td class="align-right">${Number.isFinite(r.ownPrice) && r.ownPrice > 0 ? money(r.ownPrice) : "—"}</td><td class="align-right">${money(r.competitorPrice)}</td><td class="align-right">${deviationCell(r)}</td><td>${tag(t[0], t[1])}<div class="micro">${esc(r.cmp.reason)}</div></td><td>${
           r.example ? `${tag("Fiktives Beispiel", "orange")}<div class="micro">keine echte Quelle</div>` : r.source ? `<a href="${esc(r.source)}" target="_blank" rel="noopener noreferrer">${esc(r.checked ? dateDE(r.checked) : "Quelle")} ↗</a>` : esc(r.checked ? dateDE(r.checked) : "ohne Datum")
-        }<div class="micro">${r.origin === "meinMarkt" ? "aus Mein Markt" : "KI-Marktcheck"}${r.note ? " · " + esc(r.note) : ""}</div></td><td>${
+        }<div class="micro">${r.origin === "meinMarkt" ? "aus Mein Markt" : "eigene Beobachtung"}${r.note ? " · " + esc(r.note) : ""}</div></td><td>${
           r.origin === "v11"
             ? `<button type="button" class="btn btn-small" data-v11="market-check" data-id="${esc(r.id)}" aria-label="Vergleich ${esc(r.ownName)} / ${esc(r.competitor)} prüfen">Prüfen</button>`
             : `<button type="button" class="btn btn-small btn-quiet" data-view="market" aria-label="In Mein Markt bearbeiten">Mein Markt</button>`
@@ -1252,7 +1252,7 @@ const VIEWS = [
   ["v11sales", "Verkauf & Monatsimport", salesView, "VERKAUF & ANALYSE", "⇪"],
   ["v11menu", "Menu Engineering", menuView, "VERKAUF & ANALYSE", "◆"],
   ["v11funnel", "Tagesfunnel (Kassenbons)", funnelView, "VERKAUF & ANALYSE", "◷"],
-  ["v11market", "KI-Marktcheck", marketView, "VERKAUF & ANALYSE", "⌁"],
+  ["v11market", "Wettbewerbspreise", marketView, "VERKAUF & ANALYSE", "⌁"],
   ["v11stock", "Mindestbestände", stockView, "WARENWIRTSCHAFT", "▤"],
   ["v11legacy", "Strukturcheck", legacyView, "MANAGEMENT", "▧"],
 ];
