@@ -81,8 +81,9 @@ test.describe("S16 Übersicht und Zahlen", () => {
   test("S16-1 Handlungsbedarf nennt Artikel, Grundlage und führt zur Detailseite; ohne Ziel keine Bewertung", async ({ page }) => {
     const actions = page.locator(".v6-actions");
     await expect(actions).toContainText("Auswahl: alle Monate · alle Outlets · alle Warengruppen");
-    const item = actions.locator(".v6-action", { hasText: "Rumpsteak 250 g: Warenquote" });
-    await expect(item).toContainText("über deinem Ziel von 30,0 %");
+    // article as heading, the figure line below it (same words as before)
+    const item = actions.locator(".v6-action").filter({ has: page.locator(".v6-action-head", { hasText: "Rumpsteak 250 g" }) });
+    await expect(item.locator(".v6-action-line")).toHaveText("Warenquote 42,3 % über deinem Ziel von 30,0 %");
     await expect(item).toContainText(/Wareneinsatz .* ÷ Netto-Umsatz/);
     await item.getByRole("button", { name: /Zielpreis ansehen/ }).click();
     await expect.poll(() => state(page).then((s) => s.hash)).toBe("#costs");

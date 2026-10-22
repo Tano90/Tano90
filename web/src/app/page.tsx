@@ -9,6 +9,9 @@ import { APP_NAME } from "@/lib/brand";
 import { PriceCalculator } from "@/components/landing/price-calculator";
 import { formatEur, INDIVIDUAL, PLANS, PLANS_PRELIMINARY_NOTE } from "@/lib/pricing";
 import shotCosts from "../../public/landing/suite-costs.png";
+import detailHint from "../../public/landing/detail-hint.png";
+import detailOrder from "../../public/landing/detail-order.png";
+import detailRecipe from "../../public/landing/detail-recipe.png";
 import shotFunnel from "../../public/landing/suite-funnel.png";
 import shotLifecycle from "../../public/landing/suite-lifecycle.png";
 import shotMobile from "../../public/landing/suite-mobile.png";
@@ -90,6 +93,13 @@ const SPOTLIGHTS: Spotlight[] = [
     points: ["Zielquote je 100 Gäste für jede Stufe", "Szenario-Werte getrennt vom echten Umsatz", "Kaufquoten je Bon zusätzlich aus Kassendaten (Tagesfunnel)"],
     shot: shotFunnel, alt: "Service Funnel mit Schiebereglern je Stufe und Kacheln für Gäste und Szenario-Werte.",
   },
+];
+
+// Close-ups of three existing views, large enough to read (real screenshots of the demo, scripts/suite-details.mjs).
+const DETAILS: { title: string; text: string; shot: StaticImageData; alt: string; wide?: boolean }[] = [
+  { title: "Ein Artikelhinweis", text: "Aus der Übersicht: Artikel, Warenquote gegen dein Ziel, die Rechengrundlage und der Weg zum Zielpreis.", shot: detailHint, alt: "Hinweis „Prüfen“: Rumpsteak 250 g, Warenquote 42,3 % über deinem Ziel von 30,0 %, Wareneinsatz 1.817,40 € geteilt durch Netto-Umsatz 4.300,93 €, Schaltfläche Zielpreis ansehen.", wide: true },
+  { title: "Rezeptkalkulation", text: "Kostenbestandteile je Portion links, das Kalkulationsergebnis mit Wareneinsatz und Stück-Deckungsbeitrag rechts.", shot: detailRecipe, alt: "Preiskalkulation mit Kostenbestandteilen je Portion und Kalkulationsergebnis: Verkaufspreis brutto 22,83 Euro bei 30 % Ziel-Wareneinsatz." },
+  { title: "Bestellvorschlag", text: "Bedarf, Bestand, bereits bestellt, Bestellgebinde und Einkaufswert je Rohware; was nicht ermittelbar ist, steht als Hinweis daneben.", shot: detailOrder, alt: "Tabelle des Bestell-Forecasts mit Rohware, Prognosebedarf, Bestand, Bestellgebinden und Einkaufswert netto." },
 ];
 
 // Every area of the suite as a short index (the same five areas as the navigation inside the app).
@@ -210,6 +220,23 @@ export default function LandingPage() {
       </section>
 
       <main>
+        {/* ------------------------------------------------ readable close-ups of existing views */}
+        <section id="details" aria-labelledby="closeups" className="mx-auto max-w-(--size-content-max) px-4 pt-20 lg:px-8">
+          <p className="text-sm font-bold tracking-wide text-accent">Im Detail</p>
+          <h2 id="closeups" className="font-display mt-3 max-w-3xl text-[2rem] leading-tight lg:text-[2.5rem]">So sehen die Ansichten aus der Nähe aus.</h2>
+          <p className="mt-4 max-w-2xl text-base text-text-muted">Ausschnitte aus der Suite mit ihren Beispieldaten.</p>
+          <div className="mt-10 grid gap-8 lg:grid-cols-2">
+            {DETAILS.map((d) => (
+              <figure key={d.title} className={d.wide ? "lg:col-span-2" : ""}>
+                <div className="overflow-hidden rounded-[12px] border border-border bg-white">
+                  <Image src={d.shot} alt={d.alt} placeholder="blur" className="h-auto w-full" sizes={d.wide ? "(min-width: 1024px) 1200px, 100vw" : "(min-width: 1024px) 600px, 100vw"} />
+                </div>
+                <figcaption className="mt-3"><span className="font-semibold">{d.title}.</span> <span className="text-text-muted">{d.text}</span></figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+
         {/* ------------------------------------------------ use cases */}
         <section id="alltag" aria-labelledby="usecases" className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8 lg:py-28">
           <Reveal>

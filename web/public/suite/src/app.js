@@ -4984,6 +4984,7 @@
       hints.push({
         level: "warn",
         title: `${noCost.length === 1 ? noCost[0].name + ": Wareneinsatz fehlt" : noCost.length + " verkaufte Artikel ohne Wareneinsatz"}`,
+        ...(noCost.length === 1 ? { head: noCost[0].name, line: "Wareneinsatz fehlt" } : {}),
         detail: `${noCost.length === 1 ? "" : noCost.slice(0, 3).map((x) => x.name).join(", ") + (noCost.length > 3 ? " … · " : " · ")}${euro(noCost.reduce((a, x) => a + x.revenue, 0))} Netto-Umsatz ohne Kosten; DB und Warenquote dieser Artikel sind nicht berechenbar und fehlen in den Summen.`,
         action: "Kosten hinterlegen",
         view: "products",
@@ -4999,6 +5000,8 @@
         hints.push({
           level: "warn",
           title: `${x.name}: Warenquote ${pct(x.q)} über deinem Ziel von ${pct(S.targetPct)}`,
+          head: x.name,
+          line: `Warenquote ${pct(x.q)} über deinem Ziel von ${pct(S.targetPct)}`,
           detail: `Wareneinsatz ${euro(x.goods)} ÷ Netto-Umsatz ${euro(x.revenue)}. Rezeptkosten, Portionierung und Verkaufspreis prüfen.`,
           action: "Zielpreis ansehen",
           costFocus: x.id,
@@ -5023,6 +5026,8 @@
       hints.push({
         level: "info",
         title: `${p.name}: Absatz ${pct(life.changePct)} (Rückgang)`,
+        head: p.name,
+        line: `Absatz ${pct(life.changePct)} (Rückgang)`,
         detail: `Ø ${periodName(life.period[2])}/${periodName(life.period[3])} gegenüber Ø ${periodName(life.period[0])}/${periodName(life.period[1])}, ${v6OutletName(V6_OUTLET)}. Verfügbarkeit, Preis, Platzierung und Saison prüfen.`,
         action: "Verlauf ansehen",
         lifecycle: p.id,
@@ -5077,7 +5082,7 @@
         ? `<ol class="v6-action-list">${hints
             .map(
               (h) =>
-                `<li class="v6-action ${h.level}"><span class="v6-action-mark">${mark[h.level]}</span><div><b>${esc(h.title)}</b>${h.scope ? `<span class="v6-action-scope">${esc(h.scope)}</span>` : ""}<p>${esc(h.detail)}</p></div><button type="button" class="btn btn-small" ${h.lifecycle ? `data-lifecycle="${esc(h.lifecycle)}" data-lc-outlet="${esc(h.lcOutlet || "all")}"` : h.costFocus ? `data-cost-focus="${esc(h.costFocus)}"` : `data-view="${h.view}"`}>${esc(h.action)} →</button></li>`,
+                `<li class="v6-action ${h.level}"><span class="v6-action-mark">${mark[h.level]}</span><div class="v6-action-body">${h.head ? `<b class="v6-action-head">${esc(h.head)}</b><span class="v6-action-line">${esc(h.line)}</span>` : `<b class="v6-action-head">${esc(h.title)}</b>`}${h.scope ? `<span class="v6-action-scope">${esc(h.scope)}</span>` : ""}<p>${esc(h.detail)}</p></div><button type="button" class="btn btn-small" ${h.lifecycle ? `data-lifecycle="${esc(h.lifecycle)}" data-lc-outlet="${esc(h.lcOutlet || "all")}"` : h.costFocus ? `data-cost-focus="${esc(h.costFocus)}"` : `data-view="${h.view}"`}>${esc(h.action)} →</button></li>`,
             )
             .join("")}</ol>`
         : `<p class="v6-smallnote">In dieser Auswahl gibt es nichts, das aus den Daten heraus Handlungsbedarf zeigt.</p>`

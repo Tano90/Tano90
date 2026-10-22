@@ -1,3 +1,67 @@
+# STATUS – Visuelle Überarbeitung (23.10.2026)
+
+Nur Darstellung. Nicht geändert: Funktionen, Berechnungen, Daten, Rollen, Preise, Filterlogik, URLs.
+
+## Umgesetzt
+- **Gestaltungsschicht `polish.css`** (wird als letzte geladen), mit einheitlichen Variablen:
+  - Farben: App-Hintergrund #F4F7F6, Text #203438, Linien #DFE7E3, Petrol #116C63, Bernstein für Prüfhinweise.
+  - Ecken 10–12 px, kaum Schatten.
+  - Verschachtelte Karten verlieren ihren eigenen Rahmen.
+- **Dashboard-Kopf ohne eigene Karte:**
+  - Kompakter Titel, Mini-Diagramm als schmale Spalte daneben.
+  - Filter in einer Zeile.
+  - Ergebnis: Bei 1280×800 sind Filter, Kennzahlen und der erste Handlungshinweis ohne Scrollen sichtbar.
+- **Kennzahlen:**
+  - Die Zahl steht zuerst (30 px), darunter Bedeutung und Grundlage.
+  - Gleich breite Ziffern.
+  - Die DB-II-Karte ist nur noch mit einem Strich hervorgehoben, nicht mehr grün eingefärbt.
+- **Handlungshinweise:**
+  - Artikel als Überschrift, die Kennzahlenzeile darunter, die Grundlage gedämpft.
+  - Aktion rechts, auf dem Handy in voller Breite darunter.
+  - Gleiche Wörter und Werte wie vorher.
+- **Tabellen:** gleichmäßige Zeilen, feine Linien, lesbare Spaltenköpfe (nicht in Großbuchstaben), rechtsbündige Zahlen, dezenter Hover- und Fokuszustand.
+- **Seitenköpfe:** eine Größe für alle Module.
+- **Preiskalkulation:** Das Ergebnis steht hell mit Petrol-Kante statt im dunklen Block.
+- **Bewegung:** Übergänge 0,12 s. Bei der Systemeinstellung „reduzierte Bewegung“ entfallen sie.
+- **Handy:**
+  - Kurzer Kopf, Kennzahlen in zwei Spalten.
+  - Hinweise in voller Breite, Demo-Hinweis ohne Lücke.
+- **Website:**
+  - Hintergrund #F5F0E6.
+  - Neuer Abschnitt „Im Detail“ mit drei echten, lesbaren Ausschnitten aus der Demo: Artikelhinweis, Rezeptkalkulation, Bestellvorschlag. Erzeugt mit `web/scripts/suite-details.mjs`.
+  - Die vorhandenen Produktbilder und das Video sind aus dem neuen Stand neu aufgenommen.
+
+## Dateien
+- `web/public/suite/src/polish.css` (neu)
+- `web/public/suite/index.html`, `web/public/suite/sw.js` (Datei und Cache-Name)
+- `web/public/suite/src/app.js` (nur das Markup der Hinweise: Überschrift und Zeile)
+- `web/src/app/page.tsx`, `web/src/app/globals.css`
+- `web/public/landing/*` (Bilder)
+- `web/scripts/suite-details.mjs`
+- Tests: `web/e2e/suite-v13.spec.ts` (Selektor für das neue Hinweis-Markup), `web/e2e/landing.spec.ts` (Hintergrundfarbe)
+
+## Prüfungen
+- Breiten 360, 390, 768, 1280 und 1440 px im Chromium-Browser, Handy mit Touch-Emulation. Seiten: Startseite und Preise, Übersicht, Berichte, Deckungsbeiträge & Zielpreise, Bestell-Forecast, Erste Schritte, Aufgaben.
+  - Ergebnis: kein Querscrollen, keine Konsolenfehler.
+- axe-Prüfung in S23. Dabei gefunden und behoben: Kontrast des grauen Kleintexts in der markierten Zeile.
+- Tests:
+  - Unit 160/160.
+  - vitest 60 bestanden, 34 übersprungen.
+  - tsc ohne Fehler.
+  - Suite- und Startseiten-e2e 99/99.
+  - Volltest: siehe Commit.
+- Preise und Rechenlogik: `pricing.ts`, `core.js` und `v04core.js` sind unverändert. Die Preis-Tests sind grün.
+- Kein echtes Gerät, keine Prüfung mit Textvergrößerung über Systemeinstellungen.
+
+## Offen
+- Textvergrößerung (200 %) und Safari/iOS auf echten Geräten prüfen.
+- Ältere Module mit eigenen Styles (v4/v5) folgen den Variablen nur teilweise. Die Unterschiede sind klein.
+
+## Nächster Schritt
+Volltest abwarten, dann Sichtprüfung durch die Fachseite.
+
+---
+
 # STATUS – Geräte-Runde GLB AI Suite (Desktop, Tablet, Handy · Oktober 2026)
 
 Stand: 22.10.2026 · Branch `claude/replica-skill-install-vzriug`

@@ -56,7 +56,7 @@ test.describe("L01 Landingpage", () => {
       const cta = [...document.querySelectorAll("a")].find((a) => a.textContent?.includes("Mit eigenen Daten vorführen lassen")) as HTMLElement;
       return { bg: getComputedStyle(root).backgroundColor, text: getComputedStyle(root).color, cta: getComputedStyle(cta).backgroundColor, h1: getComputedStyle(document.querySelector("h1")!).fontFamily };
     });
-    expect(look.bg).toBe("rgb(247, 242, 232)");
+    expect(look.bg).toBe("rgb(245, 240, 230)");
     expect(look.text).toBe("rgb(34, 28, 21)");
     expect(look.cta).toBe("rgb(15, 106, 100)");
     expect(look.h1).toContain("Fraunces");
