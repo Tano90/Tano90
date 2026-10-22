@@ -122,7 +122,7 @@
 }
 .v4-kpi > span {
   font-size: 11px;
-  color: #748691;
+  color: #65757f;
   font-weight: 750;
 }
 .v4-kpi strong {
@@ -132,7 +132,7 @@
 }
 .v4-kpi small {
   font-size: 10px;
-  color: #90a0a7;
+  color: #63757d;
 }
 .v4-kpi-icon {
   position: absolute;
@@ -244,7 +244,7 @@
 }
 .v4-footnote {
   font-size: 10px;
-  color: #7d8d94;
+  color: #67767d;
   margin-top: 14px;
   line-height: 1.7;
 }
@@ -385,7 +385,7 @@
 }
 .v4-toolbar p {
   font-size: 11px;
-  color: #87939a;
+  color: #68747c;
   margin: 0;
   line-height: 1.5;
 }
@@ -421,7 +421,7 @@
   font-size: 13px;
 }
 .v4-stock-card small {
-  color: #91a0a8;
+  color: #657680;
   font-size: 10px;
 }
 .v4-stock-head {
@@ -444,7 +444,7 @@
 }
 .v4-date {
   font-size: 10px;
-  color: #84939a;
+  color: #67767d;
 }
 .v4-stock-value {
   font-size: 23px;
@@ -469,7 +469,7 @@
 .v4-hint,
 .v4-p {
   font-size: 11px;
-  color: #7f909a;
+  color: #64757f;
   line-height: 1.7;
 }
 .v4-vision-stage {
@@ -482,7 +482,7 @@
   gap: 5px;
   overflow: hidden;
   padding: 10px;
-  color: #7d9a97;
+  color: #5c7674;
 }
 .v4-vision-stage > svg {
   width: 34px;
@@ -545,7 +545,7 @@
   border-radius: 9px;
   margin-top: 19px;
   font-size: 11px;
-  color: #5e7778;
+  color: #5b7374;
   padding: 12px 15px;
   line-height: 1.6;
 }

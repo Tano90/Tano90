@@ -5,7 +5,7 @@
   --ink: #142631;
   --navy: #10232d;
   --navy2: #18313b;
-  --muted: #6b7b84;
+  --muted: #627179;
   --line: #e2e9e9;
   --teal: #097e70;
   --teal-dark: #096f63;
@@ -117,7 +117,7 @@ main {
 .page-desc {
   font-size: 12.5px;
   line-height: 1.65;
-  color: #6a7c82;
+  color: #617177;
   max-width: 690px;
 }
 .kpi-grid {
@@ -196,7 +196,7 @@ main {
   border: 1px solid #dce6e5;
   background: #f9fbfb;
   border-radius: 10px;
-  color: #6a7c84;
+  color: #62737a;
   font-size: 11.5px;
   padding: 8px 10px;
   white-space: nowrap;
@@ -210,7 +210,7 @@ main {
   background: #eef3f3;
   padding: 4px 6px;
   border-radius: 5px;
-  color: #657981;
+  color: #5c6e76;
   font-size: 10px;
 }
 .v5-search-trigger:hover {
@@ -221,7 +221,7 @@ main {
   display: flex;
   align-items: center;
   gap: 9px;
-  color: #72878a;
+  color: #607174;
   font-size: 10px;
   font-weight: 750;
   letter-spacing: 0.6px;
@@ -378,7 +378,7 @@ main {
   min-height: 122px;
 }
 .v5-metrics small {
-  color: #72868e;
+  color: #64767d;
   font-weight: 820;
   font-size: 9px;
   letter-spacing: 0.8px;
@@ -390,7 +390,7 @@ main {
   color: #183b40;
 }
 .v5-metrics span {
-  color: #809197;
+  color: #66767c;
   font-size: 10.5px;
 }
 .v5-ops-columns {
@@ -420,7 +420,7 @@ main {
   font-weight: 800;
   font-size: 9px;
   letter-spacing: 1.4px;
-  color: #0d907b;
+  color: #0b7967;
   margin-bottom: 8px;
 }
 .v5-panel-title h2,
@@ -433,7 +433,7 @@ main {
 .v5-panel-title p,
 .v5-note p {
   font-size: 11.5px;
-  color: #7e9094;
+  color: #5f6f73;
   margin: 0;
   line-height: 1.6;
 }
@@ -468,7 +468,7 @@ main {
 }
 .v5-check-icon.done {
   background: #d9f5eb;
-  color: #0d907b;
+  color: #0b7967;
 }
 .v5-checkrow b {
   font-size: 11.5px;
@@ -477,7 +477,7 @@ main {
 }
 .v5-checkrow small {
   display: block;
-  color: #8a9ca1;
+  color: #62757a;
   font-size: 10px;
   margin-top: 4px;
 }
@@ -568,7 +568,7 @@ main {
 }
 .v5-tag.green {
   background: #e1f5ed;
-  color: #187c67;
+  color: #177863;
 }
 .v5-tag.blue {
   background: #e7f0fc;
@@ -590,7 +590,7 @@ main {
 }
 .v5-stats-strip span {
   background: #edf6f4;
-  color: #507d79;
+  color: #4a7470;
   font-size: 10px;
   font-weight: 720;
   padding: 8px 10px;
@@ -626,7 +626,7 @@ main {
 .v5-disclaimer {
   font-size: 10.5px;
   line-height: 1.65;
-  color: #7a8d94;
+  color: #5f7077;
   padding: 14px 0;
   margin-top: 8px;
   max-width: 950px;
@@ -669,7 +669,7 @@ main {
 }
 .v5-empty-line {
   font-size: 12px;
-  color: #7d9196;
+  color: #63767b;
   padding: 17px 4px;
 }
 .v5-order-list {
@@ -775,7 +775,7 @@ main {
 .v5-info-grid p {
   font-size: 11.5px;
   line-height: 1.7;
-  color: #70858e;
+  color: #64767e;
 }
 #modal-layer:has(.v5-command-overlay) {
   backdrop-filter: blur(4px);

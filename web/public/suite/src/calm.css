@@ -264,3 +264,7 @@ body {
 .v5-checkrow .v5-arr {
   flex: none;
 }
+/* sidebar footer (storage status) readable on the dark sidebar */
+.side-footer {
+  color: #a9bac2;
+}

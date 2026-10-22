@@ -1,6 +1,6 @@
 /* GLB AI Suite 0.6 – GLB CI executive reporting / accessible, responsive charts. */
 :root {
-  --teal: #109982;
+  --teal: #0d7967;
   --teal-dark: #076f64;
   --glb-deep: #102b36;
   --glb-ink: #18343d;
@@ -221,7 +221,7 @@ body {
   width: 16px;
 }
 .v6-filter-ribbon label {
-  color: #6c8087;
+  color: #63757c;
   font-size: 9px;
   text-transform: uppercase;
   font-weight: 800;
@@ -272,12 +272,12 @@ body {
 }
 .v6-heading p {
   margin: 0;
-  color: #80949a;
+  color: #5e7177;
   font-size: 12px;
 }
 .v6-overline {
   font-size: 9px;
-  color: #14917e;
+  color: #117869;
   font-weight: 900;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -312,7 +312,7 @@ body {
   font-size: 9.5px;
   letter-spacing: 0.5px;
   font-weight: 900;
-  color: #71868c;
+  color: #5e6f74;
   text-transform: uppercase;
 }
 .v6-stat b {
@@ -325,7 +325,7 @@ body {
   overflow-wrap: anywhere;
 }
 .v6-stat > span {
-  color: #8b9da0;
+  color: #5d6f72;
   font-size: 10.5px;
   line-height: 1.4;
 }
@@ -365,7 +365,7 @@ body {
   letter-spacing: -0.4px;
 }
 .v6-panel-head p {
-  color: #87989e;
+  color: #64767c;
   font-size: 11px;
   margin: 0;
   line-height: 1.6;
@@ -534,7 +534,7 @@ body {
 .v6-advice-item small {
   display: block;
   font-size: 10px;
-  color: #7b9194;
+  color: #62777a;
   line-height: 1.5;
 }
 .v6-modular-head {
@@ -547,7 +547,7 @@ body {
   font-size: 10px;
   letter-spacing: 1.5px;
   font-weight: 850;
-  color: #0b8972;
+  color: #0a7d68;
 }
 .v6-module-report {
   margin: 42px 0 25px;
@@ -578,7 +578,7 @@ body {
   justify-content: center;
   align-items: center;
   gap: 9px;
-  color: #8aa1a6;
+  color: #5e767b;
   text-align: center;
   font-size: 11px;
 }
@@ -609,7 +609,7 @@ body {
 .v6-abc-grid small {
   font-size: 10px;
   letter-spacing: 1px;
-  color: #13967b;
+  color: #107d67;
   font-weight: 900;
 }
 .v6-abc-grid b {
@@ -620,11 +620,11 @@ body {
 }
 .v6-abc-grid b span {
   font-size: 12px;
-  color: #96a8aa;
+  color: #5f7376;
 }
 .v6-abc-grid p {
   font-size: 10px;
-  color: #899da0;
+  color: #5f7376;
 }
 .v6-abc-grid strong {
   font-size: 13px;
@@ -632,7 +632,7 @@ body {
 }
 .v6-smallnote,
 .v6-report-fineprint {
-  color: #83989b;
+  color: #5e7174;
   font-size: 10.5px;
   line-height: 1.7;
   margin: 13px 0 0;
@@ -665,7 +665,7 @@ body {
 .v6-sim small,
 .v6-sim span {
   display: block;
-  color: #6d8c88;
+  color: #58716e;
   font-size: 10px;
   line-height: 1.5;
 }
@@ -711,7 +711,7 @@ body {
   margin-bottom: 4px;
 }
 .v6-priority-list small {
-  color: #8da0a3;
+  color: #617578;
   font-size: 9px;
 }
 .v6-priority-list strong {
@@ -730,7 +730,7 @@ body {
 .v6-tabbar button {
   border: 1px solid #dfe8e7;
   border-radius: 10px;
-  color: #607e82;
+  color: #5c787c;
   background: #fff;
   min-height: 44px;
   padding: 0 19px;
@@ -753,14 +753,14 @@ body {
   padding: 8px 12px;
   font-weight: 720;
   font-size: 10.5px;
-  color: #799393;
+  color: #596e6e;
   background: #edf3f2;
   border: 0;
   border-radius: 7px;
 }
 .v6-metric-tabs button.active {
   background: #c9ede0;
-  color: #0b755e;
+  color: #0b705a;
 }
 .v6-print-banner {
   display: none;
@@ -777,7 +777,7 @@ body {
   display: grid;
   gap: 5px;
   font-size: 10px;
-  color: #657f85;
+  color: #5e777c;
   font-weight: 750;
 }
 .v6-data-toolbar input {
@@ -789,12 +789,12 @@ body {
 }
 .v6-data-toolbar > span {
   font-size: 10px;
-  color: #91a3a5;
+  color: #637779;
 }
 .v6-table small {
   display: block;
   font-size: 9px;
-  color: #8b9da0;
+  color: #5d6f72;
   margin-top: 4px;
 }
 .v6-saved {

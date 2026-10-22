@@ -11,11 +11,11 @@
   --soft-teal: #e9f6f3;
   --gold: #ccab70;
   --shadow: 0 6px 28px rgba(20, 38, 48, 0.038);
-  --red: #bd5651;
+  --red: #b54a45;
   --red-soft: #fff0ee;
-  --orange: #b87832;
+  --orange: #966229;
   --orange-soft: #fff5e7;
-  --blue: #6486a1;
+  --blue: #527087;
   --blue-soft: #eff5fa;
 }
 * {
@@ -301,7 +301,7 @@ svg {
   align-items: center;
 }
 .breadcrumbs {
-  color: #8996a0;
+  color: #66747e;
   font-size: 12px;
 }
 .bread-sep {
@@ -499,7 +499,7 @@ main {
 }
 .kpi-head span:first-child {
   font-size: 11.5px;
-  color: #74848d;
+  color: #66747c;
   font-weight: 640;
 }
 .kpi-icon {
@@ -520,7 +520,7 @@ main {
 .kpi-foot {
   font-size: 10px;
   margin-top: 6px;
-  color: #92a0a6;
+  color: #65757c;
 }
 .kpi-foot b {
   color: #2b8171;
@@ -554,7 +554,7 @@ main {
 .panel-sub {
   margin: 6px 0 0;
   font-size: 11px;
-  color: #929fa7;
+  color: #66757f;
   line-height: 1.55;
 }
 .panel-link {
@@ -572,14 +572,14 @@ main {
   padding: 5px 8px;
   border-radius: 5px;
   background: #eff5f3;
-  color: #2c8575;
+  color: #287869;
   font-size: 10px;
   font-weight: 750;
   white-space: nowrap;
 }
 .tag-neutral {
   background: #f0f3f5;
-  color: #627681;
+  color: #5b6e78;
 }
 .tag-red {
   background: var(--red-soft);
@@ -631,7 +631,7 @@ main {
   background: linear-gradient(90deg, #7e9994, #c7d9d0);
 }
 .chart-note {
-  color: #8a979e;
+  color: #627077;
   font-size: 10px;
   line-height: 1.5;
   margin: 14px 0 0;
@@ -701,7 +701,7 @@ main {
   text-transform: uppercase;
   letter-spacing: 0.85px;
   font-weight: 800;
-  color: #9aa6ac;
+  color: #66757c;
   border-bottom: 1px solid var(--line);
   padding: 11px 13px;
 }
@@ -894,7 +894,7 @@ main {
   text-align: left;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #93a0a9;
+  color: #667580;
   font-size: 9.5px;
   padding: 12px 6px;
   border-bottom: 1px solid var(--line);
@@ -968,7 +968,7 @@ main {
 }
 .calc-note {
   font-size: 10.5px;
-  color: #83939e;
+  color: #657681;
   line-height: 1.65;
   margin-top: 15px;
 }
@@ -1083,13 +1083,13 @@ main {
 .insight-content p {
   font-size: 11.5px;
   line-height: 1.7;
-  color: #6d7e88;
+  color: #667680;
   margin: 0;
 }
 .insight-explain {
   margin-top: 10px;
   font-size: 10px;
-  color: #a0abb0;
+  color: #67757c;
 }
 .ai-banner {
   background: linear-gradient(120deg, #1d2f3c, #173d40);
@@ -1152,7 +1152,7 @@ main {
 .format-guide {
   font-size: 11px;
   line-height: 1.9;
-  color: #71828b;
+  color: #63727a;
   background: #f7f9f9;
   border-radius: 10px;
   padding: 18px;
@@ -1188,7 +1188,7 @@ main {
 }
 .step p {
   font-size: 11px;
-  color: #84939b;
+  color: #66767e;
   margin: 4px 0 0;
   line-height: 1.6;
 }
@@ -1207,7 +1207,7 @@ main {
 }
 .settings-row p {
   font-size: 11px;
-  color: #84939b;
+  color: #66767e;
   line-height: 1.6;
   margin: 5px 0 10px;
 }
@@ -1544,7 +1544,7 @@ main {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #687b84;
+  color: #64767e;
 }
 .glb-bar-row > strong {
   text-align: right;
@@ -1585,7 +1585,7 @@ main {
 }
 .glb-action small {
   grid-column: 2;
-  color: #8495a0;
+  color: #637581;
 }
 .funnel-sliders {
   display: grid;
