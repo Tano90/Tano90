@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, Boxes, Calculator, Check, ChefHat, Download, Filter, Gauge, LineChart, MapPin, PackageSearch, Plus, ScanLine, ShieldCheck, ShoppingCart, Smartphone, Sparkles, Store, Upload, Users } from "lucide-react";
+import { ArrowRight, BarChart3, Boxes, Calculator, Check, ChefHat, Download, Filter, Gauge, GraduationCap, LineChart, ListChecks, MapPin, PackageSearch, Plus, Receipt, ScanLine, ShieldCheck, ShoppingCart, Smartphone, Sparkles, Store, Upload, Users } from "lucide-react";
 import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
@@ -22,9 +22,16 @@ import shotPortfolio from "../../public/landing/suite-portfolio.png";
 import shotPurchasing from "../../public/landing/suite-purchasing.png";
 import shotRecipes from "../../public/landing/suite-recipes.png";
 import shotReports from "../../public/landing/suite-reports.png";
+import shotV11Cockpit from "../../public/landing/suite-v11cockpit.png";
+import shotV11Funnel from "../../public/landing/suite-v11funnel.png";
+import shotV11Market from "../../public/landing/suite-v11market.png";
+import shotV11Menu from "../../public/landing/suite-v11menu.png";
+import shotV11Tasks from "../../public/landing/suite-v11tasks.png";
+import shotV11Training from "../../public/landing/suite-v11training.png";
 
 // Public landing page. Static: no session lookup, so it is fast and cacheable.
-// Only what the GLB AI Suite v0.8 (public/suite) does today. Every screenshot shows its built-in example data.
+// Only what the GLB AI Suite (public/suite, v0.8 modules plus v1.1 Intelligence Center) does today.
+// Every screenshot shows its built-in example data.
 // No testimonials, logos or user counts until there are real ones.
 
 const SUITE = "/suite";
@@ -59,6 +66,18 @@ const SPOTLIGHTS: Spotlight[] = [
     points: ["Vergleich innerhalb des Sortiments, einer Warengruppe oder Oberkategorie", "Konkrete Maßnahmen je Artikel", "Preis-Szenarien für ausgewählte Artikel"],
     shot: shotPortfolio, alt: "Renner-Penner-Matrix mit Produkten als Punkte in vier Feldern und daneben eine Liste priorisierter Schritte.",
   },
+  {
+    icon: Receipt, kicker: "Kassenbons", title: "Tagesfunnel aus Kassendaten",
+    body: "Aus einzelnen Bonpositionen: Wie viele Bons enthalten einen Aperitif, Wasser, ein Upgrade, ein Dessert, Kaffee oder einen After-Glow-Abschluss?",
+    points: ["Kaufquote je Bon für sechs unabhängige Themen, Gäste nur bei vollständiger Angabe", "Zielquoten und vorsichtige Szenarien, ohne garantierte Gewinne", "Import per CSV mit Positions-ID, Storno und Erkennung von Überschneidungen"],
+    shot: shotV11Funnel, alt: "Tagesfunnel mit Kacheln für Bons, Gäste, Bruttoverkauf und Deckungsbeitrag I sowie Balken je Thema mit Zielmarke.",
+  },
+  {
+    icon: GraduationCap, kicker: "Team", title: "Funnel Quest – Training",
+    body: "Kurze Verkaufstrainings zu den sechs Themen: Lernhinweis, Frage, Rückmeldung und Punkte. Die Schulungspriorität kommt aus den Kassenbons.",
+    points: ["100 Punkte je richtiger Antwort, ein Versuch je Thema und Tag", "Ergebnisse sieht nur die Person selbst, kein Ranking, keine Bewertung", "Schulung direkt als Aufgabe für das Team anlegen"],
+    shot: shotV11Training, alt: "Funnel Quest mit Punkten, Stufe, sechs Missionen und einer Frage mit drei Antworten.",
+  },
 ];
 
 // Further modules: a smaller card each, also with a screenshot.
@@ -70,10 +89,14 @@ const MODULES: { icon: typeof BarChart3; title: string; body: string; shot: Stat
   { icon: Boxes, title: "Inventur & Lager", body: "Mehrere Lager, mobile Zählmaske, Warenbewegungen, Transfer, Schwund und Wareneingang.", shot: shotInventory, alt: "Inventur und Lagerverwaltung mit Beständen je Rohware." },
   { icon: ChefHat, title: "Rezepte & Rohwaren", body: "Zutaten, Gebinde und Einheiten, Kosten je Portion, Import von Rezepten und Rohwaren per CSV.", shot: shotRecipes, alt: "Rezepturen und Rohwaren mit Kosten je Rezept und Rohwarenstamm." },
   { icon: Upload, title: "Speisekarten-Import", body: "CSV, Text oder textbasierte PDF einlesen; Steuersatz nach Speisen und Getränken vorbelegt, unsichere Positionen markiert, vor dem Speichern korrigierbar.", shot: shotMenuImport, alt: "Speisekarten-Import mit Upload-Feld, Texteingabe und Vorschau." },
+  { icon: Gauge, title: "Management-Cockpit", body: "Brutto- und Nettoumsatz, Deckungsbeitrag I und Wareneinsatzquote nach Outlet und Monat; fehlende Kosten werden als unvollständig gezeigt, nicht geschätzt.", shot: shotV11Cockpit, alt: "Management-Cockpit mit vier Kennzahlen, Monatsdiagramm und regelbasierten Hinweisen." },
+  { icon: LineChart, title: "Menu Engineering", body: "Stars, Renner, Puzzle und Penner nach Absatz und DB I je Einheit; fehlender Wareneinsatz lässt sich bewusst nachtragen.", shot: shotV11Menu, alt: "Menu Engineering mit Klassen je Artikel, Empfehlungen und Berechnungsgrundlage." },
+  { icon: ListChecks, title: "Team & Aufgaben, Mindestbestände", body: "Maßnahmen mit Priorität und Fälligkeit für alle Rollen; einfache Mindestbestandsliste mit Bestellvorschlag Ziel minus Ist, neben dem Forecast.", shot: shotV11Tasks, alt: "Team und Aufgaben mit Aufgabenliste und Formular für neue Aufgaben." },
+  { icon: MapPin, title: "KI-Marktcheck", body: "Preise der Konkurrenz mit Quelle und Prüfdatum vergleichen, Umfeld per OpenStreetMap finden. Die KI-Einordnung ist optional und braucht einen eigenen Schlüssel auf dem Server.", shot: shotV11Market, alt: "KI-Marktcheck mit Formular für Preisbeobachtungen, Umfeldsuche und Preisvergleich." },
   { icon: ScanLine, title: "GLB Intelligence", body: "Regelbasierte Hinweise und Handlungsempfehlungen. Vorschläge, keine Automatik: du entscheidest.", shot: shotInsights, alt: "GLB Intelligence mit Handlungsempfehlungen und Analysegrundlage." },
 ];
 
-const TICKER = ["Report Studio", "Mission Control", "Service Funnel", "Deckungsbeiträge", "Zielpreise", "Renner-Penner", "Lebenszyklen", "Mein Markt", "Speisekarten-Import", "Rezepte & Rohwaren", "Inventur & Lager", "Bestell-Forecast", "7 Rollen", "App fürs Handy"];
+const TICKER = ["Management-Cockpit", "Tagesfunnel", "Funnel Quest", "Menu Engineering", "KI-Marktcheck", "Report Studio", "Mission Control", "Service Funnel", "Deckungsbeiträge", "Zielpreise", "Renner-Penner", "Lebenszyklen", "Mein Markt", "Speisekarten-Import", "Rezepte & Rohwaren", "Inventur & Lager", "Bestell-Forecast", "7 Rollen", "App fürs Handy"];
 
 // From the suite's access model (v0.8): what each role works with.
 const ROLES = [
@@ -97,10 +120,10 @@ const FACTS = [
 
 const FAQ = [
   { q: "Wie kommen meine Daten hinein?", a: "Über den Datenimport: Speisekarten als CSV, Text oder textbasierte PDF, Rezepte, Rohwaren und Tagesabsätze als CSV. Vorlagen für jede Datei liegen in der Suite. Vor dem Übernehmen siehst du eine Vorschau und kannst korrigieren. Dieselbe Datei wird wiedererkannt und nicht doppelt gezählt." },
-  { q: `Ist ${APP_NAME} mit meiner Kasse verbunden?`, a: "Noch nicht automatisch. Verkaufszahlen kommen per CSV-Export aus der Kasse. Eine direkte Kassenanbindung ist in Planung." },
+  { q: `Ist ${APP_NAME} mit meiner Kasse verbunden?`, a: "Es gibt keine fertige Anbindung an ein bestimmtes Kassensystem. Monatsverkäufe und einzelne Bonpositionen kommen per CSV-Export aus der Kasse. Für eine automatische Übertragung gibt es eine signierte Schnittstelle, an die ein Kassen- oder ETL-Dienst Positionen senden kann; das muss für deine Kasse eingerichtet werden." },
   { q: "Wer sieht welche Zahlen?", a: "Es gibt sieben Rollen von Geschäftsführung bis Mitarbeiter Küche. Service und Sales sehen keine Einkaufspreise und keine Fixkosten, die Küche keine Finanzberichte. Die Rechte prüft auch die Datenbank." },
   { q: "Funktioniert das auf dem Handy?", a: `Ja. ${APP_NAME} läuft im Browser und lässt sich als App installieren. Für Service und Küche gibt es eigene mobile Ansichten, etwa für die Tageszahlen im Funnel und die Inventur.` },
-  { q: "Rechnet die KI für mich?", a: "GLB Intelligence arbeitet mit nachvollziehbaren Regeln auf deinen Zahlen und macht Vorschläge. Nichts wird ohne deine Bestätigung geändert." },
+  { q: "Rechnet die KI für mich?", a: "Kennzahlen, Hinweise und Szenarien entstehen aus nachvollziehbaren Regeln auf deinen Zahlen. Nur der KI-Marktcheck kann optional eine KI um eine Einordnung bitten: Sie bekommt ausschließlich die von dir eingetragenen Preise mit Quelle, prüft keine Webseiten und ändert nichts. Dafür muss auf dem Server ein eigener API-Schlüssel eingerichtet sein." },
   { q: "Kann ich vorher ausprobieren?", a: `Ja. Über „Live ausprobieren“ öffnest du die Suite mit Beispieldaten. Für deinen eigenen Betrieb legst du in der Suite ein Konto an.` },
   { q: "Wo liegen meine Daten?", a: "In der Cloud-Datenbank von Supabase, getrennt pro Betrieb. Zusätzlich kannst du jederzeit ein Backup herunterladen." },
 ];

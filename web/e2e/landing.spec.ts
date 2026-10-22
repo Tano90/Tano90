@@ -30,9 +30,11 @@ test.describe("L01 Landingpage", () => {
   test("L01-E3 nur Module von v0.8, jedes mit Bild; Video mit Untertiteln", async ({ page }) => {
     await page.goto("/");
     const features = page.getByRole("region", { name: "Vom Service bis zum Ergebnis." });
-    for (const h of ["GLB Report Studio", "Service Funnel & Sales Forecast", "Deckungsbeiträge & Zielpreise", "Renner-Penner & Aktionsplan"]) await expect(features.getByRole("heading", { name: h })).toBeVisible();
-    await expect(features.getByRole("img")).toHaveCount(4);
-    await expect(page.getByRole("region", { name: "Ein Board statt zehn Listen" }).getByRole("img")).toHaveCount(8);
+    for (const h of ["GLB Report Studio", "Service Funnel & Sales Forecast", "Deckungsbeiträge & Zielpreise", "Renner-Penner & Aktionsplan", "Tagesfunnel aus Kassendaten", "Funnel Quest – Training"]) await expect(features.getByRole("heading", { name: h })).toBeVisible();
+    await expect(features.getByRole("img")).toHaveCount(6);
+    const board = page.getByRole("region", { name: "Ein Board statt zehn Listen" });
+    for (const h of ["Management-Cockpit", "Menu Engineering", "Team & Aufgaben, Mindestbestände", "KI-Marktcheck"]) await expect(board.getByRole("heading", { name: h })).toBeVisible();
+    await expect(board.getByRole("img")).toHaveCount(12);
     const video = page.locator("video");
     await expect(video).toHaveAttribute("poster", "/landing/suite-reports.png");
     await expect(video.locator("track[kind=captions]")).toHaveAttribute("src", "/landing/suite-rundgang.vtt");

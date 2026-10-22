@@ -344,3 +344,11 @@ body {
     font-size: 11px;
   }
 }
+/* collapsible summaries wrap on phones instead of pushing the hint out */
+.panel-collapsible > summary {
+  flex-wrap: wrap;
+}
+.panel-collapsible > summary > span:first-child {
+  flex: 1 1 200px;
+  min-width: 0;
+}

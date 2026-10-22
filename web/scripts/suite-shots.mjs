@@ -22,7 +22,7 @@ async function open(page, view) {
 }
 
 // Desktop screenshots
-const SHOTS = ["overview", "reports", "funnel", "portfolio", "costs", "lifecycle", "market", "purchasing", "inventory", "insights", "recipes", "menuimport"];
+const SHOTS = ["overview", "reports", "funnel", "portfolio", "costs", "lifecycle", "market", "purchasing", "inventory", "insights", "recipes", "menuimport", "v11cockpit", "v11funnel", "v11training", "v11market", "v11menu", "v11tasks"];
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: "de-DE", timezoneId: "Europe/Berlin" });
 await page.goto(`${base}/suite`);
 await page.waitForSelector("#sidebar [data-view]");

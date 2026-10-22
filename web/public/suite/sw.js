@@ -1,5 +1,5 @@
 /* PWA shell cache ONLY. Cloud data and Supabase authentication MUST NEVER be cached. */
-const NAME = "glb-v11-shell-20261022a";
+const NAME = "glb-v11-shell-20261022b";
 const SHELL = [
   "./",
   "./index.html",
