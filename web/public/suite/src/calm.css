@@ -1,0 +1,266 @@
+/* GLB AI Suite – calm surface layer (website revision, Oct 2026).
+   Loaded after the v0.4–v0.8 styles: flat neutral surfaces instead of dark gradients and glow,
+   the brand green stays for actions, active states and positive values. Nothing is hidden here. */
+:root {
+  --calm-border: #dfe6e8;
+  --calm-ink-soft: #4d5f69;
+  --calm-sidebar: #10262f;
+}
+
+/* page and sidebar: no glow, no gradient */
+body {
+  background: var(--paper);
+}
+.sidebar {
+  background: var(--calm-sidebar);
+}
+.sidebar .brand-logo,
+.brand-logo {
+  background: var(--teal-dark);
+}
+.sidebar .nav-item.active,
+.nav-item.active {
+  background: rgba(24, 137, 121, 0.22);
+}
+
+/* former dark hero blocks become ordinary page headers */
+.v6-executive,
+.v4-module-banner,
+.ai-banner,
+.v5-inline-cta,
+.v08-staff-head > div {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--calm-border);
+  box-shadow: none;
+}
+.v6-executive {
+  min-height: 0;
+  padding: 22px 26px;
+  border-radius: 14px;
+  grid-template-columns: minmax(0, 1.6fr) minmax(240px, 0.8fr);
+  gap: 22px;
+}
+.v6-executive:before {
+  display: none;
+}
+.v6-executive h2 {
+  font-size: clamp(21px, 2vw, 26px);
+  letter-spacing: -0.4px;
+  margin: 6px 0 8px;
+}
+.v6-executive p,
+.v4-module-banner p,
+.ai-banner p,
+.v5-inline-cta span {
+  color: var(--calm-ink-soft);
+}
+.v6-executive .v6-overline,
+.v4-overline {
+  color: var(--teal-dark);
+}
+.ai-banner .icon {
+  color: var(--teal);
+}
+.v6-hero-btn {
+  background: var(--teal);
+  color: #fff;
+}
+.v6-hero-btn:hover {
+  background: var(--teal-dark);
+}
+.v6-hero-ghost {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--calm-border);
+}
+.v6-hero-card {
+  min-height: 0;
+  background: var(--paper);
+  backdrop-filter: none;
+  border: 1px solid var(--line);
+  padding: 16px 18px;
+}
+.v6-hero-card > span,
+.v6-hero-card > small {
+  color: var(--calm-ink-soft);
+}
+.v6-hero-mini i {
+  background: var(--teal);
+  opacity: 0.75;
+}
+.v08-staff-head small {
+  color: var(--calm-ink-soft);
+}
+.v4-module-banner h2,
+.ai-banner h2,
+.v5-inline-cta b,
+.v08-staff-head strong {
+  color: var(--ink);
+}
+
+/* soft tinted panels keep their tint, without a gradient */
+.v5-note,
+.v6-insight-panel,
+.v6-stat.mint,
+.notice {
+  background: var(--soft-teal);
+}
+.v4-file-drop {
+  background: var(--surface);
+}
+
+/* Mein Arbeitsplatz: compact header, task list, shortcut list */
+.v08-today {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--calm-border);
+  box-shadow: none;
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 10px 24px;
+  margin-bottom: 18px;
+}
+.v08-today h1 {
+  font-size: clamp(21px, 2vw, 26px);
+  letter-spacing: -0.4px;
+  margin: 6px 0 4px;
+}
+.v08-today > div > p,
+.v08-today > p.v08-today-scope {
+  color: var(--calm-ink-soft);
+  font-size: 13px;
+  margin: 0;
+}
+.v08-today > p.v08-today-scope {
+  max-width: 460px;
+}
+.v08-today .v08-overline {
+  color: var(--teal-dark);
+}
+.v08-today a {
+  color: var(--teal-dark);
+  font-weight: 700;
+}
+.v08-today-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.v08-tasks {
+  display: grid;
+  gap: 8px;
+}
+.v08-task {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.v08-task:hover {
+  border-color: var(--teal);
+}
+.v08-task b {
+  display: block;
+  font-size: 14px;
+}
+.v08-task small {
+  display: block;
+  color: var(--calm-ink-soft);
+  font-size: 12px;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+.v08-task-mark {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--orange);
+}
+.v08-task-mark.routine {
+  background: var(--blue);
+}
+.v08-task-go {
+  color: var(--teal-dark);
+  font-weight: 800;
+}
+.v08-subhead {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--calm-ink-soft);
+  margin: 18px 0 8px;
+}
+.v08-shortcut-list {
+  display: grid;
+  gap: 6px;
+}
+.v08-shortcut-list .v08-shortcut {
+  min-height: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  transition: none;
+}
+.v08-shortcut-list .v08-shortcut:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--teal);
+}
+.v08-shortcut-list .v08-shortcut b {
+  font-size: 13.5px;
+}
+.v08-shortcut-list .v08-shortcut small {
+  margin-top: 2px;
+  color: var(--calm-ink-soft);
+}
+.v08-today-grid .v08-note {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--calm-ink-soft);
+}
+
+/* visible keyboard focus everywhere */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .v08-today-grid,
+  .v6-executive {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  /* the trend is in the KPI tile and the chart below; keep the phone header short */
+  .v6-hero-card {
+    display: none;
+  }
+  .v6-executive,
+  .v08-today {
+    padding: 16px;
+  }
+}
+/* checklist rows: the text shrinks, the arrow keeps its place */
+.v5-checkrow > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.v5-checkrow .v5-arr {
+  flex: none;
+}

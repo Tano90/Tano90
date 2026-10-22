@@ -28,7 +28,7 @@
 
   // [icon, label, target in the original header]
   const ACTIONS = [
-    ["⌕", "Aktion suchen", ".topbar .v5-search-trigger"],
+    ["⌕", "Modul suchen", ".topbar .v5-search-trigger"],
     ["▥", "Reports", '.topbar [data-view="reports"]'],
     ["⤓", "App installieren", "#glb08-install"],
     ["☺", "Mein Konto", "#cloud-account"],

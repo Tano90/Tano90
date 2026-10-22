@@ -1,5 +1,5 @@
 /* PWA shell cache ONLY. Cloud data and Supabase authentication MUST NEVER be cached. */
-const NAME = "glb-v08-shell-20261022o";
+const NAME = "glb-v08-shell-20261022p";
 const SHELL = [
   "./",
   "./index.html",
@@ -24,6 +24,7 @@ const SHELL = [
   "./src/mobile.js",
   "./src/market-plus.js",
   "./src/xlsx.js",
+  "./src/calm.css",
 ];
 self.addEventListener("install", (e) => {
   e.waitUntil(

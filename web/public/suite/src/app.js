@@ -354,7 +354,7 @@
         `<button class="btn" data-view="costs">${I("calculator")} DB-Masken</button><button class="btn" data-action="new-sale">${I("plus")} Verkauf erfassen</button><button class="btn btn-primary" data-action="new-product">${I("plus")} Produkt hinzufügen</button>`,
       ) +
       demoNotice() +
-      `<div class="toolbar"><div class="toolbar-left"><input class="search-input" id="product-search" placeholder="Produkt suchen ..." value="${esc(FILTER)}" aria-label="Produkte suchen"><select class="select" id="product-category" aria-label="Kategorie filtern">${selectOptions([["all", "Alle Kategorien"], ...cats.map((x) => [x, x])], CAT)}</select></div><span class="micro">${items.length} von ${S.items.length} Artikeln</span></div><div class="panel table-shell">${dataTable(items)}<div class="table-footer"><span>DB je Stück = DB II nach direkten variablen Kosten · Umsatz aus Verkaufszeilen.</span><span>Speicherung: nur dieser Browser</span></div></div>`
+      `<div class="toolbar"><div class="toolbar-left"><input class="search-input" id="product-search" placeholder="Produkt suchen ..." value="${esc(FILTER)}" aria-label="Produkte suchen"><select class="select" id="product-category" aria-label="Kategorie filtern">${selectOptions([["all", "Alle Kategorien"], ...cats.map((x) => [x, x])], CAT)}</select></div><span class="micro">${items.length} von ${S.items.length} Artikeln</span></div><div class="panel table-shell">${dataTable(items)}<div class="table-footer"><span>DB je Stück = DB II nach direkten variablen Kosten · Umsatz aus Verkaufszeilen.</span><span>Speicherung: ${window.GLB_CLOUD_ENABLED ? "Cloud-Arbeitsbereich" : "nur dieser Browser"}</span></div></div>`
     );
   }
   function getRecipe() {
@@ -1655,7 +1655,7 @@
   const labels = {
     funnel: "Service Funnel",
     groups: "Oberkategorien",
-    overview: "Übersicht",
+    overview: "Dashboard",
     products: "Artikel & Umsätze",
     costs: "Deckungsbeiträge",
     outlets: "Outlet-Controlling",
@@ -2146,6 +2146,7 @@
     const nav = e.target.closest("[data-view]");
     if (nav) {
       e.preventDefault();
+      if (nav.closest(".v5-command-overlay")) closeModal();
       navigate(nav.dataset.view);
       return;
     }
@@ -3613,7 +3614,7 @@
       button.type = "button";
       button.id = "v5-open-command";
       button.className = "v5-search-trigger";
-      button.innerHTML = `${I("search")} <span>Aktion suchen</span><kbd>Ctrl K</kbd>`;
+      button.innerHTML = `${I("search")} <span>Suchen</span><kbd>Strg K</kbd>`;
       topRight.prepend(button);
     }
     const current = document.querySelector(".sidebar-bottom .side-status strong");
@@ -3694,12 +3695,12 @@
       pageHeader(
         "CONTROL CENTER",
         "Mission Control",
-        "Dein operativer Startpunkt: Datenqualität, Lager, offene Bestellungen und nächste Schritte.",
+        "Ist die Suite richtig eingerichtet und sind die Zahlen belastbar? Einrichtung, Datenvollständigkeit, Lager und Bestellungen auf einen Blick.",
         `<button class="btn" data-action="export-json">${I("download")} Backup</button><button class="btn btn-primary" data-view="purchasing">${I("cart")} Bestell-Forecast</button>`,
       ) +
       demoNotice() +
       v5Toolbar() +
-      `<div class="v5-metrics"><div><small>EINRICHTUNG</small><b>${good}/6</b><span>Schritte mindestens einmal erledigt</span></div><div><small>KALKULIERBARE ARTIKEL</small><b>${V5.completeness(S).calculable}/${S.items.length}</b><span>mit Rezept oder Einkaufspreis</span></div><div><small>BESTELLUNGEN OFFEN</small><b>${orders.draft + orders.ordered}</b><span>${v5Price(orders.openTotal)} geplantes Volumen</span></div><div><small>MINDESTBESTAND</small><b>${danger.length}</b><span>Unterschreitungen nach Schätzung</span></div><div><small>BESTAND UNBEKANNT</small><b>${notCounted}</b><span>Rohwaren ohne Inventur</span></div></div><div class="v5-ops-columns"><div>${v5Readiness()}${v5Completeness()}<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">ARBEITSABLÄUFE</div><h2>Was steht heute an?</h2></div></div><div class="v5-actions-grid">${v5CommandLinks()}</div></section></div><div><section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">INTELLIGENCE / HINWEISE</div><h2>Handlungsbedarf</h2></div></div><div class="v5-alerts">${notCounted ? `<button data-view="inventory" class="v5-alert">${I("alert")} <span><b>${notCounted} Rohwaren ohne Zählung</b><small>Vor der Bestellung Bestand prüfen.</small></span>→</button>` : ""}${danger.length ? `<button data-view="stockledger" class="v5-alert">${I("alert")}<span><b>${danger.length} Bestände unter Minimum</b><small>Prognose und Buchungen abgleichen.</small></span>→</button>` : ""}${errors ? `<button data-view="stockledger" class="v5-alert">${I("alert")}<span><b>${errors} Verbrauchszuordnungen offen</b><small>Lagerzuordnung für Rohwaren prüfen.</small></span>→</button>` : ""}${f.quality !== "gut" ? `<button data-view="purchasing" class="v5-alert">${I("info")}<span><b>Absatzhistorie: ${esc(f.quality)}</b><small>28 Tage vollständig importieren.</small></span>→</button>` : ""}${!danger.length && !notCounted && !errors && f.quality === "gut" ? '<p class="v5-empty-line">Keine automatischen Hinweise aus den vorhandenen Daten.</p>' : ""}</div></section><section class="v5-panel v5-note"><div class="v5-eyebrow">DATENSICHERHEIT</div><h2>Lokal ist nicht automatisch synchron.</h2><p>Regelmäßig JSON-Backups sichern. Auf einem anderen PC oder in einer anderen Browseradresse liegen die Daten nicht automatisch vor.</p><button class="btn" data-action="export-json">JSON-Backup herunterladen</button></section></div></div>`
+      `<div class="v5-metrics"><div><small>EINRICHTUNG</small><b>${good}/6</b><span>Schritte mindestens einmal erledigt</span></div><div><small>KALKULIERBARE ARTIKEL</small><b>${V5.completeness(S).calculable}/${S.items.length}</b><span>mit Rezept oder Einkaufspreis</span></div><div><small>BESTELLUNGEN OFFEN</small><b>${orders.draft + orders.ordered}</b><span>${v5Price(orders.openTotal)} geplantes Volumen</span></div><div><small>MINDESTBESTAND</small><b>${danger.length}</b><span>Unterschreitungen nach Schätzung</span></div><div><small>BESTAND UNBEKANNT</small><b>${notCounted}</b><span>Rohwaren ohne Inventur</span></div></div><div class="v5-ops-columns"><div>${v5Readiness()}${v5Completeness()}<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">ARBEITSABLÄUFE</div><h2>Häufige Abläufe</h2></div></div><div class="v5-actions-grid">${v5CommandLinks()}</div></section></div><div><section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">INTELLIGENCE / HINWEISE</div><h2>Handlungsbedarf</h2></div></div><div class="v5-alerts">${notCounted ? `<button data-view="inventory" class="v5-alert">${I("alert")} <span><b>${notCounted} Rohwaren ohne Zählung</b><small>Vor der Bestellung Bestand prüfen.</small></span>→</button>` : ""}${danger.length ? `<button data-view="stockledger" class="v5-alert">${I("alert")}<span><b>${danger.length} Bestände unter Minimum</b><small>Prognose und Buchungen abgleichen.</small></span>→</button>` : ""}${errors ? `<button data-view="stockledger" class="v5-alert">${I("alert")}<span><b>${errors} Verbrauchszuordnungen offen</b><small>Lagerzuordnung für Rohwaren prüfen.</small></span>→</button>` : ""}${f.quality !== "gut" ? `<button data-view="purchasing" class="v5-alert">${I("info")}<span><b>Absatzhistorie: ${esc(f.quality)}</b><small>28 Tage vollständig importieren.</small></span>→</button>` : ""}${!danger.length && !notCounted && !errors && f.quality === "gut" ? '<p class="v5-empty-line">Keine automatischen Hinweise aus den vorhandenen Daten.</p>' : ""}</div></section><section class="v5-panel v5-note"><div class="v5-eyebrow">DATENSICHERHEIT</div>${window.GLB_CLOUD_ENABLED ? "<h2>Cloud-Arbeitsbereich mit Revisionsprüfung.</h2><p>Ein JSON-Backup ist eine zusätzliche Kopie, etwa vor großen Importen.</p>" : "<h2>Nur in diesem Browser gespeichert.</h2><p>Regelmäßig JSON-Backups sichern. Auf einem anderen Gerät oder in einem anderen Browser liegen die Daten nicht vor.</p>"}<button class="btn" data-action="export-json">JSON-Backup herunterladen</button></section></div></div>`
     );
   }
   function v5StockOverview() {
@@ -4098,37 +4099,68 @@
     v5Toolbar() +
     v5Readiness() +
     `<section class="v5-panel"><div class="v5-panel-title"><div><div class="v5-eyebrow">WEITERENTWICKLUNG</div><h2>Was die lokale Suite kann – und was nicht</h2></div></div><div class="v5-info-grid"><div><b>Bereits funktional</b><p>Produkt-, Rezept-, Rohwaren- und Lagerverwaltung; CSV-Import; DB-Rechnung; Forecast; interne Bestellentwürfe; Wareneingang; manuelle Buchungen; Backup.</p></div><div><b>Noch nicht produktionsreif</b><p>Mehrbenutzer-Synchronisierung, revisionssichere Buchungen, echte Bestellung an Lieferanten, OCR auf Scans, automatische KI-Preise und abgesicherte Online-Anmeldung.</p></div></div></section>`;
+  // Search words per view, so people find a module by what they want to do, not only by its exact name.
+  const COMMAND_WORDS = {
+    myday: "start heute aufgaben arbeitsplatz",
+    operations: "einrichtung status vollständigkeit datenqualität backup überblick",
+    overview: "dashboard kennzahlen umsatz übersicht kpi",
+    funnel: "service gäste conversion aperitif dessert kaffee upselling tageserfassung",
+    products: "artikel produkte umsätze preise verkauf",
+    outlets: "outlet standort bar restaurant terrasse filiale",
+    portfolio: "renner penner menu engineering matrix stars schläfer",
+    lifecycle: "lebenszyklus trend entwicklung monate",
+    market: "markt wettbewerb konkurrenz umkreis preisvergleich",
+    menuimport: "speisekarte karte pdf import menü",
+    recipes: "rezept rohware zutaten wareneinsatz",
+    costs: "deckungsbeitrag db kosten zielpreis fixkosten",
+    calculator: "preiskalkulation kalkulieren verkaufspreis",
+    groups: "oberkategorie gruppen warengruppe",
+    inventory: "inventur lager zählen bestand",
+    stockledger: "warenbewegung wareneingang transfer schwund buchen journal",
+    purchasing: "forecast bestellvorschlag bedarf einkauf",
+    orders: "bestellung lieferant wareneingang",
+    reports: "report bericht auswertung export excel csv pdf drucken studio",
+    insights: "intelligence hinweise empfehlungen ki",
+    import: "datenimport csv verkäufe artikel hochladen",
+    setup: "einrichtung erste schritte",
+    settings: "einstellungen backup wiederherstellen ust steuer konto",
+  };
   function v5CommandMenu() {
-    const links = [
-      ["Übersicht", "overview"],
-      ["Mission Control", "operations"],
-      ["Produkte", "products"],
-      ["Speisekartenimport", "menuimport"],
-      ["Rezepte & Rohwaren", "recipes"],
-      ["Inventur zählen", "inventory"],
-      ["Warenbewegungen buchen", "stockledger"],
-      ["Bestellforecast", "purchasing"],
-      ["Bestellungen", "orders"],
-      ["Service Funnel", "funnel"],
-      ["Outlet-Controlling", "outlets"],
-      ["Deckungsbeiträge", "costs"],
-      ["Renner-Penner", "portfolio"],
-      ["Mein Markt", "market"],
-      ["GLB Intelligence", "insights"],
-      ["Datenimport", "import"],
-      ["Einrichtung", "setup"],
-    ];
+    // every navigation target the current role can open, named exactly as in the sidebar
+    const seen = new Set(),
+      links = [];
+    for (const a of document.querySelectorAll("#sidebar [data-view]")) {
+      const id = a.dataset.view,
+        label = (a.textContent || "").replace(/\s+/g, " ").trim();
+      if (!id || seen.has(id) || !label || !(window.GLBAccess?.canView(id) ?? true)) continue;
+      seen.add(id);
+      links.push([label, id, `${label} ${labels[id] || ""} ${COMMAND_WORDS[id] || ""}`]);
+    }
+    const row = ([l, id]) => `<button type="button" data-view="${id}">${esc(l)} <span aria-hidden="true">↗</span></button>`;
     document.querySelector("#modal-layer").innerHTML =
-      `<div class="v5-command-overlay" role="dialog" aria-modal="true" aria-label="Schnellnavigation"><div class="v5-command-header">${I("search")}<input id="v5-command-input" autofocus placeholder="Modul oder Aktion suchen…"><button data-v5="command-close" aria-label="Schließen">ESC</button></div><div id="v5-command-results">${links.map(([l, id]) => `<button data-view="${id}">${esc(l)} <span>↗</span></button>`).join("")}</div><div class="v5-command-foot">GLB AI Suite · schneller arbeiten mit Strg + K</div></div>`;
-    const search = document.querySelector("#v5-command-input");
+      `<div class="v5-command-overlay" role="dialog" aria-modal="true" aria-label="Modul suchen"><div class="v5-command-header">${I("search")}<input id="v5-command-input" autofocus placeholder="Modul oder Aufgabe suchen, z. B. Report, Inventur, Excel" aria-label="Modul oder Aufgabe suchen" aria-controls="v5-command-results"><button type="button" data-v5="command-close" aria-label="Suche schließen">ESC</button></div><div id="v5-command-results" aria-live="polite">${links.map(row).join("")}</div><div class="v5-command-foot">Pfeiltasten wählen · Enter öffnet · Esc schließt · Strg + K öffnet die Suche</div></div>`;
+    const search = document.querySelector("#v5-command-input"),
+      results = document.querySelector("#v5-command-results");
     search.focus();
     search.addEventListener("input", () => {
-      const q = V4.norm(search.value);
-      document.querySelector("#v5-command-results").innerHTML =
-        links
-          .filter((x) => V4.norm(x[0]).includes(q))
-          .map(([l, id]) => `<button data-view="${id}">${esc(l)} <span>↗</span></button>`)
-          .join("") || '<p class="v5-empty-line">Kein Treffer</p>';
+      const words = V4.norm(search.value) ? search.value.toLowerCase().split(/\s+/).filter(Boolean).map(V4.norm) : [];
+      const hits = links.filter((x) => words.every((w) => V4.norm(x[2]).includes(w)));
+      // exact name matches first
+      hits.sort((a, b) => Number(!V4.norm(a[0]).includes(words[0] || "")) - Number(!V4.norm(b[0]).includes(words[0] || "")));
+      results.innerHTML =
+        hits.map(row).join("") || '<p class="v5-empty-line">Kein Treffer. Andere Begriffe versuchen, z. B. „Bestellung“ oder „Rezept“.</p>';
+    });
+    document.querySelector(".v5-command-overlay").addEventListener("keydown", (e) => {
+      const buttons = [...results.querySelectorAll("button")],
+        i = buttons.indexOf(document.activeElement);
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const next = e.key === "ArrowDown" ? (i < 0 ? 0 : Math.min(i + 1, buttons.length - 1)) : i <= 0 ? -1 : i - 1;
+        (next < 0 ? search : buttons[next])?.focus();
+      } else if (e.key === "Enter" && document.activeElement === search && buttons[0]) {
+        e.preventDefault();
+        buttons[0].click();
+      }
     });
   }
   document.addEventListener("click", (e) => {
@@ -4364,10 +4396,8 @@
   }
   function v6Exec() {
     const t = v6Report();
-    const cmp = v6MonthCompare(),
-      top = t.products[0],
-      rev = t.totals.revenue;
-    return `<section class="v6-executive"><div class="v6-executive-copy"><span class="v6-overline">OPERATIVE STEUERUNG / PERFORMANCE</span><h2>Dein Betrieb.<br><em>Alle Zahlen im Blick.</em></h2><p>Umsatz, Rohwaren, Deckungsbeitrag und Verkaufstrends – aus deinen erfassten Verkaufszeilen.</p><div class="v6-hero-links"><button class="v6-hero-btn" data-view="reports">Reporting öffnen →</button><button class="v6-hero-ghost" data-view="funnel">Service-Funnel analysieren</button></div></div><div class="v6-hero-card"><span>NETTO-UMSATZ · ${esc(v6ScopeLabel().toUpperCase())}</span><strong>${euro(rev)}</strong><div class="v6-hero-mini">${v6MiniBars(t.months)}</div><small>${!cmp ? "Noch keine Verkäufe erfasst" : cmp.change === null ? `Kein Vergleich: für ${periodName(cmp.prevId)} sind keine Verkäufe erfasst` : `${periodName(cmp.target)} ggü. ${periodName(cmp.prevId)}: ${cmp.change >= 0 ? "+" : ""}${pct(cmp.change)} (Monatsumsatz, nicht die Summe oben)`}</small></div></section>`;
+    const cmp = v6MonthCompare();
+    return `<section class="v6-executive"><div class="v6-executive-copy"><span class="v6-overline">DASHBOARD · KENNZAHLEN</span><h2>Wie läuft das Geschäft?</h2><p>Umsatz, Deckungsbeitrag und Verkaufstrends aus deinen Verkaufszeilen, für die Auswahl im Berichtsfilter. Tagesaufgaben stehen in Mein Arbeitsplatz, Einrichtung und Datenqualität in Mission Control.</p><div class="v6-hero-links"><button class="v6-hero-btn" data-view="reports">Report Studio öffnen →</button><button class="v6-hero-ghost" data-view="funnel">Service Funnel</button></div></div><div class="v6-hero-card"><span>Monatsumsatz netto · letzte ${Math.min(8, t.months.length)} Monate</span><div class="v6-hero-mini" role="img" aria-label="Verlauf des Monatsumsatzes">${v6MiniBars(t.months)}</div><small>${!cmp ? "Noch keine Verkäufe erfasst" : cmp.change === null ? `Kein Vergleich: für ${periodName(cmp.prevId)} sind keine Verkäufe erfasst` : `${periodName(cmp.target)} ggü. ${periodName(cmp.prevId)}: ${cmp.change >= 0 ? "+" : ""}${pct(cmp.change)}`}</small></div></section>`;
   }
   function v6MiniBars(months) {
     const rows = months.slice(-8),
@@ -5018,15 +5048,94 @@
     ];
     return links.filter((x) => window.GLBAccess?.canView(x[0]) ?? true);
   }
-  handlers.myday = () =>
-    `<div class="v08-today"><div class="v08-overline">DEIN ARBEITSTAG · GLB AI SUITE</div><h1>Guten Tag.<br><em>Direkt zur Aufgabe.</em></h1><p>${esc(S.business)} · ${esc(window.GLBAccess?.label(window.GLBAccess.role) || "GLB-Team")}</p><div class="v08-shortcut-grid">${v08QuickLinks()
-      .map(
-        ([view, name, detail]) =>
-          `<button class="v08-shortcut" data-view="${view}"><span class="v08-shortcut-sym">↗</span><b>${name}</b><small>${detail}</small></button>`,
-      )
-      .join(
-        "",
-      )}</div><p class="v08-note">${window.GLB_CLOUD_ENABLED ? "Änderungen werden mit dem Cloud-Arbeitsbereich synchronisiert. Ob alles gespeichert ist, steht unten in der Seitenleiste." : "Demo: Änderungen bleiben nur in diesem Browser. Für eine Kopie unter Einstellungen ein Backup laden."}</p></div>`;
+  // Tasks derived from the data; each one names why it is there and links to where it is done.
+  function v08TodayTasks() {
+    const tasks = [],
+      can = (v) => window.GLBAccess?.canView(v) ?? true,
+      add = (view, title, detail, tone = "todo") => can(view) && tasks.push({ view, title, detail, tone });
+    const orders = S.purchaseOrders || [];
+    const ordered = orders.filter((o) => o.status === "ordered").length,
+      drafts = orders.filter((o) => o.status === "draft").length;
+    if (ordered)
+      add(
+        "orders",
+        `${ordered} Bestellung${ordered === 1 ? "" : "en"} warten auf Wareneingang`,
+        "Lieferung prüfen und als eingegangen buchen.",
+      );
+    if (drafts)
+      add(
+        "orders",
+        `${drafts} Bestellentw${drafts === 1 ? "urf" : "ürfe"} noch nicht bestellt`,
+        "Mengen prüfen, dann auf „bestellt“ setzen.",
+      );
+    try {
+      const f = v4Forecast(),
+        toOrder = f.rows.filter((r) => r.packs > 0).length,
+        unknown = f.rows.filter((r) => r.requiredBase > 0 && r.stockBase === null).length;
+      if (toOrder)
+        add(
+          "purchasing",
+          `${toOrder} Rohwaren laut Forecast zu bestellen`,
+          `Bedarf für ${Number(S.v04Forecast?.days) || 7} Tage, abzüglich Bestand und offener Bestellungen.`,
+        );
+      if (unknown)
+        add("inventory", `${unknown} benötigte Rohwaren ohne Zählung`, "Ohne Bestand kann der Forecast keine Bestellmenge berechnen.");
+    } catch {
+      /* forecast needs complete master data; missing parts show up in Mission Control */
+    }
+    const lastFunnel = (S.funnel || [])
+      .map((x) => x.date)
+      .sort()
+      .at(-1);
+    if (can("funnel"))
+      add(
+        "funnel",
+        "Service von gestern erfassen",
+        lastFunnel ? `Letzter Eintrag: ${v6DateDE(lastFunnel)}.` : "Noch keine Service-Erfassung.",
+        "routine",
+      );
+    const lastDaily = (S.dailySales || [])
+      .map((x) => x.date)
+      .sort()
+      .at(-1);
+    add(
+      "purchasing",
+      "Tagesabsätze importieren",
+      lastDaily ? `Letzter Absatztag: ${v6DateDE(lastDaily)}. Der Forecast rechnet mit den letzten 28 Tagen.` : "Noch keine Tagesabsätze.",
+      "routine",
+    );
+    const c = V5.completeness(S);
+    if (c.items && c.calculable < c.items)
+      add(
+        "recipes",
+        `${c.items - c.calculable} Artikel ohne Kosten`,
+        "Für diese Artikel gibt es keinen Deckungsbeitrag. Rezept oder Einkaufspreis ergänzen.",
+      );
+    return tasks;
+  }
+  handlers.myday = () => {
+    const tasks = v08TodayTasks(),
+      todo = tasks.filter((t) => t.tone === "todo"),
+      routine = tasks.filter((t) => t.tone !== "todo"),
+      today = new Date().toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+    const row = (t) =>
+      `<button type="button" class="v08-task" data-view="${t.view}"><span class="v08-task-mark ${t.tone}" aria-hidden="true"></span><span><b>${esc(t.title)}</b><small>${esc(t.detail)}</small></span><span class="v08-task-go" aria-hidden="true">→</span></button>`;
+    return (
+      `<div class="v08-today"><div><div class="v08-overline">MEIN ARBEITSPLATZ · ${esc(today.toUpperCase())}</div><h1>Was heute ansteht</h1><p>${esc(S.business)} · ${esc(window.GLBAccess?.label(window.GLBAccess.role) || "GLB-Team")}${S.mode === "own" ? "" : " · Beispieldaten"}</p></div><p class="v08-today-scope">Aufgaben aus deinen Daten. Kennzahlen stehen im <a href="#" data-view="overview">Dashboard</a>, Einrichtung und Datenqualität in <a href="#" data-view="operations">Mission Control</a>.</p></div>` +
+      `<div class="v08-today-grid"><section class="panel">${panelHeader("Zu erledigen", todo.length ? `${todo.length} offene${todo.length === 1 ? "r Punkt" : " Punkte"}` : "")}${
+        todo.length
+          ? `<div class="v08-tasks">${todo.map(row).join("")}</div>`
+          : `<p class="v5-empty-line">Nichts offen. Bestellungen, Forecast und Zählungen sind auf Stand.</p>`
+      }${routine.length ? `<h3 class="v08-subhead">Regelmäßig</h3><div class="v08-tasks">${routine.map(row).join("")}</div>` : ""}</section><section class="panel">${panelHeader("Direkt zu")}<div class="v08-shortcut-list">${v08QuickLinks()
+        .map(
+          ([view, name, detail]) =>
+            `<button type="button" class="v08-shortcut" data-view="${view}"><b>${name}</b><small>${detail}</small></button>`,
+        )
+        .join(
+          "",
+        )}</div><p class="v08-note">${window.GLB_CLOUD_ENABLED ? "Änderungen werden mit dem Cloud-Arbeitsbereich synchronisiert. Ob alles gespeichert ist, steht unten in der Seitenleiste." : "Demo: Änderungen bleiben nur in diesem Browser. Für eine Kopie unter Einstellungen ein Backup laden."}</p></section></div>`
+    );
+  };
   labels.myday = "Mein Arbeitsplatz";
   function v08MenuView() {
     const total = V08_MENU_ROWS.length,
