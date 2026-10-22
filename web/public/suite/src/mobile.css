@@ -703,3 +703,17 @@
   min-width: 44px;
   justify-self: start;
 }
+/* the demo notice wraps instead of pushing its action past the edge (seen at 768 px, Oct 2026) */
+.notice {
+  flex-wrap: wrap;
+}
+.notice > span,
+.notice > p,
+.notice > div {
+  min-width: 0;
+  flex: 1 1 220px;
+}
+/* bottom navigation labels: readable contrast (#68848b was 3.9 : 1) */
+.glb08-bottom-button:not(.active) {
+  color: #4d5f69;
+}

@@ -107,21 +107,29 @@
       t.parentNode.insertBefore(box, t);
       box.appendChild(t);
     });
-    // a table wider than the phone scrolls inside its box – say so above it instead of hiding columns silently
-    main.querySelectorAll(".table-scroll, .glbm-scroll").forEach((box) => {
+  };
+  // a table wider than its box scrolls inside it (phones and tablets) – say so above it instead of hiding columns silently
+  const hintTables = () => {
+    if (!main) return;
+    main.querySelectorAll(".table-scroll, .glbm-scroll, .table-wrap").forEach((box) => {
       const wide = box.scrollWidth > box.clientWidth + 4;
       const prev = box.previousElementSibling;
       const has = prev?.classList.contains("glbm-scroll-hint");
       if (wide && !has) {
         const hint = document.createElement("p");
         hint.className = "glbm-scroll-hint";
-        hint.textContent = "Tabelle seitlich wischen für weitere Spalten →";
+        hint.textContent = "Weitere Spalten: Tabelle seitlich wischen oder scrollen →";
         box.parentNode.insertBefore(hint, box);
       } else if (!wide && has) prev.remove();
     });
   };
-  if (main) new MutationObserver(wrapTables).observe(main, { childList: true, subtree: true });
-  wrapTables();
+  const tables = () => {
+    wrapTables();
+    hintTables();
+  };
+  if (main) new MutationObserver(tables).observe(main, { childList: true, subtree: true });
+  window.addEventListener("resize", hintTables);
+  tables();
 
   // Choosing a module: close the side menu and start at the top.
   document.addEventListener("click", (e) => {

@@ -138,3 +138,34 @@ test.describe("S22 Menügruppen", () => {
     await expect(page.locator('#sidebar .glb08-nav-link[data-view="inventory"]')).toHaveAttribute("aria-current", "page");
   });
 });
+
+test.describe("S23 Tastatur und Fokus", () => {
+  test("S23-1 Zielpreis-Link, Menübereich und Filter per Tastatur; Fokus landet auf dem Artikel", async ({ page, axe }) => {
+    await fresh(page, "#overview");
+    const area = page.locator("#sidebar button.glb08-nav-title", { hasText: "SERVICE & TEAM" });
+    await area.focus();
+    await page.keyboard.press("Enter");
+    await expect(area).toHaveAttribute("aria-expanded", "false");
+    await page.keyboard.press("Space");
+    await expect(area).toHaveAttribute("aria-expanded", "true");
+    const btn = page.locator("[data-cost-focus]").first();
+    const id = await btn.getAttribute("data-cost-focus");
+    await btn.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator(`#cost-row-${id}`)).toBeFocused();
+    await axe();
+  });
+
+  test("S23-2 Handy: Filter-Zusammenfassung per Tastatur öffnen; Kostenkarten barrierefrei", async ({ page, axe }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await fresh(page, "#overview");
+    const toggle = page.locator("[data-v6-filter-toggle]");
+    await toggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator("[data-v6-filter-toggle]")).toHaveAttribute("aria-expanded", "true");
+    await expect(page.locator("[data-v6-filter-toggle]")).toBeFocused();
+    await page.evaluate(() => (window as any).GLBSuite.navigate("costs"));
+    await expect(page.locator("#cost-targets")).toBeVisible();
+    await axe();
+  });
+});

@@ -1063,3 +1063,8 @@ button.glb08-nav-title:focus-visible {
     padding: 14px 12px;
   }
 }
+/* screen-reader-only labels inside a scrolling table stay inside it (otherwise they widen the page) */
+.table-scroll,
+.table-wrap {
+  position: relative;
+}
