@@ -15,6 +15,7 @@ import {
 } from "./intelligence.mjs";
 import { initializeIntelligence } from "./demo.mjs";
 import * as T from "./tasks.mjs";
+import * as MK from "./market.mjs";
 import * as cloud from "./cloud.mjs";
 
 const G = window.GLBSuite;
@@ -103,6 +104,19 @@ const V = {
     }
   })(),
   summary: null,
+  marketTab: "products",
+  mSection: "all",
+  mCategory: "all",
+  mPrefill: null,
+  ploc: null,
+  geoHits: null,
+  geoMsg: "",
+  pManual: false,
+  pRadius: 2000,
+  pLastRadius: 2000,
+  pCats: ["restaurant", "cafe", "bar", "pub", "biergarten", "fast_food", "events_venue"],
+  pShow: [],
+  pSort: "distance",
   taskOutlet: "all",
   taskStatus: "all",
   taskPrio: "all",
@@ -731,67 +745,287 @@ async function submitQuiz(obj) {
   G.render();
 }
 
-// ---------- KI-Marktcheck ----------
+// ---------- KI-Marktcheck: A Speisen- und Getränkevergleich, B Restaurants und Locations in der Nähe ----------
+const suiteProducts = () => (S().items || []).map((p) => ({ id: p.id, name: p.name, category: p.category || "", unit: p.unit || "Portion", grossPrice: Number(p.grossPrice) }));
+const manualSections = () => (intel().sections ||= {});
+function marketRows() {
+  return MK.comparisonRows(intel().markets, S().market || [], suiteProducts(), S().categoryGroups || {}, manualSections());
+}
+const CMP_TAG = { comparable: ["Vergleichbar", "neutral"], normalized: ["Umgerechnet", "blue"], not: ["Nicht vergleichbar", "red"], unchecked: ["Zu prüfen", "orange"] };
+const signed = (n, f) => (n > 0 ? "+" : n < 0 ? "−" : "±") + f(Math.abs(n));
+function deviationCell(r) {
+  const c = r.cmp;
+  if (c.level === "comparable") return `${signed(r.ownPrice - r.competitorPrice, money)}<div class="micro">${signed(c.delta, (x) => percent(x))}</div>`;
+  if (c.level === "normalized")
+    return `${signed(c.ownPer - c.otherPer, money)} je ${esc(c.per)}<div class="micro">${signed(c.delta, (x) => percent(x))} · ${money(c.ownPer)} zu ${money(c.otherPer)}</div>`;
+  return `<span class="micro">keine Abweichung berechnet</span>`;
+}
+function marketTabs() {
+  const tab = (id, label, sub) =>
+    `<button type="button" role="tab" id="v11-mtab-${id}" class="v11-tab ${V.marketTab === id ? "active" : ""}" aria-selected="${V.marketTab === id}" aria-controls="v11-mpanel-${id}" tabindex="${V.marketTab === id ? 0 : -1}" data-v11="market-tab" data-tab="${id}"><b>${label}</b><small>${sub}</small></button>`;
+  return `<div class="v11-tabs" role="tablist" aria-label="Bereiche des Marktchecks">${tab("products", "A · Speisen- und Getränkevergleich", "Konkrete Produkte, dokumentierte Preise")}${tab("places", "B · Restaurants und Locations in der Nähe", "Wettbewerbsumfeld, ohne Preise")}</div>`;
+}
 function marketView() {
-  const rows = compareMarket(intel().markets, products());
-  const names = new Set(rows.map((x) => x.competitor_name));
-  const d = V.discover;
+  const rows = marketRows();
   return (
     pageHeader(
       "KI-MARKTCHECK",
       "KI-Marktcheck",
-      "Wettbewerber finden, belegte Preise vergleichen, optional von einer KI einordnen lassen. Mein Markt (Umkreis 20 km) bleibt daneben bestehen.",
+      "Zwei getrennte Fragen: Was kosten vergleichbare Speisen und Getränke bei anderen? Und wer ist überhaupt in der Nähe? Mein Markt (Umkreis 20 km) bleibt daneben bestehen.",
       `<button type="button" class="btn" data-view="market">Mein Markt öffnen</button>`,
     ) +
     demoNotice() +
-    `<section class="v6-kpis">${kpi("Beobachtungen", String(rows.length), "Mit Quelle und Prüfdatum")}${kpi("Betriebe", String(names.size), "Wettbewerbsumfeld")}${kpi("Quellen", String(new Set(rows.map((x) => x.source_url)).size), "Von dir eingetragen, nicht geprüft")}${kpi("KI-Auswertung", isCloud() ? "Auf Anfrage" : "Nur mit Cloud", "Server mit eigenem API-Schlüssel")}</section>` +
-    `<div class="content-grid"><section class="panel">${panelHeader("Marktpreis mit Quelle erfassen", "Keine Schätzpreise")}<form id="v11-market-form" class="v11-form"><div class="form-grid"><div class="field"><label for="v11-m-comp">Wettbewerber</label><input id="v11-m-comp" name="competitor_name" maxlength="160" required placeholder="Restaurant XY"></div><div class="field"><label for="v11-m-own">Eigenes Produkt</label><input id="v11-m-own" name="own_product" maxlength="200" required placeholder="z. B. Classic Cheeseburger" list="v11-own-products"></div></div><datalist id="v11-own-products">${products()
-      .map((p) => `<option value="${esc(p.name)}"></option>`)
-      .join(
-        "",
-      )}</datalist><div class="field"><label for="v11-m-cprod">Vergleichbares Konkurrenzprodukt</label><input id="v11-m-cprod" name="competitor_product" maxlength="200" required></div><div class="form-grid"><div class="field"><label for="v11-m-cprice">Konkurrenzpreis brutto (€)</label><input id="v11-m-cprice" type="number" name="competitor_price_gross" min="0.01" step="0.01" required></div><div class="field"><label for="v11-m-oprice">Unser Bruttopreis (€)</label><input id="v11-m-oprice" type="number" name="our_price_gross" min="0.01" step="0.01" required></div><div class="field"><label for="v11-m-url">Quelle (https-Link)</label><input id="v11-m-url" name="source_url" type="url" placeholder="https://…" required></div><div class="field"><label for="v11-m-date">Prüfdatum</label><input id="v11-m-date" name="checked_on" type="date" max="${today()}" required></div></div><div class="field"><label for="v11-m-note">Vergleich / Besonderheiten</label><input id="v11-m-note" name="note" maxlength="1000" placeholder="Grammatur, Beilage, Qualität, Aktion …"></div><button class="btn btn-primary" type="submit">Beobachtung speichern</button></form></section>` +
-    `<section class="panel">${panelHeader("Umfeld entdecken", "OpenStreetMap, ohne Speisekartenpreise")}<form id="v11-discover-form" class="v11-form"><div class="form-grid"><div class="field"><label for="v11-d-lat">Breitengrad</label><input id="v11-d-lat" name="lat" type="number" step="0.00001" min="-90" max="90" placeholder="50,80" required value="${esc(S().marketLocation?.lat ?? "")}"></div><div class="field"><label for="v11-d-lon">Längengrad</label><input id="v11-d-lon" name="lon" type="number" step="0.00001" min="-180" max="180" placeholder="6,48" required value="${esc(S().marketLocation?.lon ?? "")}"></div><div class="field"><label for="v11-d-radius">Umkreis</label><select id="v11-d-radius" name="radius"><option value="1000">1 km</option><option value="2000" selected>2 km</option><option value="5000">5 km</option></select></div></div><button class="btn" type="submit">Gastronomie suchen</button></form><p class="calc-note">Liefert Namen, Küche und Adresse aus OpenStreetMap. ${isCloud() ? "Die Suche läuft über den Server dieser Website." : "Demo: Die Suche geht direkt vom Browser an OpenStreetMap."}</p><div id="v11-discover-status" aria-live="polite">${d?.error ? `<p class="notice warn">${I("info")}<span>${esc(d.error)}</span></p>` : ""}</div>${
-      d?.places
-        ? `<div class="v11-list">${d.places.map((x) => `<div><span><b>${esc(x.name)}</b><small>${esc([x.cuisine, x.address].filter(Boolean).join(" · ") || "Gastronomie")}</small></span><a href="${esc(x.source_url)}" target="_blank" rel="noopener noreferrer">OSM-Eintrag ↗</a></div>`).join("") || "<p>Keine Einträge im Umkreis.</p>"}</div>`
-        : ""
-    }</section></div>` +
-    `<section class="panel" style="margin-top:18px">${panelHeader("Preisvergleich", "", tag("Ungeprüfte Eingaben", "orange"))}<div class="table-scroll"><table class="data-table"><thead><tr><th>Betrieb</th><th>Vergleich</th><th class="align-right">Konkurrenz</th><th class="align-right">Wir</th><th class="align-right">Abweichung</th><th>Beleg</th></tr></thead><tbody>${
-      rows
-        .map(
-          (x) =>
-            `<tr><td><b>${esc(x.competitor_name)}</b></td><td>${esc(x.own_name)} / ${esc(x.competitor_product)}${x.note ? `<div class="micro">${esc(x.note)}</div>` : ""}</td><td class="align-right">${money(x.competitor_price_gross)}</td><td class="align-right">${money(x.our_price_gross)}</td><td class="align-right">${x.delta === null ? "—" : (x.delta > 0 ? "+" : "") + percent(x.delta)}</td><td><a href="${esc(x.source_url)}" target="_blank" rel="noopener noreferrer">${esc(dateDE(x.checked_on))} ↗</a></td></tr>`,
-        )
-        .join("") || `<tr><td colspan="6">Noch keine dokumentierten Marktpreise.</td></tr>`
-    }</tbody></table></div><div class="actions" style="margin-top:14px"><button type="button" class="btn btn-primary" data-v11="market-ai" ${!isCloud() || !rows.length ? "disabled" : ""}>KI-Einordnung erstellen</button>${!isCloud() ? `<span class="calc-note">Nur mit angemeldetem Cloud-Arbeitsbereich und eingerichtetem Server-Schlüssel.</span>` : ""}</div><p class="calc-note">Die KI erhält nur diese Vergleichswerte und Links; sie öffnet die Links nicht und prüft keine Quellen. Ohne eingerichteten Schlüssel gibt es keine Auswertung – dann steht hier eine Fehlermeldung, kein Ergebnis.</p>${
-      V.ai
-        ? `<div class="v11-ai" role="region" aria-label="KI-Einordnung"><b>KI-Einordnung – vor Preisänderungen selbst prüfen</b>${V.aiMeta ? `<small>${esc(V.aiMeta)}</small>` : ""}<div>${esc(V.ai)}</div></div>`
-        : ""
-    }</section>`
+    marketTabs() +
+    (V.marketTab === "places" ? placesPanel() : productsPanel(rows))
   );
 }
-async function discover(obj) {
-  const lat = numberInput(obj.lat),
-    lon = numberInput(obj.lon),
-    radius = Number(obj.radius);
-  if (!Number.isFinite(lat) || Math.abs(lat) > 90 || !Number.isFinite(lon) || Math.abs(lon) > 180)
-    throw Error("Gültige Koordinaten erforderlich.");
-  if (![1000, 2000, 5000].includes(radius)) throw Error("Umkreis 1, 2 oder 5 km.");
-  V.discover = { loading: true };
-  const status = document.querySelector("#v11-discover-status");
-  if (status) status.textContent = "Suche läuft …";
+function productsPanel(rows) {
+  const cats = MK.categoriesBySection(suiteProducts(), S().categoryGroups || {}, manualSections());
+  const catChoices = V.mSection === "all" ? [...new Set([...cats.food, ...cats.drink, ...cats.open])].sort((a, b) => a.localeCompare(b, "de")) : cats[V.mSection] || [];
+  if (V.mCategory !== "all" && !catChoices.includes(V.mCategory)) V.mCategory = "all";
+  const shown = MK.filterRows(rows, { section: V.mSection, category: V.mCategory });
+  const review = MK.reviewList(rows);
+  const openCats = cats.open;
+  const counted = shown.filter((r) => r.cmp.level === "comparable" || r.cmp.level === "normalized");
+  const prods = suiteProducts().filter(
+    (p) => (V.mSection === "all" || (V.mSection === "open" ? cats.open.includes(p.category) : cats[V.mSection]?.includes(p.category))) && (V.mCategory === "all" || p.category === V.mCategory),
+  );
+  const pre = V.mPrefill || {};
+  const firstProd = prods.find((p) => p.id === pre.productId) || prods[0];
+  const seg = (id, label, n) =>
+    `<button type="button" class="v11-seg ${V.mSection === id ? "active" : ""}" aria-pressed="${V.mSection === id}" data-v11="market-section" data-section="${id}">${label} <span>${n}</span></button>`;
+  const count = (sec) => MK.filterRows(rows, { section: sec, category: "all" }).length;
+  return `<div id="v11-mpanel-products" role="tabpanel" aria-labelledby="v11-mtab-products">
+  <div class="notice">${I("info")}<span><b>Nur dokumentierte Preise.</b> Es gibt keinen automatischen Speisekartenabruf: Preise trägst du aus einer Quelle ein (Speisekarte vor Ort, Website, Lieferdienst), mit Link und Prüfdatum. Eine Umgebungssuche (Tab B) liefert keine Preise. Abweichungen werden nur berechnet, wenn Menge und Leistungsumfang vergleichbar sind.</span></div>
+  <section class="v6-kpis">${kpi("Beobachtungen", String(shown.length), "In der aktuellen Auswahl")}${kpi("Vergleichbar", String(counted.length), "Gleiche Menge oder umgerechnet")}${kpi("Zur Prüfung", String(review.length), "Zuordnung oder Vergleichbarkeit offen", review.length ? "warn" : "")}${kpi("KI-Einordnung", isCloud() ? "Auf Anfrage" : "Nur mit Cloud", "Server mit eigenem API-Schlüssel")}</section>
+  <section class="panel">${panelHeader("Auswahl", "Erst Speisen oder Getränke, dann die Warengruppe")}<div class="v11-segs" role="group" aria-label="Speisen oder Getränke">${seg("all", "Alle", rows.length)}${seg("food", "Speisen", count("food"))}${seg("drink", "Getränke", count("drink"))}${
+    count("open") || openCats.length ? seg("open", "Nicht zugeordnet", count("open")) : ""
+  }</div><div class="v11-filters"><label class="field"><span>Warengruppe</span><select data-v11-filter="mCategory">${G.ui.selectOptions(
+    [["all", V.mSection === "food" ? "Alle Speisen" : V.mSection === "drink" ? "Alle Getränke" : "Alle Warengruppen"], ...catChoices.map((c) => [c, c])],
+    V.mCategory,
+  )}</select></label></div><p class="calc-note">Speisen und Getränke kommen aus deiner Zuordnung der Warengruppen zu Oberkategorien (Küche → Speisen, Getränke → Getränke) oder aus einer Wahl unten bei „Zur Prüfung“. Nichts wird anhand des Namens geraten.</p></section>
+  <section class="panel" style="margin-top:18px">${panelHeader("Preisvergleich", `${pl(shown.length, "Beobachtung", "Beobachtungen")}`, tag("Ungeprüfte Eingaben", "orange"))}<div class="table-scroll"><table class="data-table v11-cmp"><thead><tr><th>Eigener Artikel</th><th>Wettbewerber · Produkt</th><th>Menge eigen / fremd</th><th class="align-right">Wir</th><th class="align-right">Konkurrenz</th><th class="align-right">Abweichung</th><th>Vergleichbarkeit</th><th>Quelle · Prüfdatum</th><th><span class="sr-only">Aktion</span></th></tr></thead><tbody>${
+    shown
+      .map((r) => {
+        const t = CMP_TAG[r.cmp.level];
+        return `<tr><td><b>${esc(r.ownName)}</b><div class="micro">${esc(r.category || "Warengruppe unbekannt")}${r.section ? " · " + MK.SECTIONS[r.section] : ""}</div></td><td><b>${esc(r.competitor)}</b><div class="micro">${esc(r.competitorProduct)}${r.placeUrl ? ` · <a href="${esc(r.placeUrl)}" target="_blank" rel="noopener noreferrer">Ort ↗</a>` : ""}</div></td><td>${esc(r.ownPortion || "—")} / ${esc(r.competitorPortion || "—")}</td><td class="align-right">${Number.isFinite(r.ownPrice) && r.ownPrice > 0 ? money(r.ownPrice) : "—"}</td><td class="align-right">${money(r.competitorPrice)}</td><td class="align-right">${deviationCell(r)}</td><td>${tag(t[0], t[1])}<div class="micro">${esc(r.cmp.reason)}</div></td><td>${
+          r.source ? `<a href="${esc(r.source)}" target="_blank" rel="noopener noreferrer">${esc(r.checked ? dateDE(r.checked) : "Quelle")} ↗</a>` : esc(r.checked ? dateDE(r.checked) : "ohne Datum")
+        }<div class="micro">${r.origin === "meinMarkt" ? "aus Mein Markt" : "KI-Marktcheck"}${r.note ? " · " + esc(r.note) : ""}</div></td><td>${
+          r.origin === "v11"
+            ? `<button type="button" class="btn btn-small" data-v11="market-check" data-id="${esc(r.id)}" aria-label="Vergleich ${esc(r.ownName)} / ${esc(r.competitor)} prüfen">Prüfen</button>`
+            : `<button type="button" class="btn btn-small btn-quiet" data-view="market" aria-label="In Mein Markt bearbeiten">Mein Markt</button>`
+        }</td></tr>`;
+      })
+      .join("") || `<tr><td colspan="9">${rows.length ? "Keine Beobachtung in dieser Auswahl." : "Noch keine dokumentierten Marktpreise."}</td></tr>`
+  }</tbody></table></div><p class="calc-note">Abweichung = unser Preis minus Konkurrenzpreis (absolut und in % des Konkurrenzpreises). Bei unterschiedlicher Menge in g oder ml wird je 100 g bzw. 100 ml umgerechnet. „Nicht vergleichbar“ und „Zu prüfen“ zeigen beide Preise, aber keine Abweichung.</p>
+  <div class="actions" style="margin-top:12px"><button type="button" class="btn btn-primary" data-v11="market-ai" ${!isCloud() || !shown.length ? "disabled" : ""}>KI-Einordnung für diese Auswahl</button>${!isCloud() ? `<span class="calc-note">Nur mit angemeldetem Cloud-Arbeitsbereich und eingerichtetem Server-Schlüssel.</span>` : ""}</div><p class="calc-note">Die KI erhält nur die Beobachtungen dieser Auswahl mit https-Quelle, samt Menge und Vergleichbarkeit. Sie öffnet die Links nicht und prüft keine Quellen; nicht vergleichbare Paare soll sie nicht für Preisabweichungen nutzen und Unsicherheiten benennen. Ohne eingerichteten Schlüssel gibt es keine Auswertung, sondern eine Fehlermeldung.</p>${
+    V.ai ? `<div class="v11-ai" role="region" aria-label="KI-Einordnung"><b>KI-Einordnung – vor Preisänderungen selbst prüfen</b>${V.aiMeta ? `<small>${esc(V.aiMeta)}</small>` : ""}<div>${esc(V.ai)}</div></div>` : ""
+  }</section>
+  <div class="content-grid" style="margin-top:18px"><section class="panel" id="v11-market-entry">${panelHeader("Marktpreis mit Quelle erfassen", pre.competitor ? `Aus der Umgebungssuche: ${esc(pre.competitor)}` : "Keine Schätzpreise")}${
+    prods.length
+      ? `<form id="v11-market-form" class="v11-form"><input type="hidden" name="place_url" value="${esc(pre.placeUrl || "")}"><div class="form-grid"><div class="field"><label for="v11-m-own">Eigener Artikel</label><select id="v11-m-own" name="own_product_id" required>${G.ui.selectOptions(
+          prods.map((p) => [p.id, `${p.name} (${p.category || "ohne Warengruppe"})`]),
+          firstProd?.id,
+        )}</select></div><div class="field"><label for="v11-m-oportion">Eigene Menge / Portion</label><input id="v11-m-oportion" name="own_portion" maxlength="40" required value="${esc(firstProd?.unit || "Portion")}"></div><div class="field"><label for="v11-m-oprice">Unser Bruttopreis (€)</label><input id="v11-m-oprice" type="number" name="our_price_gross" min="0.01" step="0.01" required value="${firstProd?.grossPrice > 0 ? esc(firstProd.grossPrice) : ""}"></div></div><div class="form-grid"><div class="field"><label for="v11-m-comp">Wettbewerber</label><input id="v11-m-comp" name="competitor_name" maxlength="160" required placeholder="Restaurant XY" value="${esc(pre.competitor || "")}"></div><div class="field"><label for="v11-m-cprod">Konkurrenzprodukt</label><input id="v11-m-cprod" name="competitor_product" maxlength="200" required></div><div class="field"><label for="v11-m-cportion">Menge / Portion bei der Konkurrenz</label><input id="v11-m-cportion" name="competitor_portion" maxlength="40" required placeholder="z. B. Portion, 250 g, 0,4 l"></div><div class="field"><label for="v11-m-cprice">Konkurrenzpreis brutto (€)</label><input id="v11-m-cprice" type="number" name="competitor_price_gross" min="0.01" step="0.01" required></div></div><fieldset class="v11-choice"><legend>Leistungsumfang (Beilagen, Qualität, Zubereitung)</legend><label><input type="radio" name="scope" value="same" required> Vergleichbar</label><label><input type="radio" name="scope" value="different"> Unterschiedlich</label><label><input type="radio" name="scope" value="unknown"> Noch unklar</label></fieldset><div class="form-grid"><div class="field"><label for="v11-m-url">Quelle (https-Link)</label><input id="v11-m-url" name="source_url" type="url" placeholder="https://…" required></div><div class="field"><label for="v11-m-date">Prüfdatum</label><input id="v11-m-date" name="checked_on" type="date" max="${today()}" required></div></div><div class="field"><label for="v11-m-note">Besonderheiten</label><input id="v11-m-note" name="note" maxlength="1000" placeholder="Beilage, Aktion, Qualität …"></div><div class="actions"><button class="btn btn-primary" type="submit">Beobachtung speichern</button>${pre.competitor ? `<button type="button" class="btn" data-v11="market-clear-prefill">Übernahme verwerfen</button>` : ""}</div></form>`
+      : G.ui.empty("Keine Artikel in dieser Auswahl", "Auswahl oben ändern oder Artikel im Produktstamm anlegen.")
+  }</section><section class="panel">${panelHeader("Zur manuellen Prüfung", review.length || openCats.length ? `${pl(review.length, "Beobachtung", "Beobachtungen")} · ${pl(openCats.length, "Warengruppe", "Warengruppen")} offen` : "Alles zugeordnet")}${
+    openCats.length
+      ? `<h3 class="v11-subhead">Warengruppen ohne Speisen/Getränke</h3><div class="v11-list">${openCats
+          .map(
+            (c) =>
+              `<div><span><b>${esc(c)}</b><small>${pl(suiteProducts().filter((p) => p.category === c).length, "Artikel", "Artikel")} · Oberkategorie: ${esc(S().categoryGroups?.[c] || "nicht zugeordnet")}</small></span><label class="v11-inline"><span class="sr-only">Bereich für ${esc(c)}</span><select class="select" data-v11-section-for="${esc(c)}">${G.ui.selectOptions([["", "Bitte wählen"], ["food", "Speisen"], ["drink", "Getränke"]], "")}</select></label></div>`,
+          )
+          .join("")}</div>`
+      : ""
+  }${
+    review.length
+      ? `<h3 class="v11-subhead">Beobachtungen</h3><div class="v11-list">${review
+          .map(
+            ({ row, reasons }) =>
+              `<div><span><b>${esc(row.ownName)} · ${esc(row.competitor)}</b><small>${reasons.map(esc).join(" · ")}</small></span>${
+                row.origin === "v11" ? `<button type="button" class="btn btn-small" data-v11="market-check" data-id="${esc(row.id)}">Prüfen</button>` : `<button type="button" class="btn btn-small btn-quiet" data-view="market">Mein Markt</button>`
+              }</div>`,
+          )
+          .join("")}</div>`
+      : ""
+  }${!review.length && !openCats.length ? `<p class="calc-note">Keine offenen Zuordnungen.</p>` : ""}</section></div></div>`;
+}
+function checkModal(id) {
+  const o = intel().markets.find((x) => x.id === id);
+  if (!o) throw Error("Beobachtung nicht gefunden – wurde sie inzwischen gelöscht?");
+  const prods = suiteProducts();
+  const cur = (o.own_product_id && prods.find((p) => p.id === o.own_product_id)) || prods.find((p) => norm(p.name) === norm(o.own_product));
+  document.querySelector("#modal-layer").innerHTML =
+    `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="v11-chk-title"><div class="modal-header"><h2 id="v11-chk-title">Vergleich prüfen</h2><button type="button" class="close-btn" data-v11="close" aria-label="Fenster schließen">×</button></div><form id="v11-market-check-form"><input type="hidden" name="id" value="${esc(o.id)}"><p><b>${esc(o.competitor_name)}</b>: ${esc(o.competitor_product)} für ${money(o.competitor_price_gross)} · erfasst als „${esc(o.own_product)}“, unser Preis ${money(o.our_price_gross)}. Preise und Quelle bleiben unverändert.</p><div class="field"><label for="v11-chk-prod">Eigener Artikel im Produktstamm</label><select id="v11-chk-prod" name="own_product_id" required>${G.ui.selectOptions(
+      [["", "Bitte wählen"], ...prods.map((p) => [p.id, `${p.name} (${p.category || "ohne Warengruppe"})`])],
+      cur?.id || "",
+    )}</select></div><div class="form-grid"><div class="field"><label for="v11-chk-op">Eigene Menge / Portion</label><input id="v11-chk-op" name="own_portion" maxlength="40" required value="${esc(o.own_portion || cur?.unit || "")}"></div><div class="field"><label for="v11-chk-cp">Menge / Portion bei der Konkurrenz</label><input id="v11-chk-cp" name="competitor_portion" maxlength="40" required value="${esc(o.competitor_portion || "")}" placeholder="z. B. Portion, 250 g"></div></div><fieldset class="v11-choice"><legend>Leistungsumfang</legend>${[
+      ["same", "Vergleichbar"],
+      ["different", "Unterschiedlich"],
+      ["unknown", "Noch unklar"],
+    ]
+      .map(([v, l]) => `<label><input type="radio" name="scope" value="${v}" ${(o.scope || "unknown") === v ? "checked" : ""} required> ${l}</label>`)
+      .join("")}</fieldset>${o.note ? `<p class="calc-note">Notiz: ${esc(o.note)}</p>` : ""}<div class="modal-footer"><button type="button" class="btn" data-v11="close">Abbrechen</button><button type="submit" class="btn btn-primary">Speichern</button></div></form></div>`;
+  document.querySelector("#v11-chk-prod")?.focus();
+}
+function saveCheck(o) {
+  if (!finance()) throw Error("Keine Berechtigung für Marktdaten.");
+  const rec = intel().markets.find((x) => x.id === o.id);
+  if (!rec) throw Error("Beobachtung nicht gefunden.");
+  const p = suiteProducts().find((x) => x.id === o.own_product_id);
+  if (!p) throw Error("Bitte einen Artikel aus dem Produktstamm wählen.");
+  if (!["same", "different", "unknown"].includes(o.scope)) throw Error("Leistungsumfang wählen.");
+  rec.own_product_id = p.id;
+  rec.own_portion = String(o.own_portion || "").trim().slice(0, 40);
+  rec.competitor_portion = String(o.competitor_portion || "").trim().slice(0, 40);
+  rec.scope = o.scope;
+  rec.checked_comparison_at = new Date().toISOString();
+  G.closeModal();
+  G.markEdited();
+  G.persist();
+  G.render();
+  G.toast("Vergleich gespeichert.");
+}
+
+// B · Restaurants und Locations
+function placeLocation() {
+  if (V.ploc) return V.ploc;
+  const l = S().marketLocation;
+  return l && Number.isFinite(Number(l.lat)) ? { label: l.label || "Standort des Betriebs", lat: Number(l.lat), lon: Number(l.lon), own: true } : null;
+}
+function placesPanel() {
+  const loc = placeLocation(),
+    d = V.discover,
+    places = d?.places ? MK.arrangePlaces(d.places, { sort: V.pSort, categories: V.pShow }) : [];
+  const own = S().marketLocation;
+  const catBox = (name, list) =>
+    MK.PLACE_CATEGORIES.map(([v, l]) => `<label><input type="checkbox" name="${name}" value="${v}" ${list.includes(v) ? "checked" : ""}> ${l}</label>`).join("");
+  return `<div id="v11-mpanel-places" role="tabpanel" aria-labelledby="v11-mtab-places">
+  <div class="notice">${I("info")}<span><b>Wettbewerbsumfeld, keine Preise.</b> Die Suche nutzt OpenStreetMap (frei, ohne Kosten). Einträge können fehlen, veraltet oder unvollständig sein. Entfernungen sind <b>Luftlinie</b>, keine Fahrstrecke. Preise gibt es nur in Tab A aus eigenen Quellen.</span></div>
+  <div class="content-grid"><section class="panel">${panelHeader("Standort", loc ? `${esc(loc.label)} · ${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)}` : "Noch kein Standort gesetzt")}
+  <div class="actions">${own ? `<button type="button" class="btn ${loc?.own ? "btn-primary" : ""}" data-v11="place-own">Standort des Betriebs${own.label ? ` (${esc(own.label)})` : ""}</button>` : ""}<button type="button" class="btn" data-v11="place-geo">Meinen aktuellen Standort</button></div>
+  <form id="v11-geocode-form" class="v11-form" role="search" style="margin-top:12px"><div class="field"><label for="v11-g-q">Adresse oder Ort</label><div class="v11-row"><input id="v11-g-q" name="q" type="search" minlength="3" maxlength="200" placeholder="z. B. Marktplatz 1, Düren" required><button class="btn" type="submit">Adresse suchen</button></div></div></form>
+  ${V.geoHits?.length ? `<div class="v11-list" aria-label="Gefundene Orte">${V.geoHits.map((h, i) => `<div><span><b>${esc(h.display_name)}</b></span><button type="button" class="btn btn-small" data-v11="place-hit" data-i="${i}">Übernehmen</button></div>`).join("")}</div>` : ""}
+  <details class="v11-manual"${V.pManual ? " open" : ""}><summary>Koordinaten von Hand eingeben</summary><form id="v11-coord-form" class="v11-form"><div class="form-grid"><div class="field"><label for="v11-d-lat">Breitengrad</label><input id="v11-d-lat" name="lat" inputmode="decimal" required value="${esc(loc?.lat ?? "")}"></div><div class="field"><label for="v11-d-lon">Längengrad</label><input id="v11-d-lon" name="lon" inputmode="decimal" required value="${esc(loc?.lon ?? "")}"></div></div><button class="btn" type="submit">Koordinaten verwenden</button></form></details>
+  ${loc && !loc.own ? `<button type="button" class="btn btn-small" data-v11="place-save" style="margin-top:10px">Als Standort des Betriebs speichern</button>` : ""}
+  <p id="v11-geo-status" class="calc-note" aria-live="polite">${esc(V.geoMsg || "Adresssuche über OpenStreetMap Nominatim; der Browserstandort wird nur nach deiner Freigabe abgefragt.")}</p></section>
+  <section class="panel">${panelHeader("Umkreissuche", "Radius und Kategorien")}<form id="v11-discover-form" class="v11-form"><div class="field"><label for="v11-d-radius">Radius</label><select id="v11-d-radius" name="radius">${G.ui.selectOptions(
+    [500, 1000, 2000, 3000, 5000].map((r) => [String(r), r < 1000 ? `${r} m` : `${r / 1000} km`]),
+    String(V.pRadius),
+  )}</select></div><fieldset class="v11-choice v11-cats"><legend>Kategorien</legend>${catBox("categories", V.pCats)}</fieldset><button class="btn btn-primary" type="submit" ${loc ? "" : "disabled"}>${d?.loading ? "Suche läuft …" : "Umgebung durchsuchen"}</button>${loc ? "" : `<p class="calc-note">Erst links einen Standort wählen.</p>`}</form><p class="calc-note">${isCloud() ? "Die Suche läuft über den Server dieser Website (Tageslimit je Betrieb)." : "Demo: Die Suche geht direkt vom Browser an OpenStreetMap."}</p></section></div>
+  <section class="panel" style="margin-top:18px">${panelHeader("Ergebnisse", d?.places ? `${pl(places.length, "Betrieb", "Betriebe")} angezeigt von ${d.places.length} · Umkreis ${V.pLastRadius < 1000 ? V.pLastRadius + " m" : V.pLastRadius / 1000 + " km"}` : "Noch keine Suche")}<div id="v11-discover-status" role="status" aria-live="polite">${
+    d?.loading
+      ? `<p class="notice">${I("info")}<span>Suche läuft … OpenStreetMap antwortet meist in wenigen Sekunden.</span></p>`
+      : d?.error
+        ? `<p class="notice warn">${I("info")}<span>${esc(d.error)} Die manuelle Erfassung in Tab A funktioniert unabhängig davon.</span></p>`
+        : d?.places && !d.places.length
+          ? `<p class="notice">${I("info")}<span>Keine Einträge in OpenStreetMap für diesen Umkreis und diese Kategorien. Radius vergrößern oder Kategorien ergänzen.</span></p>`
+          : ""
+  }</div>${
+    d?.places?.length
+      ? `<div class="v11-filters"><label class="field"><span>Sortierung</span><select data-v11-filter="pSort">${G.ui.selectOptions(
+          [["distance", "Entfernung (Luftlinie)"], ["category", "Kategorie"], ["name", "Name"]],
+          V.pSort,
+        )}</select></label><fieldset class="v11-choice v11-cats"><legend>Anzeigen</legend>${MK.PLACE_CATEGORIES.filter(([v]) => d.places.some((p) => p.category === v))
+          .map(([v, l]) => `<label><input type="checkbox" data-v11-show="${v}" ${!V.pShow.length || V.pShow.includes(v) ? "checked" : ""}> ${l} (${d.places.filter((p) => p.category === v).length})</label>`)
+          .join("")}</fieldset></div><div class="v11-places">${placesMap(places, loc)}<ol class="v11-place-list">${
+          places
+            .map((p, i) => {
+              const miss = MK.missingInfo(p);
+              return `<li><span class="v11-place-no" aria-hidden="true">${i + 1}</span><div><b>${esc(p.name)}</b><small>${esc(MK.categoryLabel(p.category))}${p.cuisine ? " · " + esc(p.cuisine.replaceAll(";", ", ")) : ""}</small><small>${p.address ? esc(p.address) : "Adresse in OpenStreetMap nicht hinterlegt"}</small><small><b>${esc(MK.formatDistance(p.distance_m))}</b></small><span class="v11-place-links">${
+                p.website ? `<a href="${esc(p.website)}" target="_blank" rel="noopener noreferrer">Website ↗</a>` : ""
+              }<a href="${esc(p.source_url)}" target="_blank" rel="noopener noreferrer">OSM-Eintrag ↗</a></span>${miss.length ? `<small class="v11-missing">Unvollständig in OSM: ${esc(miss.join(", "))} fehlt</small>` : ""}</div><button type="button" class="btn btn-small" data-v11="place-to-compare" data-i="${esc(d.places.indexOf(p))}">In Preisvergleich übernehmen</button></li>`;
+            })
+            .join("") || `<li>Keine Betriebe in den gewählten Kategorien.</li>`
+        }</ol></div>`
+      : ""
+  }</section></div>`;
+}
+/** Schematic position map: own location in the centre, rings for the radius, points by bearing and straight-line
+ *  distance. No street map (no tile service), so it is labelled as a schematic view. */
+function placesMap(places, loc) {
+  const located = places.filter((p) => p.lat !== null && p.lat !== undefined && loc);
+  if (!located.length) return "";
+  const R = V.pLastRadius || 2000,
+    size = 320,
+    c = size / 2,
+    scale = (c - 18) / R;
+  const pos = (p) => {
+    const dy = (p.lat - loc.lat) * 111320,
+      dx = (p.lon - loc.lon) * 111320 * Math.cos((loc.lat * Math.PI) / 180);
+    return [c + dx * scale, c - dy * scale];
+  };
+  const rings = [0.25, 0.5, 1].map((f) => `<circle class="v11-map-ring" cx="${c}" cy="${c}" r="${(c - 18) * f}"/><text class="v11-map-ring-label" x="${(c + (c - 18) * f * 0.71 + 3).toFixed(1)}" y="${(c + (c - 18) * f * 0.71 + 12).toFixed(1)}">${R * f < 1000 ? Math.round(R * f) + " m" : (R * f) / 1000 + " km"}</text>`).join("");
+  const dots = located
+    .map((p) => {
+      const [x, y] = pos(p),
+        n = places.indexOf(p) + 1;
+      return `<g class="v11-map-dot cat-${esc(p.category || "none")}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9"/><text x="${x.toFixed(1)}" y="${(y + 3.5).toFixed(1)}">${n}</text><title>${esc(n + ". " + p.name + " – " + MK.formatDistance(p.distance_m))}</title></g>`;
+    })
+    .join("");
+  return `<figure class="v11-map"><svg viewBox="0 0 ${size} ${size}" role="img" aria-label="Schematische Lageansicht: ${located.length} Betriebe um den Standort, Ringe bei 25, 50 und 100 % des Radius">${rings}<line class="v11-map-axis" x1="${c}" y1="8" x2="${c}" y2="${size - 8}"/><line class="v11-map-axis" x1="8" y1="${c}" x2="${size - 8}" y2="${c}"/><text class="v11-map-n" x="${c}" y="14">N</text>${dots}<rect class="v11-map-home" x="${c - 6}" y="${c - 6}" width="12" height="12"/></svg><figcaption>Schematische Lage (Luftlinie, Norden oben). Keine Straßenkarte; die Nummern entsprechen der Liste. ■ = Standort.</figcaption></figure>`;
+}
+async function geocode(o) {
+  const q = String(o.q || "").trim();
+  if (q.length < 3) throw Error("Bitte mindestens 3 Zeichen eingeben, z. B. Straße und Ort.");
+  V.geoMsg = "Suche Ort …";
+  V.geoHits = null;
+  G.render();
+  let list;
   try {
-    const r = isCloud()
-      ? await cloud.protectedApi("/api/suite/market/discover", { lat, lon, radius })
-      : await discoverDirect(lat, lon, radius);
-    V.discover = { places: r.places || [] };
-    G.toast(`${V.discover.places.length} Betriebe gefunden (ohne Speisekartenpreise).`);
-  } catch (e) {
-    V.discover = { error: `Umfeldsuche nicht verfügbar: ${e.message}` };
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=0&accept-language=de&q=${encodeURIComponent(q)}`, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!r.ok) throw Error("HTTP " + r.status);
+    list = (await r.json()).filter((x) => Number.isFinite(Number(x.lat)) && Number.isFinite(Number(x.lon)));
+  } catch {
+    V.geoMsg = "Adresssuche gerade nicht erreichbar. Koordinaten von Hand eingeben oder den Standort des Betriebs verwenden.";
+    V.pManual = true;
+    return G.render();
+  }
+  if (!list.length) V.geoMsg = "Nichts gefunden. Probiere Straße, Hausnummer und Ort.";
+  else if (list.length === 1) {
+    setPlace(q, list[0].lat, list[0].lon);
+    V.geoMsg = "Standort übernommen: " + list[0].display_name;
+  } else {
+    V.geoHits = list;
+    V.geoQuery = q;
+    V.geoMsg = "Mehrere Treffer – bitte den richtigen Ort wählen.";
   }
   G.render();
 }
-async function discoverDirect(lat, lon, radius) {
-  const q = `[out:json][timeout:20];(nwr["amenity"~"^(restaurant|cafe|bar)$"](around:${radius},${lat},${lon}););out center 60;`;
+function setPlace(label, lat, lon) {
+  V.ploc = { label: String(label).slice(0, 100), lat: Number(lat), lon: Number(lon), own: false };
+  V.geoHits = null;
+}
+async function discover(o) {
+  const loc = placeLocation();
+  if (!loc) throw Error("Erst einen Standort wählen.");
+  const radius = Number(o.radius),
+    categories = Array.isArray(o.categories) ? o.categories : o.categories ? [o.categories] : [];
+  if (![500, 1000, 2000, 3000, 5000].includes(radius)) throw Error("Radius zwischen 500 m und 5 km wählen.");
+  const cats = categories.filter((c) => MK.PLACE_CATEGORIES.some(([v]) => v === c));
+  if (!cats.length) throw Error("Mindestens eine Kategorie wählen.");
+  V.pRadius = radius;
+  V.pCats = cats;
+  V.discover = { loading: true };
+  G.render();
+  try {
+    const r = isCloud()
+      ? await cloud.protectedApi("/api/suite/market/discover", { lat: loc.lat, lon: loc.lon, radius, categories: cats })
+      : await discoverDirect(loc.lat, loc.lon, radius, cats);
+    V.discover = { places: (r.places || []).map((p) => ({ ...p, distance_m: p.lat !== null && p.lat !== undefined ? Math.round(MK.distanceMeters(loc.lat, loc.lon, p.lat, p.lon)) : null })) };
+    V.pLastRadius = radius;
+    V.pShow = [];
+    G.toast(`${pl(V.discover.places.length, "Betrieb", "Betriebe")} gefunden (ohne Speisekartenpreise).`);
+  } catch (e) {
+    V.discover = { error: `Umgebungssuche nicht verfügbar: ${e.message}` };
+  }
+  G.render();
+}
+async function discoverDirect(lat, lon, radius, cats = ["restaurant", "cafe", "bar"]) {
+  const q = `[out:json][timeout:20];(nwr["amenity"~"^(${cats.join("|")})$"](around:${radius},${lat},${lon}););out center 120;`;
   let r;
   try {
     r = await fetch("https://overpass-api.de/api/interpreter", {
@@ -809,22 +1043,52 @@ async function discoverDirect(lat, lon, radius) {
   return {
     places: (obj.elements || [])
       .filter((e) => e.tags?.name)
-      .slice(0, 25)
-      .map((e) => ({
-        name: e.tags.name,
-        cuisine: e.tags.cuisine || null,
-        source_url: `https://www.openstreetmap.org/${e.type}/${e.id}`,
-        address: [e.tags["addr:street"], e.tags["addr:housenumber"], e.tags["addr:city"]].filter(Boolean).join(" "),
-      })),
+      .map((e) => {
+        const plat = Number(e.lat ?? e.center?.lat),
+          plon = Number(e.lon ?? e.center?.lon),
+          ok = Number.isFinite(plat) && Number.isFinite(plon),
+          site = e.tags.website || e.tags["contact:website"] || null;
+        return {
+          name: e.tags.name,
+          category: MK.PLACE_CATEGORIES.some(([v]) => v === e.tags.amenity) ? e.tags.amenity : null,
+          cuisine: e.tags.cuisine || null,
+          website: site && /^https?:\/\//i.test(site) ? site : null,
+          source_url: `https://www.openstreetmap.org/${e.type}/${e.id}`,
+          address: [e.tags["addr:street"], e.tags["addr:housenumber"], e.tags["addr:postcode"], e.tags["addr:city"]].filter(Boolean).join(" "),
+          lat: ok ? plat : null,
+          lon: ok ? plon : null,
+        };
+      })
+      .slice(0, 120),
   };
 }
 async function marketAI() {
   if (!isCloud()) throw Error("Die KI-Einordnung braucht die Anmeldung in der Cloud.");
-  if (!intel().markets.length) throw Error("Erst Vergleichspreise mit Quellen hinterlegen.");
-  const r = await cloud.protectedApi("/api/suite/market/analyze", { observations: intel().markets.slice(0, 25) });
+  const shown = MK.filterRows(marketRows(), { section: V.mSection, category: V.mCategory });
+  const usable = shown.filter((r) => /^https:\/\//.test(r.source || "") && r.ownPrice > 0 && r.competitorPrice > 0);
+  if (!usable.length) throw Error("In dieser Auswahl gibt es keine Beobachtung mit https-Quelle und beiden Preisen.");
+  const label = { comparable: "vergleichbar", normalized: "umgerechnet", not: "nicht vergleichbar", unchecked: "nicht geprüft" };
+  const r = await cloud.protectedApi("/api/suite/market/analyze", {
+    observations: usable.slice(0, 25).map((x) => ({
+      competitor_name: x.competitor,
+      own_product: x.ownName,
+      competitor_product: x.competitorProduct,
+      competitor_price_gross: x.competitorPrice,
+      our_price_gross: x.ownPrice,
+      checked_on: x.checked,
+      source_url: x.source,
+      note: x.note,
+      section: x.section ? MK.SECTIONS[x.section] : "",
+      category: x.category,
+      own_portion: x.ownPortion,
+      competitor_portion: x.competitorPortion,
+      comparability: label[x.cmp.level] + (x.cmp.level === "normalized" ? ` je ${x.cmp.per}` : ""),
+    })),
+  });
   if (!r.answer) throw Error("Die KI hat keine Antwort geliefert.");
   V.ai = r.answer;
-  V.aiMeta = `${r.source_count} Beobachtungen · Modell ${r.model} · ${r.disclaimer}`;
+  const skipped = shown.length - Math.min(usable.length, 25);
+  V.aiMeta = `${r.source_count} Beobachtungen${skipped ? ` (${skipped} ohne https-Quelle oder über 25 nicht übergeben)` : ""} · Modell ${r.model} · ${r.disclaimer}`;
   G.render();
 }
 function saveMarket(obj) {
@@ -839,20 +1103,30 @@ function saveMarket(obj) {
   }
   if (url.protocol !== "https:" || !(price > 0 && ours > 0)) throw Error("Nur https-Quellen und positive Preise.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(obj.checked_on) || obj.checked_on > today()) throw Error("Ungültiges Prüfdatum.");
+  const p = suiteProducts().find((x) => x.id === obj.own_product_id);
+  if (!p) throw Error("Bitte einen eigenen Artikel aus dem Produktstamm wählen.");
+  if (!["same", "different", "unknown"].includes(obj.scope)) throw Error("Leistungsumfang angeben.");
+  const place = String(obj.place_url || "");
   const rec = {
     id: G.uid(),
     competitor_name: obj.competitor_name.trim(),
-    own_product: obj.own_product.trim(),
+    own_product: p.name,
+    own_product_id: p.id,
+    own_portion: String(obj.own_portion || "").trim().slice(0, 40),
     competitor_product: obj.competitor_product.trim(),
+    competitor_portion: String(obj.competitor_portion || "").trim().slice(0, 40),
+    scope: obj.scope,
     competitor_price_gross: price,
     our_price_gross: ours,
     source_url: url.href,
     checked_on: obj.checked_on,
     note: (obj.note || "").trim(),
+    place_url: /^https:\/\/www\.openstreetmap\.org\/(node|way|relation)\/\d+$/.test(place) ? place : "",
     created_at: new Date().toISOString(),
   };
-  if (!rec.competitor_name || !rec.own_product || !rec.competitor_product) throw Error("Pflichtangaben fehlen.");
+  if (!rec.competitor_name || !rec.competitor_product || !rec.own_portion || !rec.competitor_portion) throw Error("Pflichtangaben fehlen.");
   intel().markets.push(rec);
+  V.mPrefill = null;
   G.markEdited();
   G.persist();
   G.render();
@@ -1021,6 +1295,82 @@ const ACTIONS = {
     G.render();
   },
   "market-ai": marketAI,
+  "market-tab": (el) => {
+    V.marketTab = el.dataset.tab;
+    G.render();
+    document.querySelector(`#v11-mtab-${V.marketTab}`)?.focus();
+  },
+  "market-section": (el) => {
+    V.mSection = el.dataset.section;
+    V.mCategory = "all";
+    G.render();
+  },
+  "market-check": (el) => checkModal(el.dataset.id),
+  "market-clear-prefill": () => {
+    V.mPrefill = null;
+    G.render();
+  },
+  "place-own": () => {
+    V.ploc = null;
+    V.geoMsg = "Standort des Betriebs aus Mein Markt verwendet.";
+    G.render();
+  },
+  "place-geo": () =>
+    new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        V.geoMsg = "Dein Browser gibt keinen Standort frei. Adresse suchen oder Koordinaten eingeben.";
+        G.render();
+        return resolve();
+      }
+      V.geoMsg = "Frage Standort ab …";
+      G.render();
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setPlace("Aktueller Standort", pos.coords.latitude, pos.coords.longitude);
+          V.geoMsg = `Aktueller Standort übernommen (Genauigkeit etwa ${Math.round(pos.coords.accuracy)} m).`;
+          G.render();
+          resolve();
+        },
+        (e) => {
+          V.geoMsg =
+            e.code === 1
+              ? "Standort nicht freigegeben. Erlaube ihn in den Browser-Einstellungen oder suche nach der Adresse."
+              : "Standort konnte nicht bestimmt werden. Suche nach der Adresse.";
+          G.render();
+          resolve();
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+      );
+    }),
+  "place-hit": (el) => {
+    const h = V.geoHits?.[Number(el.dataset.i)];
+    if (!h) return;
+    setPlace(V.geoQuery || h.display_name, h.lat, h.lon);
+    V.geoMsg = "Standort übernommen: " + h.display_name;
+    G.render();
+  },
+  "place-save": () => {
+    if (!finance()) throw Error("Keine Berechtigung, den Betriebsstandort zu ändern.");
+    const l = V.ploc;
+    if (!l) return;
+    S().marketLocation = { label: l.label.slice(0, 100), lat: l.lat, lon: l.lon };
+    V.ploc = null;
+    V.geoMsg = "Als Standort des Betriebs gespeichert (gilt auch für Mein Markt).";
+    G.markEdited();
+    G.persist();
+    G.render();
+  },
+  "place-to-compare": (el) => {
+    const p = V.discover?.places?.[Number(el.dataset.i)];
+    if (!p) return;
+    // only name and OSM reference are taken over – the price has to come from a source the user enters
+    V.mPrefill = { competitor: p.name, placeUrl: p.source_url };
+    V.marketTab = "products";
+    G.render();
+    document.querySelector("#v11-market-entry")?.scrollIntoView({ block: "start" });
+    document.querySelector("#v11-m-cprod")?.focus();
+    G.toast(`${p.name} übernommen. Produkt, Menge und Preis aus einer Quelle eintragen.`);
+  },
   "load-legacy": loadLegacy,
 };
 document.addEventListener("click", async (e) => {
@@ -1044,6 +1394,34 @@ document.addEventListener("change", (e) => {
     G.render();
     return;
   }
+  if (e.target.dataset?.v11SectionFor !== undefined) {
+    const cat = e.target.dataset.v11SectionFor,
+      v = e.target.value;
+    if (!finance() || !["food", "drink"].includes(v)) return;
+    manualSections()[cat] = v;
+    G.markEdited();
+    G.persist();
+    G.render();
+    G.toast(`Warengruppe „${cat}“ gilt jetzt als ${MK.SECTIONS[v]}.`);
+    return;
+  }
+  if (e.target.dataset?.v11Show) {
+    const all = [...document.querySelectorAll("[data-v11-show]")];
+    const on = all.filter((x) => x.checked).map((x) => x.dataset.v11Show);
+    V.pShow = on.length === all.length ? [] : on.length ? on : ["__none__"];
+    G.render();
+    document.querySelector(`[data-v11-show="${e.target.dataset.v11Show}"]`)?.focus();
+    return;
+  }
+  if (e.target.id === "v11-m-own") {
+    const p = suiteProducts().find((x) => x.id === e.target.value),
+      f = e.target.form;
+    if (p && f) {
+      f.own_portion.value = p.unit || "Portion";
+      f.our_price_gross.value = p.grossPrice > 0 ? p.grossPrice : "";
+    }
+    return;
+  }
   if (e.target.matches?.("[data-v11-task-group]")) {
     V.taskGroup = e.target.checked;
     G.render();
@@ -1059,6 +1437,15 @@ document.addEventListener("change", (e) => {
     G.render();
     G.toast(task.status === "done" ? "Aufgabe erledigt." : "Aufgabe wieder offen.");
   }
+});
+document.addEventListener("keydown", (e) => {
+  const t = e.target.closest?.(".v11-tab");
+  if (!t || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+  e.preventDefault();
+  const tabs = [...document.querySelectorAll(".v11-tab")];
+  const i = tabs.indexOf(t),
+    n = e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : (i + (e.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+  tabs[n].click();
 });
 document.addEventListener("input", (e) => {
   if (e.target.id === "v11-article-search") {
@@ -1155,6 +1542,16 @@ const FORMS = {
   "v11-quiz-form": submitQuiz,
   "v11-market-form": saveMarket,
   "v11-discover-form": discover,
+  "v11-geocode-form": geocode,
+  "v11-coord-form": (o) => {
+    const lat = numberInput(o.lat),
+      lon = numberInput(o.lon);
+    if (!Number.isFinite(lat) || Math.abs(lat) > 90 || !Number.isFinite(lon) || Math.abs(lon) > 180) throw Error("Gültige Koordinaten erforderlich (Breite −90 bis 90, Länge −180 bis 180).");
+    setPlace("Eingegebene Koordinaten", lat, lon);
+    V.geoMsg = "Koordinaten übernommen.";
+    G.render();
+  },
+  "v11-market-check-form": saveCheck,
   "v11-summary-form": async (o) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(o.from) || !/^\d{4}-\d{2}-\d{2}$/.test(o.to) || o.from > o.to) throw Error("Zeitraum prüfen.");
     V.summary = await cloud.posSummary(o.from, o.to, V.outlet);
@@ -1181,7 +1578,11 @@ document.addEventListener("submit", async (e) => {
   const btn = e.target.querySelector('button[type="submit"]');
   if (btn) btn.disabled = true;
   try {
-    await handler(Object.fromEntries(new FormData(e.target).entries()));
+    const fd = new FormData(e.target),
+      obj = Object.fromEntries(fd.entries());
+    if (fd.has("categories")) obj.categories = fd.getAll("categories");
+    else if (e.target.querySelector('[name="categories"]')) obj.categories = [];
+    await handler(obj);
   } catch (err) {
     G.toast(err.message || String(err), "error");
   } finally {

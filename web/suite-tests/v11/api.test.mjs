@@ -448,6 +448,41 @@ test("Umfeldsuche: Radius 1–5 km, OSM-Ausfall verständlich, Ergebnis ohne Pre
   assert.equal(res.status, 502);
   assert.match((await res.json()).message, /nicht erreichbar/);
 });
+test("Umfeldsuche: Kategorien, Entfernung als Luftlinie, nächste zuerst, unvollständige Einträge am Ende", async () => {
+  let query = "";
+  const base = fakeFetch({
+    glb_v11_can_manage: true,
+    glb_api_take: true,
+    "overpass-api.de": {
+      elements: [
+        { type: "node", id: 3, lat: 50.81, lon: 6.48, tags: { name: "Weit", amenity: "bar" } },
+        { type: "way", id: 4, center: { lat: 50.8005, lon: 6.48 }, tags: { name: "Nah", amenity: "events_venue", website: "https://nah.example", "addr:street": "Markt", "addr:housenumber": "1" } },
+        { type: "node", id: 5, tags: { name: "Ohne Ort", amenity: "cafe", website: "javascript:alert(1)" } },
+      ],
+    },
+  });
+  const f = async (url, init) => {
+    if (String(url).includes("overpass")) query = String(init.body);
+    return base(url, init);
+  };
+  const res = await handleSuiteApi(
+    userReq("market/discover", { org: ORG, lat: 50.8, lon: 6.48, radius: 2000, categories: ["bar", "events_venue", "cafe", "casino"] }),
+    USER_ENV,
+    f,
+  );
+  const j = await res.json();
+  assert.match(decodeURIComponent(query), /\^\(cafe\|bar\|events_venue\)\$/, "nur erlaubte Kategorien in der Abfrage");
+  assert.equal(j.distance, "Luftlinie");
+  assert.deepEqual(j.places.map((p) => [p.name, p.category]), [["Nah", "events_venue"], ["Weit", "bar"], ["Ohne Ort", "cafe"]]);
+  assert.ok(Math.abs(j.places[0].distance_m - 56) <= 1);
+  assert.ok(Math.abs(j.places[1].distance_m - 1112) <= 2);
+  assert.equal(j.places[2].distance_m, null);
+  assert.equal(j.places[2].website, null, "nur http(s)-Websites");
+  assert.equal(j.places[0].address, "Markt 1");
+  const none = await handleSuiteApi(userReq("market/discover", { org: ORG, lat: 50.8, lon: 6.48, radius: 2000, categories: ["casino"] }), USER_ENV, f);
+  assert.equal(none.status, 400);
+  assert.match((await none.json()).message, /Kategorie/);
+});
 test("Positionsprüfung nennt die Felder", () => {
   assert.deepEqual(validateLine(line()), []);
   assert.match(
