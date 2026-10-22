@@ -1084,7 +1084,8 @@ const FORMS = {
   },
 };
 document.addEventListener("submit", async (e) => {
-  const handler = FORMS[e.target.id];
+  // getAttribute: a field named "id" inside the form would shadow form.id (v1.1 RC1 failed this way)
+  const handler = FORMS[e.target.getAttribute?.("id")];
   if (!handler) return;
   e.preventDefault();
   const btn = e.target.querySelector('button[type="submit"]');

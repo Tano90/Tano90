@@ -209,14 +209,15 @@ test.describe("SC Suite im Cloud-Betrieb (Test-Server)", () => {
     await context.close();
   });
 
-  test("SC-5 Service-Mitarbeiter: nur Arbeitsplatz und Funnel, speichert eingeschränkt", async ({ browser }) => {
+  test("SC-5 Service-Mitarbeiter: Arbeitsplatz, Funnel, Aufgaben, Training – keine Finanzen, speichert eingeschränkt", async ({ browser }) => {
     const server = fakeServer();
     server.snaps["org-1"] = { data: { business: "Testbetrieb Nord", items: [{ id: "p1", name: "Burger", category: "Burger", quantity: 0, grossPrice: 14.9, costNet: 4.2, vat: 19, unit: "Portion" }], outlets: [{ id: "restaurant", name: "Restaurant" }], funnel: [] }, revision: 1 };
     const context = await browser.newContext();
     const page = await cloudPage(context, server);
     await signIn(page, "service@betrieb.example", "geheim-456");
     const views = await page.locator("#sidebar .glb08-nav-link").evaluateAll((b) => b.map((x) => (x as HTMLElement).dataset.view));
-    expect(views.sort()).toEqual(["funnel", "myday"]);
+    // v1.1: Cockpit (ohne Umsätze), Team & Aufgaben und Funnel Quest gelten für alle Rollen (wie RC1); nichts Finanzielles
+    expect(views.sort()).toEqual(["funnel", "myday", "v11cockpit", "v11tasks", "v11training"]);
     await addFunnelDay(page, "2026-10-10", "55");
     await expect(page.locator("#cloud-sync-status")).toHaveText("In der Cloud gespeichert", { timeout: 8000 });
     expect((server.snaps["org-1"].data.items as { costNet: number }[])[0].costNet).toBe(4.2);
