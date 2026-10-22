@@ -207,7 +207,7 @@ Netto-Stückpreis bzw. DB je Einheit, Menu-Engineering-Schwellen = Median.
 | SQL 001+002 | `npm run test:suite-sql` | 8 | 0 |
 | SQL 001+002 nach 006 | dto. | 8 | 0 |
 | SQL 006, zwei Betriebe, Konten je Rolle | dto. | 7 | 0 |
-| Browser: Suite, Cloud (Test-Server), v1.1-Module, Barrierefreiheit, Website, Rechtstexte | `npx playwright test e2e/suite*.spec.ts e2e/landing.spec.ts e2e/legal.spec.ts` | 70 | 0 |
+| Browser: Suite, Cloud (Test-Server), v1.1-Module, Barrierefreiheit, Website, Rechtstexte | `npx playwright test e2e/suite*.spec.ts e2e/landing.spec.ts e2e/legal.spec.ts` | 68 | 0 |
 | Layout | `scripts/suite-audit.mjs` bei 320, 390, 768, 1024 px | 0 Überläufe | – |
 
 Der RC1-Rendering-Test (`tests/render.test.mjs`, simuliertes DOM) ist durch echte Browsertests ersetzt (SV-1: jedes Modul
