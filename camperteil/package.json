@@ -5,9 +5,8 @@
   "description": "Website Camperteil (statisch, ohne Build-Schritt)",
   "type": "module",
   "scripts": {
-    "serve": "python3 -m http.server 4173",
-    "test": "node tests/flow.mjs",
-    "preview:single": "node scripts/build-single.mjs"
+    "serve": "python3 -m http.server 4173 --directory dist",
+    "test": "node tests/flow.mjs"
   },
   "devDependencies": {
     "playwright-core": "1.56.1"

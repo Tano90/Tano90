@@ -1,15 +1,16 @@
 <!doctype html>
-<html lang="de">
+<html lang="de" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Camperteil</title>
+<title>Camperteil — Noch so viel Welt.</title>
 <meta name="description" content="Kleine Kunststoff-Ersatzteile für ältere Wohnmobile anfragen: mit Fotos, Fahrzeugdaten und Maßen. Ein Angebot von Mattias Segato Consulting.">
 <meta name="theme-color" content="#edefe8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f1a17" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/experience.css">
 </head>
 <body>
 <!--BODY-START-->
@@ -31,6 +32,7 @@
         <span class="nav-toggle-label">Menü</span>
       </button>
       <ul id="nav-list" class="nav-list">
+        <li><a href="#werkstatt">3D-Werkbank</a></li>
         <li><a href="#teile">Teile</a></li>
         <li><a href="#ablauf">Ablauf</a></li>
         <li><a href="#messen">Messen &amp; Fotografieren</a></li>
@@ -43,117 +45,14 @@
 
 <main id="inhalt">
 
-  <!-- HERO -->
-  <section class="hero" id="top" aria-labelledby="hero-title">
-    <div class="wrap hero-grid">
-      <div class="hero-copy">
-        <p class="eyebrow">Ersatzteile für ältere Wohnmobile</p>
-        <h1 id="hero-title" class="display">Das kleine Teil, das keiner mehr führt.</h1>
-        <p class="lead">Ein gebrochener Fensterriegel, eine fehlende Abdeckkappe, ein Staufachschloss ohne Rosette. Bei älteren Wohnmobilen fehlt oft ein Kunststoffteil, das der Hersteller nicht mehr liefert. Beschreiben Sie es bei Camperteil einmal genau: mit Fotos, Fahrzeugmodell, Baujahr und Maßen. Ein Fachbetrieb soll dann prüfen, ob es das Teil noch gibt oder ob es sich nachfertigen lässt.</p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="#anfrage">Ersatzteil anfragen</a>
-          <a class="btn btn-quiet" href="#ablauf">So läuft es ab</a>
-        </div>
-      </div>
-
-      <figure class="sheet hero-sheet" aria-labelledby="hero-fig-cap">
-        <div class="sheet-zones" aria-hidden="true">
-          <span>A</span><span>B</span><span>C</span><span>D</span>
-        </div>
-        <svg class="drawing" viewBox="0 0 600 450" role="img" aria-labelledby="hero-svg-title hero-svg-desc">
-          <title id="hero-svg-title">Technische Zeichnung eines Fensterriegels (Beispiel)</title>
-          <desc id="hero-svg-desc">Draufsicht und Seitenansicht eines Kunststoff-Fensterriegels mit Maßen in Millimetern: Gesamtlänge 77,5, Lagerauge Durchmesser 19, Bohrung Durchmesser 5,5, Höhe 8,5, Hebelstärke 3,5. Eine typische Bruchstelle am Lagerauge ist markiert. Illustratives Beispiel.</desc>
-          <defs>
-            <marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
-              <path d="M0 1.5 L10 5 L0 8.5 Z" class="f-ink"/>
-            </marker>
-            <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-              <rect width="7" height="7" class="f-none"/>
-              <line x1="0" y1="0" x2="0" y2="7" class="s-hatch"/>
-            </pattern>
-          </defs>
-
-          <!-- Mittellinien -->
-          <g class="center-lines">
-            <line x1="70" y1="150" x2="420" y2="150" pathLength="1" class="draw"/>
-            <line x1="130" y1="96" x2="130" y2="204" pathLength="1" class="draw"/>
-            <line x1="130" y1="270" x2="130" y2="336" pathLength="1" class="draw"/>
-          </g>
-
-          <!-- Draufsicht -->
-          <g class="part">
-            <path class="body draw" pathLength="1" d="M130 112 A38 38 0 0 0 130 188 L390 162 A12 12 0 0 0 390 138 Z"/>
-            <circle class="hole draw" pathLength="1" cx="130" cy="150" r="11"/>
-            <path class="hidden-line" d="M182 140 L360 134 M182 160 L360 166"/>
-            <path class="grip" d="M300 141v18 M318 140v20 M336 139v22"/>
-          </g>
-
-          <!-- Typische Bruchstelle -->
-          <path class="crack" d="M141 146 L152 141 L149 135 L160 129 L157 122 L166 117"/>
-          <g class="balloon" transform="translate(212 86)">
-            <line x1="-40" y1="18" x2="-12" y2="5" class="leader"/>
-            <circle r="13" class="balloon-c"/>
-            <text y="4.5" text-anchor="middle" class="balloon-t">1</text>
-          </g>
-          <text x="232" y="91" class="note">Typische Bruchstelle am Lagerauge</text>
-
-          <!-- Seitenansicht -->
-          <g class="part">
-            <path class="body section draw" pathLength="1" d="M95 286 H165 L168 289 V306 H399 L402 309 V320 H92 V289 Z"/>
-            <path class="hidden-line" d="M119 286 V320 M141 286 V320"/>
-          </g>
-
-          <!-- Bemaßung -->
-          <g class="dims">
-            <line x1="92" y1="140" x2="92" y2="48" class="ext"/>
-            <line x1="402" y1="142" x2="402" y2="48" class="ext"/>
-            <line x1="92" y1="56" x2="402" y2="56" class="dim" marker-start="url(#arr)" marker-end="url(#arr)"/>
-            <text x="247" y="49" text-anchor="middle" class="dim-t">77,5</text>
-
-            <line x1="103" y1="177" x2="78" y2="226" class="leader"/>
-            <line x1="78" y1="226" x2="40" y2="226" class="leader"/>
-            <text x="40" y="220" class="dim-t">Ø19</text>
-
-            <line x1="137" y1="158" x2="172" y2="226" class="leader" marker-start="url(#arr)"/>
-            <line x1="172" y1="226" x2="214" y2="226" class="leader"/>
-            <text x="176" y="220" class="dim-t">Ø5,5</text>
-
-            <line x1="90" y1="286" x2="54" y2="286" class="ext"/>
-            <line x1="90" y1="320" x2="54" y2="320" class="ext"/>
-            <line x1="62" y1="286" x2="62" y2="320" class="dim" marker-start="url(#arr)" marker-end="url(#arr)"/>
-            <text x="54" y="307" text-anchor="end" class="dim-t">8,5</text>
-
-            <line x1="404" y1="306" x2="446" y2="306" class="ext"/>
-            <line x1="404" y1="320" x2="446" y2="320" class="ext"/>
-            <line x1="438" y1="282" x2="438" y2="306" class="dim" marker-end="url(#arr)"/>
-            <line x1="438" y1="344" x2="438" y2="320" class="dim" marker-end="url(#arr)"/>
-            <text x="446" y="298" class="dim-t">3,5</text>
-          </g>
-
-          <text x="92" y="258" class="view-t">DRAUFSICHT</text>
-          <text x="92" y="354" class="view-t">SEITENANSICHT</text>
-
-          <!-- Schriftfeld -->
-          <g class="title-block" transform="translate(328 368)">
-            <rect width="256" height="68" class="tb-frame"/>
-            <line x1="0" y1="24" x2="256" y2="24" class="tb-rule"/>
-            <line x1="0" y1="46" x2="256" y2="46" class="tb-rule"/>
-            <line x1="150" y1="24" x2="150" y2="68" class="tb-rule"/>
-            <text x="8" y="16" class="tb-big">FENSTERRIEGEL · BEISPIEL</text>
-            <text x="8" y="39" class="tb-small">Werkstoff: unbekannt</text>
-            <text x="158" y="39" class="tb-small">Maßstab 2:1</text>
-            <text x="8" y="61" class="tb-small">Maße in mm</text>
-            <text x="158" y="61" class="tb-small">Blatt 1/1</text>
-          </g>
-        </svg>
-        <figcaption id="hero-fig-cap" class="sheet-cap">
-          <span class="tag">Beispiel</span>
-          Illustration eines typischen Teils. Kein Angebot, kein reales Bauteil aus dem Sortiment.
-        </figcaption>
-      </figure>
-    </div>
+  <section class="film-hero" id="top" aria-labelledby="hero-title">
+    <video id="hero-film" class="hero-film" muted loop playsinline preload="metadata" poster="assets/img/camper-lake.jpg" aria-label="Camper an einem Bergsee, Wolken ziehen über die Landschaft"><source src="assets/video/camper-lake.mp4" type="video/mp4"></video>
+    <div class="film-shade"></div><div class="film-grain" aria-hidden="true"></div>
+    <div class="wrap film-hero-inner"><p class="hero-coordinate">KLEINE TEILE. WEITE WEGE.</p><div class="film-copy"><p class="eyebrow">Für Camper mit Geschichte</p><h1 id="hero-title">Ein kleines Teil.<br>Noch so viel <em>Welt.</em></h1><div class="hero-bottom"><p>Dein Camper ist noch lange nicht am Ziel.<br>Wir wollen helfen, das fehlende Teil zu finden.</p><div class="hero-actions"><a href="#anfrage" class="btn btn-primary">Ersatzteil anfragen <span aria-hidden="true">↗</span></a><a href="#werkstatt" class="film-link">3D-Beispiel entdecken <span aria-hidden="true">↓</span></a></div></div></div><div class="film-caption"><span>01 — UNTERWEGS BLEIBEN</span><button type="button" class="film-toggle" data-video="hero-film" aria-label="Hintergrundvideo starten">Film starten ▷</button><span class="scroll-cue">WEITER ENTDECKEN ↓</span></div></div>
   </section>
-
+  <section class="manifesto wrap" aria-labelledby="manifesto-title"><div class="manifesto-index"><span class="eyebrow">Die Idee</span><span class="chapter">01 / WEITERDENKEN</span></div><h2 id="manifesto-title">Manchmal fehlt kein neuer Camper.<br><span>Sondern nur ein kleines Teil.</span></h2><div class="manifesto-bottom"><p>Eine verlorene Abdeckung. Ein sprödes Kunststoffteil. Bei älteren Wohnmobilen beginnt dann oft eine lange Suche. Camperteil soll aus Fotos, Maßen und Modellangaben eine klare Ersatzteil-Anfrage machen.</p><a href="#ablauf" class="text-arrow">Vom Foto zur Einschätzung <span>↗</span></a></div></section>
+  <section class="lab-section" id="werkstatt" aria-labelledby="lab-title"><div class="wrap lab-grid"><div class="lab-copy"><p class="eyebrow">Die digitale Werkbank</p><h2 id="lab-title">Von allen Seiten.<br><em>Bis ins Detail.</em></h2><p>So lässt sich ein Bauteil verständlich zeigen. Drehe die Beispiel-Abdeckung, ändere die Oberfläche oder zerlege die Ansicht.</p><p class="lab-disclaimer">Illustratives 3D-Modell. Kein Originalteil, kein Verkaufsartikel und keine technische Fertigungsvorlage.</p><div class="model-choices" role="group" aria-label="Oberfläche des Beispielmodells"><button type="button" class="material active" data-material="sand" aria-pressed="true"><i style="--swatch:#c9bda6"></i>Sand</button><button type="button" class="material" data-material="olive" aria-pressed="false"><i style="--swatch:#68705a"></i>Olive</button><button type="button" class="material" data-material="graphite" aria-pressed="false"><i style="--swatch:#353a37"></i>Graphit</button></div><label class="explode-label" for="explode">Explosionsansicht <output id="explode-value">0 %</output></label><input id="explode" type="range" min="0" max="100" value="0"><div class="model-actions"><button type="button" id="auto-rotate" aria-pressed="false">Drehung starten ↻</button><button type="button" id="reset-model">Ansicht zurücksetzen ↺</button></div><a href="#anfrage" class="text-arrow">Mein Teil beschreiben ↗</a></div><div class="model-stage" id="model-stage"><div class="stage-heading"><span>CT / STUDIE 001</span><span>ABDECKUNG · BEISPIEL</span></div><canvas id="part-canvas" tabindex="0" aria-label="Interaktive 3D-Abdeckung. Mit Maus oder Finger drehen. Alternativ Pfeiltasten zum Drehen und Plus oder Minus zum Zoomen."></canvas><div id="model-fallback" hidden><svg viewBox="0 0 300 250" role="img" aria-label="Ersatzansicht der Abdeckung"><path d="M70 50h140v150H70z M95 80v90h90V80z" fill="#c9bda6" fill-rule="evenodd" stroke="#b9ae99" stroke-width="3"/><circle cx="83" cy="65" r="4" fill="#263e34"/><circle cx="197" cy="185" r="4" fill="#263e34"/></svg><p>3D ist auf diesem Gerät nicht verfügbar. Die Anfrage funktioniert weiterhin.</p></div><div class="stage-part-note" id="stage-part-note" aria-live="polite">01 / Rahmen · 02 / Einleger · 03 / Schrauben</div><div class="stage-bottom"><span>ZIEHEN ZUM DREHEN · ZOOMEN MIT ZWEI FINGERN</span><button id="wireframe" type="button" aria-pressed="false">Drahtgitter</button></div></div></div></section>
+  <section class="journey-film" aria-labelledby="journey-title"><video id="journey-film" muted loop playsinline preload="none" poster="assets/img/meadow.jpg" aria-label="Wolken und Licht wandern über eine grüne Berglandschaft"><source src="assets/video/landscape.mp4" type="video/mp4"></video><div class="journey-shade"></div><div class="wrap journey-copy"><p class="eyebrow">Nicht fertig mit unterwegs.</p><h2 id="journey-title">Die schönsten Geschichten<br>haben noch <em>offene Wege.</em></h2><button type="button" class="film-toggle" data-video="journey-film" aria-label="Landschaftsvideo starten">Film starten ▷</button><p class="footage-note">Reiseimpression · Stockaufnahme</p></div></section>
   <!-- STAND -->
   <section class="status" aria-labelledby="status-title">
     <div class="wrap status-row">
@@ -167,8 +66,8 @@
     <div class="wrap">
       <header class="section-head">
         <p class="eyebrow">Worum es geht</p>
-        <h2 id="teile-title" class="h2">Kleine Kunststoffteile, ohne die nichts schließt, hält oder dicht ist.</h2>
-        <p class="section-intro">Gemeint sind Teile aus Möbelbau, Fenstern, Klappen und Außenhaut, die nach 20 oder 30 Jahren spröde werden. Die Zeichnung zeigt typische Beispiele. Sie stehen für Arten von Anfragen, nicht für ein Sortiment.</p>
+        <h2 id="teile-title" class="h2">Kleine Teile.<br>Große Bedeutung.</h2>
+        <p class="section-intro">Entdecke typische Teileformen auf der Zeichnung: mit Maus, Tastatur oder per Antippen. Die Beispiele zeigen unterschiedliche Geometrien, kein verfügbares Sortiment. Ob ein konkretes Teil geeignet ist, muss ein Fachbetrieb prüfen.</p>
       </header>
 
       <div class="board" data-board>
@@ -289,7 +188,7 @@
       <header class="section-head measure-head">
         <p class="eyebrow">Messen &amp; Fotografieren</p>
         <h2 id="messen-title" class="h2">Gute Angaben sparen Rückfragen.</h2>
-        <p class="section-intro">Für eine Prüfung braucht der Betrieb das Teil nicht in der Hand, aber genaue Maße und klare Fotos. So geht es am schnellsten:</p>
+        <p class="section-intro">Für eine erste Einschätzung helfen genaue Maße und klare Fotos. Für die Nachfertigung kann ein Fachbetrieb später auch das Originalteil benötigen. So bereitest du die Anfrage vor:</p>
       </header>
 
       <figure class="sheet caliper-sheet">
@@ -585,6 +484,7 @@
       <p>Ein Angebot von Mattias Segato Consulting.</p>
     </div>
     <ul class="footer-links">
+      <li><a href="inspiration.html">Design-Referenzen</a></li>
       <li><a href="impressum.html">Impressum</a></li>
       <li><a href="datenschutz.html">Datenschutz</a></li>
     </ul>
@@ -592,5 +492,6 @@
 </footer>
 <!--BODY-END-->
 <script src="assets/js/app.js" defer></script>
+<script type="module" src="assets/js/experience.js"></script>
 </body>
 </html>
