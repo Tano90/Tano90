@@ -15,10 +15,13 @@
     for (const [k, v] of Object.entries(values)) old[k] += v;
     map.set(key, old);
   };
-  function performance(data, { month = "all", outlet = "all", category = "all" } = {}) {
+  // costBasis "history": each sale is valued with the cost state of its month (C.costAt); "current": today's
+  // product cost, offered as an explicit scenario. Sales valued with a substitute cost are counted.
+  function performance(data, { month = "all", outlet = "all", category = "all", costBasis = "history" } = {}) {
     const items = data.items || [],
       pids = new Map(items.map((x) => [x.id, x])),
       outlets = new Map((data.outlets || []).map((x) => [x.id, x.name]));
+    const fallbackLines = {};
     const rows = [],
       byMonth = new Map(),
       byOutlet = new Map(),
@@ -33,7 +36,15 @@
         (category !== "all" && p.category !== category)
       )
         continue;
-      const m = C.saleMetrics(sale, p);
+      let costed = p,
+        fallback = null;
+      if (costBasis === "history" && C.costAt) {
+        const c = C.costAt(p, sale.month);
+        costed = { ...p, costNet: c.costNet, costDetail: c.costDetail };
+        fallback = c.fallback;
+      }
+      const m = C.saleMetrics(sale, costed);
+      if (fallback) fallbackLines[fallback] = (fallbackLines[fallback] || 0) + 1;
       const row = {
         ...m,
         name: p.name,
@@ -103,7 +114,9 @@
       products: byProductRows,
       abc,
       count: rows.length,
-      filters: { month, outlet, category },
+      filters: { month, outlet, category, costBasis },
+      // how many sales lines were valued without a cost state of their month (undated migrated value etc.)
+      costFallback: fallbackLines,
     };
   }
   function monthlyChange(months) {

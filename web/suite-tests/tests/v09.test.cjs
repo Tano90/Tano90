@@ -87,3 +87,57 @@ test("completeness: setup done once is not the same as all articles calculable",
   assert.equal(steps.filter((s) => s.ready).length, 6);
   assert.equal(steps.find((s) => s.id === "recipes").hint, "2 von 4 Artikeln mit Rezept");
 });
+
+const C = require("../src/core.js");
+const V6 = require("../src/v06core.js");
+test("cost states: migration, dated changes, month valuation with labelled substitute", () => {
+  const p = { id: "b", name: "Burger", category: "Burger", grossPrice: 11.9, vat: 19, costNet: 3, quantity: 0 };
+  assert.equal(C.migrateCostHistory([p]), 1);
+  assert.equal(C.migrateCostHistory([p]), 0, "idempotent");
+  assert.equal(p.costHistory[0].validFrom, null);
+  p.costNet = 4;
+  assert.equal(C.recordCost(p, { validFrom: "2026-09-15", source: "Kosten bearbeitet" }), true);
+  assert.equal(C.recordCost(p, { validFrom: "2026-09-15" }), false, "unchanged cost adds nothing");
+  assert.deepEqual(C.costAt(p, "2026-10"), { costNet: 4, costDetail: undefined, source: "history", validFrom: "2026-09-15", fallback: null });
+  assert.equal(C.costAt(p, "2026-09").costNet, 4, "valid from the 15th: September is valued with the new state");
+  const aug = C.costAt(p, "2026-08");
+  assert.equal(aug.costNet, 3);
+  assert.equal(aug.fallback, "undated", "the undated old value is a labelled substitute");
+
+  const data = { items: [p], outlets: [{ id: "o", name: "O" }], sales: [
+    { id: "s1", productId: "b", outletId: "o", month: "2026-08", quantity: 10, grossPrice: 11.9 },
+    { id: "s2", productId: "b", outletId: "o", month: "2026-10", quantity: 10, grossPrice: 11.9 },
+  ] };
+  const hist = V6.performance(data, { costBasis: "history" });
+  const now = V6.performance(data, { costBasis: "current" });
+  assert.equal(C.round(hist.totals.goods), 70, "August 10 × 3 + October 10 × 4");
+  assert.equal(C.round(now.totals.goods), 80, "scenario: all at today's 4");
+  assert.equal(hist.costFallback.undated, 1);
+  assert.deepEqual(now.costFallback, {});
+});
+
+test("import plan: same file twice adds nothing in 'add', modes are explicit", () => {
+  const key = (r) => `${r.productId}|${r.outletId}|${r.month}`;
+  const period = (r) => r.month;
+  const existing = [
+    { productId: "a", outletId: "o", month: "2026-08", quantity: 5 },
+    { productId: "a", outletId: "o", month: "2026-09", quantity: 7 },
+  ];
+  const file = [
+    { productId: "a", outletId: "o", month: "2026-09", quantity: 9, grossPrice: 10 },
+    { productId: "a", outletId: "o", month: "2026-09", quantity: 1, grossPrice: 8 }, // same month, other price: kept together
+    { productId: "b", outletId: "o", month: "2026-09", quantity: 3 },
+  ];
+  const add = C.planImport(existing, file, { keyOf: key, periodOf: period, mode: "add" });
+  assert.deepEqual([add.added, add.skipped, add.present], [1, 2, 2]);
+  const again = C.planImport(add.result, file, { keyOf: key, periodOf: period, mode: "add" });
+  assert.equal(again.added, 0, "re-importing the same file adds nothing");
+  const update = C.planImport(existing, file, { keyOf: key, periodOf: period, mode: "update" });
+  assert.equal(update.result.filter((r) => r.month === "2026-09" && r.productId === "a").reduce((s, r) => s + r.quantity, 0), 10);
+  assert.equal(update.result.some((r) => r.month === "2026-08"), true, "other months untouched");
+  const replace = C.planImport([...existing, { productId: "z", outletId: "o", month: "2026-09", quantity: 1 }], file, { keyOf: key, periodOf: period, mode: "replace" });
+  assert.equal(replace.result.some((r) => r.productId === "z"), false, "replace clears the file's months");
+  assert.equal(replace.result.some((r) => r.month === "2026-08"), true);
+  assert.equal(C.fingerprint("a;b\r\n1;2\r\n"), C.fingerprint("﻿a;b\n1;2"), "same content, other line endings/BOM");
+  assert.notEqual(C.fingerprint("a;b\n1;2"), C.fingerprint("a;b\n1;3"));
+});

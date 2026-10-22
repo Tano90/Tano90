@@ -1119,3 +1119,19 @@ body {
     padding: 13px;
   }
 }
+
+/* Website revision: cost basis note and history */
+.v6-cost-note {
+  flex: 1 1 100%;
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #4f6d72;
+}
+.cost-history {
+  margin-top: 14px;
+}
+.cost-history summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: #12685d;
+}

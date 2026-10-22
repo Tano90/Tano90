@@ -101,7 +101,6 @@
       typeof x.outletId === "string" &&
       (x.month === "undated" || /^\d{4}-(0[1-9]|1[0-2])$/.test(x.month)) &&
       Number.isInteger(Number(x.quantity)) &&
-      Number(x.quantity) >= 0 &&
       Number.isFinite(Number(x.grossPrice)) &&
       Number(x.grossPrice) >= 0
     );
@@ -160,6 +159,7 @@
   const fmt = (n) => C.round(n, 2).toString().replace(".", ",");
   const uid = () => "item-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
   const persist = () => {
+    for (const p of S.items || []) C.recordCost(p, { source: "Stammdaten geändert" });
     if (window.GLB_CLOUD_ENABLED) {
       document.querySelector("#workspace-name").textContent = S.business;
       window.GLBCloudBridge?.changed?.(S);
@@ -468,7 +468,7 @@
         `<button class="btn" data-action="csv-template">${I("download")} CSV-Vorlage</button>`,
       ) +
       demoNotice() +
-      `<section class="content-grid"><div class="panel">${panelHeader("CSV-Datei importieren", "Bestand kann ersetzt oder ergänzt werden.")}<div class="drop-zone" id="csv-dropzone" tabindex="0" role="button" aria-label="CSV-Datei auswählen">${I("upload")}<h3>CSV-Datei hier ablegen</h3><p>oder Datei auswählen. Unterstützt Semikolon und Komma, deutsche Dezimalzahlen und UTF-8.</p><button class="btn btn-primary" data-action="pick-csv">${I("file")} CSV auswählen</button><input type="file" id="csv-file" hidden accept=".csv,text/csv,text/plain"></div><div class="field" style="margin-top:17px;max-width:320px"><label for="import-mode">Importmethode</label><select id="import-mode"><option value="replace">Bestehende Artikel ersetzen</option><option value="append">Artikel zusätzlich anlegen</option></select></div><div id="import-results"></div><p class="calc-note">Wichtig: Jeder CSV-Datensatz ist ein Artikel mit einer aggregierten Absatzmenge. Dieser Artikelimport erzeugt Verkäufe ohne Monats- und Outlet-Zuordnung. Für präzise Reports nutze zusätzlich den Verkaufsimport unten.</p></div><div class="panel">${panelHeader("Benötigte CSV-Spalten", "Pflichtfelder und optionale Felder")}<div class="format-guide"><code>Produkt</code> Name des Artikels<br><code>Kategorie</code> Warengruppe (optional)<br><code>Menge</code> Verkaufte Einheiten<br><code>Bruttopreis</code> Verkaufspreis pro Einheit<br><code>Wareneinsatz netto</code> Direkte Warenkosten pro Einheit<br><code>USt</code> 7 oder 19 (optional; Standard 7)</div><p class="chart-note">Beispiel: <code>Cheeseburger;Burger;120;17,90;4,50;7</code></p><hr class="split-divider"><div class="steps"><div class="step"><span class="step-number">1</span><div><strong>Vorlage herunterladen</strong><p>Öffne die CSV in Excel und ergänze deine Produkte.</p></div></div><div class="step"><span class="step-number">2</span><div><strong>Als CSV speichern</strong><p>UTF-8 und Semikolon werden unterstützt.</p></div></div><div class="step"><span class="step-number">3</span><div><strong>Importieren & prüfen</strong><p>Ungültige Zeilen werden angezeigt und nicht übernommen.</p></div></div></div></div></section><div class="panel" style="margin-top:18px">${panelHeader("NEU · Verkaufsdaten nach Outlet und Monat importieren", "Bereits angelegte Produkte und Outlets per Namen zuordnen.")}<div class="actions"><button class="btn" data-action="sales-template">${I("download")} Verkaufs-CSV-Vorlage</button><button class="btn btn-primary" data-action="pick-sales-csv">${I("upload")} Verkaufs-CSV einlesen</button><input type="file" id="sales-csv-file" accept=".csv,text/csv" hidden></div><p class="chart-note">Spalten: Produkt;Outlet;Monat;Menge;Bruttopreis. Produktnamen und Outlets müssen bereits vorhanden und eindeutig sein. Zeilen werden zum Bestand hinzugefügt, niemals ungefragt überschrieben.</p></div>`
+      `<section class="content-grid"><div class="panel">${panelHeader("CSV-Datei importieren", "Bestand kann ersetzt oder ergänzt werden.")}<div class="drop-zone" id="csv-dropzone" tabindex="0" role="button" aria-label="CSV-Datei auswählen">${I("upload")}<h3>CSV-Datei hier ablegen</h3><p>oder Datei auswählen. Unterstützt Semikolon und Komma, deutsche Dezimalzahlen und UTF-8.</p><button class="btn btn-primary" data-action="pick-csv">${I("file")} CSV auswählen</button><input type="file" id="csv-file" hidden accept=".csv,text/csv,text/plain"></div><p class="calc-note">Nach dem Einlesen zeigt eine Vorschau gültige, fehlerhafte und vorhandene Artikel. Dort wählst du: Ergänzen, Aktualisieren oder Ersetzen.</p><div id="import-results"></div><p class="calc-note">Wichtig: Jeder CSV-Datensatz ist ein Artikel mit einer aggregierten Absatzmenge. Dieser Artikelimport erzeugt Verkäufe ohne Monats- und Outlet-Zuordnung. Für präzise Reports nutze zusätzlich den Verkaufsimport unten.</p></div><div class="panel">${panelHeader("Benötigte CSV-Spalten", "Pflichtfelder und optionale Felder")}<div class="format-guide"><code>Produkt</code> Name des Artikels<br><code>Kategorie</code> Warengruppe (optional)<br><code>Menge</code> Verkaufte Einheiten<br><code>Bruttopreis</code> Verkaufspreis pro Einheit<br><code>Wareneinsatz netto</code> Direkte Warenkosten pro Einheit<br><code>USt</code> 7 oder 19 (optional; Standard 7)</div><p class="chart-note">Beispiel: <code>Cheeseburger;Burger;120;17,90;4,50;7</code></p><hr class="split-divider"><div class="steps"><div class="step"><span class="step-number">1</span><div><strong>Vorlage herunterladen</strong><p>Öffne die CSV in Excel und ergänze deine Produkte.</p></div></div><div class="step"><span class="step-number">2</span><div><strong>Als CSV speichern</strong><p>UTF-8 und Semikolon werden unterstützt.</p></div></div><div class="step"><span class="step-number">3</span><div><strong>Importieren & prüfen</strong><p>Ungültige Zeilen werden angezeigt und nicht übernommen.</p></div></div></div></div></section><div class="panel" style="margin-top:18px">${panelHeader("NEU · Verkaufsdaten nach Outlet und Monat importieren", "Bereits angelegte Produkte und Outlets per Namen zuordnen.")}<div class="actions"><button class="btn" data-action="sales-template">${I("download")} Verkaufs-CSV-Vorlage</button><button class="btn btn-primary" data-action="pick-sales-csv">${I("upload")} Verkaufs-CSV einlesen</button><input type="file" id="sales-csv-file" accept=".csv,text/csv" hidden></div><p class="chart-note">Spalten: Produkt;Outlet;Monat;Menge;Bruttopreis. Produktnamen und Outlets müssen bereits vorhanden und eindeutig sein. Negative Menge = Korrektur oder Retoure. Vor der Übernahme zeigt eine Vorschau neue und vorhandene Zeilen; du wählst Ergänzen, Aktualisieren oder Ersetzen. Dieselbe Datei wird wiedererkannt.</p></div>`
     );
   }
   function settingsView() {
@@ -652,6 +652,61 @@
       return "#";
     }
   }
+  // Import preview: valid, faulty and already present lines, a chosen mode with its effect, and a note when the
+  // same file was imported before. Nothing changes until "Übernehmen".
+  const IMPORT_MODES = {
+    add: ["Ergänzen", "Nur neue Einträge übernehmen. Vorhandene bleiben unverändert, gleiche Einträge aus der Datei werden übersprungen."],
+    update: ["Aktualisieren", "Vorhandene Einträge mit gleichem Schlüssel durch die Datei ersetzen, neue hinzufügen. Alles andere bleibt."],
+    replace: ["Ersetzen", "Alle Einträge der Zeiträume aus der Datei löschen und durch die Datei ersetzen. Andere Zeiträume bleiben."],
+  };
+  function importDialog({ title, kind, fileName, hash, valid, errors, keyLabel, plan, apply, modes = IMPORT_MODES }) {
+    S.importLog = Array.isArray(S.importLog) ? S.importLog : [];
+    const before = S.importLog.filter((x) => x.kind === kind && x.hash === hash).at(-1);
+    const plans = Object.fromEntries(Object.keys(IMPORT_MODES).map((m) => [m, plan(m)]));
+    const effect = (p) =>
+      `${number(p.added)} übernehmen · ${number(p.removed)} vorhandene ${p.mode === "add" ? "unverändert" : "entfernen"} · ${number(p.skipped)} überspringen`;
+    document.querySelector("#modal-layer").innerHTML =
+      `<div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-header"><h2>${esc(title)}</h2><button class="close-btn" data-action="close-modal" aria-label="Schließen">×</button></div><form id="import-dialog">
+      <p class="import-file">${esc(fileName)}</p>
+      ${before ? `<p class="notice warn" role="alert">${I("alert")} <span>Diese Datei wurde am ${esc(new Date(before.importedAt).toLocaleString("de-DE"))} bereits importiert (${esc(IMPORT_MODES[before.mode]?.[0] || before.mode)}). Mit „Ergänzen“ entsteht nichts doppelt.</span></p>` : ""}
+      <div class="import-counts"><div><b>${number(valid)}</b><span>gültige Zeilen</span></div><div><b>${number(errors.length)}</b><span>fehlerhaft, werden nicht übernommen</span></div><div><b>${number(plans.add.present)}</b><span>bereits vorhanden (${esc(keyLabel)})</span></div></div>
+      ${
+        errors.length
+          ? `<details class="import-errors"><summary>Fehlerhafte Zeilen anzeigen</summary><ul>${errors
+              .slice(0, 50)
+              .map((x) => `<li>${esc(String(x))}</li>`)
+              .join("")}</ul></details>`
+          : ""
+      }
+      <fieldset class="import-modes"><legend>Was soll mit vorhandenen Daten passieren?</legend>${Object.entries(modes)
+        .map(
+          ([m, [label, text]]) =>
+            `<label class="import-mode"><input type="radio" name="mode" value="${m}" ${m === "add" ? "checked" : ""}><span><b>${label}</b><small>${esc(text)}</small><em>${effect(plans[m])}</em></span></label>`,
+        )
+        .join("")}</fieldset>
+      <div class="modal-footer"><button type="button" class="btn" data-action="close-modal">Abbrechen</button><button class="btn btn-primary" type="submit">${I("check")} Übernehmen</button></div></form></div>`;
+    document.querySelector("#import-dialog").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const mode = new FormData(e.target).get("mode") || "add";
+      const p = plans[mode];
+      apply(p);
+      S.importLog.push({
+        kind,
+        hash,
+        fileName: String(fileName).slice(0, 120),
+        mode,
+        importedAt: new Date().toISOString(),
+        added: p.added,
+        removed: p.removed,
+      });
+      S.importLog = S.importLog.slice(-200);
+      markEdited();
+      persist();
+      closeModal();
+      render();
+      toast(`${modes[mode][0]}: ${number(p.added)} übernommen, ${number(p.removed)} ersetzt, ${number(p.skipped)} übersprungen.`);
+    });
+  }
   function formModal(title, inner, form) {
     document.querySelector("#modal-layer").innerHTML =
       `<div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-header"><h2>${esc(title)}</h2><button class="close-btn" data-action="close-modal" aria-label="Schließen">×</button></div><form id="${esc(form)}">${inner}<div class="modal-footer"><button type="button" class="btn" data-action="close-modal">Abbrechen</button><button class="btn btn-primary" type="submit">${I("check")} Speichern</button></div></form></div>`;
@@ -723,11 +778,14 @@
       !S.outlets.some((x) => x.id === outletId) ||
       !(month === "undated" || /^\d{4}-(0[1-9]|1[0-2])$/.test(month)) ||
       !Number.isInteger(qty) ||
-      qty < 0 ||
+      qty === 0 ||
       !Number.isFinite(price) ||
       price < 0
     )
-      return toast("Verkauf: Angaben prüfen. Monat JJJJ-MM oder undated.", "error");
+      return toast(
+        "Verkauf: Angaben prüfen. Monat JJJJ-MM oder undated, Menge ganze Zahl (negativ = Korrektur/Retoure), Preis ≥ 0.",
+        "error",
+      );
     const v = { id: id || uid(), productId, outletId, month, quantity: qty, grossPrice: price };
     const ix = S.sales.findIndex((x) => x.id === id);
     if (ix >= 0) S.sales[ix] = v;
@@ -825,11 +883,12 @@
         !o ||
         !(/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || month === "undated") ||
         !Number.isInteger(qty) ||
-        qty < 0 ||
         !Number.isFinite(price) ||
         price < 0
       ) {
-        errors.push("Zeile " + (i + 1) + ": Artikel (eindeutiger Name), Outlet, Monat, Menge oder Preis ungültig");
+        errors.push(
+          "Zeile " + (i + 1) + ": Artikel (eindeutiger Name), Outlet, Monat, Menge (ganze Zahl, negativ = Korrektur) oder Preis ungültig",
+        );
         continue;
       }
       rows.push({ id: uid(), productId: matches[0].id, outletId: o.id, month, quantity: qty, grossPrice: price });
@@ -840,19 +899,31 @@
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) return toast("Maximal 5 MB CSV.", "error");
     try {
-      const d = parseSalesCSV(await file.text());
-      if (!d.rows.length) throw Error("Keine gültigen Verkaufsdaten gefunden.");
-      if (
-        !confirm(
-          `${d.rows.length} Verkaufszeilen hinzufügen? ${d.errors.length} Zeilen mit Fehlern (werden übersprungen).${d.errors.length ? "\n" + d.errors.slice(0, 3).join("\n") : ""}`,
-        )
-      )
-        return;
-      S.sales.push(...d.rows);
-      markEdited();
-      persist();
-      render();
-      toast(`${d.rows.length} Verkaufszeilen importiert.`);
+      const text = await file.text();
+      const d = parseSalesCSV(text);
+      if (!d.rows.length) throw Error("Keine gültigen Verkaufsdaten gefunden." + (d.errors[0] ? " " + d.errors[0] : ""));
+      const importId = uid();
+      const rows = d.rows.map((r) => ({ ...r, importId }));
+      const keyOf = (r) => `${r.productId}|${r.outletId}|${r.month}`;
+      // Quantities from the article import have no month; together with monthly lines they would count twice.
+      const legacy = (p) => p.month === "undated" && rows.some((r) => r.productId === p.productId);
+      importDialog({
+        title: "Verkäufe importieren",
+        kind: "sales",
+        fileName: file.name,
+        hash: C.fingerprint(text),
+        valid: rows.length,
+        errors: d.errors,
+        keyLabel: "Artikel, Outlet und Monat",
+        plan: (mode) => {
+          const p = C.planImport(S.sales, rows, { keyOf, periodOf: (r) => r.month, mode });
+          const dropLegacy = p.result.filter((x) => legacy(x) && !rows.includes(x)).length;
+          return { ...p, result: p.result.filter((x) => rows.includes(x) || !legacy(x)), removed: p.removed + dropLegacy };
+        },
+        apply: (p) => {
+          S.sales = p.result;
+        },
+      });
     } catch (e) {
       toast("Verkaufs-CSV: " + e.message, "error");
     }
@@ -1598,7 +1669,7 @@
     const d = p.costDetail || { ingredientsNet: p.costNet || 0, wastePct: 0, packagingNet: 0, laborNet: 0, feesNet: 0, otherNet: 0 };
     formModal(
       old ? "Produkt & Kosten bearbeiten" : "Neues Produkt",
-      `<input type="hidden" name="id" value="${esc(p.id)}"><div class="field-grid"><div class="field"><label>Produktname *</label><input id="prod-name" name="name" required maxlength="120" value="${esc(p.name)}"></div><div class="field"><label>Warengruppe</label><input name="category" maxlength="80" value="${esc(p.category)}"></div><div class="field"><label>Portion / Einheit *</label><input name="unit" maxlength="80" required value="${esc(p.unit || "Portion")}" placeholder="z. B. 250 g"></div><div class="field"><label>Produktstart (JJJJ-MM, optional)</label><input name="launchMonth" maxlength="7" placeholder="2026-10" value="${esc(p.launchMonth || "")}"></div><div class="field"><label>Regulärer Brutto-VK (€) *</label><input name="grossPrice" inputmode="decimal" required value="${esc(fmt(p.grossPrice))}"></div><div class="field"><label>USt</label><select name="vat">${selectOptions(
+      `<input type="hidden" name="id" value="${esc(p.id)}"><div class="field-grid"><div class="field"><label>Produktname *</label><input id="prod-name" name="name" required maxlength="120" value="${esc(p.name)}"></div><div class="field"><label>Warengruppe</label><input name="category" maxlength="80" value="${esc(p.category)}"></div><div class="field"><label>Portion / Einheit *</label><input name="unit" maxlength="80" required value="${esc(p.unit || "Portion")}" placeholder="z. B. 250 g"></div><div class="field"><label>Produktstart (JJJJ-MM, optional)</label><input name="launchMonth" maxlength="7" placeholder="2026-10" value="${esc(p.launchMonth || "")}"></div><div class="field"><label for="prod-cost-from">Kosten gültig ab</label><input id="prod-cost-from" name="costValidFrom" type="date" value="${esc(V4_TODAY())}"><small>Gilt für Verkäufe ab diesem Tag; frühere Monate behalten ihren Kostenstand.</small></div><div class="field"><label>Regulärer Brutto-VK (€) *</label><input name="grossPrice" inputmode="decimal" required value="${esc(fmt(p.grossPrice))}"></div><div class="field"><label>USt</label><select name="vat">${selectOptions(
         [
           [7, "7 %"],
           [19, "19 %"],
@@ -1619,12 +1690,26 @@
         )
         .join(
           "",
-        )}</div><p class="calc-note">DB I = Netto-VK − Zutaten − prozentualer Schwund; DB II = DB I − Verpackung − direkt variable Arbeit − Gebühren − Sonstiges. Reguläre Festgehälter gehören nicht in die variable Stückkosteneingabe. Absätze werden im Outlet-Modul gepflegt.</p>`,
+        )}</div><p class="calc-note">DB I = Netto-VK − Zutaten − prozentualer Schwund; DB II = DB I − Verpackung − direkt variable Arbeit − Gebühren − Sonstiges. Reguläre Festgehälter gehören nicht in die variable Stückkosteneingabe. Absätze werden im Outlet-Modul gepflegt.</p>${costHistoryTable(old)}`,
       "product-form",
     );
     setTimeout(() => document.querySelector("#prod-name")?.focus(), 0);
   }
 
+  function costHistoryTable(p) {
+    const h = p ? C.costHistoryOf(p) : [];
+    if (!h.length) return "";
+    return `<details class="cost-history"><summary>Kostenstände (${h.length})</summary><div class="table-scroll"><table class="data-table"><thead><tr><th>Gültig ab</th><th class="align-right">Zutaten netto</th><th>Quelle</th><th>Erfasst</th></tr></thead><tbody>${h
+      .slice()
+      .reverse()
+      .map(
+        (e) =>
+          `<tr><td>${e.validFrom ? esc(v6DateDE(e.validFrom)) : "ohne Datum"}</td><td class="align-right">${euro(e.costNet)}</td><td>${esc(e.source || "")}</td><td>${e.recordedAt ? esc(v6DateDE(e.recordedAt.slice(0, 10))) : "–"}</td></tr>`,
+      )
+      .join(
+        "",
+      )}</tbody></table></div><p class="calc-note">„Ohne Datum“ ist der Stand vor Einführung der Kostenstände. Monate davor werden damit als Ersatzbasis bewertet und so gekennzeichnet.</p></details>`;
+  }
   function markEdited() {
     if (S.mode === "demo") S.mode = "edited-demo";
   }
@@ -1636,7 +1721,9 @@
       unit = String(f.get("unit") || "").trim();
     const grossPrice = C.parseNumberDE(f.get("grossPrice")),
       vat = C.parseNumberDE(f.get("vat")),
-      launchMonth = String(f.get("launchMonth") || "").trim();
+      launchMonth = String(f.get("launchMonth") || "").trim(),
+      costValidFrom = String(f.get("costValidFrom") || "").trim();
+    if (costValidFrom && !V5.validDate(costValidFrom)) return toast("„Kosten gültig ab“ ist kein gültiges Datum.", "error");
     const keys = ["ingredientsNet", "wastePct", "packagingNet", "laborNet", "feesNet", "otherNet"];
     const d = {};
     for (const key of keys) d[key] = C.parseNumberDE(f.get(key));
@@ -1666,6 +1753,7 @@
       costNet: C.costBreakdown({ costDetail: d }).goodsNet,
       vat,
     };
+    C.recordCost(p, { validFrom: costValidFrom || undefined, source: prev ? "Kosten bearbeitet" : "Artikel angelegt" });
     if (prev) {
       S.items[S.items.findIndex((x) => x.id === id)] = p;
     } else S.items.push(p);
@@ -1734,31 +1822,71 @@
     try {
       const parsed = C.parseCSV(await file.text());
       if (!parsed.items.length) return toast("Keine gültigen Artikel gefunden.", "error");
-      const how = document.querySelector("#import-mode")?.value || "replace";
-      if (parsed.errors.length) {
-        const preview = parsed.errors.slice(0, 5).join("\n");
-        if (
-          !confirm(
-            `${parsed.items.length} gültige Artikel und ${parsed.errors.length} fehlerhafte Zeilen. Fehler: \n${preview}\n\nNur die gültigen Artikel importieren?`,
-          )
-        )
-          return;
-      }
-      if (how === "replace" && !confirm(`${parsed.items.length} Artikel importieren und den bisherigen Bestand ersetzen?`)) return;
-      S.items =
-        how === "append"
-          ? [...S.items, ...parsed.items.map((x) => ({ ...x, unit: "Portion" }))]
-          : parsed.items.map((x) => ({ ...x, unit: "Portion" }));
-      S.sales = how === "append" ? [...S.sales, ...legacySales(parsed.items)] : legacySales(parsed.items);
-      if (how === "replace") {
-        S.market = [];
-        S.recipes = [];
-        S.dailySales = [];
-      }
-      S.mode = how === "append" && S.mode !== "own" ? "edited-demo" : "own";
-      persist();
-      render();
-      toast(`${parsed.items.length} Artikel importiert. ${parsed.errors.length} Zeilen übersprungen.`);
+      const text = await file.text();
+      const norm = (x) =>
+        String(x.name || "")
+          .trim()
+          .toLowerCase();
+      const incoming = parsed.items.map((x) => ({ ...x, unit: "Portion" }));
+      const dated = (id) => S.sales.some((x) => x.productId === id && x.month !== "undated");
+      // Quantities in the article file become sales lines without month, but only for articles without monthly
+      // sales: otherwise the same sales would count twice.
+      const legacyFor = (items) => legacySales(items.filter((x) => !dated(x.id)));
+      importDialog({
+        title: "Artikel importieren",
+        kind: "items",
+        fileName: file.name,
+        hash: C.fingerprint(text),
+        valid: incoming.length,
+        errors: parsed.errors,
+        keyLabel: "gleicher Artikelname",
+        modes: {
+          add: ["Ergänzen", "Nur Artikel mit neuem Namen anlegen. Vorhandene Artikel bleiben unverändert."],
+          update: [
+            "Aktualisieren",
+            "Artikel mit gleichem Namen aktualisieren (Preis, Kosten, USt, Warengruppe), neue anlegen. Verkäufe, Rezepte und Bestände bleiben verknüpft.",
+          ],
+          replace: [
+            "Ersetzen",
+            "Alle Artikel ersetzen. Rezepte, Tagesabsätze und Marktdaten werden dabei gelöscht, weil sie sich auf die alten Artikel beziehen.",
+          ],
+        },
+        plan: (mode) => C.planImport(S.items, incoming, { keyOf: norm, periodOf: () => "alle", mode }),
+        apply: (p) => {
+          if (p.mode === "replace") {
+            S.items = incoming;
+            S.sales = legacySales(incoming);
+            S.market = [];
+            S.recipes = [];
+            S.dailySales = [];
+            S.mode = "own";
+            return;
+          }
+          const byName = new Map(S.items.map((x) => [norm(x), x]));
+          const created = [];
+          for (const row of incoming) {
+            const old = byName.get(norm(row));
+            if (!old) {
+              S.items.push(row);
+              created.push(row);
+            } else if (p.mode === "update") {
+              Object.assign(old, {
+                category: row.category,
+                grossPrice: row.grossPrice,
+                vat: row.vat,
+                costNet: row.costNet,
+                quantity: row.quantity,
+              });
+              if (old.costDetail) old.costDetail = { ...old.costDetail, ingredientsNet: row.costNet };
+              C.recordCost(old, { source: "Artikelimport" });
+              if (!dated(old.id))
+                S.sales = [...S.sales.filter((x) => !(x.productId === old.id && x.month === "undated")), ...legacySales([old])];
+            }
+          }
+          S.sales = [...S.sales, ...legacyFor(created)];
+          if (S.mode !== "own") S.mode = "edited-demo";
+        },
+      });
     } catch (e) {
       toast("CSV-Import fehlgeschlagen: " + e.message, "error");
     }
@@ -2412,7 +2540,7 @@
       ) +
       demoNotice() +
       v4NavPills("recipes") +
-      `<div class="v4-grid3">${v4TopCard("Rohwaren", number(S.ingredients.length), "Packungen und Einkaufspreise", "layers")}${v4TopCard("Hinterlegte Rezepturen", number(S.recipes.length), "Mit Zutatenverknüpfung", "calculator")}${v4TopCard("Kalkulierbare Rezepte", `${complete}/${maps.length}`, "Vollständige Eingaben", "check")}</div><div class="v4-two"><section class="panel">${panelHeader("Rezepturen", "Je Portion kalkuliert · netter Rohwareneinsatz", `<button class="btn btn-small" data-v4="sync-recipe-costs">Kosten in Produktstamm übernehmen</button>`)}${maps.length ? `<div class="v4-list">${maps.map(({ p, r, calc }) => `<button class="v4-list-row" data-v4="edit-recipe" data-id="${esc(p.id)}"><span><strong>${esc(p.name)}</strong><small>${(r.lines || []).length} Komponenten · Rezept für ${v4Num(r.yieldPortions)} Portion(en)</small></span><span class="v4-amount">${calc.valid ? euro(calc.costPerPortionNet) : "Prüfen"} <span class="v4-link">Bearbeiten →</span></span></button>`).join("")}</div>` : v4TableEmpty("Keine Rezepte", "Lege eine Rezeptur zu einem bereits erfassten Artikel an.")}<div class="v4-import-strip"><span>${I("upload")} Rezeptdaten aus CSV übernehmen</span><button class="btn btn-small" data-v4="pick-recipes">Import</button><input type="file" id="v4-recipes-file" accept=".csv,.txt" hidden></div></section><section class="panel">${panelHeader("Rohwarenstamm", "Einkaufsgebinde und Netto-EK")}${S.ingredients.length ? `<div class="v4-list v4-scroll">${S.ingredients.map((x) => `<button class="v4-list-row" data-v4="edit-ingredient" data-id="${esc(x.id)}"><span><strong>${esc(x.name)}</strong><small>${esc(x.category || "Sonstige")} · ${v4Qty(x.packQty, x.packUnit)} je Gebinde · Schwund ${v4Num(x.wastePct || 0)} %</small></span><span class="v4-amount">${euro(x.packCostNet)} <span class="v4-link">Bearbeiten →</span></span></button>`).join("")}</div>` : v4TableEmpty("Keine Rohwaren", "Rohwaren zuerst erfassen, dann Rezepte zuordnen.")}</section></div><div class="notice">${I("info")} <span><strong>Kalkulation:</strong> Rezeptmengen werden in Basiseinheiten umgerechnet. Gebindekosten und Schwund ergeben den Nettoeinsatz je Portion. Kosten werden erst nach manueller Freigabe in bestehende DB-Kalkulationen übernommen.</span></div>`
+      `<div class="v4-grid3">${v4TopCard("Rohwaren", number(S.ingredients.length), "Packungen und Einkaufspreise", "layers")}${v4TopCard("Hinterlegte Rezepturen", number(S.recipes.length), "Mit Zutatenverknüpfung", "calculator")}${v4TopCard("Kalkulierbare Rezepte", `${complete}/${maps.length}`, "Vollständige Eingaben", "check")}</div><div class="v4-two"><section class="panel">${panelHeader("Rezepturen", "Je Portion kalkuliert · netter Rohwareneinsatz", `<button class="btn btn-small" data-v4="sync-recipe-costs">Kosten in Produktstamm übernehmen</button>`)}${maps.length ? `<div class="v4-list">${maps.map(({ p, r, calc }) => `<button class="v4-list-row" data-v4="edit-recipe" data-id="${esc(p.id)}"><span><strong>${esc(p.name)}</strong><small>${(r.lines || []).length} Komponenten · Rezept für ${v4Num(r.yieldPortions)} Portion(en)</small>${v4RecipeVsProduct(p, calc)}</span><span class="v4-amount">${calc.valid ? euro(calc.costPerPortionNet) : "Prüfen"} <span class="v4-link">Bearbeiten →</span></span></button>`).join("")}</div>` : v4TableEmpty("Keine Rezepte", "Lege eine Rezeptur zu einem bereits erfassten Artikel an.")}<div class="v4-import-strip"><span>${I("upload")} Rezeptdaten aus CSV übernehmen</span><button class="btn btn-small" data-v4="pick-recipes">Import</button><input type="file" id="v4-recipes-file" accept=".csv,.txt" hidden></div></section><section class="panel">${panelHeader("Rohwarenstamm", "Einkaufsgebinde und Netto-EK")}${S.ingredients.length ? `<div class="v4-list v4-scroll">${S.ingredients.map((x) => `<button class="v4-list-row" data-v4="edit-ingredient" data-id="${esc(x.id)}"><span><strong>${esc(x.name)}</strong><small>${esc(x.category || "Sonstige")} · ${v4Qty(x.packQty, x.packUnit)} je Gebinde · Schwund ${v4Num(x.wastePct || 0)} %</small></span><span class="v4-amount">${euro(x.packCostNet)} <span class="v4-link">Bearbeiten →</span></span></button>`).join("")}</div>` : v4TableEmpty("Keine Rohwaren", "Rohwaren zuerst erfassen, dann Rezepte zuordnen.")}</section></div><div class="notice">${I("info")} <span><strong>Kalkulation:</strong> Rezeptmengen werden in Basiseinheiten umgerechnet. Gebindekosten und Schwund ergeben den Nettoeinsatz je Portion. Kosten werden erst nach manueller Freigabe in bestehende DB-Kalkulationen übernommen.</span></div>`
     );
   }
   function v4InventoryView() {
@@ -2682,10 +2810,9 @@
           date > V4_TODAY() ||
           !stockOf(productId) ||
           !S.outlets.some((x) => x.id === outletId) ||
-          !Number.isInteger(quantity) ||
-          quantity < 0
+          !Number.isInteger(quantity)
         )
-          throw Error("Tagesverkauf ungültig");
+          throw Error("Tagesverkauf ungültig: Menge als ganze Zahl (negativ = Korrektur/Retoure)");
         S.dailySales.push({ id: uid(), date, productId, outletId, quantity });
         markEdited();
         persist();
@@ -2860,26 +2987,29 @@
           outlet.length !== 1 ||
           !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
           date > V4_TODAY() ||
-          !Number.isInteger(quantity) ||
-          quantity < 0
+          !Number.isInteger(quantity)
         ) {
-          errors.push(i + 2);
+          errors.push(`Zeile ${i + 2}: Produkt/Outlet nicht eindeutig, Datum ungültig oder in der Zukunft, Menge keine ganze Zahl`);
           continue;
         }
         rows.push({ id: uid(), date, productId: product[0].id, outletId: outlet[0].id, quantity });
       }
       if (!rows.length) throw Error("Keine gültigen Tagesverkaufszeilen.");
-      if (
-        !confirm(
-          `${rows.length} Tagesverkaufszeilen hinzufügen, ${errors.length} überspringen? Achtung: identische Zeilen werden sonst doppelt gezählt.`,
-        )
-      )
-        return;
-      S.dailySales.push(...rows);
-      markEdited();
-      persist();
-      render();
-      toast(`${rows.length} Tagesverkäufe importiert.`);
+      const text = await file.text();
+      const keyOf = (r) => `${r.productId}|${r.outletId}|${r.date}`;
+      importDialog({
+        title: "Tagesverkäufe importieren",
+        kind: "daily",
+        fileName: file.name,
+        hash: C.fingerprint(text),
+        valid: rows.length,
+        errors,
+        keyLabel: "Artikel, Outlet und Tag",
+        plan: (mode) => C.planImport(S.dailySales, rows, { keyOf, periodOf: (r) => r.date, mode }),
+        apply: (p) => {
+          S.dailySales = p.result;
+        },
+      });
     } catch (e) {
       toast("Tagesimport: " + e.message, "error");
     }
@@ -2924,6 +3054,18 @@
     render();
     toast(`${added} Artikel neu, ${updated} aktualisiert, ${skipped} Dubletten übersprungen.`);
   }
+  // Recipe cost against the cost in the article, with the date the recipe cost was last adopted.
+  function v4RecipeVsProduct(p, calc) {
+    if (!calc.valid) return `<small class="v4-cost-diff warn">Rezept unvollständig: keine Kosten berechenbar</small>`;
+    const last = C.costHistoryOf(p)
+      .filter((e) => e.source === "Rezeptkosten übernommen")
+      .at(-1);
+    const diff = calc.costPerPortionNet - Number(p.costNet || 0);
+    const when = last ? `zuletzt übernommen am ${v6DateDE(last.validFrom)}` : "noch nie übernommen";
+    return Math.abs(diff) < 0.005
+      ? `<small class="v4-cost-diff">Artikelkosten entsprechen dem Rezept · ${when}</small>`
+      : `<small class="v4-cost-diff warn">Artikel: ${euro(p.costNet)} · Rezept: ${euro(calc.costPerPortionNet)} (${diff > 0 ? "+" : ""}${euro(diff)}) · ${when}</small>`;
+  }
   function v4SyncCosts() {
     const updates = [];
     for (const r of S.recipes) {
@@ -2943,6 +3085,7 @@
     for (const row of updates) {
       row.p.costDetail = { ...row.d, ingredientsNet: row.cost, wastePct: 0 };
       row.p.costNet = row.cost;
+      C.recordCost(row.p, { source: "Rezeptkosten übernommen" });
     }
     markEdited();
     persist();
@@ -3961,8 +4104,12 @@
   function ensureV06() {
     S.v06Pinned = Array.isArray(S.v06Pinned) ? S.v06Pinned.slice(0, 12) : [];
     S.version = 6;
+    // Cost states with a date (website revision): existing costs become one undated state, see C.migrateCostHistory.
+    C.migrateCostHistory(S.items);
   }
   ensureV06();
+  // "history": each month with its cost state; "current": today's costs as a named scenario.
+  let V6_COSTBASIS = "history";
   let V6_MONTH = "all",
     V6_OUTLET = "all",
     V6_CATEGORY = "all",
@@ -3976,7 +4123,7 @@
   const v6Metric = { revenue: "Netto-Umsatz", db2: "DB II", quantity: "Absatz", goods: "Wareneinsatz" };
   const v6Colors = ["#19a78b", "#173f49", "#d3a761", "#76a4b5", "#82c4b1", "#bc7f70", "#93a0ab", "#3f797d"];
   function v6Report() {
-    return V6.performance(S, { month: V6_MONTH, outlet: V6_OUTLET, category: V6_CATEGORY });
+    return V6.performance(S, { month: V6_MONTH, outlet: V6_OUTLET, category: V6_CATEGORY, costBasis: V6_COSTBASIS });
   }
   // One definition of what the report filters mean, used by figures, charts, tables and exports alike.
   const v6DateDE = (d) => d.split("-").reverse().join(".");
@@ -4007,6 +4154,16 @@
       "Keine Verkaufszeilen in dieser Auswahl",
       `Für ${v6ScopeLabel()} sind keine Verkäufe erfasst. Andere Filter wählen oder Verkäufe importieren.`,
     );
+  // Says which cost values the figures use, and how many sales had no cost state of their own month.
+  function v6CostNote() {
+    if (V6_COSTBASIS === "current")
+      return `<p class="v6-cost-note">Szenario: alle Verkäufe mit den heutigen Produktkosten bewertet, nicht mit den Kosten des jeweiligen Monats.</p>`;
+    const fb = v6Report().costFallback || {},
+      n = (fb.undated || 0) + (fb["later-state"] || 0) + (fb["no-history"] || 0);
+    return n
+      ? `<p class="v6-cost-note" role="note">Kosten je Verkaufsmonat. Für ${number(n)} Verkaufszeilen gibt es keinen Kostenstand aus ihrem Monat; bewertet mit dem ältesten bekannten Stand (Ersatzbasis). Neue Kostenstände entstehen beim Bearbeiten der Artikelkosten.</p>`
+      : `<p class="v6-cost-note">Kosten je Verkaufsmonat aus den Kostenständen der Artikel.</p>`;
+  }
   function v6ReportFunnelScope() {
     const m = V6_MONTH;
     return {
@@ -4022,8 +4179,8 @@
   }
   // Last month with sales compared with the calendar month before it, for the same outlet and product group.
   function v6MonthCompare() {
-    const months = V6.performance(S, { month: "all", outlet: V6_OUTLET, category: V6_CATEGORY }).months.filter((x) =>
-      /^\d{4}-\d{2}$/.test(x.id),
+    const months = V6.performance(S, { month: "all", outlet: V6_OUTLET, category: V6_CATEGORY, costBasis: V6_COSTBASIS }).months.filter(
+      (x) => /^\d{4}-\d{2}$/.test(x.id),
     );
     const target = V6_MONTH === "all" ? months.at(-1)?.id : V6_MONTH;
     if (!target) return null;
@@ -4095,7 +4252,17 @@
     const off = (k) => (applies.includes(k) ? "" : ' disabled aria-describedby="v6-filter-note"');
     const months = [...new Set((S.sales || []).map((x) => x.month).filter((x) => /^\d{4}-\d{2}$/.test(x)))].sort().reverse();
     const cats = [...new Set(S.items.map((p) => p.category))].sort();
-    return `<div class="v6-filter-ribbon"><div class="v6-filter-info">${I("settings")} <span>Berichtsfilter</span></div><label>Zeitraum<select id="v6-filter-month" class="select"${off("month")}>${selectOptions([["all", "Alle Monate"], ...months.map((x) => [x, periodName(x)])], V6_MONTH)}</select></label><label>Outlet<select id="v6-filter-outlet" class="select"${off("outlet")}>${selectOptions([["all", "Alle Outlets"], ...S.outlets.map((o) => [o.id, o.name])], V6_OUTLET)}</select></label><label>Warengruppe<select id="v6-filter-category" class="select"${off("category")}>${selectOptions([["all", "Alle Warengruppen"], ...cats.map((x) => [x, x])], V6_CATEGORY)}</select></label><button class="v6-text-button" data-v6="reset">Zurücksetzen</button>${note ? `<p class="v6-filter-note" id="v6-filter-note">${esc(note)}</p>` : ""}</div>`;
+    return `<div class="v6-filter-ribbon"><div class="v6-filter-info">${I("settings")} <span>Berichtsfilter</span></div><label>Zeitraum<select id="v6-filter-month" class="select"${off("month")}>${selectOptions([["all", "Alle Monate"], ...months.map((x) => [x, periodName(x)])], V6_MONTH)}</select></label><label>Outlet<select id="v6-filter-outlet" class="select"${off("outlet")}>${selectOptions([["all", "Alle Outlets"], ...S.outlets.map((o) => [o.id, o.name])], V6_OUTLET)}</select></label><label>Warengruppe<select id="v6-filter-category" class="select"${off("category")}>${selectOptions([["all", "Alle Warengruppen"], ...cats.map((x) => [x, x])], V6_CATEGORY)}</select></label>${
+      applies.includes("month")
+        ? `<label>Kostenbasis<select id="v6-filter-costbasis" class="select">${selectOptions(
+            [
+              ["history", "Kostenstand im Verkaufsmonat"],
+              ["current", "Szenario: heutige Kosten"],
+            ],
+            V6_COSTBASIS,
+          )}</select></label>`
+        : ""
+    }<button class="v6-text-button" data-v6="reset">Zurücksetzen</button>${note ? `<p class="v6-filter-note" id="v6-filter-note">${esc(note)}</p>` : ""}${applies.includes("month") ? v6CostNote() : ""}</div>`;
   }
   function v6ReportHeader(title, desc) {
     return `<div class="v6-heading"><div><div class="v6-overline">GLB INSIGHTS / REPORTING</div><h2>${esc(title)}</h2><p>${esc(desc)}</p></div><div class="v6-report-actions"><button class="btn" data-v6="save-view">${I("plus")} Ansicht speichern</button><button class="btn" data-v6="csv">${I("download")} CSV-Report</button><button class="btn btn-primary" data-v6="print">${I("file")} Drucken / PDF</button></div></div>`;
@@ -4167,7 +4334,7 @@
   }
   function v6Cost() {
     // Same month as the cost form above, all outlets and groups, so both blocks describe the same period.
-    const r = V6.performance(S, { month: COST_MONTH, outlet: "all", category: "all" }),
+    const r = V6.performance(S, { month: COST_MONTH, outlet: "all", category: "all", costBasis: V6_COSTBASIS }),
       existing = Object.entries(S.monthlyCosts || {}).filter(([month]) => /^\d{4}-\d{2}$/.test(month));
     const rows = existing
       .map(([id, x]) => ({
@@ -4521,7 +4688,7 @@
       ];
     } else {
       rows = r.products;
-      name = "Artikelperformance_" + v6ScopeLabel();
+      name = "Artikelperformance_" + v6ScopeLabel() + (V6_COSTBASIS === "current" ? "_heutige_Kosten" : "_Kosten_je_Monat");
       cols = [
         { label: "Artikel", value: "name" },
         { label: "Absatz", value: "quantity" },
@@ -4550,6 +4717,7 @@
         break;
       case "reset":
         V6_MONTH = V6_OUTLET = V6_CATEGORY = "all";
+        V6_COSTBASIS = "history";
         render();
         break;
       case "save-view": {
@@ -4566,6 +4734,7 @@
           outlet: V6_OUTLET,
           category: V6_CATEGORY,
           metric: V6_METRIC,
+          costBasis: V6_COSTBASIS,
         });
         persist();
         render();
@@ -4580,6 +4749,7 @@
         V6_OUTLET = p.outlet;
         V6_CATEGORY = p.category;
         V6_METRIC = p.metric;
+        V6_COSTBASIS = p.costBasis === "current" ? "current" : "history";
         render();
         break;
       }
@@ -4631,6 +4801,10 @@
         break;
       case "v6-filter-category":
         V6_CATEGORY = e.target.value;
+        render();
+        break;
+      case "v6-filter-costbasis":
+        V6_COSTBASIS = e.target.value === "current" ? "current" : "history";
         render();
         break;
       case "v6-table-sort":

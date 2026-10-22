@@ -251,7 +251,7 @@
       if (!Number.isFinite(d) || d > anchorValue || d <= anchorValue - 28 * 86400000) continue;
       const age = Math.round((anchorValue - d) / 86400000),
         qty = N(sale.quantity);
-      if (!Number.isFinite(qty) || qty < 0) continue;
+      if (!Number.isFinite(qty)) continue; // negative lines are corrections and reduce the product's sum
       uniqueDates.add(sale.date);
       dayTotals.set(sale.date, (dayTotals.get(sale.date) || 0) + qty);
       const v = byProduct.get(sale.productId) || { w7: 0, w28: 0 };
@@ -268,6 +268,8 @@
       unitsTotal = 0,
       unitsWithRecipe = 0;
     for (const [productId, x] of byProduct) {
+      x.w7 = Math.max(0, x.w7);
+      x.w28 = Math.max(0, x.w28);
       const rec = recipeByProduct.get(productId);
       unitsTotal += x.w28;
       if (rec) unitsWithRecipe += x.w28;

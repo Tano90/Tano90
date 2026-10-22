@@ -639,3 +639,16 @@
   font-size: 11px;
   padding: 6px 4px;
 }
+
+/* Website revision: recipe cost against article cost */
+.v4-cost-diff {
+  display: block;
+  margin-top: 3px;
+  color: #12685d;
+}
+.v4-cost-diff.warn {
+  color: #9a5a12;
+}
+.v4-cost-diff.warn::before {
+  content: "⚠ ";
+}

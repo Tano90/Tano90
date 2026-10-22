@@ -1658,3 +1658,92 @@ main {
     font-size: 10px;
   }
 }
+
+/* Website revision: import preview */
+.import-file {
+  margin: 0 0 10px;
+  font-weight: 700;
+  color: #12353b;
+  overflow-wrap: anywhere;
+}
+.import-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+.import-counts > div {
+  border: 1px solid #e1e8ea;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.import-counts b {
+  display: block;
+  font-size: 20px;
+  color: #12353b;
+}
+.import-counts span {
+  font-size: 12px;
+  color: #5b6f74;
+}
+.import-errors {
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+.import-errors summary {
+  cursor: pointer;
+  color: #9a5a12;
+  font-weight: 700;
+}
+.import-modes {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.import-modes legend {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.import-mode {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid #e1e8ea;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.import-mode:has(input:checked) {
+  border-color: #188979;
+  background: #f2faf7;
+}
+.import-mode input {
+  margin-top: 3px;
+}
+.import-mode b {
+  display: block;
+}
+.import-mode small {
+  display: block;
+  color: #4f6d72;
+  line-height: 1.4;
+}
+.import-mode em {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  color: #12685d;
+}
+.notice.warn {
+  border-color: #e6c48a;
+  background: #fff8ec;
+}
+@media (max-width: 520px) {
+  .import-counts {
+    grid-template-columns: 1fr;
+  }
+}

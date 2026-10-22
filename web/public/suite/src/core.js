@@ -327,7 +327,8 @@
   }
   function saleMetrics(sale, product) {
     const cost = costBreakdown(product);
-    const quantity = Math.max(0, finite(sale.quantity));
+    // Negative quantities are corrections or returns and reduce the totals (they used to be set to 0).
+    const quantity = finite(sale.quantity);
     const vat = Number(product.vat);
     const grossPrice = Math.max(0, finite(sale.grossPrice));
     const netPrice = grossPrice / (1 + vat / 100);
@@ -376,8 +377,9 @@
     const groups = new Map();
     for (const x of sales) {
       if (String(x.productId) !== String(productId) || !/^\d{4}-(0[1-9]|1[0-2])$/.test(String(x.month))) continue;
-      groups.set(x.month, (groups.get(x.month) || 0) + Math.max(0, finite(x.quantity)));
+      groups.set(x.month, (groups.get(x.month) || 0) + finite(x.quantity));
     }
+    for (const [m, q] of groups) groups.set(m, Math.max(0, q)); // a month's net quantity, corrections included
     const months = [...groups.keys()].sort();
     if (months.length && /^\d{4}-(0[1-9]|1[0-2])$/.test(launchMonth)) {
       const [y, m] = launchMonth.split("-").map(Number),
@@ -563,7 +565,132 @@
     const a = Math.sin(dlat / 2) ** 2 + Math.cos(lat1 * toR) * Math.cos(lat2 * toR) * Math.sin(dlon / 2) ** 2;
     return 6371 * 2 * Math.asin(Math.min(1, Math.sqrt(a)));
   }
+  // Cost states with a valid-from date, so a past month is valued with the cost of that month.
+  // An entry without date (validFrom null) is the migrated old value: used only as a labelled substitute.
+  const COST_FIELDS = ["costNet", "costDetail"];
+  function costHistoryOf(product) {
+    const h = Array.isArray(product?.costHistory) ? product.costHistory.filter((e) => e && Number.isFinite(Number(e.costNet))) : [];
+    return h.slice().sort((a, b) => String(a.validFrom || "").localeCompare(String(b.validFrom || "")));
+  }
+  /** The cost state valid in a month ("YYYY-MM"): the last dated entry from before the month's end. */
+  function costAt(product, month) {
+    const history = costHistoryOf(product);
+    if (!history.length || !/^\d{4}-\d{2}$/.test(String(month || "")))
+      return {
+        costNet: product?.costNet,
+        costDetail: product?.costDetail,
+        source: "current",
+        fallback: !history.length ? "no-history" : "no-month",
+      };
+    const end = month + "-31";
+    const dated = history.filter((e) => e.validFrom && e.validFrom <= end);
+    if (dated.length) {
+      const e = dated.at(-1);
+      return { costNet: Number(e.costNet), costDetail: e.costDetail, source: "history", validFrom: e.validFrom, fallback: null };
+    }
+    // Nothing dated before this month: the undated migrated value, else the oldest dated one. Labelled, not invented.
+    const e = history.find((x) => !x.validFrom) || history[0];
+    return {
+      costNet: Number(e.costNet),
+      costDetail: e.costDetail,
+      source: "history",
+      validFrom: e.validFrom || null,
+      fallback: e.validFrom ? "later-state" : "undated",
+    };
+  }
+  /** Appends a cost state when the product's current cost differs from its last recorded one. */
+  function recordCost(product, { validFrom, source = "Stammdaten", recordedAt = new Date().toISOString() } = {}) {
+    if (!product) return false;
+    const history = Array.isArray(product.costHistory) ? product.costHistory : (product.costHistory = []);
+    const last = costHistoryOf(product)
+      .filter((e) => !validFrom || !e.validFrom || e.validFrom <= validFrom)
+      .at(-1);
+    const same =
+      last &&
+      Number(last.costNet) === Number(product.costNet) &&
+      JSON.stringify(last.costDetail || null) === JSON.stringify(product.costDetail || null);
+    if (same) return false;
+    const entry = { validFrom: validFrom || recordedAt.slice(0, 10), costNet: Number(product.costNet) || 0, source, recordedAt };
+    if (product.costDetail) entry.costDetail = JSON.parse(JSON.stringify(product.costDetail));
+    const sameDay = history.findIndex((e) => e.validFrom === entry.validFrom);
+    if (sameDay >= 0) history[sameDay] = entry;
+    else history.push(entry);
+    return true;
+  }
+  /** Migration for data without history: the existing cost becomes one undated state. Idempotent. */
+  function migrateCostHistory(items) {
+    let changed = 0;
+    for (const p of items || []) {
+      if (Array.isArray(p.costHistory) && p.costHistory.length) continue;
+      p.costHistory = [
+        {
+          validFrom: null,
+          costNet: Number(p.costNet) || 0,
+          ...(p.costDetail ? { costDetail: JSON.parse(JSON.stringify(p.costDetail)) } : {}),
+          source: "Bestand ohne Datum (Migration)",
+          recordedAt: null,
+        },
+      ];
+      changed++;
+    }
+    return changed;
+  }
+  // Imports: a fingerprint of the file (same content = same file, whatever its name) and a plan per mode.
+  function fingerprint(text) {
+    const t = String(text ?? "")
+      .replace(/^\uFEFF/, "")
+      .replace(/\r\n?/g, "\n")
+      .trim();
+    let h = 0x811c9dc5;
+    for (let i = 0; i < t.length; i++) {
+      h ^= t.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return h.toString(16).padStart(8, "0") + "-" + t.length;
+  }
+  /**
+   * What an import does to existing lines, grouped by a key (e.g. product|outlet|month). Lines of the same key in
+   * the file belong together (different prices in one month). Modes:
+   *  add     – only keys not present yet; present keys are skipped
+   *  update  – present keys are replaced by the file's lines, new keys added
+   *  replace – everything in the periods the file covers is removed, then all lines added
+   */
+  function planImport(existing, incoming, { keyOf, periodOf, mode = "add" }) {
+    const have = new Set(existing.map(keyOf));
+    const fileKeys = new Set(incoming.map(keyOf));
+    const periods = new Set(incoming.map(periodOf));
+    const present = incoming.filter((r) => have.has(keyOf(r)));
+    const fresh = incoming.filter((r) => !have.has(keyOf(r)));
+    let keep, add;
+    if (mode === "replace") {
+      keep = existing.filter((r) => !periods.has(periodOf(r)));
+      add = incoming;
+    } else if (mode === "update") {
+      keep = existing.filter((r) => !fileKeys.has(keyOf(r)));
+      add = incoming;
+    } else {
+      keep = existing;
+      add = fresh;
+    }
+    return {
+      mode,
+      present: present.length,
+      fresh: fresh.length,
+      removed: existing.length - keep.length,
+      added: add.length,
+      skipped: incoming.length - add.length,
+      periods: [...periods].sort(),
+      result: [...keep, ...add],
+    };
+  }
   return {
+    fingerprint,
+    planImport,
+    costHistoryOf,
+    costAt,
+    recordCost,
+    migrateCostHistory,
+    COST_FIELDS,
     round,
     median,
     metrics,
