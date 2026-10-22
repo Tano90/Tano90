@@ -1,40 +1,237 @@
-/* Local cinematic layer and interactive illustrative part. */
-const $=s=>document.querySelector(s);
-const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-const videos=[...document.querySelectorAll('video')];
-const videoButtons=[...document.querySelectorAll('[data-video]')];
-function updateVideoButton(video){const b=videoButtons.find(b=>b.dataset.video===video.id);if(!b)return;b.textContent=video.paused?'Film starten ▷':'Film pausieren Ⅱ';b.setAttribute('aria-label',video.paused?'Video starten':'Video pausieren');b.setAttribute('aria-pressed',String(!video.paused));}
-videoButtons.forEach(button=>button.addEventListener('click',async()=>{const video=document.getElementById(button.dataset.video);video.dataset.manual='true';if(video.paused){try{await video.play()}catch{button.textContent='Video nicht verfügbar'}}else video.pause();updateVideoButton(video)}));
-const videoIO=new IntersectionObserver(entries=>entries.forEach(e=>{const v=e.target;if(e.isIntersecting&&!reduced.matches&&v.dataset.manual!=='true'){v.play().catch(()=>{});}else if(!e.isIntersecting)v.pause();}),{threshold:.12});
-videos.forEach(v=>{videoIO.observe(v);v.addEventListener('play',()=>updateVideoButton(v));v.addEventListener('pause',()=>updateVideoButton(v));v.addEventListener('error',()=>{const b=videoButtons.find(b=>b.dataset.video===v.id);if(b){b.textContent='Standbild anzeigen';b.disabled=true;}});});
-reduced.addEventListener('change',()=>{if(reduced.matches)videos.forEach(v=>v.pause());});
-if(!reduced.matches){document.documentElement.classList.add('motion-enabled');const io=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}}),{threshold:.07});document.querySelectorAll('.manifesto,.lab-copy,.section-head,.measure-notes').forEach(n=>{n.classList.add('reveal');io.observe(n)});}
-const board=$('[data-board]');if(board){const rows=[...board.querySelectorAll('tr[data-pos]')];rows.forEach(row=>{const activate=()=>{const pos=row.dataset.pos;board.classList.add('has-focus');board.querySelectorAll('[data-pos]').forEach(n=>{n.classList.toggle('is-active',n.dataset.pos===pos);n.classList.toggle('selected',n===row)});};row.addEventListener('click',activate);row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate();}});});}
-async function setup3d(){const canvas=$('#part-canvas'),stage=$('#model-stage');if(!canvas)return;
-try{const probe=document.createElement('canvas');if(!probe.getContext('webgl2')){const {software3d}=await import('./software3d.js');software3d();return;}const THREE=await import('../vendor/three.module.js');const {OrbitControls}=await import('../vendor/OrbitControls.js');
-const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.4;
-const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(35,1,.1,100);camera.position.set(5.9,4.6,7.8);
-const controls=new OrbitControls(camera,canvas);controls.enableDamping=true;controls.dampingFactor=.08;controls.enablePan=false;controls.minDistance=5;controls.maxDistance=16;controls.autoRotateSpeed=.8;controls.enableZoom=true;controls.target.set(0,.1,0);controls.minPolarAngle=.25;controls.maxPolarAngle=Math.PI*.75;controls.update();
-scene.add(new THREE.HemisphereLight(0xfff3da,0x638475,3));const key=new THREE.DirectionalLight(0xffefd1,4.5);key.position.set(4,8,5);scene.add(key);const rim=new THREE.DirectionalLight(0xd9f5ff,4);rim.position.set(-5,3,-3);scene.add(rim);const fill=new THREE.DirectionalLight(0xffffff,1.8);fill.position.set(2,0,-5);scene.add(fill);
-const root=new THREE.Group();root.rotation.set(.1,0,-.15);scene.add(root);
-const plastic=new THREE.MeshStandardMaterial({color:0xc9bda6,roughness:.38,metalness:.04});const insertMat=new THREE.MeshStandardMaterial({color:0x4d5948,roughness:.48,metalness:.06});const metal=new THREE.MeshStandardMaterial({color:0xb9beb5,metalness:.85,roughness:.22});
-function roundedRect(w,h,r){const s=new THREE.Shape();s.moveTo(-w/2+r,-h/2);s.lineTo(w/2-r,-h/2);s.quadraticCurveTo(w/2,-h/2,w/2,-h/2+r);s.lineTo(w/2,h/2-r);s.quadraticCurveTo(w/2,h/2,w/2-r,h/2);s.lineTo(-w/2+r,h/2);s.quadraticCurveTo(-w/2,h/2,-w/2,h/2-r);s.lineTo(-w/2,-h/2+r);s.quadraticCurveTo(-w/2,-h/2,-w/2+r,-h/2);return s;}
-const shape=roundedRect(3.7,4.1,.35);const hole=roundedRect(2.42,2.8,.15);shape.holes.push(hole);for(const [x,y] of [[-1.48,-1.66],[1.48,1.66]]){const p=new THREE.Path();p.absarc(x,y,.12,0,Math.PI*2,true);shape.holes.push(p);}
-const frame=new THREE.Mesh(new THREE.ExtrudeGeometry(shape,{depth:.28,bevelEnabled:true,bevelSegments:5,steps:1,bevelSize:.065,bevelThickness:.065,curveSegments:24}),plastic);frame.position.z=-.14;root.add(frame);
-const insertShape=roundedRect(2.39,2.77,.14);const insert=new THREE.Mesh(new THREE.ExtrudeGeometry(insertShape,{depth:.13,bevelEnabled:true,bevelSegments:3,bevelSize:.025,bevelThickness:.025,curveSegments:20}),insertMat);insert.position.z=.03;root.add(insert);
-const ribs=new THREE.Group();for(let i=0;i<7;i++){const rib=new THREE.Mesh(new THREE.BoxGeometry(1.8,.025,.022),plastic);rib.position.set(0,-.6+i*.2,.2);ribs.add(rib);}root.add(ribs);
-const screws=[];for(const [x,y] of [[-1.48,-1.66],[1.48,1.66]]){const group=new THREE.Group();const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,.65,20),metal);shaft.rotation.x=Math.PI/2;group.add(shaft);const head=new THREE.Mesh(new THREE.CylinderGeometry(.15,.15,.08,32),metal);head.rotation.x=Math.PI/2;head.position.z=.34;group.add(head);for(const rot of [0,Math.PI/2]){const slot=new THREE.Mesh(new THREE.BoxGeometry(.19,.022,.008),new THREE.MeshStandardMaterial({color:0x455047,roughness:.4}));slot.position.z=.385;slot.rotation.z=rot;group.add(slot);}group.position.set(x,y,.22);screws.push(group);root.add(group);}
-const ring=new THREE.Mesh(new THREE.TorusGeometry(3.5,.006,8,100),new THREE.MeshBasicMaterial({color:0x71816b,transparent:true,opacity:.3}));ring.rotation.x=Math.PI/2;ring.position.y=-2.8;scene.add(ring);
-const ring2=ring.clone();ring2.scale.setScalar(.88);scene.add(ring2);
-function size(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}new ResizeObserver(size).observe(stage);size();
-let visible=false,animation=0,lastTime=0;function loop(time){animation=requestAnimationFrame(loop);if(!visible||document.hidden||time-lastTime<28)return;lastTime=time;controls.update();renderer.render(scene,camera);}new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;},{threshold:0}).observe(stage);animation=requestAnimationFrame(loop);
-const slider=$('#explode');function explode(value){const t=Number(value)/100;insert.position.z=.03+t*1.3;ribs.position.z=t*1.3;screws.forEach((g,i)=>g.position.z=.22+t*(2.2+i*.25));$('#explode-value').textContent=`${value} %`;stage.dataset.exploded=String(value);}
-slider.addEventListener('input',()=>explode(slider.value));
-const materials={sand:0xc9bda6,olive:0x68705a,graphite:0x353a37};document.querySelectorAll('[data-material]').forEach(b=>b.addEventListener('click',()=>{plastic.color.setHex(materials[b.dataset.material]);document.querySelectorAll('[data-material]').forEach(n=>{const active=n===b;n.classList.toggle('active',active);n.setAttribute('aria-pressed',String(active));});stage.dataset.material=b.dataset.material;}));
-const auto=$('#auto-rotate');auto.addEventListener('click',()=>{controls.autoRotate=!controls.autoRotate;auto.setAttribute('aria-pressed',String(controls.autoRotate));auto.textContent=controls.autoRotate?'Drehung pausieren Ⅱ':'Drehung starten ↻';});
-$('#wireframe').addEventListener('click',e=>{plastic.wireframe=!plastic.wireframe;insertMat.wireframe=plastic.wireframe;e.currentTarget.setAttribute('aria-pressed',String(plastic.wireframe));});
-$('#reset-model').addEventListener('click',()=>{camera.position.set(5.9,4.6,7.8);controls.target.set(0,.1,0);controls.autoRotate=false;auto.setAttribute('aria-pressed','false');auto.textContent='Drehung starten ↻';slider.value=0;explode(0);plastic.wireframe=false;insertMat.wireframe=false;$('#wireframe').setAttribute('aria-pressed','false');controls.update();});
-canvas.addEventListener('keydown',e=>{const v=camera.position.clone().sub(controls.target),sph=new THREE.Spherical().setFromVector3(v);if(e.key==='ArrowLeft')sph.theta-=.15;else if(e.key==='ArrowRight')sph.theta+=.15;else if(e.key==='ArrowUp')sph.phi=Math.max(.3,sph.phi-.12);else if(e.key==='ArrowDown')sph.phi=Math.min(Math.PI*.75,sph.phi+.12);else if(e.key==='+'||e.key==='=')sph.radius=Math.max(5,sph.radius-.5);else if(e.key==='-')sph.radius=Math.min(16,sph.radius+.5);else return;e.preventDefault();camera.position.copy(new THREE.Vector3().setFromSpherical(sph).add(controls.target));controls.update();});
-canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();cancelAnimationFrame(animation);canvas.hidden=true;$('#model-fallback').hidden=false;});stage.dataset.ready='true';
-}catch(e){try{const {software3d}=await import('./software3d.js');software3d();return;}catch{}canvas.hidden=true;$('#model-fallback').hidden=false;stage.dataset.ready='fallback';document.querySelectorAll('.model-actions button,.material,#explode,#wireframe').forEach(b=>b.disabled=true);console.warn('3D fallback:',e.message);}}
-setup3d();
+/* Camperteil: Filme, Kopfzeile, Einblendungen und die 3D-Werkbank.
+   Ergänzt app.js (Navigation, Formular); ändert den Anfrage-Ablauf nicht. */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const reducedQuery = matchMedia('(prefers-reduced-motion: reduce)');
+const coarse = matchMedia('(pointer: coarse)').matches;
+const tallQuery = matchMedia('(max-aspect-ratio: 4/5)');
+const root = document.documentElement;
+root.classList.add('xp');
+
+/* ---------- Filme ----------
+   Standbild zuerst. Der Film wird erst geladen, wenn sein Abschnitt in die Nähe kommt,
+   und nur automatisch abgespielt, wenn Bewegung erwünscht ist und keine Datensparoption aktiv ist. */
+const conn = navigator.connection || {};
+const sparsam = () => !!conn.saveData || /(^|-)2g$/.test(conn.effectiveType || '');
+const autoplayAllowed = () => !reducedQuery.matches && !sparsam();
+// WebM/VP9 ist kleiner und läuft auch in Browsern ohne H.264; MP4 bleibt für ältere Safari-Versionen
+const EXT = document.createElement('video').canPlayType('video/webm; codecs="vp9"') ? 'webm' : 'mp4';
+const SIZE = { webm: { 'hero-wide': '0,5', 'hero-tall': '0,2', 'journey-wide': '1,5', 'journey-tall': '0,6' }, mp4: { 'hero-wide': '0,8', 'hero-tall': '0,3', 'journey-wide': '1,8', 'journey-tall': '0,7' } }[EXT];
+
+const films = $$('.film-video').map((video) => {
+  const frame = video.closest('.film-frame');
+  const section = video.closest('section');
+  const button = $(`[data-video="${video.id}"]`);
+  const film = { video, frame, section, button, userPaused: false, failed: false, inView: false };
+  const variant = () => `${tallQuery.matches ? video.dataset.tall : video.dataset.wide}.${EXT}`;
+  const label = (text) => { if (button) $('.ft-label', button).textContent = text; };
+  film.render = () => {
+    if (!button) return;
+    if (film.failed) { label('Film nicht verfügbar, Standbild bleibt'); button.disabled = true; button.dataset.state = 'error'; return; }
+    const playing = !video.paused && !video.ended;
+    button.dataset.state = playing ? 'playing' : 'paused';
+    if (playing) label('Film anhalten');
+    else if (!video.currentSrc && sparsam()) { const k = variant().split('/').pop().split('.')[0]; label(`Film abspielen (${SIZE[k] || '?'} MB)`); }
+    else label('Film abspielen');
+  };
+  film.load = () => {
+    if (video.getAttribute('src') || film.failed) return;
+    video.src = variant();
+    video.load();
+  };
+  film.play = () => {
+    film.load();
+    const p = video.play();
+    if (p && p.catch) p.catch(() => { film.render(); }); // Autoplay gesperrt: Standbild bleibt, Knopf startet den Film
+  };
+  video.addEventListener('playing', () => { frame.classList.add('is-playing'); film.render(); });
+  video.addEventListener('play', film.render);
+  video.addEventListener('pause', film.render);
+  video.addEventListener('error', () => { film.failed = true; frame.classList.remove('is-playing'); frame.classList.add('has-error'); film.render(); });
+  if (button) button.addEventListener('click', () => {
+    if (video.paused) { film.userPaused = false; film.play(); }
+    else { film.userPaused = true; video.pause(); }
+  });
+  film.render();
+  return film;
+});
+
+const filmIO = new IntersectionObserver((entries) => entries.forEach((e) => {
+  const film = films.find((f) => f.section === e.target);
+  film.inView = e.isIntersecting;
+  if (e.isIntersecting) {
+    // Erst nach dem Laden der Seite, damit Standbild und Schriften Vorrang haben
+    const start = () => { if (film.inView && autoplayAllowed() && !film.userPaused) film.play(); };
+    if (document.readyState === 'complete') start(); else addEventListener('load', start, { once: true });
+  } else if (!film.video.paused) film.video.pause();
+}), { threshold: 0.15 });
+films.forEach((f) => filmIO.observe(f.section));
+reducedQuery.addEventListener?.('change', () => { if (reducedQuery.matches) films.forEach((f) => f.video.pause()); });
+// Zwischen Hoch- und Querformat nur wechseln, solange der Film noch nicht läuft
+tallQuery.addEventListener?.('change', () => films.forEach((f) => { if (f.video.paused && f.video.getAttribute('src')) { f.video.removeAttribute('src'); f.frame.classList.remove('is-playing'); f.video.load(); f.render(); } }));
+
+/* ---------- Kopfzeile ----------
+   Über dem Film transparent. Danach als ruhige Leiste: beim Weiterlesen ausgeblendet, beim Zurückscrollen sofort da. */
+const header = $('.site-header');
+const cta = $('[data-mobile-cta]');
+const hero = $('.film-hero');
+let lastY = scrollY, ticking = false;
+const updateHeader = () => {
+  ticking = false;
+  const y = scrollY, past = y > hero.offsetHeight - header.offsetHeight - 48;
+  const menuOpen = $('#nav-list')?.classList.contains('open');
+  header.classList.toggle('is-solid', past);
+  const hide = past && y > lastY + 4 && y > hero.offsetHeight + 120 && !menuOpen && !header.contains(document.activeElement);
+  if (hide) header.classList.add('is-tucked');
+  else if (y < lastY - 4 || !past) header.classList.remove('is-tucked');
+  // Die mobile Schaltfläche weicht beim Lesen nach unten aus und kommt beim Zurückscrollen wieder
+  if (cta) { if (y > lastY + 4) cta.classList.add('is-away'); else if (y < lastY - 4) cta.classList.remove('is-away'); }
+  lastY = y;
+};
+addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(updateHeader); } }, { passive: true });
+header.addEventListener('focusin', () => header.classList.remove('is-tucked'));
+updateHeader();
+
+/* ---------- Mobile Schaltfläche ----------
+   app.js blendet sie außerhalb von Hero und Formular ein. Hier zusätzlich: nicht über der 3D-Bühne und nicht über der Fußzeile. */
+if (cta) {
+  const blockers = new Set();
+  const ctaIO = new IntersectionObserver((entries) => {
+    entries.forEach((e) => (e.isIntersecting ? blockers.add(e.target) : blockers.delete(e.target)));
+    cta.classList.toggle('is-suppressed', blockers.size > 0);
+  }, { threshold: 0.25 });
+  [$('#model-stage'), $('.site-footer')].forEach((n) => n && ctaIO.observe(n));
+}
+
+/* ---------- Einblendungen ----------
+   Nur Abschnittsköpfe, kurz und einmalig. Ohne Bewegungswunsch bleibt alles sofort sichtbar. */
+if (!reducedQuery.matches && 'IntersectionObserver' in window) {
+  root.classList.add('motion-enabled');
+  const io = new IntersectionObserver((entries) => entries.forEach((e) => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+  }), { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+  $$('.manifesto, .lab-copy, .section-head, .journey-copy').forEach((n) => {
+    // Was beim Laden schon im Bild ist, wird nicht versteckt
+    if (n.getBoundingClientRect().top < innerHeight * 0.9) return;
+    n.classList.add('reveal'); io.observe(n);
+  });
+}
+
+/* ---------- Stückliste: Antippen und Tastatur ---------- */
+const board = $('[data-board]');
+if (board) {
+  $$('tr[data-pos]', board).forEach((row) => {
+    const activate = () => {
+      const pos = row.dataset.pos;
+      board.classList.add('has-focus');
+      $$('[data-pos]', board).forEach((n) => { n.classList.toggle('is-active', n.dataset.pos === pos); n.classList.toggle('selected', n === row); });
+    };
+    row.addEventListener('click', activate);
+    row.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
+  });
+}
+
+/* ---------- 3D-Werkbank ---------- */
+const stage = $('#model-stage');
+// Three.js und das Modell erst laden, wenn die Werkbank in die Nähe kommt: hält den Seitenstart schlank
+if (stage) {
+  const near = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) { near.disconnect(); setupWorkbench(); }
+  }, { rootMargin: '600px 0px' });
+  near.observe(stage);
+}
+
+async function setupWorkbench() {
+  const canvas = $('#part-canvas');
+  const status = $('#stage-status');
+  const slider = $('#explode');
+  const out = $('#explode-value');
+  const autoBtn = $('#auto-rotate');
+  const wireBtn = $('#wireframe');
+  const labels = Object.fromEntries($$('[data-label]', stage).map((n) => [n.dataset.label, n]));
+  const say = (text) => { status.textContent = ''; setTimeout(() => { status.textContent = text; }, 30); };
+  const onLabels = (pos, alpha) => {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    for (const [k, n] of Object.entries(labels)) {
+      if (!pos[k]) continue;
+      const [x, y] = pos[k];
+      // Nur zeigen, was sicher innerhalb der Bühne und oberhalb der Bedienleiste liegt
+      const inside = x > 8 && x < w - 130 && y > 48 && y < h - 96;
+      n.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+      n.style.opacity = inside ? alpha.toFixed(2) : '0';
+    }
+  };
+  const ctx = { stage, canvas, coarse, reduced: reducedQuery.matches, onLabels, onLost: () => fallBack('Grafik wurde vom Gerät zurückgesetzt'), onTooSlow: () => fallBack('WebGL zu langsam') };
+  let viewer = null;
+
+  async function useSoftware(reason) {
+    const { createSoftwareViewer } = await import('./software3d.js');
+    viewer = createSoftwareViewer({ ...ctx, canvas: $('#part-canvas') });
+    stage.dataset.ready = 'software3d';
+    stage.dataset.reason = reason;
+  }
+  function staticFallback(reason) {
+    $('#part-canvas').hidden = true;
+    $('#model-fallback').hidden = false;
+    stage.dataset.ready = 'fallback'; stage.dataset.reason = reason;
+    $$('.model-panel button, .model-panel input, .stage-tools button').forEach((b) => { b.disabled = true; });
+  }
+  async function fallBack(reason) {
+    try { await useSoftware(reason); applyState(); } catch (e) { staticFallback(reason + '; ' + e.message); }
+  }
+
+  try {
+    const probe = document.createElement('canvas');
+    const gl = probe.getContext('webgl2');
+    if (!gl) throw new Error('kein WebGL2');
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    const { createWebGLViewer } = await import('./part3d.js');
+    viewer = createWebGLViewer(ctx);
+    stage.dataset.ready = 'webgl';
+  } catch (e) {
+    try { await useSoftware(e.message); } catch (e2) { staticFallback(e.message + '; ' + e2.message); return; }
+  }
+
+  // Bedienelemente: einmal verdrahtet, für beide Darstellungen.
+  // Erst den Knopfzustand zeichnen lassen, dann das 3D-Bild ändern: die Rückmeldung kommt sofort, auch wenn ein Bild länger dauert.
+  const afterPaint = (fn) => requestAnimationFrame(() => setTimeout(fn, 0));
+  const ui = { material: 'sand', explode: 0, auto: false, wire: false };
+  function applyState() {
+    viewer.setMaterial(ui.material); viewer.setExplode(ui.explode / 100); viewer.setAuto(ui.auto); viewer.setWire(ui.wire);
+  }
+  const syncButtons = () => {
+    autoBtn.setAttribute('aria-pressed', String(ui.auto));
+    autoBtn.textContent = ui.auto ? 'Drehung anhalten' : 'Langsam drehen';
+    wireBtn.setAttribute('aria-pressed', String(ui.wire));
+    slider.value = ui.explode; out.textContent = `${ui.explode} %`;
+    slider.style.setProperty('--fill', `${ui.explode}%`);
+    slider.setAttribute('aria-valuetext', `${ui.explode} Prozent auseinandergezogen`);
+    stage.dataset.exploded = String(ui.explode);
+    stage.dataset.surface = ui.material;
+  };
+  $$('.material[data-material]').forEach((b) => b.addEventListener('click', () => {
+    ui.material = b.dataset.material;
+    $$('.material[data-material]').forEach((n) => { const on = n === b; n.classList.toggle('active', on); n.setAttribute('aria-pressed', String(on)); });
+    syncButtons(); say(`Oberfläche ${b.textContent.trim()}`); afterPaint(() => viewer.setMaterial(ui.material));
+  }));
+  slider.addEventListener('input', () => { ui.explode = Number(slider.value); viewer.setExplode(ui.explode / 100); syncButtons(); });
+  autoBtn.addEventListener('click', () => { ui.auto = !ui.auto; syncButtons(); afterPaint(() => viewer.setAuto(ui.auto)); });
+  wireBtn.addEventListener('click', () => { ui.wire = !ui.wire; syncButtons(); say(ui.wire ? 'Drahtgitter an' : 'Drahtgitter aus'); afterPaint(() => viewer.setWire(ui.wire)); });
+  $('#zoom-in').addEventListener('click', () => afterPaint(() => viewer.zoomBy(0.82)));
+  $('#zoom-out').addEventListener('click', () => afterPaint(() => viewer.zoomBy(1.22)));
+  $('#reset-model').addEventListener('click', () => {
+    ui.explode = 0; ui.auto = false; ui.wire = false; syncButtons(); say('Ansicht zurückgesetzt'); afterPaint(() => viewer.reset());
+  });
+  // Tastatur, wenn die Bühne ausgewählt ist: Pfeile drehen, + / − zoomen, Pos1 setzt zurück
+  stage.addEventListener('keydown', (e) => {
+    if (e.target.tagName !== 'CANVAS') return;
+    const map = { ArrowLeft: [-0.2, 0], ArrowRight: [0.2, 0], ArrowUp: [0, -0.14], ArrowDown: [0, 0.14] };
+    if (map[e.key]) { e.preventDefault(); viewer.rotateBy(...map[e.key]); }
+    else if (e.key === '+' || e.key === '=') { e.preventDefault(); viewer.zoomBy(0.82); }
+    else if (e.key === '-' || e.key === '_') { e.preventDefault(); viewer.zoomBy(1.22); }
+    else if (e.key === 'Home') { e.preventDefault(); $('#reset-model').click(); }
+  });
+  syncButtons();
+  // Für automatisierte Prüfungen lesbar, ohne Einfluss auf die Seite
+  stage.debug3d = () => ({ ready: stage.dataset.ready, ...viewer.debug() });
+}

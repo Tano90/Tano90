@@ -121,7 +121,13 @@
     ctx.stroke();
   }
   if (canvas) {
-    drawContours();
+    // Erst zeichnen, wenn der Abschnitt in die Nähe kommt; die Berechnung kostet sonst Zeit beim Seitenstart
+    if ("IntersectionObserver" in window) {
+      var contourIO = new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting) { contourIO.disconnect(); drawContours(); }
+      }, { rootMargin: "400px 0px" });
+      contourIO.observe(canvas.parentElement);
+    } else drawContours();
     var resizeT;
     window.addEventListener("resize", function () { clearTimeout(resizeT); resizeT = setTimeout(drawContours, 200); });
     if (window.matchMedia) {

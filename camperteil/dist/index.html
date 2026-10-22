@@ -5,12 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Camperteil — Noch so viel Welt.</title>
 <meta name="description" content="Kleine Kunststoff-Ersatzteile für ältere Wohnmobile anfragen: mit Fotos, Fahrzeugdaten und Maßen. Ein Angebot von Mattias Segato Consulting.">
-<meta name="theme-color" content="#edefe8" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f1a17" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#16291f">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
-<link rel="preload" href="assets/fonts/archivo-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/archivo-wght.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/site.css">
 <link rel="stylesheet" href="assets/css/experience.css">
+<link rel="preload" as="image" href="assets/img/hero-wide.jpg" media="(min-aspect-ratio: 4/5)" fetchpriority="high">
+<link rel="preload" as="image" href="assets/img/hero-tall.jpg" media="(max-aspect-ratio: 4/5)" fetchpriority="high">
+<link rel="modulepreload" href="assets/js/experience.js">
 </head>
 <body>
 <!--BODY-START-->
@@ -32,8 +35,8 @@
         <span class="nav-toggle-label">Menü</span>
       </button>
       <ul id="nav-list" class="nav-list">
-        <li><a href="#werkstatt">3D-Werkbank</a></li>
         <li><a href="#teile">Teile</a></li>
+        <li><a href="#werkstatt">3D-Werkbank</a></li>
         <li><a href="#ablauf">Ablauf</a></li>
         <li><a href="#messen">Messen &amp; Fotografieren</a></li>
         <li><a href="#fragen">Fragen</a></li>
@@ -46,20 +49,48 @@
 <main id="inhalt">
 
   <section class="film-hero" id="top" aria-labelledby="hero-title">
-    <video id="hero-film" class="hero-film" muted loop playsinline preload="metadata" poster="assets/img/camper-lake.jpg" aria-label="Camper an einem Bergsee, Wolken ziehen über die Landschaft"><source src="assets/video/camper-lake.mp4" type="video/mp4"></video>
-    <div class="film-shade"></div><div class="film-grain" aria-hidden="true"></div>
-    <div class="wrap film-hero-inner"><p class="hero-coordinate">KLEINE TEILE. WEITE WEGE.</p><div class="film-copy"><p class="eyebrow">Für Camper mit Geschichte</p><h1 id="hero-title">Ein kleines Teil.<br>Noch so viel <em>Welt.</em></h1><div class="hero-bottom"><p>Dein Camper ist noch lange nicht am Ziel.<br>Wir wollen helfen, das fehlende Teil zu finden.</p><div class="hero-actions"><a href="#anfrage" class="btn btn-primary">Ersatzteil anfragen <span aria-hidden="true">↗</span></a><a href="#werkstatt" class="film-link">3D-Beispiel entdecken <span aria-hidden="true">↓</span></a></div></div></div><div class="film-caption"><span>01 — UNTERWEGS BLEIBEN</span><button type="button" class="film-toggle" data-video="hero-film" aria-label="Hintergrundvideo starten">Film starten ▷</button><span class="scroll-cue">WEITER ENTDECKEN ↓</span></div></div>
+    <div class="film-frame" aria-hidden="true">
+      <picture>
+        <source media="(max-aspect-ratio: 4/5)" srcset="assets/img/hero-tall.jpg">
+        <img class="film-poster" src="assets/img/hero-wide.jpg" alt="" width="1280" height="720" fetchpriority="high" decoding="async">
+      </picture>
+      <video id="hero-film" class="film-video" muted loop playsinline preload="none" data-wide="assets/video/hero-wide" data-tall="assets/video/hero-tall"></video>
+    </div>
+    <div class="film-shade"></div>
+    <div class="film-grain" aria-hidden="true"></div>
+    <div class="wrap film-hero-inner">
+      <p class="hero-coordinate" aria-hidden="true">Kleine Teile · Weite Wege</p>
+      <div class="film-copy">
+        <p class="eyebrow">Ersatzteile für ältere Wohnmobile</p>
+        <h1 id="hero-title"><span class="line">Ein kleines Teil.</span> <span class="line">Noch so viel <em>Welt.</em></span></h1>
+        <div class="hero-bottom">
+          <p>Ihnen fehlt ein Kunststoffteil, das es nicht mehr gibt? Senden Sie Fotos und Maße. Ein Fachbetrieb soll prüfen, ob es sich finden oder nachfertigen lässt.</p>
+          <div class="hero-actions">
+            <a href="#anfrage" class="btn btn-primary">Ersatzteil anfragen <span aria-hidden="true">↗</span></a>
+            <a href="#werkstatt" class="film-link">3D-Beispiel ansehen <span aria-hidden="true">↓</span></a>
+          </div>
+        </div>
+      </div>
+      <div class="film-caption">
+        <ol class="hero-steps" aria-label="So funktioniert die Anfrage">
+          <li><span>01</span>Fotos</li>
+          <li><span>02</span>Maße</li>
+          <li><span>03</span>Machbarkeit prüfen</li>
+        </ol>
+        <button type="button" class="film-toggle" data-video="hero-film"><span class="ft-icon" aria-hidden="true"></span><span class="ft-label">Film abspielen</span></button>
+      </div>
+    </div>
   </section>
-  <section class="manifesto wrap" aria-labelledby="manifesto-title"><div class="manifesto-index"><span class="eyebrow">Die Idee</span><span class="chapter">01 / WEITERDENKEN</span></div><h2 id="manifesto-title">Manchmal fehlt kein neuer Camper.<br><span>Sondern nur ein kleines Teil.</span></h2><div class="manifesto-bottom"><p>Eine verlorene Abdeckung. Ein sprödes Kunststoffteil. Bei älteren Wohnmobilen beginnt dann oft eine lange Suche. Camperteil soll aus Fotos, Maßen und Modellangaben eine klare Ersatzteil-Anfrage machen.</p><a href="#ablauf" class="text-arrow">Vom Foto zur Einschätzung <span>↗</span></a></div></section>
-  <section class="lab-section" id="werkstatt" aria-labelledby="lab-title"><div class="wrap lab-grid"><div class="lab-copy"><p class="eyebrow">Die digitale Werkbank</p><h2 id="lab-title">Von allen Seiten.<br><em>Bis ins Detail.</em></h2><p>So lässt sich ein Bauteil verständlich zeigen. Drehe die Beispiel-Abdeckung, ändere die Oberfläche oder zerlege die Ansicht.</p><p class="lab-disclaimer">Illustratives 3D-Modell. Kein Originalteil, kein Verkaufsartikel und keine technische Fertigungsvorlage.</p><div class="model-choices" role="group" aria-label="Oberfläche des Beispielmodells"><button type="button" class="material active" data-material="sand" aria-pressed="true"><i style="--swatch:#c9bda6"></i>Sand</button><button type="button" class="material" data-material="olive" aria-pressed="false"><i style="--swatch:#68705a"></i>Olive</button><button type="button" class="material" data-material="graphite" aria-pressed="false"><i style="--swatch:#353a37"></i>Graphit</button></div><label class="explode-label" for="explode">Explosionsansicht <output id="explode-value">0 %</output></label><input id="explode" type="range" min="0" max="100" value="0"><div class="model-actions"><button type="button" id="auto-rotate" aria-pressed="false">Drehung starten ↻</button><button type="button" id="reset-model">Ansicht zurücksetzen ↺</button></div><a href="#anfrage" class="text-arrow">Mein Teil beschreiben ↗</a></div><div class="model-stage" id="model-stage"><div class="stage-heading"><span>CT / STUDIE 001</span><span>ABDECKUNG · BEISPIEL</span></div><canvas id="part-canvas" tabindex="0" aria-label="Interaktive 3D-Abdeckung. Mit Maus oder Finger drehen. Alternativ Pfeiltasten zum Drehen und Plus oder Minus zum Zoomen."></canvas><div id="model-fallback" hidden><svg viewBox="0 0 300 250" role="img" aria-label="Ersatzansicht der Abdeckung"><path d="M70 50h140v150H70z M95 80v90h90V80z" fill="#c9bda6" fill-rule="evenodd" stroke="#b9ae99" stroke-width="3"/><circle cx="83" cy="65" r="4" fill="#263e34"/><circle cx="197" cy="185" r="4" fill="#263e34"/></svg><p>3D ist auf diesem Gerät nicht verfügbar. Die Anfrage funktioniert weiterhin.</p></div><div class="stage-part-note" id="stage-part-note" aria-live="polite">01 / Rahmen · 02 / Einleger · 03 / Schrauben</div><div class="stage-bottom"><span>ZIEHEN ZUM DREHEN · ZOOMEN MIT ZWEI FINGERN</span><button id="wireframe" type="button" aria-pressed="false">Drahtgitter</button></div></div></div></section>
-  <section class="journey-film" aria-labelledby="journey-title"><video id="journey-film" muted loop playsinline preload="none" poster="assets/img/meadow.jpg" aria-label="Wolken und Licht wandern über eine grüne Berglandschaft"><source src="assets/video/landscape.mp4" type="video/mp4"></video><div class="journey-shade"></div><div class="wrap journey-copy"><p class="eyebrow">Nicht fertig mit unterwegs.</p><h2 id="journey-title">Die schönsten Geschichten<br>haben noch <em>offene Wege.</em></h2><button type="button" class="film-toggle" data-video="journey-film" aria-label="Landschaftsvideo starten">Film starten ▷</button><p class="footage-note">Reiseimpression · Stockaufnahme</p></div></section>
+
   <!-- STAND -->
-  <section class="status" aria-labelledby="status-title">
+  <section class="status" id="stand" aria-labelledby="status-title">
     <div class="wrap status-row">
       <h2 id="status-title" class="status-label">Stand Oktober 2026</h2>
       <p>Camperteil startet gerade. Wir haben zwei mögliche Partnerbetriebe angeschrieben, eine Zusammenarbeit ist noch nicht bestätigt. Sie können Ihre Anfrage schon vollständig vorbereiten. Der Versand über diese Website ist noch nicht eingerichtet.</p>
     </div>
   </section>
+
+  <section class="manifesto wrap" aria-labelledby="manifesto-title"><div class="manifesto-index"><span class="eyebrow">Die Idee</span><span class="chapter">Kapitel 1 · Das fehlende Teil</span></div><h2 id="manifesto-title">Manchmal fehlt kein neuer Camper.<br><span>Sondern nur ein kleines Teil.</span></h2><div class="manifesto-bottom"><p>Eine verlorene Abdeckung. Ein sprödes Kunststoffteil. Bei älteren Wohnmobilen beginnt dann oft eine lange Suche. Camperteil soll aus Fotos, Maßen und Modellangaben eine klare Ersatzteil-Anfrage machen.</p><a href="#ablauf" class="text-arrow">Vom Foto zur Einschätzung <span>↗</span></a></div></section>
 
   <!-- TEILE -->
   <section class="section" id="teile" aria-labelledby="teile-title">
@@ -67,7 +98,7 @@
       <header class="section-head">
         <p class="eyebrow">Worum es geht</p>
         <h2 id="teile-title" class="h2">Kleine Teile.<br>Große Bedeutung.</h2>
-        <p class="section-intro">Entdecke typische Teileformen auf der Zeichnung: mit Maus, Tastatur oder per Antippen. Die Beispiele zeigen unterschiedliche Geometrien, kein verfügbares Sortiment. Ob ein konkretes Teil geeignet ist, muss ein Fachbetrieb prüfen.</p>
+        <p class="section-intro">Tippen oder klicken Sie auf eine Zeile der Stückliste, um das Teil in der Zeichnung hervorzuheben. Die Beispiele zeigen unterschiedliche Geometrien, kein verfügbares Sortiment. Ob ein konkretes Teil geeignet ist, muss ein Fachbetrieb prüfen.</p>
       </header>
 
       <div class="board" data-board>
@@ -149,6 +180,73 @@
     </div>
   </section>
 
+  <section class="lab-section" id="werkstatt" aria-labelledby="lab-title">
+    <div class="wrap lab-grid">
+      <div class="lab-copy">
+        <p class="eyebrow">Die digitale Werkbank</p>
+        <h2 id="lab-title">Von allen Seiten.<br><em>Bis ins Detail.</em></h2>
+        <p>So lässt sich ein Bauteil verständlich zeigen. Drehen Sie die Beispiel-Abdeckung, wechseln Sie die Oberfläche oder ziehen Sie sie in ihre Einzelteile auseinander.</p>
+        <p class="lab-disclaimer">Illustratives 3D-Modell. Kein Originalteil, kein Verkaufsartikel und keine technische Fertigungsvorlage.</p>
+        <div class="model-panel">
+          <p class="control-label" id="material-label">Oberfläche</p>
+          <div class="model-choices" role="group" aria-labelledby="material-label">
+            <button type="button" class="material active" data-material="sand" aria-pressed="true"><i style="--swatch:#cbbd9f"></i>Sand</button>
+            <button type="button" class="material" data-material="olive" aria-pressed="false"><i style="--swatch:#68705a"></i>Olive</button>
+            <button type="button" class="material" data-material="graphite" aria-pressed="false"><i style="--swatch:#3a3f3b"></i>Graphit</button>
+          </div>
+          <div class="explode-row"><label class="control-label" for="explode">Explosionsansicht</label><output id="explode-value" for="explode">0 %</output></div>
+          <input id="explode" type="range" min="0" max="100" step="1" value="0" aria-describedby="explode-hint">
+          <p id="explode-hint" class="control-hint">Zieht Rahmen, Einleger und Schrauben auseinander.</p>
+          <div class="model-actions">
+            <button type="button" id="auto-rotate" aria-pressed="false">Langsam drehen</button>
+            <button type="button" id="reset-model">Ansicht zurücksetzen</button>
+          </div>
+        </div>
+        <a href="#anfrage" class="text-arrow">Mein Teil beschreiben <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="model-stage" id="model-stage" data-ready="loading">
+        <div class="stage-heading" aria-hidden="true"><span>CT / Studie 001</span><span>Abdeckung · Beispiel</span></div>
+        <canvas id="part-canvas" tabindex="0" role="img" aria-roledescription="interaktive 3D-Ansicht" aria-label="Beispiel-Abdeckung in 3D" aria-describedby="stage-help"></canvas>
+        <div class="part-labels" aria-hidden="true">
+          <span data-label="frame"><b>01</b> Rahmen</span>
+          <span data-label="insert"><b>02</b> Einleger</span>
+          <span data-label="screws"><b>03</b> Schrauben</span>
+        </div>
+        <div class="stage-loading" aria-hidden="true"><span></span>Modell wird geladen</div>
+        <div id="model-fallback" hidden>
+          <svg viewBox="0 0 300 250" role="img" aria-label="Ersatzansicht der Abdeckung"><path d="M70 50h140v150H70z M95 80v90h90V80z" fill="#cbbd9f" fill-rule="evenodd" stroke="#b9ae99" stroke-width="3"/><circle cx="83" cy="65" r="4" fill="#263e34"/><circle cx="197" cy="185" r="4" fill="#263e34"/></svg>
+          <p>3D ist auf diesem Gerät nicht verfügbar. Die Anfrage funktioniert weiterhin.</p>
+        </div>
+        <p class="visually-hidden" id="stage-status" role="status" aria-live="polite"></p>
+        <div class="stage-bottom">
+          <p class="stage-help" id="stage-help"><span class="help-touch">Waagerecht wischen zum Drehen · zwei Finger zum Zoomen</span><span class="help-pointer">Ziehen zum Drehen · Strg + Mausrad zum Zoomen · nach Auswahl Pfeiltasten und + / −</span></p>
+          <div class="stage-tools">
+            <button type="button" id="zoom-out" aria-label="Verkleinern"><span aria-hidden="true">−</span></button>
+            <button type="button" id="zoom-in" aria-label="Vergrößern"><span aria-hidden="true">+</span></button>
+            <button type="button" id="wireframe" aria-pressed="false">Drahtgitter</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="journey-film" aria-labelledby="journey-title">
+    <div class="film-frame" aria-hidden="true">
+      <picture>
+        <source media="(max-aspect-ratio: 4/5)" srcset="assets/img/journey-tall.jpg">
+        <img class="film-poster" src="assets/img/journey-wide.jpg" alt="" width="1280" height="720" loading="lazy" decoding="async">
+      </picture>
+      <video id="journey-film" class="film-video" muted loop playsinline preload="none" data-wide="assets/video/journey-wide" data-tall="assets/video/journey-tall"></video>
+    </div>
+    <div class="journey-shade"></div>
+    <div class="wrap journey-copy">
+      <p class="eyebrow">Nicht fertig mit unterwegs</p>
+      <h2 id="journey-title">Die schönsten Geschichten<br>haben noch <em>offene Wege.</em></h2>
+      <button type="button" class="film-toggle" data-video="journey-film"><span class="ft-icon" aria-hidden="true"></span><span class="ft-label">Film abspielen</span></button>
+    </div>
+    <p class="footage-note wrap">Reiseimpression, Stockaufnahme · <a href="nachweise.html">Nachweise</a></p>
+  </section>
+
   <!-- ABLAUF -->
   <section class="section night" id="ablauf" aria-labelledby="ablauf-title">
     <canvas class="contours" aria-hidden="true"></canvas>
@@ -188,7 +286,7 @@
       <header class="section-head measure-head">
         <p class="eyebrow">Messen &amp; Fotografieren</p>
         <h2 id="messen-title" class="h2">Gute Angaben sparen Rückfragen.</h2>
-        <p class="section-intro">Für eine erste Einschätzung helfen genaue Maße und klare Fotos. Für die Nachfertigung kann ein Fachbetrieb später auch das Originalteil benötigen. So bereitest du die Anfrage vor:</p>
+        <p class="section-intro">Für eine erste Einschätzung helfen genaue Maße und klare Fotos. Für die Nachfertigung kann ein Fachbetrieb später auch das Originalteil benötigen. So bereiten Sie die Anfrage vor:</p>
       </header>
 
       <figure class="sheet caliper-sheet">
@@ -484,7 +582,7 @@
       <p>Ein Angebot von Mattias Segato Consulting.</p>
     </div>
     <ul class="footer-links">
-      <li><a href="inspiration.html">Design-Referenzen</a></li>
+      <li><a href="nachweise.html">Bild- und Videonachweise</a></li>
       <li><a href="impressum.html">Impressum</a></li>
       <li><a href="datenschutz.html">Datenschutz</a></li>
     </ul>

@@ -3,7 +3,8 @@
    auf gealtertem Kunststoff-Weiß, Tinte in Kiefergrün, Markisen-Ocker als einziger Akzent.
    Nachtabschnitt mit Höhenlinien für die Stimmung am Stellplatz. */
 
-@font-face { font-family: "Archivo Var"; src: url("../fonts/archivo-var.woff2") format("woff2-variations"), url("../fonts/archivo-var.woff2") format("woff2"); font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; }
+/* Archivo nur mit Gewichtsachse (35 KB statt 90 KB); die Breitenachse wird auf der Startseite nicht genutzt */
+@font-face { font-family: "Archivo Var"; src: url("../fonts/archivo-wght.woff2") format("woff2-variations"), url("../fonts/archivo-wght.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
 @font-face { font-family: "Plex Sans"; src: url("../fonts/plex-sans-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Plex Sans"; src: url("../fonts/plex-sans-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
 @font-face { font-family: "Plex Sans"; src: url("../fonts/plex-sans-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
@@ -52,22 +53,7 @@
   --header-h: 64px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #0f1a17; --sheet: #14221e; --ink: #e3e9df; --ink-2: #a5b3aa; --rule: #2c3d36;
-    --ochre: #e2a63a; --ochre-ink: #ebb954; --on-ochre: #1a1405;
-    --night: #09130f; --night-2: #12231d; --night-ink: #e3e9df; --night-dim: #95a89d; --contour: rgba(226, 166, 58, 0.13);
-    --error: #ff8f84; --error-bg: #2d1513; --ok: #7fc794; --focus: #8ab4ff;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --paper: #0f1a17; --sheet: #14221e; --ink: #e3e9df; --ink-2: #a5b3aa; --rule: #2c3d36;
-  --ochre: #e2a63a; --ochre-ink: #ebb954; --on-ochre: #1a1405;
-  --night: #09130f; --night-2: #12231d; --night-ink: #e3e9df; --night-dim: #95a89d; --contour: rgba(226, 166, 58, 0.13);
-  --error: #ff8f84; --error-bg: #2d1513; --ok: #7fc794; --focus: #8ab4ff;
-  color-scheme: dark;
-}
+/* Die Website ist bewusst nur hell gestaltet (warmes Creme, Kieferngrün); Dunkel-Varianten gibt es nicht. */
 
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 12px); -webkit-text-size-adjust: 100%; }
