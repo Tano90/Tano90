@@ -83,6 +83,31 @@ test.describe("SA Analysen", () => {
     await open(page, "lifecycle");
     await expect(page.locator("#main")).toContainText("nicht verkauft");
   });
+
+  test("SA-3 Rezepte: Abweichung Rezept zu Artikel sichtbar, Übernahme gleicht ab und wird datiert protokolliert", async ({
+    page,
+  }) => {
+    await open(page, "recipes");
+    const diffs = page.locator(".v4-cost-diff.warn", { hasText: "Rezept:" });
+    const before = await diffs.count();
+    expect(before).toBeGreaterThan(0);
+    await expect(diffs.first()).toContainText("noch nie übernommen");
+    page.on("dialog", (d) => void d.accept());
+    await page.locator('[data-v4="sync-recipe-costs"]').click();
+    await expect(diffs).toHaveCount(0);
+    await expect(
+      page
+        .locator(".v4-cost-diff", { hasText: "entsprechen dem Rezept" })
+        .first(),
+    ).toContainText("zuletzt übernommen am");
+    const sources = await page.evaluate(() =>
+      window.GLBAppSync.snapshot().items.flatMap(
+        (x: { costHistory?: { source: string }[] }) =>
+          (x.costHistory || []).map((e) => e.source),
+      ),
+    );
+    expect(sources).toContain("Rezeptkosten übernommen");
+  });
 });
 
 declare global {
