@@ -20,7 +20,7 @@
     "e2e": "playwright test",
     "vercel-build": "npm run db:migrate && npm run build",
     "legal:check": "node scripts/legal-check.mjs",
-    "test:suite": "node --test suite-tests/tests/*.test.cjs",
+    "test:suite": "node --test suite-tests/tests/*.test.cjs suite-tests/v11/*.test.mjs",
     "test:suite-sql": "node --test suite-tests/rls.test.mjs"
   },
   "dependencies": {
