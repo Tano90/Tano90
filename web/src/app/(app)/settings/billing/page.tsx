@@ -6,7 +6,7 @@ import { canManageBilling, requireSession } from "@/data/session";
 import { billingConfigured, yearlyConfigured } from "@/lib/billing";
 import { accessOf } from "@/domain/access";
 import { formatDate } from "@/lib/dates";
-import { PLANS_PRELIMINARY_NOTE, plansFinal } from "@/lib/pricing";
+import { formatEur, INDIVIDUAL, PLANS, PLANS_PRELIMINARY_NOTE, plansFinal } from "@/lib/pricing";
 import { BillingButtons } from "./billing-buttons";
 
 export const metadata = { title: "Abo & Rechnungen" };
@@ -37,6 +37,14 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
           {billing.plan === "trial" && <div><dt className="text-xs text-text-muted">{access.readOnly ? "Testphase endete" : "Testphase endet"}</dt><dd>{date(billing.trialEndsAt)}</dd></div>}
           {billing.currentPeriodEnd && <div><dt className="text-xs text-text-muted">{billing.plan === "cancelled" ? "Zugang bis" : "Nächste Abrechnung"}</dt><dd>{date(billing.currentPeriodEnd)}</dd></div>}
         </dl>
+        {/* same source and formatter as the public price list, so website and billing never differ */}
+        <section aria-labelledby="billing-plans" className="rounded-md border border-border bg-bg p-4 text-sm">
+          <h2 id="billing-plans" className="text-sm font-bold">Tarife{plansFinal() ? "" : " (vorläufig)"}</h2>
+          <ul className="mt-2 flex flex-col gap-1">
+            {PLANS.map((pl) => <li key={pl.id} data-billing-plan={pl.id}>{pl.name}: {formatEur(pl.baseMonthly)} pro Kunde und Monat zzgl. {formatEur(pl.perUserMonthly)} pro Nutzer und Monat</li>)}
+            <li data-billing-plan="individual">Individuelle Lösungen: Entwicklungsgebühr nach Vereinbarung zzgl. {formatEur(INDIVIDUAL.serviceMonthly)} pro Monat</li>
+          </ul>
+        </section>
         {billing.plan === "past_due" && <Notice tone="warning">Die letzte Zahlung ist fehlgeschlagen. Aktualisiere deine Zahlungsart, damit der Zugang erhalten bleibt.</Notice>}
         <BillingButtons hasCustomer={!!billing.stripeCustomerId} configured={billingConfigured()} canBuy={plansFinal()} yearly={yearlyConfigured()} />
         <p className="text-xs font-normal text-text-muted">Kündigen geht jederzeit mit einem Klick über „Abo verwalten“. Bezahlung und Rechnungen laufen über Stripe; deine Kartendaten sehen wir nie.</p>

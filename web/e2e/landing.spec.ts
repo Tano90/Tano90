@@ -6,7 +6,7 @@ test.describe("L01 Landingpage", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Gastro führen mit echten Zahlen.");
     await expect(page.getByRole("img", { name: /Dashboard der GLB AI Suite/ })).toBeVisible();
     await axe();
-    await expect(page.getByRole("link", { name: /Live ausprobieren/ }).first()).toHaveAttribute("href", "/suite");
+    await expect(page.getByRole("link", { name: /Demo ohne Anmeldung öffnen/ }).first()).toHaveAttribute("href", "/suite");
     await expect(page.getByRole("link", { name: "Anmelden" })).toHaveAttribute("href", "/suite");
   });
 
@@ -41,7 +41,7 @@ test.describe("L01 Landingpage", () => {
     for (const a of ["Übersicht", "Verkauf & Preise", "Einkauf & Lager", "Service & Team", "Einrichtung & Daten"]) await expect(board.getByText(a, { exact: true })).toBeVisible();
     await expect(board.getByRole("img")).toHaveCount(0);
     // the demo appointment stays visible: header and hero lead to it
-    await expect(page.getByRole("link", { name: "Vorführung anfragen" })).toHaveAttribute("href", "#anfrage");
+    await expect(page.getByRole("link", { name: /Mit eigenen Daten vorführen lassen/ }).first()).toHaveAttribute("href", "#anfrage");
     const video = page.locator("video");
     await expect(video).toHaveAttribute("poster", "/landing/suite-reports.png");
     await expect(video.locator("track[kind=captions]")).toHaveAttribute("src", "/landing/suite-rundgang.vtt");
@@ -53,7 +53,7 @@ test.describe("L01 Landingpage", () => {
     await page.goto("/");
     const look = await page.evaluate(() => {
       const root = document.querySelector(".landing-beige") as HTMLElement;
-      const cta = [...document.querySelectorAll("a")].find((a) => a.textContent?.includes("Live ausprobieren")) as HTMLElement;
+      const cta = [...document.querySelectorAll("a")].find((a) => a.textContent?.includes("Mit eigenen Daten vorführen lassen")) as HTMLElement;
       return { bg: getComputedStyle(root).backgroundColor, text: getComputedStyle(root).color, cta: getComputedStyle(cta).backgroundColor, h1: getComputedStyle(document.querySelector("h1")!).fontFamily };
     });
     expect(look.bg).toBe("rgb(247, 242, 232)");
@@ -79,5 +79,67 @@ test.describe("L01 Landingpage", () => {
     for (const name of ["Datenschutz", "Nutzungsbedingungen", "Impressum"]) {
       await expect(page.getByRole("link", { name, exact: true })).toHaveAttribute("href", /\/legal\//);
     }
+  });
+});
+
+test.describe("L02 Tarife, Rechner und Ansprache", () => {
+  test("L02-1 Standard als Einstieg, Premium hervorgehoben mit Begründung, Individuell als eigener Weg", async ({ page }) => {
+    await page.goto("/#preise");
+    const pricing = page.getByRole("region", { name: "Preise" });
+    const cards = pricing.locator("[data-plan-card]");
+    await expect(cards).toHaveCount(3);
+    expect(await cards.evaluateAll((c) => c.map((x) => (x as HTMLElement).dataset.planCard))).toEqual(["standard", "premium", "individual"]);
+    const premium = pricing.locator('[data-plan-card="premium"]');
+    await expect(premium).toContainText("Empfehlung für aktive Betriebssteuerung");
+    await expect(premium).toContainText("20,99 € mehr als Standard");
+    await expect(pricing).not.toContainText(/Am beliebtesten|Bestseller|nur noch|Rabatt|sparen Sie/i);
+    for (const plan of ["standard", "premium"])
+      for (const t of ["Für wen", "Welches Problem", "Vorgeschlagener Umfang", "Zum Start nötig", "Nicht automatisch angebunden"])
+        await expect(pricing.locator(`[data-plan-card="${plan}"]`)).toContainText(t);
+    const ind = pricing.locator('[data-plan-card="individual"]');
+    const text = (await ind.innerText()).replace(/\s/g, " ");
+    expect(text.indexOf("29,99 €")).toBeGreaterThan(-1);
+    expect(text.indexOf("Entwicklungsgebühr")).toBeLessThan(text.indexOf("29,99 €"));
+    await expect(ind).toContainText("unbegrenzte Weiterentwicklung ist nicht enthalten");
+  });
+
+  test("L02-2 Rechner: 5 Nutzer ergeben 103,95 € und 124,94 €; Grundpreis und Nutzerpreis getrennt; Annahmen genannt", async ({ page }) => {
+    await page.goto("/#preise");
+    const input = page.getByLabel("Anzahl Nutzer");
+    await expect(input).toHaveAttribute("inputmode", "numeric");
+    await input.fill("5");
+    const std = page.locator('dl[data-plan="standard"]');
+    const prem = page.locator('dl[data-plan="premium"]');
+    await expect(std).toContainText("89,00 €");
+    await expect(std).toContainText("14,95 €");
+    await expect(std.locator("[data-total]")).toHaveText("103,95 €");
+    await expect(prem).toContainText("109,99 €");
+    await expect(prem.locator("[data-total]")).toHaveText("124,94 €");
+    await expect(page.getByText(/Annahmen bis zur Bestätigung/)).toBeVisible();
+    await input.fill("0");
+    await expect(page.getByRole("alert").filter({ hasText: "ganze Zahl" })).toContainText("ganze Zahl von 1 bis 500");
+    await expect(input).toHaveAttribute("aria-invalid", "true");
+    await expect(std.locator("[data-total]")).toHaveText("–");
+  });
+
+  test("L02-3 Ansprache ohne Druck: Hauptaktion Vorführung mit eigenen Daten, daneben Demo; kein Countdown", async ({ page }) => {
+    await page.goto("/");
+    const hero = page.getByRole("region", { name: /Gastro führen/ });
+    await expect(hero.getByRole("link").filter({ hasText: "Mit eigenen Daten vorführen lassen" })).toHaveAttribute("href", "#anfrage");
+    await expect(hero.getByRole("link").filter({ hasText: "Demo ohne Anmeldung öffnen" })).toHaveAttribute("href", "/suite");
+    await expect(page.locator("body")).not.toContainText(/Nur noch \d|Angebot endet|Countdown|Plätze frei|Kundenstimmen|Sterne/i);
+  });
+
+  test("L02-4 Handy: Tarifkarten untereinander, gleich aufgebaut, Standard zuerst; Rechner bedienbar", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 });
+    await page.goto("/#preise");
+    await expectNoHorizontalScroll(page);
+    const boxes = await page.locator("[data-plan-card]").evaluateAll((c) => c.map((x) => x.getBoundingClientRect().top));
+    expect(boxes[0]).toBeLessThan(boxes[1]);
+    expect(boxes[1]).toBeLessThan(boxes[2]);
+    const input = page.getByLabel("Anzahl Nutzer");
+    expect((await input.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await input.fill("12");
+    await expect(page.locator('dl[data-plan="standard"] [data-total]')).toHaveText("124,88 €");
   });
 });

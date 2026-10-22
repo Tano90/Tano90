@@ -12,7 +12,7 @@ export function SiteHeader() {
         <Link href="/#preise" className="hidden font-semibold text-text-muted hover:text-text md:inline">Preise</Link>
         <Link href="/suite" className="font-semibold hover:underline">Anmelden</Link>
         <Link href="/suite" className="hidden h-(--size-control-md) items-center rounded-pill bg-accent px-4 font-bold text-on-accent hover:bg-accent-hover sm:inline-flex">
-          Kostenlos starten
+          Demo öffnen
         </Link>
       </nav>
     </header>

@@ -26,7 +26,7 @@ const state = (page: Page) =>
 test.describe("S15 Navigation", () => {
   test("S15-1 Start → Übersicht; Adresse, Seitenname und Menüpunkt stimmen; Direktlinks und Zurück", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("link", { name: /Live ausprobieren/ }).first().click();
+    await page.getByRole("link", { name: /Demo ohne Anmeldung öffnen/ }).first().click();
     await page.waitForFunction(() => (window as any).GLBV11);
     await expect(page.getByRole("heading", { level: 1, name: "Wie läuft der Betrieb?" })).toBeVisible();
     expect(await state(page)).toEqual({ hash: "#overview", crumb: "Übersicht", active: ["overview"] });

@@ -6,7 +6,8 @@ import { LeadForm, ViewBeacon } from "@/components/landing/lead-form";
 import { Reveal } from "@/components/landing/motion";
 import { SiteFooter } from "@/components/landing/site-chrome";
 import { APP_NAME } from "@/lib/brand";
-import { INDIVIDUAL, PLANS, PLANS_PRELIMINARY_NOTE } from "@/lib/pricing";
+import { PriceCalculator } from "@/components/landing/price-calculator";
+import { formatEur, INDIVIDUAL, PLANS, PLANS_PRELIMINARY_NOTE } from "@/lib/pricing";
 import shotCosts from "../../public/landing/suite-costs.png";
 import shotFunnel from "../../public/landing/suite-funnel.png";
 import shotLifecycle from "../../public/landing/suite-lifecycle.png";
@@ -27,8 +28,31 @@ const SUITE = "/suite";
 const cta = "inline-flex h-(--size-control-lg) items-center gap-2 rounded-pill bg-accent px-6 text-base font-bold text-on-accent transition-colors duration-fast hover:bg-accent-hover";
 const ctaLight = cta;
 const ctaQuiet = "inline-flex h-(--size-control-lg) items-center rounded-pill border border-border-input bg-transparent px-6 text-base font-semibold hover:bg-row-hover";
-// Exact cents, German format: 89,00 € / 109,99 € / 2,99 €
-const eur = (cents: number) => (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+// Exact cents, German format: 89,00 € / 109,99 € / 2,99 € – the same formatter as calculator and billing
+const eur = formatEur;
+// Primary action: a guided session with the visitor's own data; secondary: the demo without sign-up.
+const CTA_PRIMARY = "Mit eigenen Daten vorführen lassen";
+const CTA_DEMO = "Demo ohne Anmeldung öffnen";
+
+// Per plan: for whom, which problem, what getting started needs, what is NOT connected automatically.
+// The module split is the operator's PROPOSAL (Oct 2026), shown as such until it is confirmed. Every module named
+// exists in the suite today; nothing is switched off for anyone (there is no plan gating in the product yet).
+const PLAN_DETAILS = {
+  standard: {
+    who: "Betriebe, die Artikel, Rezepte, Lager und Einkauf an einem Ort führen wollen.",
+    problem: "Wareneinsatz und Bestand sind unklar, bestellt wird aus dem Bauch.",
+    modules: ["Artikel und Rezepte", "Rohwaren und Einkaufspreise", "Inventur und Bestand", "Bestellungen mit Bestell-Forecast", "Basisberichte mit CSV- und Excel-Export"],
+    start: "Speisekarte, Rezepte mit Rohwaren und Einkaufspreisen, eine erste Inventur und ein Verkaufsexport aus der Kasse.",
+    manual: "Keine Kassenschnittstelle: Verkäufe kommen per CSV-Export. Bestellungen werden nicht an Lieferanten gesendet.",
+  },
+  premium: {
+    who: "Betriebe, die Sortiment, Preise und Service aktiv steuern wollen.",
+    problem: "Welche Artikel lassen nach, wo liegen die Preise im Umfeld, welche Zusatzverkäufe bleiben im Service liegen?",
+    modules: ["Alles aus Standard", "Lebenszyklen je Artikel", "Menu Engineering (Renner und Penner)", "Szenarien im Service Funnel", "Wettbewerbspreise mit Quelle"],
+    start: "Wie Standard, dazu mindestens vier Monate Verkäufe für Lebenszyklen und Gästezahlen für den Service Funnel.",
+    manual: "Wettbewerbspreise werden nicht automatisch abgerufen, sondern mit Quelle erfasst. Eine KI-Einordnung gibt es nur, wenn der Betreiber sie eingerichtet hat. Keine Kassenschnittstelle.",
+  },
+} as const;
 
 // The questions a buyer asks first, answered before any feature list (Oct 2026).
 const ANSWERS = [
@@ -112,7 +136,7 @@ const FAQ = [
   { q: "Wer sieht welche Zahlen?", a: "Es gibt sieben Rollen von Geschäftsführung bis Mitarbeiter Küche. Service und Sales sehen keine Einkaufspreise und keine Fixkosten, die Küche keine Finanzberichte. Die Rechte prüft auch die Datenbank." },
   { q: "Funktioniert das auf dem Handy?", a: `Ja. ${APP_NAME} läuft im Browser und lässt sich als App installieren. Für Service und Küche gibt es eigene mobile Ansichten, etwa für die Tageszahlen im Funnel und die Inventur.` },
   { q: "Rechnet die KI für mich?", a: "Kennzahlen, Hinweise und Szenarien entstehen aus nachvollziehbaren Regeln auf deinen Zahlen. Nur bei den Wettbewerbspreisen kann optional eine KI die von dir erfassten Preise einordnen; sie prüft keine Webseiten und ändert nichts. Die KI richtet der Betreiber auf dem Server ein, du verwaltest keine Schlüssel. Ob sie in einem Tarif enthalten ist, wird mit den Tarifdetails festgelegt." },
-  { q: "Kann ich vorher ausprobieren?", a: "Ja. Über „Live ausprobieren“ öffnest du die Suite mit Beispieldaten, ohne Anmeldung. Mit „Eigene Daten starten“ legst du in der Suite deinen Betrieb an." },
+  { q: "Kann ich vorher ausprobieren?", a: "Ja. Über „Demo ohne Anmeldung öffnen“ öffnest du die Suite mit Beispieldaten, ohne Anmeldung. Mit „Eigene Daten starten“ legst du in der Suite deinen Betrieb an." },
   { q: "Wo liegen meine Daten?", a: "Mit Anmeldung in der Cloud-Datenbank von Supabase, getrennt pro Betrieb. Ohne Anmeldung nur in deinem Browser. Zusätzlich kannst du jederzeit ein Backup herunterladen." },
 ];
 
@@ -132,7 +156,7 @@ export default function LandingPage() {
             <a href="#preise" className="hidden font-semibold text-text-muted hover:text-text md:inline">Preise</a>
             <a href="#anfrage" className="hidden font-semibold text-text-muted hover:text-text md:inline">Vorführung</a>
             <Link href={SUITE} className="font-semibold hover:underline">Anmelden</Link>
-            <Link href={SUITE} className="hidden h-(--size-control-md) items-center rounded-pill bg-accent px-4 font-bold text-on-accent hover:bg-accent-hover sm:inline-flex">Kostenlos starten</Link>
+            <Link href={SUITE} className="hidden h-(--size-control-md) items-center rounded-pill bg-accent px-4 font-bold text-on-accent hover:bg-accent-hover sm:inline-flex">Demo öffnen</Link>
           </nav>
         </header>
 
@@ -150,8 +174,8 @@ export default function LandingPage() {
               Warenquote über deinem Ziel liegt und was nachbestellt werden muss. Aus deinen Kassen- und Einkaufsdaten.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href={SUITE} className={ctaLight}>Live ausprobieren <ArrowRight aria-hidden className="size-4" /></Link>
-              <a href="#anfrage" className={ctaQuiet}>Vorführung anfragen</a>
+              <a href="#anfrage" className={ctaLight}>{CTA_PRIMARY} <ArrowRight aria-hidden className="size-4" /></a>
+              <Link href={SUITE} className={ctaQuiet}>{CTA_DEMO}</Link>
             </div>
             <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-text-muted">
               {["Demo ohne Anmeldung", "Beispieldaten klar markiert", "Im Browser und als App"].map((x) => (
@@ -332,23 +356,47 @@ export default function LandingPage() {
           <div className="mx-auto max-w-(--size-content-max) px-4 py-20 lg:px-8">
             <h2 id="pricing" className="font-display text-[2rem] leading-tight lg:text-[2.75rem]">Preise</h2>
             <p className="mt-3 max-w-3xl rounded-md border border-border bg-surface px-4 py-3 text-sm text-text-muted" role="note">{PLANS_PRELIMINARY_NOTE}</p>
-            <div className="mt-10 grid gap-6 md:grid-cols-3">
-              {PLANS.map((p) => (
-                <div key={p.id} className="rounded-md border border-border bg-surface-raised p-8">
-                  <h3 className="text-lg">{p.name}</h3>
-                  <p className="num font-display mt-6 text-[2.5rem] leading-none">{eur(p.baseMonthly)}</p>
-                  <p className="mt-2 text-sm text-text-muted">pro Kunde und Monat</p>
-                  <p className="mt-4 flex gap-2 text-sm"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />zuzüglich {eur(p.perUserMonthly)} pro Nutzer und Monat</p>
-                </div>
-              ))}
-              <div className="rounded-md border border-border border-t-4 border-t-accent bg-surface-raised p-8">
-                <h3 className="text-lg">Individuelle Lösungen</h3>
-                <p className="font-display mt-6 text-[1.75rem] leading-tight">Entwicklungsgebühr nach Vereinbarung</p>
-                <p className="mt-4 flex gap-2 text-sm"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />zuzüglich {eur(INDIVIDUAL.serviceMonthly)} pro Monat</p>
-                <a href="#anfrage" className="mt-6 inline-flex font-semibold text-accent underline">Im Gespräch klären →</a>
-              </div>
+            <p className="mt-4 max-w-3xl text-text-muted">Standard ist der Einstieg. Premium kostet {eur(PLANS[1].baseMonthly - PLANS[0].baseMonthly)} mehr Grundpreis im Monat und ergänzt die Module zur Steuerung von Sortiment, Preisen und Service; der Preis je Nutzer ist gleich. Individuelle Lösungen sind ein eigener Weg für Anforderungen außerhalb dieser Module.</p>
+            <div className="mt-10 grid items-start gap-6 lg:grid-cols-3">
+              {PLANS.map((p) => {
+                const d = PLAN_DETAILS[p.id];
+                const premium = p.id === "premium";
+                return (
+                  <article key={p.id} data-plan-card={p.id} aria-labelledby={`plan-${p.id}`} className={premium ? "rounded-md border-2 border-accent bg-surface-raised p-6 lg:p-8" : "rounded-md border border-border bg-surface-raised p-6 lg:p-8"}>
+                    {premium && <p className="mb-3 inline-flex rounded-pill bg-accent px-3 py-1 text-xs font-bold text-on-accent">Empfehlung für aktive Betriebssteuerung</p>}
+                    <h3 id={`plan-${p.id}`} className="text-lg">{p.name}</h3>
+                    <p className="num font-display mt-4 text-[2.5rem] leading-none">{eur(p.baseMonthly)}</p>
+                    <p className="mt-2 text-sm text-text-muted">pro Kunde und Monat</p>
+                    <p className="mt-3 flex gap-2 text-sm"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />zuzüglich {eur(p.perUserMonthly)} pro Nutzer und Monat</p>
+                    {premium && <p className="mt-3 text-sm text-text-muted">{eur(p.baseMonthly - PLANS[0].baseMonthly)} mehr als Standard – für die vier zusätzlichen Module unten.</p>}
+                    <dl className="mt-6 flex flex-col gap-4 text-sm">
+                      <div><dt className="font-bold">Für wen</dt><dd className="mt-1 text-text-muted">{d.who}</dd></div>
+                      <div><dt className="font-bold">Welches Problem</dt><dd className="mt-1 text-text-muted">{d.problem}</dd></div>
+                      <div>
+                        <dt className="font-bold">Vorgeschlagener Umfang</dt>
+                        <dd className="mt-1"><ul className="flex flex-col gap-1">{d.modules.map((m) => <li key={m} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />{m}</li>)}</ul></dd>
+                      </div>
+                      <div><dt className="font-bold">Zum Start nötig</dt><dd className="mt-1 text-text-muted">{d.start}</dd></div>
+                      <div><dt className="font-bold">Nicht automatisch angebunden</dt><dd className="mt-1 text-text-muted">{d.manual}</dd></div>
+                    </dl>
+                  </article>
+                );
+              })}
+              <article data-plan-card="individual" aria-labelledby="plan-individual" className="rounded-md border border-border border-t-4 border-t-text bg-surface-raised p-6 lg:p-8">
+                <h3 id="plan-individual" className="text-lg">Individuelle Lösungen</h3>
+                <p className="font-display mt-4 text-[1.5rem] leading-tight">Entwicklungsgebühr nach vereinbartem Umfang</p>
+                <p className="mt-2 text-sm text-text-muted">einmalig, Umfang und Betrag vorab schriftlich festgelegt</p>
+                <p className="mt-3 flex gap-2 text-sm"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />danach {eur(INDIVIDUAL.serviceMonthly)} pro Monat</p>
+                <dl className="mt-6 flex flex-col gap-4 text-sm">
+                  <div><dt className="font-bold">Für wen</dt><dd className="mt-1 text-text-muted">Betriebe mit Anforderungen, die Standard und Premium nicht abdecken.</dd></div>
+                  <div><dt className="font-bold">Was die {eur(INDIVIDUAL.serviceMonthly)} abdecken</dt><dd className="mt-1 text-text-muted">Umfang und Grenzen der laufenden Leistung werden vor Vertragsschluss schriftlich festgelegt. Eine unbegrenzte Weiterentwicklung ist nicht enthalten.</dd></div>
+                  <div><dt className="font-bold">Zum Start nötig</dt><dd className="mt-1 text-text-muted">Ein Gespräch über Anforderung, Daten und Abgrenzung; daraus ein schriftliches Angebot.</dd></div>
+                </dl>
+                <a href="#anfrage" className="mt-6 inline-flex min-h-11 items-center font-semibold text-accent underline">Anforderung besprechen →</a>
+              </article>
             </div>
-            <p className="mt-6 text-sm text-text-muted">Welche Leistungen Standard und Premium unterscheiden, zeigen wir in der Vorführung. Die Demo ist kostenlos und ohne Anmeldung.</p>
+            <PriceCalculator />
+            <p className="mt-6 text-sm text-text-muted">Die Demo ist kostenlos und ohne Anmeldung. Mehr Übersicht oder Ergebnis durch Premium ist eine Annahme, die du mit deinen eigenen Daten prüfen solltest, kein Versprechen.</p>
           </div>
         </section>
 
@@ -395,7 +443,7 @@ export default function LandingPage() {
         <section aria-labelledby="final">
           <div className="mx-auto max-w-(--size-content-max) px-4 py-24 text-center lg:px-8">
             <h2 id="final" className="font-display mx-auto max-w-3xl text-[2rem] leading-tight lg:text-[2.75rem]">Sieh deinen Betrieb so, wie die Zahlen ihn sehen.</h2>
-            <div className="mt-8 flex justify-center"><Link href={SUITE} className={cta}>Live ausprobieren <ArrowRight aria-hidden className="size-4" /></Link></div>
+            <div className="mt-8 flex flex-wrap justify-center gap-3"><a href="#anfrage" className={cta}>{CTA_PRIMARY} <ArrowRight aria-hidden className="size-4" /></a><Link href={SUITE} className={ctaQuiet}>{CTA_DEMO}</Link></div>
           </div>
         </section>
       </main>
