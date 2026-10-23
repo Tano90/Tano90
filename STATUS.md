@@ -54,9 +54,17 @@ Das ist eine Kamerafahrt in einem einzigen Modell; jede Einstellung beginnt an d
 - Entfernt: `engine.ts`, `world.ts`, `scripts/story-stills.mjs`, Abhängigkeit `three`.
 - Neu: `web/scripts/story-blender/{scene.py, pack.py}`, `web/public/story/seq/*`.
 
+## Stand 23.10.2026, 13:35 (Commit f423efa)
+- Die komplette Fahrt ist auf der Website: 269 Desktop-Bilder, 9,5 MB WebP. Sie werden schrittweise nachgeladen, das erste Bild ist nach ca. 1 s da.
+- Geprüft in Chromium (Desktop-Browser, keine echten Geräte):
+  - 1440×900, 768×1024 und 390×844: Animation aktiv (`data-story-mode=anim`), vorwärts und rückwärts ohne Fehler, kein seitlicher Überlauf.
+  - Videos mit echtem Mausrad-Scrollen aufgenommen.
+- e2e-Tests der Startseite: 14/14, darunter „Animation für normale Besucher“ und „reduzierte Bewegung → Standbilder“.
+- Die Namensnennung für die CC-BY-Modelle steht unter der Geschichte.
+
 ## Offen / Nächster Schritt
-- Abschnitt 1 (office) fertig rendern und im Browser vorwärts und rückwärts prüfen, dann die übrigen Einstellungen.
-- Namensnennung der CC-BY-Modelle auf der Website ergänzen.
+- Hochformat-Bilder (486×864) für alle Einstellungen werden noch gerendert. Bis dahin bekommen Handys die Desktop-Folge im Bildausschnitt. Danach mit `pack.py` neu verpacken.
+- Echte Gerätetests (iPhone/Safari, Android) stehen aus.
 
 ---
 
