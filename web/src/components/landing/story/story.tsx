@@ -139,7 +139,7 @@ function SequenceStory({ onFail, pending }: { onFail: () => void; pending: boole
     if (!manifest) return;
     const v = manifest.variants[variantKey];
     const imgs: (HTMLImageElement | null)[] = new Array(v.count).fill(null);
-    let disposed = false, raf = 0, current = -1, target = 0, last = 0;
+    let disposed = false, raf = 0, current = -1, target = 0, last = 0, shown = -1;
     const ctx = canvas.current!.getContext("2d", { alpha: false })!;
 
     // load order: first frame, then coarse to fine, so every scroll position soon has a nearby frame
@@ -186,18 +186,14 @@ function SequenceStory({ onFail, pending }: { onFail: () => void; pending: boole
       }
       // cover-fit of the rendered frame
       const s = Math.max(W / v.w, H / v.h), ox = (W - v.w * s) / 2, oy = (H - v.h * s) / 2;
-      const f = p * (v.count - 1), a = Math.floor(f), b = Math.min(v.count - 1, a + 1), wgt = f - a;
+      // exactly one rendered frame at a time (cross-fading frames of a moving camera would ghost)
+      const a = Math.round(p * (v.count - 1)), b = a, wgt = 0;
       const ia = nearest(a);
       if (ia >= 0) {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.globalAlpha = 1;
         ctx.drawImage(imgs[ia]!, ox, oy, v.w * s, v.h * s);
-        if (wgt > 0.01 && imgs[b] && ia === a) {
-          ctx.globalAlpha = wgt;
-          ctx.drawImage(imgs[b]!, ox, oy, v.w * s, v.h * s);
-          ctx.globalAlpha = 1;
-        }
       }
+      shown = ia;
       // sharp screenshots on the laptop and phone screens, corners interpolated between the two frames
       const place = (el: HTMLImageElement | null, key: "laptop" | "phone", nw: number, nh: number) => {
         if (!el) return;
@@ -211,8 +207,14 @@ function SequenceStory({ onFail, pending }: { onFail: () => void; pending: boole
           el.style.opacity = String(clamp((area - 0.004) / 0.01));
         } else el.style.opacity = "0";
       };
-      place(overlay.current, "laptop", 1920, 1200);
-      place(phoneOverlay.current, "phone", 780, 1688);
+      // the overlays follow the frame that is really on screen (it may be a neighbour while frames are loading)
+      if (shown !== a) {
+        if (overlay.current) overlay.current.style.opacity = "0";
+        if (phoneOverlay.current) phoneOverlay.current.style.opacity = "0";
+      } else {
+        place(overlay.current, "laptop", 1920, 1200);
+        place(phoneOverlay.current, "phone", 780, 1688);
+      }
       // area labels
       const shot = v.shots.find((x) => a >= x.start && a < x.start + x.count)?.name || "";
       for (const l of LABELS) {
@@ -303,13 +305,14 @@ function SequenceStory({ onFail, pending }: { onFail: () => void; pending: boole
           );
         })}
 
-        {/* opening: heading and both actions right away, over the keyboard area below the screen */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:justify-start lg:p-8" style={{ opacity: intro, visibility: intro <= 0 ? "hidden" : "visible" }}>
-          <Panel className="pointer-events-auto w-full max-w-2xl">
-            <p className="text-sm font-bold text-accent">Beispieldaten der Demo</p>
-            <h1 id="hero" className="font-display mt-1 text-[1.75rem] leading-[1.1] lg:text-[2.4rem]">Gastro führen mit <span className="text-accent">echten Zahlen.</span></h1>
-            <p className="mt-2 text-base text-text-muted">Dein Betrieb beginnt mit einem Überblick. Scrolle, um aus dem Dashboard in den Betrieb zu gehen.</p>
-            <div className="mt-4"><Ctas /></div>
+        {/* opening: heading and both actions right away, as a low strip over the keyboard area below the screen */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:p-5" style={{ opacity: intro, visibility: intro <= 0 ? "hidden" : "visible" }}>
+          <Panel className="pointer-events-auto flex w-full max-w-5xl flex-col gap-3 !p-4 lg:flex-row lg:items-center lg:justify-between lg:!px-6">
+            <div>
+              <h1 id="hero" className="font-display text-[1.6rem] leading-[1.1] lg:text-[2.1rem]">Gastro führen mit <span className="text-accent">echten Zahlen.</span></h1>
+              <p className="mt-1 text-sm text-text-muted lg:text-base">Dein Betrieb beginnt mit einem Überblick. Beispieldaten der Demo – scrolle in den Betrieb.</p>
+            </div>
+            <div className="shrink-0"><Ctas /></div>
           </Panel>
         </div>
 
