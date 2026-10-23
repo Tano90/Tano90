@@ -4,7 +4,8 @@ test.describe("L01 Landingpage", () => {
   test("L01-H1 erreichbar ohne Anmeldung, barrierefrei, führt in die Suite", async ({ page, axe }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Gastro führen mit echten Zahlen.");
-    await expect(page.getByRole("img", { name: /Dashboard der GLB AI Suite/ })).toBeVisible();
+    // the dashboard preview is there before the 3D scene takes over (and stays as fallback)
+    await expect(page.locator("#geschichte img[alt^=\"Dashboard der GLB AI Suite\"]").first()).toBeAttached();
     await axe();
     await expect(page.getByRole("link", { name: /Demo ohne Anmeldung öffnen/ }).first()).toHaveAttribute("href", "/suite");
     await expect(page.getByRole("link", { name: "Anmelden" })).toHaveAttribute("href", "/suite");
@@ -124,7 +125,7 @@ test.describe("L02 Tarife, Rechner und Ansprache", () => {
 
   test("L02-3 Ansprache ohne Druck: Hauptaktion Vorführung mit eigenen Daten, daneben Demo; kein Countdown", async ({ page }) => {
     await page.goto("/");
-    const hero = page.getByRole("region", { name: /Gastro führen/ });
+    const hero = page.locator("#geschichte");
     await expect(hero.getByRole("link").filter({ hasText: "Mit eigenen Daten vorführen lassen" })).toHaveAttribute("href", "#anfrage");
     await expect(hero.getByRole("link").filter({ hasText: "Demo ohne Anmeldung öffnen" })).toHaveAttribute("href", "/suite");
     await expect(page.locator("body")).not.toContainText(/Nur noch \d|Angebot endet|Countdown|Plätze frei|Kundenstimmen|Sterne/i);
@@ -141,5 +142,38 @@ test.describe("L02 Tarife, Rechner und Ansprache", () => {
     expect((await input.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await input.fill("12");
     await expect(page.locator('dl[data-plan="standard"] [data-total]')).toHaveText("124,88 €");
+  });
+});
+
+test.describe("L03 Produktgeschichte", () => {
+  test("L03-1 Überschrift und Aktionen sofort als HTML; überspringen führt hinter die Geschichte", async ({ page }) => {
+    await page.goto("/");
+    const story = page.locator("#geschichte");
+    await expect(story.getByRole("heading", { level: 1 })).toHaveText("Gastro führen mit echten Zahlen.");
+    await expect(story.getByRole("link", { name: /Mit eigenen Daten vorführen lassen/ }).first()).toBeVisible();
+    await page.getByRole("link", { name: /Animation überspringen|Zu den Inhalten springen/ }).click();
+    await expect.poll(() => page.evaluate(() => document.querySelector("#geschichte")!.getBoundingClientRect().bottom <= innerHeight + 2)).toBe(true);
+  });
+
+  test("L03-2 reduzierte Bewegung: dieselbe Geschichte als Standbilder, ohne 3D", async ({ browser }) => {
+    const ctx = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    const story = page.locator("#geschichte");
+    await expect(story.locator("canvas")).toHaveCount(0);
+    for (const t of ["Hinter jeder Zahl steht dein Betrieb.", "Auch dort, wo gearbeitet wird.", "Restaurant. Bar. Bankett. Zusammen im Blick.", "Dein Betrieb. Alle Bereiche. Eine Übersicht."])
+      await expect(story.getByRole("heading", { name: t })).toBeVisible();
+    await expectNoHorizontalScroll(page);
+    await ctx.close();
+  });
+
+  test("L03-3 die Suite lädt kein 3D-Paket", async ({ page }) => {
+    const scripts: string[] = [];
+    page.on("response", async (r) => {
+      if (r.request().resourceType() === "script") scripts.push(await r.text().catch(() => ""));
+    });
+    await page.goto("/suite");
+    await page.waitForLoadState("networkidle");
+    expect(scripts.some((s) => s.includes("WebGLRenderer"))).toBe(false);
   });
 });

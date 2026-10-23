@@ -1,3 +1,70 @@
+# STATUS – Scrollgesteuerte Produktgeschichte (Startseite, 23.10.2026)
+
+Verlauf: Tool → Laptop im Restaurantbüro → Restaurant von oben → Gastraum/Servicestation → Handy-App → Restaurant, Bar, Bankett → gemeinsames Dashboard.
+
+## Szenenstatus
+Werte sind Anteile am Fortschritt der Geschichte.
+| Szene | Fortschritt | Stand |
+| --- | --- | --- |
+| 1 Im Tool | 0–0,10 | Echtes Dashboard füllt den Laptop-Bildschirm; H1 und beide Aktionen sofort als HTML. |
+| 2 Aus dem Bildschirm | 0,10–0,29 | Rückfahrt über die berechnete Bildschirmposition: Laptop auf dem Schreibtisch, dann das Büro. |
+| 3 Der Betrieb | 0,29–0,47 | Aufstieg zur Drohnenansicht; Büro, Restaurant, Bar und Bankett mit Beschriftungen. |
+| 4 Wieder ins Restaurant | 0,47–0,62 | Abstieg vor den Gastraum zur Servicestation mit dem Handy auf einem Ständer. Keine Figur, siehe Einschränkungen. |
+| 5 In die App | 0,62–0,75 | Das Handy-Display füllt die Ansicht: Team & Aufgaben je Outlet, echte Handy-Ansicht der Demo. |
+| 6 Die Outlets | 0,75–0,93 | Restaurant, Bar und Bankett nacheinander, je mit der echten Übersicht und Outlet-Filter (Beispieldaten). |
+| 7 Eine Übersicht | 0,93–1 | Gesamtansicht, dann zurück in den Laptop-Bildschirm; Abschluss mit beiden Aktionen. |
+
+## Technik
+- **Three.js 0.186 (MIT)**, die einzige neue Abhängigkeit, dazu `@types/three` als Dev-Abhängigkeit.
+  - Wird erst nach dem Laden der Startseite per dynamischem Import nachgeladen (ein Chunk, ca. 560 KB unkomprimiert).
+  - Die Suite lädt kein 3D (Test L03-3).
+- **Steuerung durch Scrollen:**
+  - Die Scrollposition ergibt einen Fortschritt von 0 bis 1.
+  - Kamera, Texte, Karten und Beschriftungen werden daraus abgeleitet, vorwärts wie rückwärts.
+  - Es gibt eine zeitbasierte Glättung von etwa 0,1 s ohne Vorauslaufen und ohne Abfangen von Scrollgesten.
+- **Rendering:**
+  - Gezeichnet wird nur bei einer Änderung. Außerhalb des sichtbaren Bereichs pausiert es.
+  - Die Schattenkarte wird einmal berechnet.
+  - Die Pixeldichte ist begrenzt: 1,6 am Desktop, 1,25 im vereinfachten Modus.
+- **Vereinfachter Modus:** greift bei Breite unter 768 px oder schwachen Geräten. Dann gibt es weniger Möbel, keine Schatten und kein Antialiasing. Wide-Shots sind im Hochformat weiter entfernt.
+- **Rückfallversion:** bei reduzierter Bewegung, fehlendem WebGL, einem Fehler beim Start oder mehr als 12 s Ladezeit, sowie mit `?story=static`. Sie zeigt dieselbe Geschichte als Standbilder aus derselben Szene, mit allen Texten und Aktionen.
+- **„Animation überspringen“** ist immer sichtbar und führt hinter die Geschichte (zu Preisen, Demo und Kontakt).
+
+## Assets und Lizenzen
+- 3D-Modell: vollständig selbst aus Three.js-Grundformen gebaut (`world.ts`): Gebäude, Möbel, Laptop, Handy, Pflanzen. Holz- und Steinstrukturen werden im Browser per Canvas erzeugt.
+  - Es gibt keine externen Modelle, Texturen oder HDRIs, also keine Namensnennung nötig.
+  - Die Beleuchtung nutzt das in Three.js enthaltene `RoomEnvironment` (MIT).
+- Bildschirminhalte: echte Aufnahmen der aktuellen Demo mit ihren Beispieldaten.
+  - Erzeugt mit `web/scripts/story-assets.mjs`: `public/story/screen-dashboard.jpg`, `screen-mobile.jpg`, `outlet-*.jpg`.
+- Standbilder für die Rückfallversion: gerendert aus derselben Szene mit `web/scripts/story-stills.mjs` (`public/story/still-*.jpg`).
+- Schriften und Farben: vorhanden (Fraunces, Inter; Beige und Petrol).
+
+## Geänderte Dateien
+- Neu: `web/src/components/landing/story/{world.ts, engine.ts, story.tsx}`
+- Neu: `web/scripts/{story-assets.mjs, story-stills.mjs}`
+- Neu: `web/public/story/*`
+- Geändert: `web/src/app/page.tsx` (alter Hero-Block durch die Geschichte ersetzt), `web/package.json` und `package-lock.json` (three)
+- Tests: `web/e2e/landing.spec.ts` (L03, angepasste Hero-Prüfungen)
+- Die Suite selbst ist unverändert.
+
+## Tests
+Alle Tests liefen in Chromium headless mit Software-WebGL (SwiftShader). **Keine echten Geräte und keine echte GPU.**
+- Breiten 390, 768 und 1440: Bilder an 11 Stellen der Fahrt, kein Querscrollen, keine Konsolenfehler.
+- Erstes 3D-Bild nach dem Laden: 1,3–2,3 s mit Software-Rendering. Das ist nicht repräsentativ für echte Geräte; eine Bildrate wird nicht zugesagt.
+- Reduzierte Bewegung (390 px): Standbilder statt Canvas, alle Aussagen vorhanden.
+- „Animation überspringen“ springt hinter die Geschichte.
+- e2e: Landing, Legal und Suite-v13 32/32 inklusive axe-Prüfung der Startseite. Neu sind L03-1 bis L03-3.
+
+## Offen
+- Echte Geräte prüfen (iPhone/Safari, Android, schwache Laptops) und Bildrate messen.
+- Optional: eine stilisierte Servicekraft. Bewusst weggelassen, weil eine glaubwürdige Figur ohne externes Modell nicht hochwertig gelingt.
+- Optional: externe CC0-Möbelmodelle, zum Beispiel aus Poly Haven oder Kenney, wenn mehr Detail gewünscht ist. Im Moment ist alles selbst gebaut.
+
+## Nächster Schritt
+Sichtprüfung auf echten Geräten; danach Kamerazeiten und Texte nach Rückmeldung feinjustieren.
+
+---
+
 # STATUS – Visuelle Überarbeitung (23.10.2026)
 
 Nur Darstellung. Nicht geändert: Funktionen, Berechnungen, Daten, Rollen, Preise, Filterlogik, URLs.
