@@ -59,7 +59,7 @@
 - Scrollen langsam und schnell, vorwärts und rückwärts: 407 Messungen ohne schwarzes Bild (niedrigste mittlere Helligkeit 44 von 255).
 - Tastatur: Alle Fokusstopps zeigen einen sichtbaren Rahmen; ausgeblendete Aktionen sind nicht fokussierbar.
 - Landing-E2E: 17/17, darunter neu L03-5 (Nachladen), L03-6 (Telefon) und L03-7 (Film fällt aus).
-- Volle Testreihe: siehe Abschnitt Ergebnis unten.
+- Volle Testreihe auf dem Vorschau-Stand: Typecheck und Produktionsbuild erfolgreich, Playwright 322/322 grün (App, Suite, Rechte, Importe, Startseite).
 - Kein Test über das echte Kontaktformular.
 
 ## Verbleibende Schwächen
