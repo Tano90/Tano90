@@ -16,7 +16,13 @@ ap.add_argument("shots", nargs="+")
 a = ap.parse_args()
 
 manifest = {"version": 1, "variants": {}}
+# portrait frames are used only when every shot has them; until then phones get the landscape sequence (cover-cropped)
+portrait_ok = all(os.path.exists(os.path.join(sp.split("=", 1)[1].split(",")[1], sp.split("=")[0] + ".json")) for sp in a.shots)
 for variant, idx in (("d", 0), ("m", 1)):
+    if variant == "m" and not portrait_ok:
+        manifest["variants"]["m"] = dict(manifest["variants"]["d"], dir="d")
+        print("m: Hochformat unvollständig, Handy nutzt die Desktop-Bilder")
+        continue
     os.makedirs(os.path.join(a.out, variant), exist_ok=True)
     frames, shots, total = [], [], 0
     size = None

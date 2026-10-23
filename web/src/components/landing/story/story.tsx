@@ -17,7 +17,7 @@ const BASE = "/story/seq";
 
 type Corner = [number, number, number];
 type Frame = { laptop: Corner[] | null; phone: Corner[] | null; zones?: Record<string, Corner> | null };
-type Variant = { w: number; h: number; count: number; shots: { name: string; start: number; count: number }[]; frames: Frame[] };
+type Variant = { w: number; h: number; count: number; dir?: string; shots: { name: string; start: number; count: number }[]; frames: Frame[] };
 type Manifest = { version: number; variants: { d: Variant; m: Variant } };
 
 // messages per shot (fractions of that shot); shots that are not rendered yet are skipped
@@ -152,7 +152,7 @@ function SequenceStory({ onFail, pending }: { onFail: () => void; pending: boole
         const i = order[next++];
         const im = new Image();
         im.decoding = "async";
-        im.src = `${BASE}/${variantKey}/${String(i).padStart(4, "0")}.webp`;
+        im.src = `${BASE}/${v.dir ?? variantKey}/${String(i).padStart(4, "0")}.webp`;
         active++;
         im.onload = () => {
           active--;
@@ -280,7 +280,7 @@ function SequenceStory({ onFail, pending }: { onFail: () => void; pending: boole
       <div className="sticky top-0 h-svh w-full overflow-hidden bg-[#2b2620]">
         {/* first frame as preview until the sequence is ready */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`${BASE}/${variantKey}/0000.webp`} alt="Dashboard der GLB AI Suite mit Beispieldaten auf einem Laptop im Restaurantbüro." className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${ready ? "opacity-0" : "opacity-100"}`} />
+        <img src={`${BASE}/${manifest ? (manifest.variants[variantKey]?.dir ?? variantKey) : "d"}/0000.webp`} alt="Dashboard der GLB AI Suite mit Beispieldaten auf einem Laptop im Restaurantbüro." className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${ready ? "opacity-0" : "opacity-100"}`} />
         <canvas ref={canvas} aria-hidden className="absolute inset-0 h-full w-full" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img ref={overlay} src="/story/screen-dashboard.jpg" alt="" aria-hidden className="pointer-events-none absolute left-0 top-0 origin-top-left opacity-0" style={{ width: 1920, height: 1200, maxWidth: "none" }} width={1920} height={1200} />
