@@ -7,6 +7,7 @@ import { Reveal } from "@/components/landing/motion";
 import { SiteFooter } from "@/components/landing/site-chrome";
 import { APP_NAME } from "@/lib/brand";
 import { PriceCalculator } from "@/components/landing/price-calculator";
+import { Story } from "@/components/landing/story/story";
 import { formatEur, INDIVIDUAL, PLANS, PLANS_PRELIMINARY_NOTE } from "@/lib/pricing";
 import shotCosts from "../../public/landing/suite-costs.png";
 import detailHint from "../../public/landing/detail-hint.png";
@@ -15,7 +16,6 @@ import detailRecipe from "../../public/landing/detail-recipe.png";
 import shotFunnel from "../../public/landing/suite-funnel.png";
 import shotLifecycle from "../../public/landing/suite-lifecycle.png";
 import shotMobile from "../../public/landing/suite-mobile.png";
-import shotOverview from "../../public/landing/suite-overview.png";
 import shotPurchasing from "../../public/landing/suite-purchasing.png";
 import shotReports from "../../public/landing/suite-reports.png";
 import shotV11Cockpit from "../../public/landing/suite-v11cockpit.png";
@@ -169,40 +169,10 @@ export default function LandingPage() {
             <Link href={SUITE} className="hidden h-(--size-control-md) items-center rounded-pill bg-accent px-4 font-bold text-on-accent hover:bg-accent-hover sm:inline-flex">Demo öffnen</Link>
           </nav>
         </header>
-
-        <section aria-labelledby="hero" className="mx-auto grid max-w-(--size-content-max) items-center gap-12 px-4 pt-8 pb-20 lg:grid-cols-[5fr_7fr] lg:px-8 lg:pt-16 lg:pb-28">
-          <div className="min-w-0">
-            <a href="#alltag" className="mb-6 inline-flex max-w-full items-center gap-2 border-b border-accent pb-0.5 text-sm font-semibold text-accent hover:text-accent-hover">
-              <span className="truncate">Neu: Lebenszyklus-Graph, Wettbewerbspreise in zwei Ansichten, Aufgaben je Outlet</span>
-              <ArrowRight aria-hidden className="size-4 shrink-0" />
-            </a>
-            <h1 id="hero" className="font-display text-[2.5rem] leading-[1.08] sm:text-[3.25rem] lg:text-[4rem]">
-              Gastro führen mit <span className="text-accent">echten Zahlen.</span>
-            </h1>
-            <p className="mt-6 max-w-xl text-base text-text-muted lg:text-lg lg:font-normal">
-              Für Inhaber und Betriebsleitungen in der Gastronomie: sieh jeden Monat, welche Artikel Geld bringen, wo die
-              Warenquote über deinem Ziel liegt und was nachbestellt werden muss. Aus deinen Kassen- und Einkaufsdaten.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#anfrage" className={ctaLight}>{CTA_PRIMARY} <ArrowRight aria-hidden className="size-4" /></a>
-              <Link href={SUITE} className={ctaQuiet}>{CTA_DEMO}</Link>
-            </div>
-            <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-text-muted">
-              {["Demo ohne Anmeldung", "Beispieldaten klar markiert", "Im Browser und als App"].map((x) => (
-                <li key={x} className="flex items-center gap-1.5"><Check aria-hidden className="size-4 text-accent" />{x}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="relative">
-            <figure className="overflow-hidden rounded-md border border-border bg-surface-raised">
-              <Image src={shotOverview} alt="Dashboard der GLB AI Suite: Netto-Umsatz 22.766 Euro, DB II, Wareneinsatzquote und verkaufte Einheiten, mit Beispieldaten." placeholder="blur" priority className="h-auto w-full" sizes="(min-width: 1024px) 760px, 100vw" />
-            </figure>
-            <figure className="absolute -bottom-10 -left-6 hidden w-36 overflow-hidden rounded-md border-4 border-text sm:block lg:w-44">
-              <Image src={shotMobile} alt="Die Suite auf dem Handy." placeholder="blur" className="h-auto w-full" sizes="176px" />
-            </figure>
-          </div>
-        </section>
       </div>
+
+      {/* the product story: tool → laptop → restaurant → phone → outlets → dashboard (heading and actions inside) */}
+      <Story />
 
       {/* the first questions of a buyer, answered before any feature list */}
       <section aria-labelledby="answers" className="border-b border-border bg-surface">
