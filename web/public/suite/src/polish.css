@@ -536,3 +536,19 @@ body {
 .v6-action-head {
   text-wrap: pretty;
 }
+
+/* Einstieg in drei Schritten on the overview (Oct 2026): compact, links to existing views only */
+.v6-guide { margin: 16px 0 4px; padding: 14px 16px; border: 1px solid var(--line, #dfe5e2); border-radius: 12px; background: var(--surface, #fff); }
+.v6-guide-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.v6-guide-head h2 { margin: 0; font-size: 1rem; }
+.v6-guide ol { display: grid; gap: 14px; margin: 12px 0 0; padding: 0; list-style: none; }
+@media (min-width: 900px) { .v6-guide ol { grid-template-columns: repeat(3, 1fr); } }
+.v6-guide li { display: flex; gap: 10px; }
+.v6-guide-num { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #0f6a64; color: #fff; font-weight: 700; font-size: 0.85rem; }
+.v6-guide li p { margin: 2px 0 8px; font-size: 0.875rem; color: var(--muted, #5b6b68); }
+.v6-guide-links { display: flex; flex-wrap: wrap; gap: 6px; }
+.v6-guide-link { min-height: 36px; padding: 0 12px; border: 1px solid var(--line, #cfd8d5); border-radius: 999px; background: transparent; font: inherit; font-size: 0.85rem; font-weight: 600; color: #0f6a64; cursor: pointer; }
+.v6-guide-link:hover { background: rgba(15, 106, 100, 0.08); }
+.v6-guide-link:focus-visible, .v6-guide-head button:focus-visible { outline: 3px solid #0f6a64; outline-offset: 2px; }
+.v6-guide-show { margin: 10px 0 0; font-size: 0.875rem; }
+@media (max-width: 640px) { .v6-guide-link { min-height: 44px; } }

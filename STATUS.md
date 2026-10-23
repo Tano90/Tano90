@@ -1,4 +1,86 @@
-# STATUS – Kamerafahrt-Vorschau (Branch `claude/kamerafahrt-vorschau`, 23.10.2026)
+# STATUS – Startseite gestrafft, KI-Klarheit, Demo-Einstieg (Branch `claude/kamerafahrt-vorschau`, 23.10.2026)
+
+## Sicherung
+- **Live, unverändert:** `claude/replica-skill-install-vzriug` @ `3e59d29`.
+- **Vorschau vor dieser Runde:** `846c309`.
+- **Diese Runde:** liegt im selben Vorschau-Branch.
+- **Unverändert:**
+  - Berechnungen, Daten, Rollen, Importe, Formular, Server Actions
+  - Preisdefinition `src/lib/pricing.ts` und Rechner
+
+## Bestandsprüfung (gezielt)
+- **Startseite:** Dieselben Ansichten kamen bis zu dreimal vor (Detailausschnitte, Alltagsfragen, Funktionen). Dazu kamen eine separate Modulliste, ein Rundgang-Video und Fakten, die die KI-Aussage doppelt enthielten.
+- **KI im Code:**
+  - Der einzige KI-Aufruf ist `POST /api/suite/market/analyze` (OpenAI, `store:false`).
+    - Läuft nur mit einem Server-Schlüssel des Betreibers, nur auf Klick.
+    - Nur für Leitungsrollen, mit Tageslimit.
+    - Verarbeitet nur die selbst erfassten Preisbeobachtungen.
+  - `market/discover` sucht Orte über OpenStreetMap, ohne Preise.
+  - `market/status` meldet `price_lookup: false`.
+  - **Kein automatischer Preisabruf.**
+  - „GLB Intelligence“ (`v11/intelligence.mjs`) rechnet deterministische Kennzahlen, keine KI.
+  - Kassenanbindung: signierter Webhook `/api/suite/pos/ingest` (optional).
+
+## Änderungen
+- **Einstieg:**
+  - Die Überschrift bleibt.
+  - Darunter steht die Nutzenbeschreibung („Erkenne, welche Gerichte …“).
+  - Hauptaktion „Demo ohne Anmeldung öffnen“, zweite Aktion „Vorführung mit eigenen Daten“.
+  - Am Desktop steht die Überschrift in 2 Zeilen.
+  - Auf dem Handy hat der Textbereich mehr Höhe, damit nichts verdeckt wird.
+- **Neue Gliederung der Startseite:**
+  1. Kurz beantwortet: 6 Käuferfragen, jeweils mit Link.
+  2. `#funktionen`: 4 Entscheidungen mit je einem Screenshot. Die Bereichsliste ist aufklappbar.
+  3. `#daten`: Import und „Das erledigst du weiterhin selbst“.
+  4. `#ki`: Berechnung, Regeln, KI (optional), manuelle Erfassung, Integrationen.
+  5. `#rollen`: Rollen und Verlässlichkeit, zusammengeführt.
+  6. `#preise`
+  7. `#ausprobieren`: 3 Schritte und das Video (`#rundgang`).
+  8. `#anfrage`, FAQ ohne Dopplungen, Abschluss.
+- **Entfernt:** Abschnitte „Im Detail“, „Vier Fragen“ und „Funktionen“ als Einzelabschnitte, „Alles drin“, „Verlässlich“. Die alten Anker `#alltag` und `#details` zeigen weiter auf `#funktionen`.
+- **Navigation:** Funktionen, Daten & KI, Preise, Ausprobieren.
+- **Preise:**
+  - Alle vorläufigen Punkte stehen gebündelt in einem Hinweis mit der Liste „Noch offen“.
+  - Die Karten zeigen zuerst Tarif, Preis, Zielgruppe, Umfang und Handlung; Details sind aufklappbar.
+- **Suite – „Einstieg in drei Schritten“ in der Übersicht** (`app.js` `v6Guide`, Stil in `polish.css`):
+  - Die Schritte: Daten importieren → Auffälligkeiten prüfen → Nächste Maßnahme.
+  - Verlinkt sind nur vorhandene Ansichten, die die jeweilige Rolle im Menü hat.
+  - Ausblendbar; die Wahl bleibt in diesem Browser (`glb-guide-hidden`).
+  - Es gibt keine neue Import- oder Rechenlogik; die Beispieldaten-Hinweise bleiben.
+  - Der Cache-Name im Service Worker ist angehoben.
+- **Tests:**
+  - L01-E3 auf die neue Gliederung umgestellt, dazu die Prüfung, dass kein Screenshot doppelt vorkommt.
+  - L02-3 und L03-1 auf die neue Beschriftung umgestellt.
+  - Neu: SG-1 (Einstieg in drei Schritten).
+
+## Geprüft (Chromium-Emulation, keine echten Geräte)
+- Einstieg bei 1440×900, 1280×720, 768×1024, 390×844, 375×667 und 360×640: Überschrift, Nutzentext und beide Aktionen vollständig sichtbar und nicht verdeckt; kein horizontaler Überlauf; keine Konsolenfehler.
+- Kamerafahrt vorwärts und rückwärts, Telefon, Ausfall des Films und reduzierte Bewegung: Landing-E2E 17/17.
+- Volle Testreihe: siehe Ergebnis unten.
+- Nicht gesondert geprüft in dieser Runde: Sicherheit, Backend und Rollen. Sie sind nur über die bestehende automatische Testreihe abgedeckt.
+- Kein echtes Kontaktformular abgeschickt.
+
+## Offene Geschäftsentscheidungen (für dich)
+1. Welche Module endgültig zu Standard und Premium gehören. Der Umfang auf der Seite ist ein Vorschlag.
+2. Ob Nutzer im Grundpreis enthalten sind.
+3. Was „pro Kunde“ abrechnet (Vertragskunde, Betrieb, Standort?).
+4. Ob die Umsatzsteuer ausgewiesen wird und ob die Preise netto oder brutto gelten.
+5. Ob die optionale KI-Einordnung in einem Tarif enthalten ist, und wer die API-Kosten trägt.
+6. Leistungsumfang und Grenzen der 29,99 € bei individuellen Lösungen.
+7. Ob die KI-Einordnung auf der Live-Seite überhaupt eingerichtet ist (Server-Schlüssel). Das ist von hier aus nicht prüfbar.
+
+## Bekannte Schwächen
+- 360×640: Das Dashboard im Einstieg ist nur ca. 200 px breit, und das angehobene Telefon ist klein.
+- Film: KI-Material, hochskaliert; kein Bankett-Filmabschnitt. Siehe Archiv unten.
+- Keine echten iOS- und Android-Tests.
+
+## Fortsetzung
+- Nächster Schritt: offene Geschäftsentscheidungen klären, Vorschau auf echten Geräten prüfen, nach Freigabe in `claude/replica-skill-install-vzriug` übernehmen.
+
+---
+
+# Archiv: Kamerafahrt-Vorschau
+
 
 ## Ausgangsstand und Sicherung
 - Produktiv bleibt `claude/replica-skill-install-vzriug` auf Commit `3e59d29`. Diese Seite ist live und unverändert.

@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from "react";
 // "Reduced motion" (or ?story=static) shows the still version; if the film fails, texts and actions stay usable.
 
 const CTA_PRIMARY = "Demo ohne Anmeldung öffnen";
-const CTA_SECOND = "Mit eigenen Daten vorführen lassen";
+const CTA_SECOND = "Vorführung mit eigenen Daten";
 const FILM = "/story/film";
 const DASH = "/story/screen-overview.webp";
 const DASH_ALT = "Dashboard der GLB AI Suite mit Beispieldaten: Kennzahlen, Berichtsfilter und Handlungsbedarf.";
@@ -393,7 +393,7 @@ function ScrollStory() {
             <div className="story-copy pointer-events-auto [grid-area:1/1]" style={fade(hero)}>
               <p className="story-kicker">GLB AI Suite<span className="hidden sm:inline"> · Gastro Leadership Board</span></p>
               <h1 id="hero" className="story-h1 mt-3">Gastro führen mit echten Zahlen.</h1>
-              <p className="story-lead mt-3 sm:mt-4">Umsatz, Deckungsbeitrag, Warenquote und offene Aufgaben: aus deinen Verkäufen, für jedes Outlet.</p>
+              <p className="story-lead mt-3 sm:mt-4">Erkenne, welche Gerichte deine Warenquote überschreiten, was du nachbestellen musst und welche Aufgaben im Team offen sind.</p>
               <div className="mt-6"><Ctas /></div>
             </div>
             {BEATS.map((b) => (
@@ -443,7 +443,7 @@ function StaticStory() {
         <div>
           <p className="story-kicker">GLB AI Suite · Gastro Leadership Board</p>
           <h1 id="hero" className="story-h1 mt-3">Gastro führen mit echten Zahlen.</h1>
-          <p className="story-lead mt-4">Umsatz, Deckungsbeitrag, Warenquote und offene Aufgaben: aus deinen Verkäufen, für jedes Outlet.</p>
+          <p className="story-lead mt-4">Erkenne, welche Gerichte deine Warenquote überschreiten, was du nachbestellen musst und welche Aufgaben im Team offen sind.</p>
           <div className="mt-6"><Ctas /></div>
         </div>
         <div className="story-frame relative overflow-hidden" style={{ aspectRatio: "16 / 10" }}>

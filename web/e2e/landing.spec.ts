@@ -30,20 +30,27 @@ test.describe("L01 Landingpage", () => {
     await expect(page.getByText(/Es gibt sieben Rollen/)).toBeVisible();
   });
 
-  test("L01-E3 kurze Antworten zuerst, vier Abläufe mit Bild, Bereiche als kurzer Index; Video mit Untertiteln", async ({ page }) => {
+  test("L01-E3 sechs Käuferfragen zuerst, vier Entscheidungen mit je einem Bild, Bereiche aufklappbar, KI klar abgegrenzt; Video mit Untertiteln", async ({ page }) => {
     await page.goto("/");
     const answers = page.getByRole("region", { name: "Kurz beantwortet" });
-    for (const q of ["Welche Entscheidung erleichtert die Suite?", "Wie kommen meine Daten hinein?", "Wie viel laufende Arbeit entsteht?", "Was kostet das?", "Wie teste ich mit eigenen Daten?"])
-      await expect(answers.getByText(q)).toBeVisible();
-    const features = page.getByRole("region", { name: "Vom Service bis zum Ergebnis." });
-    for (const h of ["Report Studio", "Deckungsbeiträge & Zielpreise", "Bestell-Forecast", "Service Funnel"]) await expect(features.getByRole("heading", { name: h })).toBeVisible();
+    for (const q of ["Für welchen Betrieb?", "Welche Entscheidungen erleichtert sie?", "Wie kommen die Daten hinein?", "Welche Arbeit bleibt bei dir?", "Was kostet sie?", "Wie probiere ich sie aus?"])
+      await expect(answers.getByText(q, { exact: true })).toBeVisible();
+    const features = page.getByRole("region", { name: "Vier Entscheidungen, die jede Woche anstehen." });
+    for (const h of ["Welches Gericht überschreitet deine Warenquote?", "Welcher Artikel wächst, welcher verliert?", "Was musst du nachbestellen?", "Was ist in welchem Outlet offen?"])
+      await expect(features.getByRole("heading", { name: h })).toBeVisible();
     await expect(features.getByRole("img")).toHaveCount(4);
-    const board = page.getByRole("region", { name: "Ein Board statt zehn Listen" });
-    for (const a of ["Übersicht", "Verkauf & Preise", "Einkauf & Lager", "Service & Team", "Einrichtung & Daten"]) await expect(board.getByText(a, { exact: true })).toBeVisible();
-    await expect(board.getByRole("img")).toHaveCount(0);
-    // the demo appointment stays visible: header and hero lead to it
-    await expect(page.getByRole("link", { name: /Mit eigenen Daten vorführen lassen/ }).first()).toHaveAttribute("href", "#anfrage");
-    const video = page.locator("video");
+    // the area index is folded away and opens by keyboard
+    const index = features.getByText("Alle Bereiche der Suite", { exact: false });
+    await index.focus();
+    await page.keyboard.press("Enter");
+    for (const a of ["Übersicht", "Verkauf & Preise", "Einkauf & Lager", "Service & Team", "Einrichtung & Daten"]) await expect(features.getByText(a, { exact: true })).toBeVisible();
+    // AI: one optional function, no automatic price lookup
+    const ai = page.getByRole("region", { name: "Was die Suite rechnet, und wo KI im Spiel ist." });
+    for (const h of ["Nachvollziehbare Berechnungen", "Regelbasierte Hinweise", "KI-Einordnung im Marktcheck (optional)", "Manuelle Erfassung", "Optionale Integrationen"]) await expect(ai.getByRole("heading", { name: h })).toBeVisible();
+    await expect(ai).toContainText("keine Restaurant- oder Wettbewerbspreise automatisch ab");
+    await expect(page.getByRole("region", { name: "Wie die Daten hineinkommen, und was bei dir bleibt." })).toContainText("Bestellungen an Lieferanten selbst senden");
+    await expect(page.getByRole("link", { name: /Vorführung mit eigenen Daten/ }).first()).toHaveAttribute("href", "#anfrage");
+    const video = page.locator("#ausprobieren video");
     await expect(video).toHaveAttribute("poster", "/landing/suite-reports.png");
     await expect(video.locator("track[kind=captions]")).toHaveAttribute("src", "/landing/suite-rundgang.vtt");
     expect((await page.request.get("/landing/suite-rundgang.mp4")).status()).toBe(200);
@@ -63,10 +70,9 @@ test.describe("L01 Landingpage", () => {
     expect(look.h1).toContain("Fraunces");
     // no moving ticker, no glow on the start page
     expect(await page.locator(".animate-marquee, .shadow-glow").count()).toBe(0);
-    // real views of the application for concrete use cases
-    const cases = page.getByRole("region", { name: "Vier Fragen, die jede Woche kommen." });
-    await expect(cases.getByRole("img")).toHaveCount(4);
-    for (const h of ["Wie lief der Monat, und wo fehlen noch Kosten?", "Welcher Artikel wächst, welcher verliert?", "Was verlangen andere für Vergleichbares?", "Was ist in welchem Outlet offen?"]) await expect(cases.getByRole("heading", { name: h })).toBeVisible();
+    // no screenshot appears twice on the page
+    const srcs = await page.locator("main img").evaluateAll((xs) => xs.map((x) => (x.getAttribute("src") || "").replace(/[?&]w=\d+.*$/, "")));
+    expect(new Set(srcs).size).toBe(srcs.length);
     // every in-page link has its target
     const anchors = await page.locator('a[href^="#"]').evaluateAll((as) => as.map((a) => a.getAttribute("href")!));
     for (const h of anchors) expect(await page.locator(h).count(), h).toBe(1);
@@ -126,7 +132,7 @@ test.describe("L02 Tarife, Rechner und Ansprache", () => {
   test("L02-3 Ansprache ohne Druck: Hauptaktion Demo ohne Anmeldung, daneben Vorführung mit eigenen Daten; kein Countdown", async ({ page }) => {
     await page.goto("/");
     const hero = page.locator("#geschichte");
-    await expect(hero.getByRole("link").filter({ hasText: "Mit eigenen Daten vorführen lassen" })).toHaveAttribute("href", "#anfrage");
+    await expect(hero.getByRole("link").filter({ hasText: "Vorführung mit eigenen Daten" })).toHaveAttribute("href", "#anfrage");
     await expect(hero.getByRole("link").filter({ hasText: "Demo ohne Anmeldung öffnen" })).toHaveAttribute("href", "/suite");
     await expect(page.locator("body")).not.toContainText(/Nur noch \d|Angebot endet|Countdown|Plätze frei|Kundenstimmen|Sterne/i);
   });
@@ -150,7 +156,7 @@ test.describe("L03 Produktgeschichte", () => {
     await page.goto("/");
     const story = page.locator("#geschichte");
     await expect(story.getByRole("heading", { level: 1 })).toHaveText("Gastro führen mit echten Zahlen.");
-    await expect(story.getByRole("link", { name: /Mit eigenen Daten vorführen lassen/ }).first()).toBeVisible();
+    await expect(story.getByRole("link", { name: /Vorführung mit eigenen Daten/ }).first()).toBeVisible();
     await page.getByRole("link", { name: /Animation überspringen|Zu den Inhalten springen/ }).click();
     await expect.poll(() => page.evaluate(() => document.querySelector("#geschichte")!.getBoundingClientRect().bottom <= innerHeight + 2)).toBe(true);
   });

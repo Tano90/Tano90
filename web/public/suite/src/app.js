@@ -2432,6 +2432,13 @@
         navigate("products");
         toast("Leerer Betrieb angelegt.");
         break;
+      case "guide-hide":
+      case "guide-show":
+        try {
+          localStorage.setItem("glb-guide-hidden", name === "guide-hide" ? "1" : "0");
+        } catch {}
+        render();
+        break;
       case "reset-demo":
         if (!confirm("Alle lokalen Änderungen verwerfen und Beispieldaten laden?")) return;
         S = defaults();
@@ -4943,6 +4950,25 @@
   function v6ReportHeader(title, desc) {
     return `<div class="v6-heading"><div><div class="v6-overline">GLB INSIGHTS / REPORTING</div><h2>${esc(title)}</h2><p>${esc(desc)}</p></div><div class="v6-report-actions"><button class="btn" data-v6="save-view">${I("plus")} Ansicht speichern</button><button class="btn" data-v6="csv" title="Spalten wie bisher, Semikolon, UTF-8">${I("download")} CSV</button><button class="btn" data-v6="xlsx" title="Mit Auswahl, Zeitraum, Einheiten und Grundlage">${I("download")} Excel</button><button class="btn btn-primary" data-v6="print">${I("file")} Drucken / PDF</button></div></div>`;
   }
+  // Compact way into the demo/own data: three steps, each linking existing views only (no own import or logic).
+  // Skippable; the choice is kept in this browser. Only views the current role can open in the menu are offered.
+  function v6Guide() {
+    let hidden = false;
+    try {
+      hidden = localStorage.getItem("glb-guide-hidden") === "1";
+    } catch {}
+    if (hidden) return `<p class="v6-guide-show"><button type="button" class="link-button" data-action="guide-show">Einstieg in drei Schritten anzeigen</button></p>`;
+    const can = (v) => !document.querySelector("#sidebar") || document.querySelector(`#sidebar [data-view="${v}"]`);
+    const links = (xs) => xs.filter(([v]) => can(v)).map(([v, label]) => `<button type="button" class="v6-guide-link" data-view="${v}">${esc(label)}</button>`).join("");
+    const steps = [
+      ["Daten importieren", S.mode === "own" ? "Speisekarte und Monatsverkäufe aus der Kasse (CSV) übernehmen." : "Hier siehst du Beispieldaten. Mit eigenen Daten beginnst du über „Eigene Daten starten“ oben.", [["setup", "Erste Schritte"], ["menuimport", "Speisekarte"], ["v11sales", "Monatsverkäufe"]]],
+      ["Auffälligkeiten prüfen", "Handlungsbedarf weiter unten auf dieser Seite, dazu fehlende Daten und alle Hinweise.", [["operations", "Datenqualität"], ["insights", "Hinweise"]]],
+      ["Nächste Maßnahme umsetzen", "Aufgaben je Outlet erledigen oder eine Bestellung vorbereiten.", [["myday", "Heute zu tun"], ["v11tasks", "Team & Aufgaben"], ["purchasing", "Bestell-Forecast"]]],
+    ];
+    return `<section class="v6-guide" aria-labelledby="v6-guide-title"><div class="v6-guide-head"><h2 id="v6-guide-title">Einstieg in drei Schritten</h2><button type="button" class="v6-text-button" data-action="guide-hide">Ausblenden</button></div><ol>${steps
+      .map(([title, text, xs], i) => `<li><span class="v6-guide-num" aria-hidden="true">${i + 1}</span><div><strong>${esc(title)}</strong><p>${esc(text)}</p><div class="v6-guide-links">${links(xs)}</div></div></li>`)
+      .join("")}</ol></section>`;
+  }
   function v6Exec() {
     const t = v6Report();
     const cmp = v6MonthCompare();
@@ -4959,8 +4985,8 @@
     const r = v6Report(),
       t = r.totals,
       cmp = v6MonthCompare();
-    if (!r.products.length) return `<div class="v6-page-top">${v6Exec()}${v6ReportFilters()}</div>${v6NoSales()}`;
-    return `<div class="v6-page-top">${v6Exec()}${v6ReportFilters()}</div><div class="v6-kpis">${v6Kpi(`Netto-Umsatz · ${V6_MONTH === "all" ? "alle Monate" : periodName(V6_MONTH)}`, euro(t.revenue), V6_MONTH === "all" ? v6RangeLabel(r) : !cmp ? "Kein Monat mit Verkäufen" : cmp.change === null ? `Kein Vergleich: ${periodName(cmp.prevId)} ohne Verkäufe` : `ggü. ${periodName(cmp.prevId)}: ${cmp.change >= 0 ? "+" : ""}${pct(cmp.change)}`)}${v6Kpi("DB II", euro(t.db2), "Vor Fixkosten", "mint")}${v6Kpi("Wareneinsatzquote", v6Percent(t.goodsPct), "Warenkosten / Netto-Umsatz")}${v6Kpi("Verkaufte Einheiten", number(t.quantity), "Aus erfassten Verkaufszeilen")}</div>${v6Definitions()}${v6ActionHints(r)}<div class="v6-split"><div>${v6Panel("PERFORMANCE", "Umsatz und DB im Zeitverlauf", "Monatlicher Netto-Umsatz. Alle Filter wirken auf die Grafik.", v6LineChart(r.months, "revenue"))}</div><div>${v6Panel("SORTIMENT", "Umsatz nach Warengruppe", "Anteil der Produktkategorien am Netto-Umsatz.", v6Donut(r.categories))}</div></div>${v6Panel("OUTLETS", "Umsatz nach Outlet", "Klick auf ein Outlet filtert alle Reports.", v6BarChart(r.outlets, "revenue", { click: "outlet" }))}`;
+    if (!r.products.length) return `<div class="v6-page-top">${v6Exec()}${v6Guide()}${v6ReportFilters()}</div>${v6NoSales()}`;
+    return `<div class="v6-page-top">${v6Exec()}${v6Guide()}${v6ReportFilters()}</div><div class="v6-kpis">${v6Kpi(`Netto-Umsatz · ${V6_MONTH === "all" ? "alle Monate" : periodName(V6_MONTH)}`, euro(t.revenue), V6_MONTH === "all" ? v6RangeLabel(r) : !cmp ? "Kein Monat mit Verkäufen" : cmp.change === null ? `Kein Vergleich: ${periodName(cmp.prevId)} ohne Verkäufe` : `ggü. ${periodName(cmp.prevId)}: ${cmp.change >= 0 ? "+" : ""}${pct(cmp.change)}`)}${v6Kpi("DB II", euro(t.db2), "Vor Fixkosten", "mint")}${v6Kpi("Wareneinsatzquote", v6Percent(t.goodsPct), "Warenkosten / Netto-Umsatz")}${v6Kpi("Verkaufte Einheiten", number(t.quantity), "Aus erfassten Verkaufszeilen")}</div>${v6Definitions()}${v6ActionHints(r)}<div class="v6-split"><div>${v6Panel("PERFORMANCE", "Umsatz und DB im Zeitverlauf", "Monatlicher Netto-Umsatz. Alle Filter wirken auf die Grafik.", v6LineChart(r.months, "revenue"))}</div><div>${v6Panel("SORTIMENT", "Umsatz nach Warengruppe", "Anteil der Produktkategorien am Netto-Umsatz.", v6Donut(r.categories))}</div></div>${v6Panel("OUTLETS", "Umsatz nach Outlet", "Klick auf ein Outlet filtert alle Reports.", v6BarChart(r.outlets, "revenue", { click: "outlet" }))}`;
   }
   // "Handlungsbedarf" on the overview (Oct 2026): only statements backed by data and, for good/bad judgements, by a
   // target the business set itself. Every line names article or outlet, period and basis and opens the matching page.
