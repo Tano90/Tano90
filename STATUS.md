@@ -1,3 +1,65 @@
+# STATUS – Fotorealistische Scrollgeschichte (Startseite, 23.10.2026)
+
+## Befund zur gemeldeten Browserprüfung
+- **Was angezeigt wurde:** Text und Bild nebeneinander, Servicestation, separate Handy-Abbildung. Das war die **statische Rückfallansicht** der vorigen Version (`StaticStory`), nicht die Animation.
+- **Was die Rückfallansicht damals auslöste:**
+  - die Systemeinstellung „reduzierte Bewegung“,
+  - fehlendes WebGL,
+  - ein Fehler beim Start der 3D-Szene,
+  - mehr als 12 s bis zum ersten 3D-Bild (Three.js-Paket mit ca. 560 KB plus Texturen).
+- **Welcher Auslöser es im Prüfbrowser war, lässt sich von hier aus nicht feststellen.** In dieser Umgebung lieferte Chromium headless in allen getesteten Varianten WebGL 1 und 2.
+- **Neue Lösung:**
+  - Keine Echtzeit-3D-Szene mehr. Stattdessen läuft eine **in Blender (Cycles) vorgerenderte Kamerafahrt** als scrollgesteuerte Bildfolge auf einem 2D-Canvas.
+  - Sie braucht kein WebGL. Die Rückfallansicht erscheint nur noch bei „reduzierter Bewegung“ oder mit `?story=static`; dort gibt es einen Link „Animation trotzdem abspielen“.
+  - Das Attribut `data-story-mode` zeigt im Browser, welche Variante läuft.
+
+## Werkzeuge und Assets (geprüft)
+- **Blender 5.2.3** über PyPI (`bpy`), Renderer Cycles auf der CPU (4 Kerne, keine GPU), Entrauschen mit OpenImageDenoise. EEVEE ist ohne GPU/EGL nicht verfügbar.
+- **Gesperrt** durch die Netzwerkrichtlinie dieser Umgebung: Poly Haven, ambientCG, Kenney und blender.org.
+- **Möbelmodelle aus Khronos glTF-Sample-Assets** (raw.githubusercontent.com):
+
+| Modell | Lizenz | Urheber |
+| --- | --- | --- |
+| SheenChair | CC0-1.0 | Eric Chadwick |
+| GlassVaseFlowers | CC0-1.0 | Eric Chadwick, Rico Cilliers |
+| DiffuseTransmissionTeacup | CC0-1.0 | Polyhaven.com, Eric Chadwick |
+| WaterBottle | CC0-1.0 | Microsoft (nicht verwendet) |
+| SheenWoodLeatherSofa | CC-BY-4.0 / CC0 | Eric Chadwick / Fran Calvente |
+| DiffuseTransmissionPlant | CC-BY-4.0 / CC0 | Eric Chadwick / Rico Cilliers |
+| GlassHurricaneCandleHolder | CC-BY-4.0 | Eric Chadwick |
+| CommercialRefrigerator | CC-BY-4.0 | Eric Chadwick, Sean Thomas |
+| AnisotropyBarnLamp | CC-BY-4.0 | Eric Chadwick (nicht mehr verwendet) |
+
+  Für die CC-BY-Modelle ist eine Namensnennung nötig; sie steht in der Fußzeile bzw. auf der Seite „Bildnachweise“, siehe offene Punkte.
+- **Alles andere ist selbst modelliert** (`web/scripts/story-blender/scene.py`): Gebäude, Fassade, Straße und Gegenüberbebauung, Laptop, Handy, Tische, Stühle, Theke, Flaschen und Gläser. Alle Materialien (Holz, Ziegel, Stein, Glas, Leder, Stoff) sind prozedural.
+- **Licht:** Blenders physikalischer Himmel mit Sonne. Es werden keine externen HDRIs gerendert.
+- **Bildschirme:** echte Aufnahmen der Demo (`public/story/screen-*.jpg`). Auf der Website werden sie zusätzlich als gestochen scharfe Bilder perspektivisch auf die exportierten Bildschirmecken jedes Bilds gelegt.
+
+## Szenen
+Das ist eine Kamerafahrt in einem einzigen Modell; jede Einstellung beginnt an der Endposition der vorigen.
+| Einstellung | Bilder | Inhalt |
+| --- | --- | --- |
+| office | 60 | Dashboard füllt das Bild → Laptop auf dem Schreibtisch → Büro → rückwärts durch den offenen Fensterflügel hinaus |
+| aerial | 40 | Aufstieg zur Drohnenansicht: Fassade, Terrasse, Straße, Nachbarhäuser |
+| enter | 45 | Abstieg durch den offenen Eingang in den Gastraum zur Servicestation |
+| phone | 24 | Das Handy-Display übernimmt die Fläche (Team & Aufgaben) |
+| outlets | 60 | Restaurant → Bar → durch die Glastür → Bankett, jeweils mit den echten Outlet-Kennzahlen |
+| return | 40 | Durch Durchgang und Bürotür zurück zum Laptop → Dashboard, Abschluss mit beiden Aktionen |
+
+- Desktop-Variante: 1152×648. Handy-Variante: eigene Hochformat-Bilder mit 486×864 und weiter entfernten Totalen.
+- Rendern über die Warteschlange `scratchpad/queue.sh`; bereits vorhandene Bilder werden übersprungen. Verpacken mit `web/scripts/story-blender/pack.py` (WebP plus Manifest mit den Bildschirmecken).
+
+## Geänderte Dateien
+- `web/src/components/landing/story/story.tsx`: Bildfolgen-Player, Bildschirm-Overlays, Texte und Rückfallansicht.
+- Entfernt: `engine.ts`, `world.ts`, `scripts/story-stills.mjs`, Abhängigkeit `three`.
+- Neu: `web/scripts/story-blender/{scene.py, pack.py}`, `web/public/story/seq/*`.
+
+## Offen / Nächster Schritt
+- Abschnitt 1 (office) fertig rendern und im Browser vorwärts und rückwärts prüfen, dann die übrigen Einstellungen.
+- Namensnennung der CC-BY-Modelle auf der Website ergänzen.
+
+---
+
 # STATUS – Scrollgesteuerte Produktgeschichte (Startseite, 23.10.2026)
 
 Verlauf: Tool → Laptop im Restaurantbüro → Restaurant von oben → Gastraum/Servicestation → Handy-App → Restaurant, Bar, Bankett → gemeinsames Dashboard.
