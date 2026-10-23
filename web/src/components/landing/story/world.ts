@@ -295,7 +295,8 @@ export function buildWorld(renderer: THREE.WebGLRenderer, screens: { dashboard: 
   box(0.2, 1, 8, m.plasterWarm, 12.1, 0.5, -4, root);
   box(0.2, 1, 8, m.plasterWarm, 12.1, 0.5, 4, root);
   box(24.4, 0.5, 0.2, m.plasterWarm, 0, 0.25, 8.1, root); // low parapet at the front
-  for (let x = -11; x <= 11; x += 2.75) box(0.08, H, 0.08, m.metal, x, H / 2, 8.1, root); // slim mullions of the glass front
+  // slim mullions of the glass front; the entrance in front of the service station stays open
+  for (let x = -11; x <= 11; x += 2.75) if (x < -4 || x > -1) box(0.08, H, 0.08, m.metal, x, H / 2, 8.1, root);
   // window openings in the back wall: warm glow panels
   for (const x of [-2.5, 1.5, 6.5, 9.5]) box(1.6, 1.4, 0.02, m.lamp, x, 1.7, -7.99, root, false);
 
@@ -303,7 +304,6 @@ export function buildWorld(renderer: THREE.WebGLRenderer, screens: { dashboard: 
   box(0.15, H, 3.2, m.plasterWarm, -6, H / 2, -6.4, root);
   box(0.15, 0.6, 1.8, m.plasterWarm, -6, H - 0.3, -3.9, root); // door lintel
   box(6, H, 0.02, m.glass, -9, H / 2, -3, root, false);
-  box(6, 0.06, 0.08, m.metal, -9, H, -3, root, false);
   box(6, 0.06, 0.08, m.metal, -9, 0.03, -3, root, false);
   // desk along the back wall, chair, shelf, plant, wall clock
   rbox(1.8, 0.04, 0.75, 0.01, m.oak, -9, 0.74, -7.2, root);
