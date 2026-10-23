@@ -356,13 +356,30 @@ function SequenceStory({ onFail, pending }: { onFail: () => void; pending: boole
   );
 }
 
-// still version for "reduced motion": the same story with frames of the same render
-const STILLS = [
-  { frame: 30, kicker: "Aus dem Bildschirm heraus", title: "Das Dashboard läuft dort, wo du planst.", text: "Im Büro deines Restaurants – mit Umsatz, Deckungsbeitrag und Handlungsbedarf aus deinen Verkäufen.", alt: "Der Laptop mit dem Dashboard auf dem Schreibtisch im Restaurantbüro, Ziegelwand und Regal." },
-  { frame: 50, kicker: "Der Betrieb", title: "Hinter jeder Zahl steht dein Betrieb.", alt: "Blick durch das Fenster in das Restaurantbüro mit Schreibtisch, Sessel und Pflanze." },
-];
+// still version for "reduced motion": the same story, one rendered frame per message from the same camera flight
+const STILL_AT: Record<string, { at: number; alt: string }> = {
+  office: { at: 0.5, alt: "Der Laptop mit dem Dashboard auf dem Schreibtisch im Restaurantbüro, Ziegelwand und Regal." },
+  aerial: { at: 1, alt: "Das Restaurant von oben: Fassade mit Glasfront, Terrasse mit Sonnenschirmen, Straße und Nachbarhäuser." },
+  enter: { at: 0.8, alt: "Blick durch den offenen Eingang in den Gastraum zur Servicestation." },
+  phone: { at: 1, alt: "Handy auf der Servicestation mit der Ansicht Team und Aufgaben der Suite." },
+  outlets: { at: 0.32, alt: "Gastraum mit gedeckten Tischen, Bar und Bankett im Hintergrund." },
+  return: { at: 0.3, alt: "Blick vom Bankett zurück in den Gastraum." },
+};
 
 function StaticStory() {
+  const [v, setV] = useState<Variant | null>(null);
+  useEffect(() => {
+    fetch(`${BASE}/manifest.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m: Manifest | null) => setV(m?.variants.d ?? null))
+      .catch(() => setV(null));
+  }, []);
+  const frameOf = (shot: string) => {
+    const s = v?.shots.find((x) => x.name === shot);
+    if (!s) return null;
+    return s.start + Math.round((STILL_AT[shot]?.at ?? 0.5) * (s.count - 1));
+  };
+  const seen = new Set<string>();
   return (
     <section id="geschichte" aria-label="Produktgeschichte: vom Dashboard in den Betrieb und zurück" className="mx-auto max-w-(--size-content-max) px-4 pt-6 pb-10 lg:px-8">
       <div className="flex flex-wrap justify-end gap-2">
@@ -382,19 +399,45 @@ function StaticStory() {
         </div>
       </div>
       <ol className="mt-14 flex flex-col gap-12">
-        {STILLS.map((s) => (
-          <li key={s.title} className="grid items-center gap-6 lg:grid-cols-[5fr_7fr]">
-            <div>
-              <p className="text-sm font-bold text-accent">{s.kicker}</p>
-              <h2 className="font-display mt-2 text-[1.6rem] leading-tight lg:text-[2rem]">{s.title}</h2>
-              {s.text && <p className="mt-2 text-text-muted">{s.text}</p>}
-            </div>
-            <div className="overflow-hidden rounded-[12px] border border-border bg-white">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`${BASE}/d/${String(s.frame).padStart(4, "0")}.webp`} alt={s.alt} loading="lazy" className="h-auto w-full" onError={(e) => (e.currentTarget.parentElement!.style.display = "none")} />
-            </div>
-          </li>
-        ))}
+        {BEATS.filter((b) => !seen.has(b.shot) && seen.add(b.shot)).map((b) => {
+          const f = frameOf(b.shot);
+          if (f === null) return null;
+          return (
+            <li key={b.title} className="grid items-center gap-6 lg:grid-cols-[5fr_7fr]">
+              <div>
+                <p className="text-sm font-bold text-accent">{b.kicker}</p>
+                <h2 className="font-display mt-2 text-[1.6rem] leading-tight lg:text-[2rem]">{b.title}</h2>
+                {b.text && <p className="mt-2 text-text-muted">{b.text}</p>}
+              </div>
+              {b.shot === "phone" ? (
+                <div className="mx-auto w-full max-w-[280px] overflow-hidden rounded-[24px] border-4 border-text bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/story/screen-mobile.jpg" alt="Handy-Ansicht der Suite: Team und Aufgaben je Outlet mit Beispieldaten." loading="lazy" className="h-auto w-full" />
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-[12px] border border-border bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`${BASE}/d/${String(f).padStart(4, "0")}.webp`} alt={STILL_AT[b.shot]?.alt ?? ""} loading="lazy" className="h-auto w-full" />
+                </div>
+              )}
+              {b.shot === "outlets" && (
+                <div className="grid gap-4 lg:col-span-2 lg:grid-cols-3">
+                  {OUTLETS.map((x) => (
+                    <figure key={x.name} className="overflow-hidden rounded-[12px] border border-border bg-white">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={x.img} alt={`Übersicht mit Outlet-Filter ${x.name} (Beispieldaten).`} loading="lazy" className="h-auto w-full" />
+                      <figcaption className="border-t border-border px-3 py-2 text-sm font-semibold">{x.name}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              )}
+            </li>
+          );
+        })}
+        <li>
+          <h2 className="font-display text-[1.8rem] leading-tight lg:text-[2.4rem]">Dein Betrieb. Alle Bereiche. Eine Übersicht.</h2>
+          <div className="mt-5"><Ctas /></div>
+        </li>
       </ol>
     </section>
   );

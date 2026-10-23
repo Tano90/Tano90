@@ -155,16 +155,39 @@ test.describe("L03 Produktgeschichte", () => {
     await expect.poll(() => page.evaluate(() => document.querySelector("#geschichte")!.getBoundingClientRect().bottom <= innerHeight + 2)).toBe(true);
   });
 
-  test("L03-2 reduzierte Bewegung: dieselbe Geschichte als Standbilder, ohne 3D", async ({ browser }) => {
+  test("L03-2 reduzierte Bewegung: dieselbe Geschichte als Standbilder, Animation auf Wunsch", async ({ browser }) => {
     const ctx = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 390, height: 844 } });
     const page = await ctx.newPage();
     await page.goto("/");
+    await expect(page.locator("[data-story-mode]")).toHaveAttribute("data-story-mode", "static");
     const story = page.locator("#geschichte");
     await expect(story.locator("canvas")).toHaveCount(0);
-    for (const t of ["Hinter jeder Zahl steht dein Betrieb.", "Auch dort, wo gearbeitet wird.", "Restaurant. Bar. Bankett. Zusammen im Blick.", "Dein Betrieb. Alle Bereiche. Eine Übersicht."])
+    for (const t of ["Das Dashboard läuft dort, wo du planst.", "Dein Betrieb. Alle Bereiche. Eine Übersicht."])
       await expect(story.getByRole("heading", { name: t })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Animation trotzdem abspielen" })).toHaveAttribute("href", "?story=anim");
     await expectNoHorizontalScroll(page);
     await ctx.close();
+  });
+
+  test("L03-4 normale Besucher bekommen die Animation; Scrollen wechselt die Bilder vorwärts und rückwärts", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("[data-story-mode]")).toHaveAttribute("data-story-mode", "anim");
+    await expect(page.locator("#geschichte canvas")).toHaveCount(1);
+    const pixel = () => page.evaluate(() => {
+      const c = document.querySelector("#geschichte canvas") as HTMLCanvasElement;
+      const d = c.getContext("2d")!.getImageData(Math.floor(c.width / 2), Math.floor(c.height / 3), 1, 1).data;
+      return [d[0], d[1], d[2]].join(",");
+    });
+    const scrollTo = (t: number) => page.evaluate((t) => {
+      const s = document.querySelector("#geschichte") as HTMLElement;
+      window.scrollTo(0, s.getBoundingClientRect().top + scrollY + t * (s.offsetHeight - innerHeight));
+    }, t);
+    await page.waitForTimeout(1500);
+    const start = await pixel();
+    await scrollTo(0.6);
+    await expect.poll(pixel).not.toBe(start);
+    await scrollTo(0);
+    await expect.poll(pixel).toBe(start);
   });
 
   test("L03-3 die Suite lädt kein 3D-Paket", async ({ page }) => {
