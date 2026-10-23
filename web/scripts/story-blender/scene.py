@@ -1002,8 +1002,10 @@ def render_shot(name, info, co, frames, out):
     only = getattr(ARGS, "only", None)
     import time
 
-    for f in range(frames):
-        u = f / (frames - 1)
+    half = getattr(ARGS, "half", False)
+    for f in range(frames - 1 if half else frames):
+        # --half renders the in-between frames (u halfway between frame f and f+1) for a smoother sequence
+        u = (f + 0.5) / (frames - 1) if half else f / (frames - 1)
         pos, tgt = path_at(keys, u)
         look(co, pos, tgt)
         bpy.context.view_layer.update()
@@ -1012,14 +1014,14 @@ def render_shot(name, info, co, frames, out):
         meta["zones"].append({k: project(co, Vector(v)) for k, v in info["zones"].items()})
         if only is not None and f not in only:
             continue
-        path = os.path.join(out, f"{name}_{f:04d}.jpg")
+        path = os.path.join(out, f"{name}{'_h' if half else ''}_{f:04d}.jpg")
         if os.path.exists(path) and not ARGS.force:
             continue
         sc.render.filepath = path
         t = time.time()
         bpy.ops.render.render(write_still=True)
         print("FRAME", f, round(time.time() - t, 1), [round(x, 3) for x in pos], [round(x, 3) for x in tgt], flush=True)
-    with open(os.path.join(out, f"{name}.json"), "w") as fh:
+    with open(os.path.join(out, f"{name}{'_h' if half else ''}.json"), "w") as fh:
         json.dump(meta, fh)
 
 
@@ -1039,6 +1041,7 @@ def main():
     ap.add_argument("--frames", type=int, default=48)
     ap.add_argument("--only", default="")  # e.g. 0,12,24 – render only these frames (meta for all)
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--half", action="store_true")
     ARGS = ap.parse_args(sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else sys.argv[1:])
     reset()
     M = Mats()

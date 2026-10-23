@@ -31,9 +31,24 @@ for variant, idx in (("d", 0), ("m", 1)):
         src = dirs.split(",")[idx]
         meta = json.load(open(os.path.join(src, f"{name}.json")))
         size = meta["size"]
+        # with in-between frames (<shot>_h.json from scene.py --half) the sequence is interleaved: f0, h0, f1, h1, …
+        hpath = os.path.join(src, f"{name}_h.json")
+        files = [f"{name}_{f:04d}.jpg" for f in range(meta["frames"])]
+        if os.path.exists(hpath):
+            hmeta = json.load(open(hpath))
+            files, merged = [], {k: [] for k in ("laptop", "phone", "zones")}
+            for f in range(meta["frames"]):
+                files.append(f"{name}_{f:04d}.jpg")
+                for k in merged:
+                    merged[k].append((meta.get(k) or [None] * meta["frames"])[f] if meta.get(k) else None)
+                if f < meta["frames"] - 1:
+                    files.append(f"{name}_h_{f:04d}.jpg")
+                    for k in merged:
+                        merged[k].append((hmeta.get(k) or [None] * meta["frames"])[f] if hmeta.get(k) else None)
+            meta = dict(meta, frames=len(files), **merged)
         shots.append({"name": name, "start": total, "count": meta["frames"]})
         for f in range(meta["frames"]):
-            im = Image.open(os.path.join(src, f"{name}_{f:04d}.jpg")).convert("RGB")
+            im = Image.open(os.path.join(src, files[f])).convert("RGB")
             dst = os.path.join(a.out, variant, f"{total + f:04d}.webp")
             im.save(dst, "WEBP", quality=a.quality, method=6)
             lap = meta.get("laptop", [None] * meta["frames"])[f]
