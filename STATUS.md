@@ -56,7 +56,7 @@
 ## Geprüft (Chromium-Emulation, keine echten Geräte)
 - Einstieg bei 1440×900, 1280×720, 768×1024, 390×844, 375×667 und 360×640: Überschrift, Nutzentext und beide Aktionen vollständig sichtbar und nicht verdeckt; kein horizontaler Überlauf; keine Konsolenfehler.
 - Kamerafahrt vorwärts und rückwärts, Telefon, Ausfall des Films und reduzierte Bewegung: Landing-E2E 17/17.
-- Volle Testreihe: siehe Ergebnis unten.
+- Volle Testreihe auf `21258ae`: Typecheck und Produktionsbuild erfolgreich; Suite-Unit-Tests 160/160; Playwright 323/323 grün.
 - Nicht gesondert geprüft in dieser Runde: Sicherheit, Backend und Rollen. Sie sind nur über die bestehende automatische Testreihe abgedeckt.
 - Kein echtes Kontaktformular abgeschickt.
 
