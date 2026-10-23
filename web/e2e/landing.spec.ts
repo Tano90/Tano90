@@ -54,7 +54,7 @@ test.describe("L01 Landingpage", () => {
     await page.goto("/");
     const look = await page.evaluate(() => {
       const root = document.querySelector(".landing-beige") as HTMLElement;
-      const cta = [...document.querySelectorAll("a")].find((a) => a.textContent?.includes("Mit eigenen Daten vorführen lassen")) as HTMLElement;
+      const cta = [...document.querySelectorAll("a")].find((a) => a.textContent?.includes("Demo ohne Anmeldung öffnen")) as HTMLElement;
       return { bg: getComputedStyle(root).backgroundColor, text: getComputedStyle(root).color, cta: getComputedStyle(cta).backgroundColor, h1: getComputedStyle(document.querySelector("h1")!).fontFamily };
     });
     expect(look.bg).toBe("rgb(245, 240, 230)");
@@ -123,7 +123,7 @@ test.describe("L02 Tarife, Rechner und Ansprache", () => {
     await expect(std.locator("[data-total]")).toHaveText("–");
   });
 
-  test("L02-3 Ansprache ohne Druck: Hauptaktion Vorführung mit eigenen Daten, daneben Demo; kein Countdown", async ({ page }) => {
+  test("L02-3 Ansprache ohne Druck: Hauptaktion Demo ohne Anmeldung, daneben Vorführung mit eigenen Daten; kein Countdown", async ({ page }) => {
     await page.goto("/");
     const hero = page.locator("#geschichte");
     await expect(hero.getByRole("link").filter({ hasText: "Mit eigenen Daten vorführen lassen" })).toHaveAttribute("href", "#anfrage");
@@ -161,7 +161,7 @@ test.describe("L03 Produktgeschichte", () => {
     await page.goto("/");
     await expect(page.locator("[data-story-mode]")).toHaveAttribute("data-story-mode", "static");
     const story = page.locator("#geschichte");
-    await expect(story.locator(".story-device")).toHaveCount(0);
+    await expect(story.locator("canvas")).toHaveCount(0);
     for (const t of ["Hinter jeder Zahl steht dein Betrieb.", "Auch dort, wo gearbeitet wird.", "Restaurant. Bar. Bankett. Zusammen im Blick.", "Dein Betrieb. Alle Bereiche. Eine Übersicht."])
       await expect(story.getByRole("heading", { name: t })).toBeVisible();
     await expect(page.getByRole("link", { name: "Animation trotzdem abspielen" })).toHaveAttribute("href", "?story=anim");
@@ -169,25 +169,61 @@ test.describe("L03 Produktgeschichte", () => {
     await ctx.close();
   });
 
-  test("L03-4 normale Besucher bekommen die Animation; Scrollen bewegt die Ansicht vorwärts und rückwärts", async ({ page }) => {
+  test("L03-4 normale Besucher bekommen die Kamerafahrt; Scrollen wechselt die Bilder vorwärts und rückwärts", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("[data-story-mode]")).toHaveAttribute("data-story-mode", "anim");
-    await expect(page.locator("#geschichte .story-device")).toHaveCount(1);
-    const pose = () => page.evaluate(() => (document.querySelector("#geschichte .story-device") as HTMLElement).style.transform);
+    await expect(page.locator("#geschichte canvas")).toHaveCount(1);
+    const pixel = () => page.evaluate(() => {
+      const c = document.querySelector("#geschichte canvas") as HTMLCanvasElement;
+      const d = c.getContext("2d")!.getImageData(Math.floor(c.width / 2), Math.floor(c.height / 3), 1, 1).data;
+      return [d[0], d[1], d[2]].join(",");
+    });
     const scrollTo = (t: number) => page.evaluate((t) => {
       const s = document.querySelector("#geschichte") as HTMLElement;
       window.scrollTo(0, s.getBoundingClientRect().top + scrollY + t * (s.offsetHeight - innerHeight));
     }, t);
-    await scrollTo(0);
+    await scrollTo(0.2);
+    await expect(page.getByRole("heading", { name: "Dein Betrieb beginnt mit einem Überblick." })).toBeVisible();
     await page.waitForTimeout(1500);
-    const start = await pose();
-    expect(start).toContain("rotateX");
-    await scrollTo(0.35);
-    await expect.poll(pose).not.toBe(start);
+    const office = await pixel();
+    await scrollTo(0.42);
     await expect(page.getByRole("heading", { name: "Hinter jeder Zahl steht dein Betrieb." })).toBeVisible();
+    await expect.poll(pixel).not.toBe(office);
+    await scrollTo(0.2);
+    await expect.poll(pixel, { timeout: 10000 }).toBe(office);
     await scrollTo(0);
-    await expect.poll(pose).toBe(start);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  });
+
+  test("L03-5 Filmbilder werden nach Bedarf geladen, nicht alle beim Aufruf", async ({ page }) => {
+    const frames: string[] = [];
+    page.on("request", (r) => { if (/\/story\/film\/[dm]\/\d+\.webp/.test(r.url())) frames.push(r.url()); });
+    await page.goto("/");
+    await page.waitForTimeout(2500);
+    expect(frames.length).toBeGreaterThan(0);
+    expect(frames.length).toBeLessThan(40);
+  });
+
+  test("L03-6 Telefon: die echte mobile Ansicht liegt über dem Telefon und wird lesbar groß", async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate(() => {
+      const s = document.querySelector("#geschichte") as HTMLElement;
+      window.scrollTo(0, s.getBoundingClientRect().top + scrollY + 0.69 * (s.offsetHeight - innerHeight));
+    });
+    const img = page.getByRole("img", { name: /Handy-Ansicht der Suite/ });
+    await expect(img).toBeVisible();
+    await expect.poll(async () => (await img.boundingBox())?.height ?? 0).toBeGreaterThan(400);
+    await expect(page.getByRole("heading", { name: "Auch dort, wo gearbeitet wird." })).toBeVisible();
+  });
+
+  test("L03-7 ohne Film bleiben Überschrift, Dashboard und Aktionen nutzbar", async ({ page }) => {
+    // the film data cannot be used (a broken manifest), without network errors in the console
+    await page.route("**/story/film/manifest.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "kein Film" }));
+    await page.goto("/");
+    await expect(page.locator("#geschichte")).toHaveAttribute("data-film", "failed");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.locator("#geschichte").getByRole("link", { name: /Demo ohne Anmeldung öffnen/ }).first()).toBeVisible();
+    await expect(page.locator("#geschichte img[alt^=\"Dashboard der GLB AI Suite\"]")).toBeVisible();
   });
 
   test("L03-3 die Suite lädt kein 3D-Paket", async ({ page }) => {

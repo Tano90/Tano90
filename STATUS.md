@@ -1,4 +1,85 @@
-# STATUS – Premium-Produktseite (Startseite, 23.10.2026)
+# STATUS – Kamerafahrt-Vorschau (Branch `claude/kamerafahrt-vorschau`, 23.10.2026)
+
+## Ausgangsstand und Sicherung
+- Produktiv bleibt `claude/replica-skill-install-vzriug` auf Commit `3e59d29`. Diese Seite ist live und unverändert.
+- Gearbeitet wird nur im Branch `claude/kamerafahrt-vorschau`.
+- Wiederherstellung: `git checkout 3e59d29`.
+- Das lokale Tag `sicherung-vor-kamerafahrt-2026-10-23` zeigt auf denselben Stand. Der Push des Tags wurde vom Git-Proxy abgelehnt; maßgeblich ist der Commit.
+- Unverändert:
+  - App (`public/suite`), Berechnungen, Daten, Rollen, Importe, Server Actions
+  - Formular (`lead-form.tsx`)
+  - Preisdefinition (`src/lib/pricing.ts`) und Rechner
+
+## Geprüftes Material aus der Übergabe (ZIP „GLB_Visual_Handoff“)
+- Gelesen: README, STATUS, verification.json, camera.json und cinematic.js (Kopf).
+- Film: `camera-refined-1080p.mp4` mit 1918×1080, 241 Bilder, 24 fps, ursprünglich 854×480 und per KI hochskaliert.
+- Gesichtet wurden nur Kontaktbögen (16 Bilder über den ganzen Film, dazu die Bereiche 36–79 und 120–175).
+- Übernommen:
+  - Film als Bildfolge, neu aus der 1080p-Fassung erzeugt (Desktop 1280×720 ca. 6,6 MB, Handy 960×540 ca. 4,4 MB, WebP, je 241 Bilder).
+  - Laptop-Bildschirmkoordinaten aus `camera.json`, Bilder 0–32. Sie sind am Film nachgeprüft; Bild 33/34 sind fehlerhaft und wurden verworfen.
+  - Telefonposition Bild 166 `[575,205,26,55]`, am Film nachgeprüft: aufrecht stehendes Telefon mit weißem Bildschirm auf der Servicestation.
+- Nicht übernommen:
+  - der alte Patch und die Route `/premium-preview`
+  - `cinematic.js` und `.css`; der Player ist neu in `story.tsx` geschrieben
+  - die Standalone-Seite und die Schriften aus der ZIP (das Projekt hat eigene)
+
+## Ablauf der Kamerafahrt
+| Schritt | Material | Umsetzung |
+|---|---|---|
+| 1 Dashboard | echter Screenshot | scharfes HTML-Bild neben Überschrift und Aktionen |
+| 2 Rückzug auf Laptop im Büro | Film 0–32 | digitaler Zoom vom Bildschirm zurück; Dashboard liegt passgenau auf dem Laptop |
+| 3 Außen/erhöht | Film 56–62, 76–112 | **Abweichungen:** 32→56 Überblendung (der Laptop „versinkt“ im Film), 62→76 Lichtblende (harter Schnitt Tür → draußen, Bild 64–70 unscharf am Boden) |
+| 4 Durch den Eingang | Film 112–150 | direkt |
+| 5 Servicestation mit Telefon | Film 150–166 | direkt |
+| 6 Mobile Ansicht | Bild 166 + Screenshot | digitaler Zoom (Desktop 2,2×, Handy 1,7×); echte Handy-Ansicht deckungsgleich auf dem Telefon, dann zum Lesen angehoben. Compositing, keine räumliche Telefonfahrt |
+| 7 Outlets | Film 166–240 (Gastraum, Bar) | echte Outlet-Ansichten Restaurant, Bar, Bankett. **Kein Bankett-Filmabschnitt vorhanden**; das Bankett ist nur als App-Ansicht gezeigt und so beschriftet |
+| 8 Abschluss | echter Screenshot | Film blendet aus, Übersicht mit beiden Aktionen |
+
+## Weitere Änderungen
+- **Einstieg:**
+  - Die Überschrift steht am Desktop in zwei Zeilen („Gastro führen mit / echten Zahlen.“), geprüft bei 1440 und 1280.
+  - Nutzen, Dashboard und Aktionen sind gleichzeitig sichtbar.
+- **Aktionen:** Hauptaktion ist „Demo ohne Anmeldung öffnen“, die zweite „Mit eigenen Daten vorführen lassen“. Das gilt auch am Seitenende.
+- **Preiskarten:**
+  - Sichtbar sind Preis, Nutzerpreis, Zielgruppe, vorgeschlagener Umfang und nächste Handlung.
+  - Problem, Start und Grenzen stehen in aufklappbaren Details.
+  - Der Hinweis „Vorläufige Preise“ steht unverändert sichtbar darüber.
+- **Handy:**
+  - Der Film steht oben, der Text darunter in einem eigenen Bereich, ohne Überlagerung.
+  - Die Aktionen stehen untereinander mit 48 px Höhe.
+- **Laden:**
+  - Beim Aufruf werden nur 6 Filmbilder geladen.
+  - Danach kommt beim Scrollen eine grobe Vorschau (jedes 8. Bild) plus ein Fenster von ±10 um die Position.
+  - Veraltete Anfragen werden verworfen; höchstens 48 volle Bilder bleiben im Speicher.
+  - Schmale Fenster bekommen 960×540.
+- **Ausfall:** Ohne Film bleiben Dashboard, Überschrift und Aktionen stehen (`data-film="failed"`).
+
+## Prüfung (Chromium-Emulation, keine echten Geräte)
+- Breiten: 1440×900, 1280×800, 768×1024, 390×844 und 360×640. Keine Konsolenfehler, kein horizontaler Überlauf.
+- Scrollen langsam und schnell, vorwärts und rückwärts: 407 Messungen ohne schwarzes Bild (niedrigste mittlere Helligkeit 44 von 255).
+- Tastatur: Alle Fokusstopps zeigen einen sichtbaren Rahmen; ausgeblendete Aktionen sind nicht fokussierbar.
+- Landing-E2E: 17/17, darunter neu L03-5 (Nachladen), L03-6 (Telefon) und L03-7 (Film fällt aus).
+- Volle Testreihe: siehe Abschnitt Ergebnis unten.
+- Kein Test über das echte Kontaktformular.
+
+## Verbleibende Schwächen
+- Der Film ist KI-generiert und hochskaliert, nicht nativ in HD. Räumliche Unstimmigkeiten bleiben:
+  - der Laptop verschwindet (überblendet)
+  - harter Schnitt nach draußen (Lichtblende)
+  - teils weiche Details
+- Keine eigene Bankett-Filmszene.
+- Bei 360×640 ist das angehobene Telefon nur ca. 190 px hoch; dort ist die mobile Ansicht nur grob lesbar.
+- Nicht auf echten iOS- und Android-Geräten geprüft.
+- `npx eslint` startet in dieser Umgebung nicht (Konfigurationsmigration). Das bestand schon vorher; Typecheck und Build laufen.
+
+## Nächster Schritt
+- Vorschau auf echten Geräten prüfen.
+- Danach den Branch in `claude/replica-skill-install-vzriug` übernehmen. Das ist erst die Live-Schaltung und braucht die Freigabe der Nutzerin oder des Nutzers.
+
+---
+
+# Archiv: Premium-Produktseite (live, Commit 3e59d29)
+
 
 ## Entscheidung
 - Rückmeldung: Die Restaurant-Kamerafahrt (Blender) wirkte „KI-mäßig und kindisch“ und hatte nichts mit dem Referenzvideo zu tun. Gewählte Richtung: **Premium-Produktseite**.

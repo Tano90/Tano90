@@ -82,12 +82,6 @@
   background: var(--story-ink);
   color: var(--story-cream);
 }
-.story-glow {
-  background:
-    radial-gradient(60% 55% at 68% 52%, rgba(15, 106, 100, 0.34), transparent 70%),
-    radial-gradient(40% 40% at 20% 10%, rgba(143, 211, 193, 0.07), transparent 70%),
-    linear-gradient(180deg, #0a1315 0%, #0b1719 60%, #0a1315 100%);
-}
 .story-kicker {
   font-size: 0.8rem;
   font-weight: 700;
@@ -104,30 +98,37 @@
   line-height: 1.02;
   text-wrap: balance;
 }
-.story-h1 { font-size: clamp(2.6rem, 5.6vw, 5.4rem); }
-.story-h2 { font-size: clamp(2rem, 4vw, 4rem); }
+.story-h2 { font-size: clamp(1.75rem, 3.2vw, 3.25rem); }
 .story-copy { will-change: opacity, transform; }
-.story-device {
-  border-radius: 56px;
-  background: linear-gradient(160deg, #2a3436, #0d1517 45%, #1b2426);
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.07) inset,
-    0 120px 220px -40px rgba(0, 0, 0, 0.75),
-    0 40px 90px rgba(0, 0, 0, 0.45);
-  backface-visibility: hidden;
+.story-h1 { font-size: clamp(2.3rem, 4.5vw, 4.6rem); hyphens: manual; }
+.story-lead { max-width: 34rem; font-size: 0.975rem; line-height: 1.5; color: var(--story-muted); }
+@media (min-width: 1024px) { .story-lead { font-size: 1.125rem; } }
+.story-ink :focus-visible { outline: 3px solid var(--story-mint); outline-offset: 3px; }
+/* the stage: wide screens show the film full-bleed with the text on the left; narrow screens give the film the top
+   and the text its own area below, so nothing lies on top of the other */
+.story-stage { --film-h: max(36svh, calc(100svh - 380px)); background: var(--story-ink); }
+.story-filmbox { height: var(--film-h); }
+.story-scrim { background: linear-gradient(180deg, rgba(10, 19, 21, 0) 70%, rgba(10, 19, 21, 0.9) 100%); }
+.story-copywrap { left: 16px; right: 16px; top: calc(var(--film-h) + 14px); bottom: calc(14px + env(safe-area-inset-bottom)); overflow: hidden; }
+.story-outlets { left: 12px; right: 12px; top: 0; height: calc(var(--film-h) - 12px); }
+@media (min-width: 1024px) and (min-aspect-ratio: 23/20) {
+  .story-stage { --film-h: 100svh; }
+  .story-copywrap { left: max(2rem, calc((100vw - var(--size-content-max)) / 2 + 2rem)); right: auto; width: min(40vw, 36rem); top: 0; bottom: 0; overflow: visible; }
+  .story-copywrap > .grid { height: 100%; grid-template-rows: 1fr; }
+  .story-copywrap .story-copy { align-self: center; }
+  .story-copywrap .story-copy-low { align-self: end; margin-bottom: 8svh; }
+  .story-scrim { background: linear-gradient(90deg, rgba(10, 19, 21, 0.88) 0%, rgba(10, 19, 21, 0.62) 30%, rgba(10, 19, 21, 0) 52%), linear-gradient(0deg, rgba(10, 19, 21, 0.7) 0%, rgba(10, 19, 21, 0) 34%); }
+  .story-outlets { left: auto; right: 3rem; width: min(44vw, 660px); top: 0; height: calc(100svh - 3.5rem); }
 }
-.story-glare {
-  background: linear-gradient(115deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 32%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, 0.05) 100%);
+.story-dash {
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 40px 90px rgba(0, 0, 0, 0.5);
+  transform-origin: 0 0;
 }
-.story-spot {
-  border-radius: 20px;
-  box-shadow: 0 0 0 6000px rgba(6, 12, 14, 0.82), 0 0 0 3px rgba(143, 211, 193, 0.9);
-  pointer-events: none;
-}
-.story-phone {
-  border-radius: 110px;
-  background: linear-gradient(160deg, #2a3436, #05090a 50%, #1b2426);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08) inset, 0 140px 200px -30px rgba(0, 0, 0, 0.8);
+.story-phone-real {
+  border: 2px solid #0b0f10;
+  background: #0b0f10;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
 }
 .story-card,
 .story-frame {

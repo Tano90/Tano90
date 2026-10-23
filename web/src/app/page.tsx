@@ -33,7 +33,7 @@ const ctaLight = cta;
 const ctaQuiet = "inline-flex h-(--size-control-lg) items-center rounded-pill border border-border-input bg-transparent px-6 text-base font-semibold hover:bg-row-hover";
 // Exact cents, German format: 89,00 € / 109,99 € / 2,99 € – the same formatter as calculator and billing
 const eur = formatEur;
-// Primary action: a guided session with the visitor's own data; secondary: the demo without sign-up.
+// Primary action: the demo without sign-up (lowest threshold); second: a guided session with the visitor's own data.
 const CTA_PRIMARY = "Mit eigenen Daten vorführen lassen";
 const CTA_DEMO = "Demo ohne Anmeldung öffnen";
 
@@ -359,37 +359,49 @@ export default function LandingPage() {
                 const d = PLAN_DETAILS[p.id];
                 const premium = p.id === "premium";
                 return (
-                  <article key={p.id} data-plan-card={p.id} aria-labelledby={`plan-${p.id}`} className={premium ? "rounded-md border-2 border-accent bg-surface-raised p-6 lg:p-8" : "rounded-md border border-border bg-surface-raised p-6 lg:p-8"}>
-                    {premium && <p className="mb-3 inline-flex rounded-pill bg-accent px-3 py-1 text-xs font-bold text-on-accent">Empfehlung für aktive Betriebssteuerung</p>}
-                    <h3 id={`plan-${p.id}`} className="text-lg">{p.name}</h3>
+                  <article key={p.id} data-plan-card={p.id} aria-labelledby={`plan-${p.id}`} className={premium ? "flex flex-col rounded-md border-2 border-accent bg-surface-raised p-6 lg:p-8" : "flex flex-col rounded-md border border-border bg-surface-raised p-6 lg:p-8"}>
+                    <div className="flex min-h-7 flex-wrap items-center justify-between gap-2">
+                      <h3 id={`plan-${p.id}`} className="text-lg">{p.name}</h3>
+                      {premium && <p className="inline-flex rounded-pill bg-accent px-3 py-1 text-xs font-bold text-on-accent">Empfehlung für aktive Betriebssteuerung</p>}
+                    </div>
                     <p className="num font-display mt-4 text-[2.5rem] leading-none">{eur(p.baseMonthly)}</p>
                     <p className="mt-2 text-sm text-text-muted">pro Kunde und Monat</p>
-                    <p className="mt-3 flex gap-2 text-sm"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />zuzüglich {eur(p.perUserMonthly)} pro Nutzer und Monat</p>
-                    {premium && <p className="mt-3 text-sm text-text-muted">{eur(p.baseMonthly - PLANS[0].baseMonthly)} mehr als Standard – für die vier zusätzlichen Module unten.</p>}
-                    <dl className="mt-6 flex flex-col gap-4 text-sm">
-                      <div><dt className="font-bold">Für wen</dt><dd className="mt-1 text-text-muted">{d.who}</dd></div>
-                      <div><dt className="font-bold">Welches Problem</dt><dd className="mt-1 text-text-muted">{d.problem}</dd></div>
-                      <div>
-                        <dt className="font-bold">Vorgeschlagener Umfang</dt>
-                        <dd className="mt-1"><ul className="flex flex-col gap-1">{d.modules.map((m) => <li key={m} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />{m}</li>)}</ul></dd>
-                      </div>
-                      <div><dt className="font-bold">Zum Start nötig</dt><dd className="mt-1 text-text-muted">{d.start}</dd></div>
-                      <div><dt className="font-bold">Nicht automatisch angebunden</dt><dd className="mt-1 text-text-muted">{d.manual}</dd></div>
-                    </dl>
+                    <p className="mt-2 flex gap-2 text-sm"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />zuzüglich {eur(p.perUserMonthly)} pro Nutzer und Monat</p>
+                    {premium && <p className="mt-2 text-sm text-text-muted">{eur(p.baseMonthly - PLANS[0].baseMonthly)} mehr als Standard, für vier zusätzliche Module.</p>}
+                    <p className="mt-5 text-sm"><span className="font-bold">Für wen: </span><span className="text-text-muted">{d.who}</span></p>
+                    <p className="mt-5 text-sm font-bold">Vorgeschlagener Umfang</p>
+                    <ul className="mt-2 flex flex-col gap-1.5 text-sm">{d.modules.map((m) => <li key={m} className="flex gap-2"><Check aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />{m}</li>)}</ul>
+                    <div className="mt-6 flex flex-col gap-2">
+                      <Link href={SUITE} className="inline-flex min-h-12 items-center justify-center rounded-pill bg-accent px-5 font-bold text-on-accent hover:bg-accent-hover">Mit Beispieldaten testen</Link>
+                      <a href="#anfrage" className="inline-flex min-h-11 items-center justify-center font-semibold text-accent underline">Vorführung anfragen</a>
+                    </div>
+                    <details className="group mt-5 border-t border-border pt-4 text-sm">
+                      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between font-semibold"><span>Details: Problem, Start, Grenzen</span><Plus aria-hidden className="size-4 transition-transform group-open:rotate-45" /></summary>
+                      <dl className="mt-3 flex flex-col gap-4">
+                        <div><dt className="font-bold">Welches Problem</dt><dd className="mt-1 text-text-muted">{d.problem}</dd></div>
+                        <div><dt className="font-bold">Zum Start nötig</dt><dd className="mt-1 text-text-muted">{d.start}</dd></div>
+                        <div><dt className="font-bold">Nicht automatisch angebunden</dt><dd className="mt-1 text-text-muted">{d.manual}</dd></div>
+                      </dl>
+                    </details>
                   </article>
                 );
               })}
-              <article data-plan-card="individual" aria-labelledby="plan-individual" className="rounded-md border border-border border-t-4 border-t-text bg-surface-raised p-6 lg:p-8">
-                <h3 id="plan-individual" className="text-lg">Individuelle Lösungen</h3>
-                <p className="font-display mt-4 text-[1.5rem] leading-tight">Entwicklungsgebühr nach vereinbartem Umfang</p>
+              <article data-plan-card="individual" aria-labelledby="plan-individual" className="flex flex-col rounded-md border border-border border-t-4 border-t-text bg-surface-raised p-6 lg:p-8">
+                <div className="flex min-h-7 items-center"><h3 id="plan-individual" className="text-lg">Individuelle Lösungen</h3></div>
+                <p className="font-display mt-4 text-[1.5rem] leading-tight">Entwicklungsgebühr nach Angebot</p>
                 <p className="mt-2 text-sm text-text-muted">einmalig, Umfang und Betrag vorab schriftlich festgelegt</p>
-                <p className="mt-3 flex gap-2 text-sm"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />danach {eur(INDIVIDUAL.serviceMonthly)} pro Monat</p>
-                <dl className="mt-6 flex flex-col gap-4 text-sm">
-                  <div><dt className="font-bold">Für wen</dt><dd className="mt-1 text-text-muted">Betriebe mit Anforderungen, die Standard und Premium nicht abdecken.</dd></div>
-                  <div><dt className="font-bold">Was die {eur(INDIVIDUAL.serviceMonthly)} abdecken</dt><dd className="mt-1 text-text-muted">Umfang und Grenzen der laufenden Leistung werden vor Vertragsschluss schriftlich festgelegt. Eine unbegrenzte Weiterentwicklung ist nicht enthalten.</dd></div>
-                  <div><dt className="font-bold">Zum Start nötig</dt><dd className="mt-1 text-text-muted">Ein Gespräch über Anforderung, Daten und Abgrenzung; daraus ein schriftliches Angebot.</dd></div>
-                </dl>
-                <a href="#anfrage" className="mt-6 inline-flex min-h-11 items-center font-semibold text-accent underline">Anforderung besprechen →</a>
+                <p className="mt-2 flex gap-2 text-sm"><Plus aria-hidden className="mt-0.5 size-4 shrink-0 text-accent" />danach {eur(INDIVIDUAL.serviceMonthly)} pro Monat</p>
+                <p className="mt-5 text-sm"><span className="font-bold">Für wen: </span><span className="text-text-muted">Betriebe mit Anforderungen, die Standard und Premium nicht abdecken.</span></p>
+                <div className="mt-6 flex flex-col gap-2">
+                  <a href="#anfrage" className="inline-flex min-h-12 items-center justify-center rounded-pill border border-border-input px-5 font-bold hover:bg-row-hover">Anforderung besprechen</a>
+                </div>
+                <details className="group mt-5 border-t border-border pt-4 text-sm">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between font-semibold"><span>Details: Leistung und Start</span><Plus aria-hidden className="size-4 transition-transform group-open:rotate-45" /></summary>
+                  <dl className="mt-3 flex flex-col gap-4">
+                    <div><dt className="font-bold">Was die {eur(INDIVIDUAL.serviceMonthly)} abdecken</dt><dd className="mt-1 text-text-muted">Umfang und Grenzen der laufenden Leistung werden vor Vertragsschluss schriftlich festgelegt. Eine unbegrenzte Weiterentwicklung ist nicht enthalten.</dd></div>
+                    <div><dt className="font-bold">Zum Start nötig</dt><dd className="mt-1 text-text-muted">Ein Gespräch über Anforderung, Daten und Abgrenzung; daraus ein schriftliches Angebot.</dd></div>
+                  </dl>
+                </details>
               </article>
             </div>
             <PriceCalculator />
@@ -440,7 +452,7 @@ export default function LandingPage() {
         <section aria-labelledby="final">
           <div className="mx-auto max-w-(--size-content-max) px-4 py-24 text-center lg:px-8">
             <h2 id="final" className="font-display mx-auto max-w-3xl text-[2rem] leading-tight lg:text-[2.75rem]">Sieh deinen Betrieb so, wie die Zahlen ihn sehen.</h2>
-            <div className="mt-8 flex flex-wrap justify-center gap-3"><a href="#anfrage" className={cta}>{CTA_PRIMARY} <ArrowRight aria-hidden className="size-4" /></a><Link href={SUITE} className={ctaQuiet}>{CTA_DEMO}</Link></div>
+            <div className="mt-8 flex flex-wrap justify-center gap-3"><Link href={SUITE} className={cta}>{CTA_DEMO} <ArrowRight aria-hidden className="size-4" /></Link><a href="#anfrage" className={ctaQuiet}>{CTA_PRIMARY}</a></div>
           </div>
         </section>
       </main>
