@@ -156,22 +156,22 @@ export default function LandingPage() {
       <ViewBeacon />
 
       {/* ------------------------------------------------ hero */}
-      <div className="border-b border-border">
+      <div className="story-ink border-b border-white/10">
         <header className="mx-auto flex max-w-(--size-content-max) items-center justify-between px-4 py-5 lg:px-8">
-          <Link href="/" aria-label={`${APP_NAME} Startseite`}><Logo /></Link>
+          <Link href="/" aria-label={`${APP_NAME} Startseite`}><Logo tone="light" /></Link>
           <nav aria-label="Konto" className="flex items-center gap-5">
-            <a href="#rundgang" className="hidden font-semibold text-text-muted hover:text-text md:inline">Rundgang</a>
-            <a href="#funktionen" className="hidden font-semibold text-text-muted hover:text-text md:inline">Funktionen</a>
-            <a href="#rollen" className="hidden font-semibold text-text-muted hover:text-text lg:inline">Rollen</a>
-            <a href="#preise" className="hidden font-semibold text-text-muted hover:text-text md:inline">Preise</a>
-            <a href="#anfrage" className="hidden font-semibold text-text-muted hover:text-text md:inline">Vorführung</a>
-            <Link href={SUITE} className="font-semibold hover:underline">Anmelden</Link>
-            <Link href={SUITE} className="hidden h-(--size-control-md) items-center rounded-pill bg-accent px-4 font-bold text-on-accent hover:bg-accent-hover sm:inline-flex">Demo öffnen</Link>
+            <a href="#rundgang" className="hidden font-semibold text-[var(--story-muted)] hover:text-[var(--story-cream)] md:inline">Rundgang</a>
+            <a href="#funktionen" className="hidden font-semibold text-[var(--story-muted)] hover:text-[var(--story-cream)] md:inline">Funktionen</a>
+            <a href="#rollen" className="hidden font-semibold text-[var(--story-muted)] hover:text-[var(--story-cream)] lg:inline">Rollen</a>
+            <a href="#preise" className="hidden font-semibold text-[var(--story-muted)] hover:text-[var(--story-cream)] md:inline">Preise</a>
+            <a href="#anfrage" className="hidden font-semibold text-[var(--story-muted)] hover:text-[var(--story-cream)] md:inline">Vorführung</a>
+            <Link href={SUITE} className="font-semibold text-[var(--story-cream)] hover:underline">Anmelden</Link>
+            <Link href={SUITE} className="hidden h-(--size-control-md) items-center rounded-pill bg-[var(--story-cream)] px-4 font-bold text-[var(--story-ink)] hover:bg-white sm:inline-flex">Demo öffnen</Link>
           </nav>
         </header>
       </div>
 
-      {/* the product story: tool → laptop → restaurant → phone → outlets → dashboard (heading and actions inside) */}
+      {/* the product story: the real overview of the suite, close up (heading and actions inside) */}
       <Story />
 
       {/* the first questions of a buyer, answered before any feature list */}

@@ -2,71 +2,103 @@
 
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-// Scroll story of the start page. A camera flight pre-rendered in Blender (Cycles) is played as an image sequence:
-// the scroll position sets one progress value, which picks the frame (neighbouring frames are cross-faded), the
-// texts and the screen overlay – forwards and backwards. Nothing moves on its own; no scroll gesture is captured.
-// The laptop and phone screens are overlaid with the real demo screenshots, fitted to the rendered screen corners
-// of every frame, so the product view stays sharp and readable throughout the move.
-// Needs no WebGL. Only "reduced motion" (or ?story=static) shows the still version.
+// Scroll story of the start page: the real overview of the suite (demo data) is the only object on a dark stage.
+// The scroll position sets one progress value; a camera moves over the screenshot (tilt, zoom, glide), dims
+// everything but the part the text talks about, lifts the phone view and the outlet views to the front and ends on
+// the whole overview again. Plain CSS 3D transforms, no WebGL, no canvas. Nothing moves on its own and no scroll
+// gesture is captured, so it plays forwards and backwards. "Reduced motion" (or ?story=static) shows the still version.
 
 const CTA_PRIMARY = "Mit eigenen Daten vorführen lassen";
 const CTA_DEMO = "Demo ohne Anmeldung öffnen";
-const BASE = "/story/seq";
-
-type Corner = [number, number, number];
-type Frame = { laptop: Corner[] | null; phone: Corner[] | null; zones?: Record<string, Corner> | null };
-type Variant = { w: number; h: number; count: number; dir?: string; shots: { name: string; start: number; count: number }[]; frames: Frame[] };
-type Manifest = { version: number; variants: { d: Variant; m: Variant } };
-
-// messages per shot (fractions of that shot); shots that are not rendered yet are skipped
-type Beat = { shot: string; from: number; to: number; kicker: string; title: string; text?: string };
-const BEATS: Beat[] = [
-  { shot: "office", from: 0.22, to: 0.7, kicker: "Aus dem Bildschirm heraus", title: "Das Dashboard läuft dort, wo du planst.", text: "Im Büro deines Restaurants – mit Umsatz, Deckungsbeitrag und Handlungsbedarf aus deinen Verkäufen." },
-  { shot: "aerial", from: 0.25, to: 1.01, kicker: "Der Betrieb", title: "Hinter jeder Zahl steht dein Betrieb.", text: "Büro, Restaurant, Bar und Bankett: ein Betrieb, in der Suite als Outlets geführt." },
-  { shot: "enter", from: 0.55, to: 1.01, kicker: "Im Gastraum", title: "Die Servicestation am Eingang.", text: "Aufgaben je Outlet sind auch auf dem Handy erreichbar." },
-  { shot: "phone", from: 0.4, to: 1.01, kicker: "Mobile Ansicht", title: "Auch dort, wo gearbeitet wird.", text: "Team & Aufgaben in der Handy-Ansicht der Suite: offene und überfällige Aufgaben je Outlet. Ansicht aus der Demo." },
-  { shot: "outlets", from: 0.2, to: 1.01, kicker: "Die Outlets", title: "Restaurant. Bar. Bankett. Zusammen im Blick.", text: "Derselbe Berichtsfilter zeigt jedes Outlet einzeln. Werte aus den Beispieldaten der Demo." },
-  { shot: "return", from: 0.0, to: 0.7, kicker: "Zurück ins Büro", title: "Alle Bereiche laufen in einer Übersicht zusammen." },
-];
-// outlet figures from the demo while the camera is in that area (fractions of the "outlets" shot)
+const IMG = "/story/screen-overview.webp";
+const ALT = "Dashboard der GLB AI Suite mit Beispieldaten: Kennzahlen, Berichtsfilter, Handlungsbedarf und Umsatz nach Outlet.";
+// page size of the capture (CSS px at 1440 wide, image at 2×) and the boxes of its parts – from scripts/story-assets.mjs
+const PAGE = { w: 1440, h: 1924, screen: 900 };
+const R = {
+  sidebar: [0, 0, 257, 900],
+  kpis: [291, 425, 1115, 145],
+  hints: [291, 636, 1115, 305],
+  outlets: [291, 1670, 1115, 230],
+} as const;
 const OUTLETS = [
-  { from: 0.22, to: 0.45, name: "Restaurant", img: "/story/outlet-restaurant.jpg" },
-  { from: 0.47, to: 0.7, name: "Bar", img: "/story/outlet-bar.jpg" },
-  { from: 0.78, to: 1.01, name: "Bankett & Events", img: "/story/outlet-bankett.jpg" },
+  { name: "Restaurant", img: "/story/outlet-restaurant.jpg" },
+  { name: "Bar", img: "/story/outlet-bar.jpg" },
+  { name: "Bankett & Events", img: "/story/outlet-bankett.jpg" },
 ];
-// area labels at the projected 3D positions (only in the shots from above / at the entrance)
-const LABELS: { id: string; label: string; shots: string[] }[] = [
-  { id: "buero", label: "Büro", shots: ["aerial"] },
-  { id: "restaurant", label: "Restaurant", shots: ["aerial"] },
-  { id: "bar", label: "Bar", shots: ["aerial"] },
-  { id: "bankett", label: "Bankett", shots: ["aerial"] },
+
+type Rect = readonly [number, number, number, number];
+// one camera position: focus box (page px), scroll of the screen, rotation, depth, dimming outside the focus,
+// device opacity, phone and outlet cards (0…1), device shift to the side (share of the stage width)
+type Key = { at: number; f: Rect; sc: number; rx: number; ry: number; z: number; dim: number; dev: number; ph: number; oc: number; dx: number };
+const FULL: Rect = [0, 0, PAGE.w, PAGE.screen];
+const k = (at: number, f: Rect, o: Partial<Omit<Key, "at" | "f">> = {}): Key => ({ at, f, sc: 0, rx: 0, ry: 0, z: 0, dim: 0, dev: 1, ph: 0, oc: 0, dx: 0, ...o });
+const MAXSC = PAGE.h - PAGE.screen;
+const pad = (r: Rect, p = 14): Rect => [r[0] - p, r[1] - p, r[2] + 2 * p, r[3] + 2 * p];
+
+const KEYS_WIDE: Key[] = [
+  k(0, FULL, { rx: 14, ry: -24, z: -80 }),
+  k(0.1, FULL),
+  k(0.2, FULL, { ry: 2 }),
+  k(0.3, pad(R.kpis), { dim: 0.62, ry: 6, rx: 3 }),
+  k(0.4, pad(R.kpis), { dim: 0.62, ry: -5, rx: 2 }),
+  k(0.5, pad(R.hints), { sc: 560, dim: 0.6, ry: 5 }),
+  k(0.58, pad(R.hints), { sc: 560, dim: 0.6, ry: -3 }),
+  k(0.66, FULL, { ry: 26, z: -520, dx: -0.2, dev: 0.5, ph: 1 }),
+  k(0.74, FULL, { ry: 22, z: -560, dx: -0.22, dev: 0.5, ph: 1 }),
+  k(0.8, pad(R.outlets), { sc: MAXSC, dim: 0.62, ry: -4 }),
+  k(0.84, pad(R.outlets), { sc: MAXSC, dim: 0.62, ry: 3 }),
+  k(0.9, pad(R.outlets), { sc: MAXSC, z: -700, dim: 0.62, dev: 0.3, oc: 1, rx: 10 }),
+  k(0.95, FULL, { rx: 6, ry: -10 }),
+  k(1, FULL, { rx: 6, ry: -12, z: -40 }),
+];
+// narrow screens: smaller focus boxes, so the figures stay legible; the camera pans from card to card
+const KEYS_NARROW: Key[] = [
+  k(0, FULL, { rx: 20, ry: -10, z: -60 }),
+  k(0.1, FULL),
+  k(0.2, FULL),
+  k(0.27, pad([291, 425, 552, 145], 8), { dim: 0.62, ry: 6 }),
+  k(0.33, pad([291, 425, 552, 145], 8), { dim: 0.62, ry: 4 }),
+  k(0.4, pad([855, 425, 551, 145], 8), { dim: 0.62, ry: -6 }),
+  k(0.5, [370, 745, 600, 196], { sc: 560, dim: 0.6, ry: 5 }),
+  k(0.58, [370, 745, 600, 196], { sc: 560, dim: 0.6, ry: -4 }),
+  k(0.66, FULL, { z: -600, dev: 0.15, ph: 1 }),
+  k(0.74, FULL, { z: -600, dev: 0.15, ph: 1 }),
+  k(0.8, pad([291, 1670, 700, 230], 8), { sc: MAXSC, dim: 0.62, ry: -4 }),
+  k(0.84, pad([291, 1670, 700, 230], 8), { sc: MAXSC, dim: 0.62, ry: 3 }),
+  k(0.9, FULL, { sc: MAXSC, z: -700, dev: 0.15, oc: 1 }),
+  k(0.95, FULL, { rx: 8 }),
+  k(1, FULL, { rx: 8, z: -40 }),
+];
+
+// the texts, by progress
+type Beat = { from: number; to: number; kicker: string; title: string; text?: string };
+const BEATS: Beat[] = [
+  { from: 0.12, to: 0.24, kicker: "Übersicht", title: "Dein Betrieb beginnt mit einem Überblick.", text: "Umsatz, Deckungsbeitrag und Handlungsbedarf aus deinen Verkäufen – auf einer Seite." },
+  { from: 0.27, to: 0.43, kicker: "Kennzahlen", title: "Hinter jeder Zahl steht dein Betrieb.", text: "Netto-Umsatz, DB II, Wareneinsatzquote und verkaufte Einheiten, gerechnet aus deinen Verkaufszeilen." },
+  { from: 0.46, to: 0.6, kicker: "Handlungsbedarf", title: "Was du als Nächstes tun solltest.", text: "Hinweise nur aus deinen Daten und deinen Zielen: ohne Ziel keine Bewertung, ohne Daten kein Hinweis." },
+  { from: 0.63, to: 0.76, kicker: "Mobile Ansicht", title: "Auch dort, wo gearbeitet wird.", text: "Team & Aufgaben auf dem Handy: offene und überfällige Aufgaben je Outlet." },
+  { from: 0.79, to: 0.92, kicker: "Outlets", title: "Restaurant. Bar. Bankett. Zusammen im Blick.", text: "Ein Berichtsfilter: jedes Outlet einzeln oder alle zusammen." },
 ];
 
 const clamp = (x: number, a = 0, b = 1) => Math.min(b, Math.max(a, x));
-const win = (t: number, from: number, to: number, edge = 0.06) => clamp(Math.min((t - from) / edge, (to - t) / edge));
+const win = (t: number, from: number, to: number, edge = 0.025) => clamp(Math.min((t - from) / edge, (to - t) / edge));
+const ease = (x: number) => x * x * x * (x * (6 * x - 15) + 10);
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 
-// ---------- perspective fit of a rectangle onto four points (CSS matrix3d)
-type M3 = number[];
-const adj = (m: M3): M3 => [m[4] * m[8] - m[5] * m[7], m[2] * m[7] - m[1] * m[8], m[1] * m[5] - m[2] * m[4], m[5] * m[6] - m[3] * m[8], m[0] * m[8] - m[2] * m[6], m[2] * m[3] - m[0] * m[5], m[3] * m[7] - m[4] * m[6], m[1] * m[6] - m[0] * m[7], m[0] * m[4] - m[1] * m[3]];
-const mul = (a: M3, b: M3): M3 => {
-  const c: M3 = [];
-  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) c[3 * i + j] = a[3 * i] * b[j] + a[3 * i + 1] * b[3 + j] + a[3 * i + 2] * b[6 + j];
-  return c;
-};
-const mulv = (m: M3, v: number[]) => [m[0] * v[0] + m[1] * v[1] + m[2] * v[2], m[3] * v[0] + m[4] * v[1] + m[5] * v[2], m[6] * v[0] + m[7] * v[1] + m[8] * v[2]];
-function basis(p: number[]): M3 {
-  const m = [p[0], p[2], p[4], p[1], p[3], p[5], 1, 1, 1];
-  const v = mulv(adj(m), [p[6], p[7], 1]);
-  return mul(m, [v[0], 0, 0, 0, v[1], 0, 0, 0, v[2]]);
-}
-/** matrix3d that maps a w×h element (origin top left) onto the quad tl, tr, bl, br (viewport pixels). */
-function fit(w: number, h: number, q: number[][]) {
-  const s = basis([0, 0, w, 0, 0, h, w, h]);
-  const d = basis([q[0][0], q[0][1], q[1][0], q[1][1], q[2][0], q[2][1], q[3][0], q[3][1]]);
-  const t = mul(d, adj(s)).map((x, _, a) => x / a[8]);
-  return `matrix3d(${t[0]},${t[3]},0,${t[6]},${t[1]},${t[4]},0,${t[7]},0,0,1,0,${t[2]},${t[5]},0,${t[8]})`;
+function camera(keys: Key[], p: number): Key {
+  let i = 0;
+  while (i < keys.length - 2 && p > keys[i + 1].at) i++;
+  const a = keys[i], b = keys[i + 1];
+  const t = ease(clamp((p - a.at) / (b.at - a.at)));
+  const out = { at: p } as Key;
+  for (const key of ["sc", "rx", "ry", "z", "dim", "dev", "ph", "oc", "dx"] as const) out[key] = mix(a[key], b[key], t);
+  // the zoom feels even when the size of the focus box changes a lot; the centre glides in screen coordinates
+  const w = Math.exp(mix(Math.log(a.f[2]), Math.log(b.f[2]), t)), h = Math.exp(mix(Math.log(a.f[3]), Math.log(b.f[3]), t));
+  const cx = mix(a.f[0] + a.f[2] / 2, b.f[0] + b.f[2] / 2, t), cy = mix(a.f[1] + a.f[3] / 2 - a.sc, b.f[1] + b.f[3] / 2 - b.sc, t) + out.sc;
+  out.f = [cx - w / 2, cy - h / 2, w, h];
+  return out;
 }
 
 function useMode() {
@@ -76,367 +108,267 @@ function useMode() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setMode(q === "static" || (q !== "anim" && reduced) ? "static" : "anim");
   }, []);
-  return [mode, setMode] as const;
+  return mode;
 }
 
 export function Story() {
-  const [mode, setMode] = useMode();
-  const fail = useCallback(() => setMode("static"), [setMode]);
+  const mode = useMode();
   return (
-    <>
-      <div className="relative" data-story-mode={mode}>
-        {mode === "static" ? <StaticStory /> : <SequenceStory onFail={fail} pending={mode === "pending"} />}
-      </div>
-      <p id="nach-geschichte" className="mx-auto max-w-(--size-content-max) px-4 pt-3 text-xs text-text-muted lg:px-8">
-        Kamerafahrt in Blender gerendert. Möbelmodelle: Khronos glTF Sample Assets – Sofa, Pflanze, Windlicht und Kühlschrank von Eric Chadwick und Sean Thomas (CC BY 4.0), weitere Modelle CC0. Bildschirminhalte: Beispieldaten der GLB-Demo.
+    <div className="story-ink" data-story-mode={mode}>
+      {mode === "static" ? <StaticStory /> : <ScrollStory />}
+      <p id="nach-geschichte" className="mx-auto max-w-(--size-content-max) px-4 pb-6 pt-3 text-xs text-[var(--story-muted)] lg:px-8">
+        Alle Ansichten: echte Bildschirme der GLB AI Suite mit den Beispieldaten der Demo.
       </p>
-    </>
+    </div>
   );
 }
 
 function Ctas() {
   return (
     <div className="flex flex-wrap gap-3">
-      <a href="#anfrage" className="inline-flex min-h-12 items-center gap-2 rounded-pill bg-accent px-5 text-base font-bold text-on-accent hover:bg-accent-hover">
+      <a href="#anfrage" className="inline-flex min-h-12 items-center gap-2 rounded-pill bg-accent px-5 text-base font-bold text-on-accent shadow-[0_0_0_1px_rgba(143,211,193,0.35)] hover:bg-[#13807a]">
         {CTA_PRIMARY} <ArrowRight aria-hidden className="size-4" />
       </a>
-      <Link href="/suite" className="inline-flex min-h-12 items-center rounded-pill border border-border-input bg-surface-raised px-5 text-base font-semibold hover:bg-row-hover">
+      <Link href="/suite" className="inline-flex min-h-12 items-center rounded-pill border border-[var(--story-line)] px-5 text-base font-semibold text-[var(--story-cream)] hover:bg-white/10">
         {CTA_DEMO}
       </Link>
     </div>
   );
 }
 
-function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-[12px] border border-border bg-bg/95 p-4 shadow-[0_8px_30px_rgba(34,28,21,0.14)] lg:p-6 ${className}`}>{children}</div>;
-}
+const SCREEN_W = PAGE.w * 2, SCREEN_H = PAGE.screen * 2, BEZEL = 34;
+const PHONE_W = 780, PHONE_H = 1688, PHONE_B = 26;
 
-function SequenceStory({ onFail, pending }: { onFail: () => void; pending: boolean }) {
+function ScrollStory() {
   const section = useRef<HTMLElement>(null);
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const overlay = useRef<HTMLImageElement>(null);
-  const phoneOverlay = useRef<HTMLImageElement>(null);
-  const labelRefs = useRef<Record<string, HTMLSpanElement | null>>({});
-  const [manifest, setManifest] = useState<Manifest | null>(null);
-  const [variantKey, setVariantKey] = useState<"d" | "m">("d");
+  const scene = useRef<HTMLDivElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
+  const device = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
+  const spot = useRef<HTMLDivElement>(null);
+  const phone = useRef<HTMLDivElement>(null);
+  const cards = useRef<(HTMLElement | null)[]>([]);
   const [t, setT] = useState(0);
   const [ready, setReady] = useState(false);
 
-  // manifest and the variant for this screen (portrait frames on phones)
   useEffect(() => {
-    if (pending) return;
-    const pick = () => setVariantKey(window.innerWidth / window.innerHeight < 0.9 ? "m" : "d");
-    pick();
-    window.addEventListener("resize", pick);
-    fetch(`${BASE}/manifest.json`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(setManifest)
-      .catch(onFail);
-    return () => window.removeEventListener("resize", pick);
-  }, [pending, onFail]);
-
-  useEffect(() => {
-    if (!manifest) return;
-    const v = manifest.variants[variantKey];
-    const imgs: (HTMLImageElement | null)[] = new Array(v.count).fill(null);
-    let disposed = false, raf = 0, current = -1, target = 0, last = 0, shown = -1;
-    const ctx = canvas.current!.getContext("2d", { alpha: false })!;
-
-    // load order: first frame, then coarse to fine, so every scroll position soon has a nearby frame
-    const order: number[] = [];
-    for (const step of [16, 8, 4, 2, 1]) for (let i = 0; i < v.count; i += step) if (!order.includes(i)) order.push(i);
-    if (!order.includes(v.count - 1)) order.splice(1, 0, v.count - 1);
-    let next = 0, active = 0;
-    const pump = () => {
-      while (active < 6 && next < order.length && !disposed) {
-        const i = order[next++];
-        const im = new Image();
-        im.decoding = "async";
-        im.src = `${BASE}/${v.dir ?? variantKey}/${String(i).padStart(4, "0")}.webp`;
-        active++;
-        im.onload = () => {
-          active--;
-          if (disposed) return;
-          imgs[i] = im;
-          if (i === 0) setReady(true);
-          request();
-          pump();
-        };
-        im.onerror = () => {
-          active--;
-          pump();
-        };
-      }
+    const sec = section.current!, st = stage.current!;
+    let W = 0, H = 0, raf = 0, cur = 0, target = 0, last = 0;
+    const measure = () => {
+      W = st.clientWidth;
+      H = st.clientHeight;
     };
-    const nearest = (i: number) => {
-      for (let d = 0; d < v.count; d++) {
-        if (imgs[i - d]) return i - d;
-        if (imgs[i + d]) return i + d;
-      }
-      return -1;
+    const read = () => {
+      const r = sec.getBoundingClientRect();
+      target = clamp(-r.top / Math.max(1, sec.offsetHeight - innerHeight));
     };
-
-    const draw = (p: number) => {
-      const c = canvas.current!;
-      const W = c.clientWidth, H = c.clientHeight;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) {
-        c.width = Math.round(W * dpr);
-        c.height = Math.round(H * dpr);
-      }
-      // cover-fit of the rendered frame
-      const s = Math.max(W / v.w, H / v.h), ox = (W - v.w * s) / 2, oy = (H - v.h * s) / 2;
-      // exactly one rendered frame at a time (cross-fading frames of a moving camera would ghost)
-      const a = Math.round(p * (v.count - 1)), b = a, wgt = 0;
-      const ia = nearest(a);
-      if (ia >= 0) {
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.drawImage(imgs[ia]!, ox, oy, v.w * s, v.h * s);
-      }
-      shown = ia;
-      // sharp screenshots on the laptop and phone screens, corners interpolated between the two frames
-      const place = (el: HTMLImageElement | null, key: "laptop" | "phone", nw: number, nh: number) => {
-        if (!el) return;
-        const ca = v.frames[a]?.[key], cb = v.frames[b]?.[key];
-        if (ca && cb && ca.every((x) => x[2] > 0) && cb.every((x) => x[2] > 0)) {
-          const pt = (k: number) => [ox + (ca[k][0] + (cb[k][0] - ca[k][0]) * wgt) * v.w * s, oy + (ca[k][1] + (cb[k][1] - ca[k][1]) * wgt) * v.h * s];
-          // corners from the render: bottom left, bottom right, top right, top left
-          const q = [pt(3), pt(2), pt(0), pt(1)];
-          const area = Math.abs((q[1][0] - q[0][0]) * (q[2][1] - q[0][1])) / (W * H);
-          el.style.transform = fit(el.naturalWidth || nw, el.naturalHeight || nh, q);
-          el.style.opacity = String(clamp((area - 0.004) / 0.01));
-        } else el.style.opacity = "0";
-      };
-      // the overlays follow the frame that is really on screen (it may be a neighbour while frames are loading)
-      if (shown !== a) {
-        if (overlay.current) overlay.current.style.opacity = "0";
-        if (phoneOverlay.current) phoneOverlay.current.style.opacity = "0";
-      } else {
-        place(overlay.current, "laptop", 1920, 1200);
-        place(phoneOverlay.current, "phone", 780, 1688);
-      }
-      // area labels
-      const shot = v.shots.find((x) => a >= x.start && a < x.start + x.count)?.name || "";
-      for (const l of LABELS) {
-        const el = labelRefs.current[l.id];
-        const za = v.frames[a]?.zones?.[l.id], zb = v.frames[b]?.zones?.[l.id];
-        if (!el) continue;
-        if (!za || !zb || !l.shots.includes(shot) || za[2] <= 0) {
-          el.style.opacity = "0";
-          continue;
-        }
-        const x = ox + (za[0] + (zb[0] - za[0]) * wgt) * v.w * s, y = oy + (za[1] + (zb[1] - za[1]) * wgt) * v.h * s;
-        el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
-        el.style.opacity = x > 0 && x < W && y > 0 && y < H ? "1" : "0";
-      }
+    const apply = (p: number) => {
+      const wide = W >= 1024 && W / H > 1.15;
+      const cam = camera(wide ? KEYS_WIDE : KEYS_NARROW, p);
+      // the free area next to (wide) or below (narrow) the text
+      const area = wide ? { x: W * 0.4, y: 72, w: W * 0.57, h: H - 132 } : { x: 16, y: H * 0.43, w: W - 32, h: H * 0.57 - 36 };
+      // the objects fade out softly before they reach the text, however far the camera zooms in
+      const mask = wide ? `linear-gradient(90deg, transparent ${W * 0.35}px, #000 ${W * 0.43}px)` : `linear-gradient(180deg, transparent ${area.y - 28}px, #000 ${area.y + 16}px)`;
+      scene.current!.style.maskImage = mask;
+      scene.current!.style.webkitMaskImage = mask;
+      const [fx, fy, fw, fh] = cam.f;
+      const s = Math.min(area.w / (fw * 2), area.h / (fh * 2)) * (wide ? 0.88 : 0.94);
+      const ax = area.x + area.w / 2 + cam.dx * W, ay = area.y + area.h / 2;
+      const cx = BEZEL + (fx + fw / 2) * 2, cy = BEZEL + (fy + fh / 2 - cam.sc) * 2;
+      const dv = device.current!.style;
+      dv.transform = `translate3d(${ax}px,${ay}px,${cam.z}px) rotateX(${cam.rx}deg) rotateY(${cam.ry}deg) scale(${s}) translate(${-cx}px,${-cy}px)`;
+      dv.opacity = String(cam.dev);
+      content.current!.style.transform = `translate3d(0,${-cam.sc * 2}px,0)`;
+      const sp = spot.current!.style;
+      sp.left = `${fx * 2}px`;
+      sp.top = `${fy * 2}px`;
+      sp.width = `${fw * 2}px`;
+      sp.height = `${fh * 2}px`;
+      sp.opacity = String(cam.dim);
+      // phone: rises from below into the area while the device steps back
+      const ps = (area.h * 0.94) / (PHONE_H + 2 * PHONE_B);
+      const px = wide ? area.x + area.w * 0.62 : area.x + area.w / 2;
+      const ph = phone.current!.style;
+      ph.transform = `translate3d(${px}px,${ay + (1 - cam.ph) * H * 0.9}px,${(1 - cam.ph) * -200}px) rotateY(${wide ? -8 * cam.ph : 0}deg) scale(${ps}) translate(-50%,-50%)`;
+      ph.opacity = String(clamp(cam.ph * 1.6));
+      ph.visibility = cam.ph <= 0.001 ? "hidden" : "visible";
+      // outlet views: one after another to the front, stacked in the area
+      const cw = Math.min(area.w * 0.96, 880), chh = (cw * 574) / 1942, gap = Math.max(10, area.h * 0.03);
+      const top0 = ay - (3 * chh + 2 * gap) / 2;
+      cards.current.forEach((c, i) => {
+        if (!c) return;
+        const ci = ease(clamp(cam.oc * 3.2 - i * 0.9));
+        c.style.width = `${cw}px`;
+        c.style.transform = `translate3d(${area.x + area.w / 2 - cw / 2}px,${top0 + i * (chh + gap) + (1 - ci) * 60}px,${(1 - ci) * -500}px) rotateX(${(1 - ci) * 24}deg)`;
+        c.style.opacity = String(ci);
+        c.style.visibility = ci <= 0.001 ? "hidden" : "visible";
+      });
     };
-    const readScroll = () => {
-      const r = section.current!.getBoundingClientRect();
-      return clamp(-r.top / Math.max(1, r.height - window.innerHeight));
-    };
-    const tick = (now: number) => {
+    const frame = (now: number) => {
       raf = 0;
-      // short, time-based smoothing towards the scroll position (never ahead of it)
-      const dt = last ? Math.min(100, now - last) : 16;
+      const dt = last ? Math.min(64, now - last) : 16;
       last = now;
-      const nx = current < 0 ? target : current + (target - current) * (1 - Math.exp(-dt / 70));
-      current = Math.abs(target - nx) < 0.0002 ? target : nx;
-      draw(current);
-      setT(current);
-      if (current !== target) raf = requestAnimationFrame(tick);
+      cur += (target - cur) * (1 - Math.exp(-dt / 90));
+      if (Math.abs(target - cur) < 0.0004) cur = target;
+      apply(cur);
+      setT(cur);
+      if (cur !== target) raf = requestAnimationFrame(frame);
       else last = 0;
     };
-    function request() {
-      if (!raf) raf = requestAnimationFrame(tick);
-    }
-    const onScroll = () => {
-      target = readScroll();
-      request();
+    const kick = () => {
+      read();
+      if (!raf) raf = requestAnimationFrame(frame);
     };
-    const fail = setTimeout(() => !disposed && !imgs[0] && onFail(), 15000);
-    pump();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    onScroll();
+    const resize = () => {
+      measure();
+      apply(cur);
+      kick();
+    };
+    measure();
+    read();
+    cur = target;
+    apply(cur);
+    setT(cur);
+    setReady(true);
+    addEventListener("scroll", kick, { passive: true });
+    addEventListener("resize", resize);
     return () => {
-      disposed = true;
-      clearTimeout(fail);
+      removeEventListener("scroll", kick);
+      removeEventListener("resize", resize);
       cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
     };
-  }, [manifest, variantKey, onFail]);
+  }, []);
 
-  const v = manifest?.variants[variantKey];
-  const local = (shot: string) => {
-    const s = v?.shots.find((x) => x.name === shot);
-    if (!s || !v) return -1;
-    return clamp((t * (v.count - 1) - s.start) / Math.max(1, s.count - 1), -1, 2);
-  };
-  const intro = 1 - clamp((t - 0.05) / 0.06);
-  const frames = v?.count ?? 60;
+  const intro = clamp(1 - t / 0.06);
+  const outro = clamp((t - 0.935) / 0.04);
+  const fade = (o: number) => ({ opacity: o, visibility: o <= 0 ? ("hidden" as const) : ("visible" as const), transform: `translateY(${(1 - o) * 18}px)` });
   return (
-    <section ref={section} id="geschichte" aria-label="Produktgeschichte: vom Dashboard in den Betrieb und zurück" className="relative" style={{ height: `calc(100svh + ${Math.round(frames * 3.4)}svh)` }}>
-      <div className="sticky top-0 h-svh w-full overflow-hidden bg-[#2b2620]">
-        {/* first frame as preview until the sequence is ready */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`${BASE}/${manifest ? (manifest.variants[variantKey]?.dir ?? variantKey) : "d"}/0000.webp`} alt="Dashboard der GLB AI Suite mit Beispieldaten auf einem Laptop im Restaurantbüro." className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${ready ? "opacity-0" : "opacity-100"}`} />
-        <canvas ref={canvas} aria-hidden className="absolute inset-0 h-full w-full" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img ref={overlay} src="/story/screen-dashboard.jpg" alt="" aria-hidden className="pointer-events-none absolute left-0 top-0 origin-top-left opacity-0" style={{ width: 1920, height: 1200, maxWidth: "none" }} width={1920} height={1200} />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img ref={phoneOverlay} src="/story/screen-mobile.jpg" alt="" aria-hidden className="pointer-events-none absolute left-0 top-0 origin-top-left opacity-0" style={{ width: 780, height: 1688, maxWidth: "none" }} width={780} height={1688} />
-        {LABELS.map((l) => (
-          <span key={l.id} ref={(el) => { labelRefs.current[l.id] = el; }} aria-hidden className="pointer-events-none absolute left-0 top-0 rounded-pill bg-text/90 px-3 py-1 text-sm font-semibold text-bg opacity-0 transition-opacity duration-200">
-            {l.label}
-          </span>
-        ))}
-        {OUTLETS.map((x) => {
-          const l = local("outlets");
-          const o = l < 0 ? 0 : win(l, x.from, x.to, 0.04);
-          return (
-            <figure key={x.name} aria-hidden={o <= 0} className="pointer-events-none absolute inset-x-4 top-[max(4rem,env(safe-area-inset-top))] lg:inset-x-auto lg:right-8 lg:top-20 lg:w-[min(44vw,620px)]" style={{ opacity: o, visibility: o <= 0 ? "hidden" : "visible" }}>
-              <div className="overflow-hidden rounded-[12px] border border-border bg-white shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+    <section ref={section} id="geschichte" aria-label="Produktgeschichte: die Übersicht der Suite von nah" className="relative h-[760svh]">
+      <div ref={stage} className="sticky top-0 h-svh overflow-hidden">
+        <div aria-hidden className="story-glow absolute inset-0" />
+        <div ref={scene} className="absolute inset-0 [perspective:1800px]" style={{ opacity: ready ? 1 : 0, transition: "opacity .6s" }}>
+          <div ref={device} className="story-device absolute left-0 top-0 origin-top-left" style={{ width: SCREEN_W + 2 * BEZEL, height: SCREEN_H + 2 * BEZEL, padding: BEZEL }}>
+            <div className="relative h-full w-full overflow-hidden rounded-[22px] bg-white">
+              <div ref={content} className="absolute left-0 top-0" style={{ width: SCREEN_W }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={x.img} alt={`Übersicht mit Outlet-Filter ${x.name}: Netto-Umsatz, DB II, Wareneinsatzquote und verkaufte Einheiten (Beispieldaten).`} className="h-auto w-full" />
+                <img src={IMG} alt={ALT} width={SCREEN_W} height={PAGE.h * 2} fetchPriority="high" className="block max-w-none" style={{ width: SCREEN_W, height: PAGE.h * 2 }} />
+                <div ref={spot} aria-hidden className="story-spot absolute" />
               </div>
-              <figcaption className="mt-2 inline-block rounded-pill bg-text px-3 py-1 text-sm font-semibold text-bg">{x.name} · Übersicht mit Outlet-Filter</figcaption>
-            </figure>
-          );
-        })}
-
-        {/* opening: heading and both actions right away, as a low strip over the keyboard area below the screen */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:p-5" style={{ opacity: intro, visibility: intro <= 0 ? "hidden" : "visible" }}>
-          <Panel className="pointer-events-auto flex w-full max-w-5xl flex-col gap-3 !p-4 lg:flex-row lg:items-center lg:justify-between lg:!px-6">
-            <div>
-              <h1 id="hero" className="font-display text-[1.6rem] leading-[1.1] lg:text-[2.1rem]">Gastro führen mit <span className="text-accent">echten Zahlen.</span></h1>
-              <p className="mt-1 text-sm text-text-muted lg:text-base">Dein Betrieb beginnt mit einem Überblick. Beispieldaten der Demo – scrolle in den Betrieb.</p>
+              {/* the sidebar of the suite stays in place while the page scrolls, as in the app */}
+              <div aria-hidden className="absolute left-0 top-0" style={{ width: R.sidebar[2] * 2, height: SCREEN_H, backgroundImage: `url(${IMG})`, backgroundSize: `${SCREEN_W}px auto` }} />
+              <div aria-hidden className="story-glare pointer-events-none absolute inset-0" />
             </div>
-            <div className="shrink-0"><Ctas /></div>
-          </Panel>
+          </div>
+          <div ref={phone} className="story-phone absolute left-0 top-0 origin-top-left" style={{ width: PHONE_W + 2 * PHONE_B, height: PHONE_H + 2 * PHONE_B, padding: PHONE_B, visibility: "hidden" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/story/screen-mobile.jpg" alt="Handy-Ansicht der Suite: Team und Aufgaben je Outlet mit Beispieldaten." loading="lazy" className="block h-full w-full rounded-[84px] object-cover" />
+          </div>
+          {OUTLETS.map((o, i) => (
+            <figure key={o.name} ref={(el) => { cards.current[i] = el; }} className="story-card absolute left-0 top-0 origin-top" style={{ visibility: "hidden" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={o.img} alt={`Übersicht mit Outlet-Filter ${o.name} (Beispieldaten).`} loading="lazy" className="block h-auto w-full" />
+              <figcaption className="absolute left-3 top-3 rounded-pill bg-[var(--story-ink)] px-3 py-1 text-xs font-bold text-[var(--story-cream)]">{o.name}</figcaption>
+            </figure>
+          ))}
         </div>
 
-        {BEATS.map((b) => {
-          const l = local(b.shot);
-          const o = l < 0 ? 0 : win(l, b.from, b.to);
-          if (o <= 0) return null;
-          return (
-            <div key={b.title} className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-start p-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:p-8" style={{ opacity: o }}>
-              <Panel className="max-w-md">
-                <p className="text-sm font-bold text-accent">{b.kicker}</p>
-                <h2 className="font-display mt-1 text-[1.5rem] leading-tight lg:text-[2rem]">{b.title}</h2>
-                {b.text && <p className="mt-2 text-base text-text-muted">{b.text}</p>}
-              </Panel>
+        {/* texts: HTML over the stage, all in one grid cell (top on phones, vertically centred on the left on wide screens) */}
+        <div className="pointer-events-none absolute inset-0 mx-auto max-w-(--size-content-max) px-4 pt-[max(4.25rem,8svh)] lg:px-8 lg:pt-0">
+          <div className="grid h-full content-start lg:w-[36%] lg:content-center">
+            <div className="story-copy pointer-events-auto [grid-area:1/1]" style={fade(intro)}>
+              <p className="story-kicker">GLB AI Suite · Gastro Leadership Board</p>
+              <h1 id="hero" className="story-h1 mt-3">Gastro führen mit echten Zahlen.</h1>
+              <p className="mt-4 max-w-md text-base text-[var(--story-muted)] lg:text-lg">Dein Betrieb beginnt mit einem Überblick.</p>
+              <div className="mt-6"><Ctas /></div>
             </div>
-          );
-        })}
-
-        {(() => {
-          const l = local("return");
-          const o = l < 0 ? 0 : clamp((l - 0.8) / 0.12);
-          return (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:justify-start lg:p-8" style={{ opacity: o, visibility: o <= 0 ? "hidden" : "visible" }}>
-              <Panel className="pointer-events-auto w-full max-w-2xl">
-                <p className="text-sm font-bold text-accent">Eine Übersicht</p>
-                <h2 className="font-display mt-1 text-[1.6rem] leading-tight lg:text-[2.2rem]">Dein Betrieb. Alle Bereiche. Eine Übersicht.</h2>
-                <div className="mt-4"><Ctas /></div>
-              </Panel>
+            {BEATS.map((b) => (
+              <div key={b.title} className="story-copy [grid-area:1/1]" style={fade(win(t, b.from, b.to))}>
+                <p className="story-kicker">{b.kicker}</p>
+                <h2 className="story-h2 mt-3">{b.title}</h2>
+                {b.text && <p className="mt-4 max-w-md text-base text-[var(--story-muted)] lg:text-lg">{b.text}</p>}
+              </div>
+            ))}
+            <div className="story-copy pointer-events-auto [grid-area:1/1]" style={fade(outro)}>
+              <p className="story-kicker">Eine Übersicht</p>
+              <h2 className="story-h2 mt-3">Dein Betrieb. Alle Bereiche. Eine Übersicht.</h2>
+              <div className="mt-6"><Ctas /></div>
             </div>
-          );
-        })()}
+          </div>
+        </div>
 
         <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] lg:right-6 lg:top-6">
-          <a href="#nach-geschichte" className="inline-flex min-h-11 items-center rounded-pill border border-border-input bg-bg/95 px-4 text-sm font-semibold hover:bg-row-hover">Animation überspringen</a>
+          <a href="#nach-geschichte" className="inline-flex min-h-11 items-center rounded-pill border border-[var(--story-line)] bg-[var(--story-ink)] px-4 text-sm font-semibold text-[var(--story-cream)] hover:bg-white/10">Animation überspringen</a>
         </div>
-        <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-black/20">
-          <div className="h-full bg-accent" style={{ width: `${t * 100}%` }} />
+        <div aria-hidden className="absolute inset-x-0 bottom-0 h-px bg-white/10">
+          <div className="h-full bg-[var(--story-mint)]" style={{ width: `${t * 100}%` }} />
         </div>
       </div>
     </section>
   );
 }
 
-// still version for "reduced motion": the same story, one rendered frame per message from the same camera flight
-const STILL_AT: Record<string, { at: number; alt: string }> = {
-  office: { at: 0.5, alt: "Der Laptop mit dem Dashboard auf dem Schreibtisch im Restaurantbüro, Ziegelwand und Regal." },
-  aerial: { at: 1, alt: "Das Restaurant von oben: Fassade mit Glasfront, Terrasse mit Sonnenschirmen, Straße und Nachbarhäuser." },
-  enter: { at: 0.8, alt: "Blick durch den offenen Eingang in den Gastraum zur Servicestation." },
-  phone: { at: 1, alt: "Handy auf der Servicestation mit der Ansicht Team und Aufgaben der Suite." },
-  outlets: { at: 0.32, alt: "Gastraum mit gedeckten Tischen, Bar und Bankett im Hintergrund." },
-  return: { at: 0.3, alt: "Blick vom Bankett zurück in den Gastraum." },
-};
-
-function StaticStory() {
-  const [v, setV] = useState<Variant | null>(null);
-  useEffect(() => {
-    fetch(`${BASE}/manifest.json`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((m: Manifest | null) => setV(m?.variants.d ?? null))
-      .catch(() => setV(null));
-  }, []);
-  const frameOf = (shot: string) => {
-    const s = v?.shots.find((x) => x.name === shot);
-    if (!s) return null;
-    return s.start + Math.round((STILL_AT[shot]?.at ?? 0.5) * (s.count - 1));
-  };
-  const seen = new Set<string>();
+// a part of the overview capture, cut out with CSS (no extra image files)
+function Crop({ r, alt }: { r: Rect; alt: string }) {
+  const [x, y, w, h] = r;
   return (
-    <section id="geschichte" aria-label="Produktgeschichte: vom Dashboard in den Betrieb und zurück" className="mx-auto max-w-(--size-content-max) px-4 pt-6 pb-10 lg:px-8">
+    <div className="story-frame relative overflow-hidden" style={{ aspectRatio: `${w} / ${h}` }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={IMG} alt={alt} loading="lazy" className="absolute max-w-none" style={{ width: `${(PAGE.w / w) * 100}%`, left: `${(-x / w) * 100}%`, top: `${(-y / h) * 100}%` }} />
+    </div>
+  );
+}
+
+// still version for "reduced motion": the same messages with the same views, nothing moves
+function StaticStory() {
+  return (
+    <section id="geschichte" aria-label="Produktgeschichte: die Übersicht der Suite von nah" className="mx-auto max-w-(--size-content-max) px-4 pb-10 pt-6 lg:px-8">
       <div className="flex flex-wrap justify-end gap-2">
-        <a href="?story=anim" className="inline-flex min-h-11 items-center rounded-pill border border-border-input px-4 text-sm font-semibold">Animation trotzdem abspielen</a>
-        <a href="#nach-geschichte" className="inline-flex min-h-11 items-center rounded-pill border border-border-input px-4 text-sm font-semibold">Zu den Inhalten springen</a>
+        <a href="?story=anim" className="inline-flex min-h-11 items-center rounded-pill border border-[var(--story-line)] px-4 text-sm font-semibold">Animation trotzdem abspielen</a>
+        <a href="#nach-geschichte" className="inline-flex min-h-11 items-center rounded-pill border border-[var(--story-line)] px-4 text-sm font-semibold">Zu den Inhalten springen</a>
       </div>
-      <div className="mt-4 grid items-center gap-8 lg:grid-cols-[5fr_7fr]">
+      <div className="mt-6 grid items-center gap-8 lg:grid-cols-[5fr_7fr]">
         <div>
-          <p className="text-sm font-bold text-accent">Beispieldaten der Demo</p>
-          <h1 id="hero" className="font-display mt-2 text-[2.25rem] leading-[1.1] lg:text-[3.25rem]">Gastro führen mit <span className="text-accent">echten Zahlen.</span></h1>
-          <p className="mt-4 text-base text-text-muted lg:text-lg">Dein Betrieb beginnt mit einem Überblick.</p>
+          <p className="story-kicker">GLB AI Suite · Gastro Leadership Board</p>
+          <h1 id="hero" className="story-h1 mt-3">Gastro führen mit echten Zahlen.</h1>
+          <p className="mt-4 text-base text-[var(--story-muted)] lg:text-lg">Dein Betrieb beginnt mit einem Überblick.</p>
           <div className="mt-6"><Ctas /></div>
         </div>
-        <div className="overflow-hidden rounded-[12px] border border-border bg-white">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/story/screen-dashboard.jpg" alt="Dashboard der GLB AI Suite mit Beispieldaten: Kennzahlen, Berichtsfilter und Handlungsbedarf." className="h-auto w-full" />
-        </div>
+        <Crop r={FULL} alt={ALT} />
       </div>
-      <ol className="mt-14 flex flex-col gap-12">
-        {BEATS.filter((b) => !seen.has(b.shot) && seen.add(b.shot)).map((b) => {
-          const f = frameOf(b.shot);
-          if (f === null) return null;
-          return (
-            <li key={b.title} className="grid items-center gap-6 lg:grid-cols-[5fr_7fr]">
-              <div>
-                <p className="text-sm font-bold text-accent">{b.kicker}</p>
-                <h2 className="font-display mt-2 text-[1.6rem] leading-tight lg:text-[2rem]">{b.title}</h2>
-                {b.text && <p className="mt-2 text-text-muted">{b.text}</p>}
+      <ol className="mt-16 flex flex-col gap-14">
+        {BEATS.map((b, i) => (
+          <li key={b.title} className="grid items-center gap-6 lg:grid-cols-[5fr_7fr]">
+            <div>
+              <p className="story-kicker">{b.kicker}</p>
+              <h2 className="story-h2 mt-3">{b.title}</h2>
+              {b.text && <p className="mt-3 text-[var(--story-muted)]">{b.text}</p>}
+            </div>
+            {i === 0 && <Crop r={[257, 60, 1183, 520]} alt="Kopf der Übersicht mit Berichtsfilter und Kennzahlen (Beispieldaten)." />}
+            {i === 1 && <Crop r={pad(R.kpis)} alt="Kennzahlen der Übersicht: Netto-Umsatz, DB II, Wareneinsatzquote, verkaufte Einheiten (Beispieldaten)." />}
+            {i === 2 && <Crop r={pad(R.hints)} alt="Handlungsbedarf: Hinweise zu Warenquoten über dem Ziel (Beispieldaten)." />}
+            {i === 3 && (
+              <div className="mx-auto w-full max-w-[280px] rounded-[34px] bg-[#05090a] p-2.5 shadow-[0_0_0_1px_var(--story-line)]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/story/screen-mobile.jpg" alt="Handy-Ansicht der Suite: Team und Aufgaben je Outlet mit Beispieldaten." loading="lazy" className="h-auto w-full rounded-[26px]" />
               </div>
-              {b.shot === "phone" ? (
-                <div className="mx-auto w-full max-w-[280px] overflow-hidden rounded-[24px] border-4 border-text bg-white">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/story/screen-mobile.jpg" alt="Handy-Ansicht der Suite: Team und Aufgaben je Outlet mit Beispieldaten." loading="lazy" className="h-auto w-full" />
-                </div>
-              ) : (
-                <div className="overflow-hidden rounded-[12px] border border-border bg-white">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`${BASE}/d/${String(f).padStart(4, "0")}.webp`} alt={STILL_AT[b.shot]?.alt ?? ""} loading="lazy" className="h-auto w-full" />
-                </div>
-              )}
-              {b.shot === "outlets" && (
-                <div className="grid gap-4 lg:col-span-2 lg:grid-cols-3">
-                  {OUTLETS.map((x) => (
-                    <figure key={x.name} className="overflow-hidden rounded-[12px] border border-border bg-white">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={x.img} alt={`Übersicht mit Outlet-Filter ${x.name} (Beispieldaten).`} loading="lazy" className="h-auto w-full" />
-                      <figcaption className="border-t border-border px-3 py-2 text-sm font-semibold">{x.name}</figcaption>
-                    </figure>
-                  ))}
-                </div>
-              )}
-            </li>
-          );
-        })}
+            )}
+            {i === 4 && (
+              <div className="flex flex-col gap-3">
+                <Crop r={pad(R.outlets)} alt="Umsatz nach Outlet: Restaurant, Bar, Bankett & Events (Beispieldaten)." />
+                {OUTLETS.map((o) => (
+                  <figure key={o.name} className="story-frame relative overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={o.img} alt={`Übersicht mit Outlet-Filter ${o.name} (Beispieldaten).`} loading="lazy" className="h-auto w-full" />
+                    <figcaption className="absolute left-3 top-3 rounded-pill bg-[var(--story-ink)] px-3 py-1 text-xs font-bold text-[var(--story-cream)]">{o.name}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            )}
+          </li>
+        ))}
         <li>
-          <h2 className="font-display text-[1.8rem] leading-tight lg:text-[2.4rem]">Dein Betrieb. Alle Bereiche. Eine Übersicht.</h2>
-          <div className="mt-5"><Ctas /></div>
+          <h2 className="story-h2">Dein Betrieb. Alle Bereiche. Eine Übersicht.</h2>
+          <div className="mt-6"><Ctas /></div>
         </li>
       </ol>
     </section>

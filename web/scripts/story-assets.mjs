@@ -1,6 +1,7 @@
 // Real screens of the suite demo (example data) for the scroll story on the start page.
 // Run against a local demo server: BASE_URL=http://localhost:3300 node scripts/story-assets.mjs
 import { execFileSync } from "node:child_process";
+import { writeFileSync } from "node:fs";
 import { chromium } from "playwright";
 const BASE = process.env.BASE_URL || "http://localhost:3300";
 const OUT = "public/story";
@@ -17,11 +18,17 @@ const open = async (p, view) => {
   await p.waitForFunction(() => window.GLBSuite && window.GLBV11);
   await p.waitForTimeout(700);
 };
-// laptop screen: the overview, 16:10
-let p = await page(1440, 900, 4 / 3);
+// the whole overview at 1440 px, sharp enough to zoom in (DPR 2), plus the boxes of its parts for the camera
+let p = await page(1440, 900, 2);
 await open(p, "overview");
-await p.screenshot({ path: `${OUT}/screen-dashboard.png` });
-jpg(`${OUT}/screen-dashboard.png`);
+const regions = await p.evaluate(() => {
+  const box = (sel, i = 0) => { const e = document.querySelectorAll(sel)[i]; const r = e.getBoundingClientRect(); return [r.x, r.y + scrollY, r.width, r.height].map(Math.round); };
+  return { sidebar: box("aside.sidebar"), top: box(".v6-executive"), chart: box(".v6-hero-card"), filter: box(".v6-filter-ribbon"), kpis: box(".v6-kpis"), actions: box(".v6-actions"), hints: box(".v6-action-list"), outlets: box(".v6-report-panel", 2) };
+});
+const H = regions.outlets[1] + regions.outlets[3] + 24;
+await p.screenshot({ path: `${OUT}/screen-overview.png`, fullPage: true, clip: { x: 0, y: 0, width: 1440, height: H } });
+execFileSync("python3", ["-c", `from PIL import Image; Image.open("${OUT}/screen-overview.png").convert("RGB").save("${OUT}/screen-overview.webp", quality=84, method=6)`]);
+writeFileSync(`${OUT}/screen-overview.json`, JSON.stringify({ w: 1440, h: H, dpr: 2, regions }));
 // outlet views: filter summary and figures of the overview, one outlet at a time
 p = await page(1280, 900, 2);
 for (const [id, file] of [["restaurant", "outlet-restaurant"], ["bar", "outlet-bar"], ["banquet", "outlet-bankett"]]) {

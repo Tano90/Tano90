@@ -71,6 +71,71 @@
   background: var(--color-bg);
   color: var(--color-text);
 }
+/* Product story on the start page (Oct 2026): a dark, quiet stage for the real overview of the suite. Cream type on
+   near-black petrol; the beige brand returns right after it. Contrast: cream on ink 15:1, muted 8:1, mint 9:1. */
+.story-ink {
+  --story-ink: #0a1315;
+  --story-cream: #f4eee3;
+  --story-muted: #b9c2bd;
+  --story-mint: #8fd3c1;
+  --story-line: rgba(244, 238, 227, 0.22);
+  background: var(--story-ink);
+  color: var(--story-cream);
+}
+.story-glow {
+  background:
+    radial-gradient(60% 55% at 68% 52%, rgba(15, 106, 100, 0.34), transparent 70%),
+    radial-gradient(40% 40% at 20% 10%, rgba(143, 211, 193, 0.07), transparent 70%),
+    linear-gradient(180deg, #0a1315 0%, #0b1719 60%, #0a1315 100%);
+}
+.story-kicker {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--story-mint);
+}
+.story-h1,
+.story-h2 {
+  font-family: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  font-optical-sizing: auto;
+  font-weight: 560;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+.story-h1 { font-size: clamp(2.6rem, 5.6vw, 5.4rem); }
+.story-h2 { font-size: clamp(2rem, 4vw, 4rem); }
+.story-copy { will-change: opacity, transform; }
+.story-device {
+  border-radius: 56px;
+  background: linear-gradient(160deg, #2a3436, #0d1517 45%, #1b2426);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.07) inset,
+    0 120px 220px -40px rgba(0, 0, 0, 0.75),
+    0 40px 90px rgba(0, 0, 0, 0.45);
+  backface-visibility: hidden;
+}
+.story-glare {
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 32%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, 0.05) 100%);
+}
+.story-spot {
+  border-radius: 20px;
+  box-shadow: 0 0 0 6000px rgba(6, 12, 14, 0.82), 0 0 0 3px rgba(143, 211, 193, 0.9);
+  pointer-events: none;
+}
+.story-phone {
+  border-radius: 110px;
+  background: linear-gradient(160deg, #2a3436, #05090a 50%, #1b2426);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08) inset, 0 140px 200px -30px rgba(0, 0, 0, 0.8);
+}
+.story-card,
+.story-frame {
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 30px 70px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
 .landing-beige .font-display {
   font-family: "Fraunces Variable", Georgia, "Times New Roman", serif;
   font-optical-sizing: auto;

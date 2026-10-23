@@ -1,4 +1,58 @@
-# STATUS – Fotorealistische Scrollgeschichte (Startseite, 23.10.2026)
+# STATUS – Premium-Produktseite (Startseite, 23.10.2026)
+
+## Entscheidung
+- Rückmeldung: Die Restaurant-Kamerafahrt (Blender) wirkte „KI-mäßig und kindisch“ und hatte nichts mit dem Referenzvideo zu tun. Gewählte Richtung: **Premium-Produktseite**.
+- Umgesetzt:
+  - Dunkle, ruhige Bühne mit großer Typografie (Fraunces, Markenschrift) und Petrol-Akzent.
+  - Einziges Objekt ist die **echte Übersicht der Suite** (Demo-Beispieldaten), als Bildschirm in 3D.
+- Ablauf beim Scrollen:
+  1. Der Bildschirm kippt aus der Schräge in die Fläche.
+  2. Zoom auf die vier Kennzahlen (der Rest wird abgedunkelt).
+  3. Die Seite scrollt im Bildschirm zum Handlungsbedarf.
+  4. Das Handy mit „Team & Aufgaben“ steigt auf.
+  5. Zoom auf „Umsatz nach Outlet“; danach kommen die drei Outlet-Ansichten (Restaurant, Bar, Bankett & Events) nacheinander nach vorn.
+  6. Am Ende steht die ganze Übersicht mit den beiden Aktionen.
+- Technik:
+  - Nur CSS-3D-Transformationen; kein WebGL, kein Canvas, keine neuen Pakete.
+  - Eine Fortschrittszahl aus der Scrollposition; läuft vorwärts und rückwärts.
+  - Kein Scroll-Hijacking, keine Automatik.
+  - Weiche Ausblendung zwischen Text und Bühne.
+- Barrierefreiheit:
+  - „Animation überspringen“ führt hinter die Geschichte.
+  - Bei reduzierter Bewegung oder `?story=static` gibt es eine Standversion mit denselben Texten und Ausschnitten. Dort lässt sich die Animation über „Animation trotzdem abspielen“ starten.
+- Kopfzeile der Startseite ist jetzt dunkel und schließt an die Bühne an; ab „Kurz beantwortet“ bleibt die Seite beige.
+
+## Assets
+- `web/public/story/screen-overview.webp` (2880×3848, 357 KB) und `screen-overview.json` mit den Boxen der Bereiche (aus dem DOM gemessen).
+- `outlet-*.jpg`, `screen-mobile.jpg`: echte Demo-Bildschirme.
+- Alle erzeugt mit `node scripts/story-assets.mjs` gegen den lokalen Demo-Server. Keine erfundenen Zahlen; alle Werte sind Beispieldaten der Demo.
+- Entfernt aus `public`: Blender-Bildsequenz (`story/seq`, ca. 9,5 MB), Standbilder und `screen-dashboard.jpg`.
+- Die Blender-Skripte (`web/scripts/story-blender`) und `story-production/` bleiben nur als Archiv und werden nicht ausgeliefert.
+
+## Geänderte Dateien
+- `web/src/components/landing/story/story.tsx` (neu geschrieben)
+- `web/src/app/globals.css` (`.story-*`)
+- `web/src/app/page.tsx` (dunkle Kopfzeile)
+- `web/scripts/story-assets.mjs`
+- `web/e2e/landing.spec.ts` (L03-2 und L03-4 auf die neue Bühne umgestellt; alle anderen Prüfungen unverändert)
+
+## Prüfung
+- Landing-E2E: 14/14 grün.
+- Chromium-Emulation bei 1440×900, 768×1024 und 390×844:
+  - keine Konsolenfehler
+  - kein horizontales Scrollen
+  - alle Stationen per Screenshot geprüft
+- Videos aufgenommen.
+- Noch nicht auf echten Geräten geprüft. Offen: iPhone Safari (Mask-Image, 3D) und Android Chrome.
+
+## Offen / Nächster Schritt
+- Prüfung auf echten Geräten.
+- Higgsfield bleibt ungenutzt (API-Guthaben 0).
+
+---
+
+# Archiv: Fotorealistische Scrollgeschichte (ersetzt)
+
 
 ## Befund zur gemeldeten Browserprüfung
 - **Was angezeigt wurde:** Text und Bild nebeneinander, Servicestation, separate Handy-Abbildung. Das war die **statische Rückfallansicht** der vorigen Version (`StaticStory`), nicht die Animation.
