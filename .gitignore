@@ -1,2 +1,4 @@
 # Local trader-skill config (contains the SEC name/email)
 trader/config.json
+# Local trader-skill state (downloaded PDFs, seen-filings cache)
+trader/state/
